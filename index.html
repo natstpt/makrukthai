@@ -2,427 +2,682 @@
 <html lang="th">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#174a44">
-  <meta name="description" content="สื่อการสอนหมากรุกไทยสำหรับเด็กและผู้เริ่มต้น เรียนจบใน 2 วัน วันละ 6 ชั่วโมง">
-  <title>หมากรุกไทย ฉบับเริ่มต้น | 2 วันเล่นเป็น</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#20211f">
+  <meta name="description" content="Makruk Learn บทเรียนหมากรุกไทยแบบทีละขั้น สำหรับเด็กและผู้เริ่มต้น">
+  <title>Makruk Learn | เรียนหมากรุกไทยทีละขั้น</title>
   <style>
     :root{
-      --ink:#19322f;--muted:#60716e;--cream:#fffaf0;--paper:#ffffff;--green:#174a44;
-      --green2:#2b6a61;--mint:#dff3e9;--gold:#f0b84b;--gold2:#fff0bd;--red:#d95c52;
-      --blue:#4f78c5;--line:#dfe8e4;--shadow:0 14px 36px rgba(25,50,47,.10);
-      --r:22px;--max:1120px;
+      --bg:#262724;--panel:#1f201e;--panel2:#292b28;--ink:#f7f5ec;--muted:#b9bcb5;
+      --green:#77a653;--green2:#5e8d40;--light:#edeccc;--boardGreen:#769c57;
+      --accent:#29c6ad;--accent2:#15a48e;--gold:#f2c14e;--danger:#e06a5f;
+      --line:#3a3c38;--shadow:0 18px 50px rgba(0,0,0,.22);--r:18px;
+      --font:"Noto Sans Thai","Leelawadee UI",Tahoma,sans-serif;
     }
     *{box-sizing:border-box}
-    html{scroll-behavior:smooth}
-    body{margin:0;background:linear-gradient(180deg,#f6fbf8 0,#fffaf0 52%,#f7fbf8 100%);
-      color:var(--ink);font-family:"Noto Sans Thai","Leelawadee UI",Tahoma,sans-serif;line-height:1.65}
-    button,a{font:inherit}
-    a{color:inherit}
-    .progress{position:fixed;inset:0 0 auto 0;height:5px;background:transparent;z-index:80}
-    .progress>span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gold),#f18f55,var(--green2))}
-    .wrap{width:min(calc(100% - 32px),var(--max));margin:auto}
-    .topbar{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.88);backdrop-filter:blur(14px);
-      border-bottom:1px solid rgba(223,232,228,.85)}
-    .nav{min-height:68px;display:flex;align-items:center;gap:14px}
-    .brand{display:flex;align-items:center;gap:10px;font-weight:900;text-decoration:none;white-space:nowrap}
-    .brandmark{width:42px;height:42px;border-radius:14px;background:var(--green);color:white;display:grid;place-items:center;
-      box-shadow:0 8px 20px rgba(23,74,68,.2);font-weight:900}
-    .navlinks{margin-left:auto;display:flex;gap:6px;align-items:center}
-    .navlinks a,.ghost{border:0;background:transparent;padding:9px 12px;border-radius:12px;text-decoration:none;font-weight:700;color:#405854}
-    .navlinks a:hover,.ghost:hover{background:var(--mint);color:var(--green)}
-    .ghost{cursor:pointer;border:1px solid var(--line);background:white}
-    .hero{padding:72px 0 46px;overflow:hidden}
-    .heroGrid{display:grid;grid-template-columns:1.12fr .88fr;gap:46px;align-items:center}
-    .eyebrow{display:inline-flex;gap:8px;align-items:center;background:var(--gold2);border:1px solid #f6d98f;
-      padding:7px 12px;border-radius:999px;font-weight:800;color:#765315}
-    h1{font-size:clamp(38px,6vw,72px);line-height:1.05;margin:18px 0 20px;letter-spacing:-1.5px}
-    h1 span{color:var(--green2)}
-    .lead{font-size:clamp(18px,2vw,23px);color:#48625d;max-width:720px;margin:0 0 24px}
-    .heroBtns{display:flex;gap:10px;flex-wrap:wrap}
-    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 18px;border-radius:14px;border:0;
-      text-decoration:none;font-weight:900;cursor:pointer}
-    .btn.primary{background:var(--green);color:white;box-shadow:0 10px 22px rgba(23,74,68,.24)}
-    .btn.secondary{background:white;border:1px solid var(--line)}
-    .stats{display:flex;gap:12px;flex-wrap:wrap;margin-top:26px}
-    .stat{background:white;border:1px solid var(--line);padding:11px 14px;border-radius:14px;min-width:122px}
-    .stat strong{font-size:21px;display:block;line-height:1.15}
-    .heroCard{background:var(--green);color:white;border-radius:32px;padding:26px;box-shadow:var(--shadow);position:relative}
-    .heroCard:before{content:"";position:absolute;width:150px;height:150px;border-radius:50%;background:#2e756b;right:-35px;top:-45px;opacity:.65}
-    .miniBoard{display:grid;grid-template-columns:repeat(8,1fr);aspect-ratio:1/1;border:7px solid #d9a95c;border-radius:12px;overflow:hidden;position:relative}
-    .sq{position:relative;display:grid;place-items:center;min-width:0}
-    .sq.light{background:#f8e8bf}.sq.dark{background:#8c5f3d}
-    .token{width:76%;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font-size:clamp(7px,1.25vw,12px);
-      font-weight:900;line-height:1;text-align:center;border:2px solid rgba(255,255,255,.62);box-shadow:0 3px 7px rgba(0,0,0,.2)}
-    .token.white{background:#fff7df;color:#443625;border-color:#fff}
-    .token.black{background:#203c38;color:white;border-color:#5a7c76}
-    .boardNote{display:flex;justify-content:space-between;gap:10px;margin-top:13px;color:#d9ece7;font-size:13px}
-    section{scroll-margin-top:82px;padding:44px 0}
-    .sectionHead{display:flex;gap:20px;justify-content:space-between;align-items:end;margin-bottom:22px}
-    .sectionHead h2{font-size:clamp(29px,4vw,44px);line-height:1.15;margin:0}
-    .sectionHead p{max-width:600px;color:var(--muted);margin:0}
-    .kicker{font-weight:900;color:var(--green2);letter-spacing:.4px;margin-bottom:6px}
-    .card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
-    .goalGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-    .goal{padding:19px;display:flex;gap:13px;align-items:flex-start}
-    .num{flex:0 0 38px;width:38px;height:38px;border-radius:13px;display:grid;place-items:center;background:var(--mint);color:var(--green);font-weight:900}
-    .goal strong{display:block;margin-bottom:2px}
-    .tabs{display:flex;gap:10px;margin:18px 0 22px;flex-wrap:wrap}
-    .tab{border:1px solid var(--line);background:white;padding:11px 17px;border-radius:999px;font-weight:900;cursor:pointer}
-    .tab.active{background:var(--green);color:white;border-color:var(--green)}
-    .dayPanel{display:none}.dayPanel.active{display:block}
-    .dayHero{display:grid;grid-template-columns:.75fr 1.25fr;gap:18px;margin-bottom:18px}
-    .daySummary{padding:24px;background:linear-gradient(135deg,var(--green),#2c7066);color:white;border-radius:var(--r)}
-    .daySummary h3{font-size:32px;line-height:1.15;margin:7px 0}
-    .daySummary p{margin:0;color:#d9ece7}
-    .formula{padding:24px;border-radius:var(--r);background:linear-gradient(135deg,#fff7d8,#fff);border:1px solid #efd88f}
-    .formula .big{font-size:clamp(25px,4vw,42px);font-weight:950;line-height:1.2;color:#77530f}
-    .timeline{display:grid;gap:12px}
-    .slot{display:grid;grid-template-columns:145px 1fr auto;gap:18px;padding:17px 18px;align-items:center}
-    .time{font-weight:950;color:var(--green);font-size:17px}
-    .slot h4{margin:0 0 3px;font-size:19px}.slot p{margin:0;color:var(--muted)}
-    .pill{padding:7px 10px;border-radius:999px;background:#eef6f3;color:var(--green);font-size:12px;font-weight:900;white-space:nowrap}
-    .note{margin-top:14px;padding:14px 17px;background:#edf7f4;border-left:5px solid var(--green2);border-radius:12px;color:#36514c}
-    .pieces{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}
-    .pieceCard{padding:18px;overflow:hidden}
-    .pieceTop{display:flex;align-items:center;gap:11px}
-    .pieceIcon{width:54px;height:54px;border-radius:17px;background:var(--green);color:white;display:grid;place-items:center;font-weight:950}
-    .pieceTop h3{margin:0;font-size:22px}.pieceTop small{color:var(--muted)}
-    .moveGrid{display:grid;grid-template-columns:repeat(5,1fr);aspect-ratio:1;max-width:260px;margin:16px auto 8px;border:1px solid #c9d6d2}
-    .moveGrid span{display:grid;place-items:center;border:1px solid #e2e9e6;font-size:12px;min-width:0}
-    .moveGrid .move{background:#cfeade}.moveGrid .piece{background:var(--green);color:white;font-weight:900}
-    .moveGrid .capture{background:#ffe5d8}.moveGrid .line{background:#e9f1ff}
-    .rule{font-weight:800;text-align:center;margin:8px 0 0}
-    .hint{font-size:13px;text-align:center;color:var(--muted)}
-    .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-    .step{padding:21px;text-align:center}
-    .step .bubble{width:56px;height:56px;margin:0 auto 10px;border-radius:50%;display:grid;place-items:center;background:var(--gold2);
-      color:#765315;font-size:24px;font-weight:950}
-    .step h3{margin:3px 0}.step p{margin:0;color:var(--muted)}
-    .games{display:grid;grid-template-columns:repeat(2,1fr);gap:15px}
-    details{background:white;border:1px solid var(--line);border-radius:18px;padding:0 18px}
-    summary{cursor:pointer;padding:16px 0;font-weight:900;list-style:none}
-    summary::-webkit-details-marker{display:none}
-    details p{color:var(--muted);margin-top:0}
-    .checklist{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
-    .check{padding:17px;text-align:center}
-    .star{font-size:27px}.check strong{display:block;margin-top:5px}.check span{font-size:13px;color:var(--muted)}
-    .quiz{padding:24px}
-    .q{padding:16px 0;border-bottom:1px dashed var(--line)}
-    .q:last-child{border:0}.q strong{display:block;margin-bottom:9px}
-    .choices{display:flex;gap:8px;flex-wrap:wrap}
-    .choice{border:1px solid var(--line);background:#fff;padding:8px 12px;border-radius:12px;cursor:pointer}
-    .choice.ok{background:#dcf2e7;border-color:#8fc8b3}.choice.no{background:#ffe6e2;border-color:#eba8a0}
-    #score{font-weight:950;font-size:20px;margin-top:14px}
-    .teacher{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-    .teacher .card{padding:21px}
-    footer{padding:38px 0 54px;color:#58706b;text-align:center}
-    .presentation{font-size:118%}.presentation .wrap{--max:1250px}
-    @media(max-width:820px){
-      .navlinks a{display:none}.hero{padding-top:42px}.heroGrid,.dayHero{grid-template-columns:1fr}
-      .heroCard{max-width:560px}.goalGrid,.pieces{grid-template-columns:1fr 1fr}.steps{grid-template-columns:1fr 1fr}
-      .checklist{grid-template-columns:1fr 1fr}.slot{grid-template-columns:110px 1fr}.slot .pill{grid-column:2}
-      .sectionHead{display:block}.sectionHead p{margin-top:8px}
+    html,body{height:100%;margin:0}
+    body{font-family:var(--font);background:var(--bg);color:var(--ink);overflow:hidden}
+    button{font:inherit}
+    .app{height:100dvh;display:grid;grid-template-rows:58px 1fr}
+    .topbar{display:flex;align-items:center;padding:0 16px;gap:12px;background:#1d1e1c;border-bottom:1px solid #343632;z-index:20}
+    .brand{display:flex;align-items:center;gap:9px;font-weight:950;letter-spacing:.2px;white-space:nowrap}
+    .brandmark{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(145deg,var(--accent),var(--accent2));color:#073d36;font-weight:950;box-shadow:inset 0 -3px rgba(0,0,0,.12)}
+    .brand small{display:block;font-size:10px;color:#9fa49c;font-weight:700;line-height:1}
+    .topActions{margin-left:auto;display:flex;gap:8px}
+    .topBtn{border:1px solid #3b3d39;background:#282a27;color:#dfe2dc;padding:8px 11px;border-radius:10px;font-weight:800;cursor:pointer}
+    .topBtn:hover{background:#333630}
+    .desktop{min-height:0;display:grid;grid-template-columns:minmax(0,1.82fr) minmax(330px,.98fr);gap:10px;padding:10px}
+    .boardArea{min-width:0;min-height:0;background:#20211f;border-radius:10px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+    .boardWrap{width:min(100%,calc(100dvh - 78px));max-width:980px;aspect-ratio:1;position:relative;user-select:none;touch-action:manipulation}
+    .board{display:grid;grid-template-columns:repeat(8,1fr);width:100%;height:100%;box-shadow:0 12px 38px rgba(0,0,0,.25)}
+    .square{position:relative;display:grid;place-items:center;cursor:default}
+    .square.light{background:var(--light)}
+    .square.dark{background:var(--boardGreen)}
+    .square.clickable{cursor:pointer}
+    .square.target:after{content:"";width:28%;aspect-ratio:1;border-radius:50%;background:rgba(38,161,105,.62);box-shadow:0 0 0 5px rgba(255,255,255,.22);position:absolute}
+    .square.capture:after{content:"";position:absolute;inset:8%;border:7px solid rgba(235,115,78,.8);border-radius:50%}
+    .square.quizTarget:after{content:"?";position:absolute;width:34%;aspect-ratio:1;border-radius:50%;background:rgba(255,255,255,.8);color:#3a5137;display:grid;place-items:center;font-weight:950;font-size:clamp(16px,2.2vw,30px)}
+    .square.last{box-shadow:inset 0 0 0 6px rgba(242,193,78,.72)}
+    .coord{position:absolute;font-weight:900;font-size:clamp(10px,1.25vw,17px);opacity:.8;pointer-events:none}
+    .rank{left:7px;top:4px}.file{right:7px;bottom:3px}
+    .light .coord{color:#6d9250}.dark .coord{color:#f1f0d3}
+    .piece{width:72%;height:72%;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:4;box-shadow:0 5px 10px rgba(0,0,0,.28),inset 0 -8px 10px rgba(0,0,0,.13),inset 0 4px 7px rgba(255,255,255,.28);transition:transform .18s ease}
+    .piece.white{background:linear-gradient(145deg,#fffdf5,#deddd1);border:3px solid #4f514d;color:#30322f}
+    .piece.black{background:linear-gradient(145deg,#555753,#2f302e);border:3px solid #20211f;color:#f5f4ec}
+    .piece.big{width:77%;height:77%}
+    .piece .glyph{font-size:clamp(15px,3vw,42px);font-weight:950;line-height:.92}
+    .piece .name{font-size:clamp(7px,1vw,14px);font-weight:900;line-height:1;margin-top:4px}
+    .piece.moved{transform:scale(.94)}
+    .boardCaption{position:absolute;left:14px;bottom:14px;background:rgba(31,32,30,.88);backdrop-filter:blur(8px);padding:8px 12px;border-radius:12px;color:#e5e7e1;font-size:13px;box-shadow:0 6px 20px rgba(0,0,0,.18);z-index:9}
+    .statusToast{position:absolute;top:16px;left:50%;transform:translate(-50%,-15px);opacity:0;background:#fff;color:#28302c;padding:10px 16px;border-radius:999px;font-weight:900;z-index:10;box-shadow:0 10px 30px rgba(0,0,0,.25);transition:.24s}
+    .statusToast.show{opacity:1;transform:translate(-50%,0)}
+    .statusToast.good{background:#e8f7df;color:#2e6224}
+    .statusToast.bad{background:#ffe8e3;color:#8e372e}
+    .lessonPanel{min-height:0;background:linear-gradient(180deg,#20211f,#242724);border-radius:10px;display:grid;grid-template-rows:auto auto 1fr auto;overflow:hidden;border:1px solid #30322e}
+    .lessonHead{height:50px;display:flex;align-items:center;border-bottom:1px solid #32342f;padding:0 13px;gap:10px;background:#1c1d1b}
+    .iconBtn{width:36px;height:36px;border:0;background:transparent;color:#b8bcb4;border-radius:9px;cursor:pointer;font-size:20px}
+    .iconBtn:hover{background:#2b2d29;color:white}
+    .lessonTitle{flex:1;text-align:center;font-weight:950}
+    .dayTag{font-size:11px;padding:4px 8px;border-radius:999px;background:#2f3930;color:#bde0aa;font-weight:900}
+    .lessonProgress{padding:12px 16px;border-bottom:1px solid #30322e}
+    .progressMeta{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#aeb2aa;margin-bottom:8px}
+    .progressTrack{height:8px;background:#343632;border-radius:999px;overflow:hidden}
+    .progressFill{height:100%;background:linear-gradient(90deg,var(--accent),#70d45f);width:0;transition:width .35s ease}
+    .lessonBody{min-height:0;overflow:auto;padding:22px 20px 18px}
+    .coachRow{display:flex;gap:12px;align-items:flex-start}
+    .coach{flex:0 0 66px;width:66px;height:66px;border-radius:18px;background:linear-gradient(145deg,#815c3e,#5a3e2b);display:grid;place-items:center;font-size:34px;box-shadow:0 8px 18px rgba(0,0,0,.23)}
+    .speech{position:relative;background:#f7f7f4;color:#2d302d;border-radius:15px;padding:14px 16px;font-size:15px;line-height:1.55;flex:1;box-shadow:0 7px 18px rgba(0,0,0,.13)}
+    .speech:before{content:"";position:absolute;left:-9px;top:21px;border-style:solid;border-width:9px 10px 9px 0;border-color:transparent #f7f7f4 transparent transparent}
+    .speech strong{color:#1f5e50}
+    .lessonExplain{margin-top:20px}
+    .lessonExplain h1{font-size:clamp(25px,3vw,38px);line-height:1.2;margin:0 0 7px}
+    .lessonExplain p{color:#c2c6bf;margin:0 0 15px}
+    .ruleCard{background:#2a2c28;border:1px solid #3a3d38;border-radius:15px;padding:14px 15px;margin-top:13px}
+    .ruleCard .label{font-size:11px;color:#99a097;font-weight:900;letter-spacing:.8px;margin-bottom:5px}
+    .ruleBig{font-size:18px;font-weight:950}
+    .legend{display:flex;gap:13px;flex-wrap:wrap;color:#b8beb5;font-size:12px;margin-top:11px}
+    .legend span{display:flex;align-items:center;gap:6px}
+    .dot{width:12px;height:12px;border-radius:50%;background:#66aa76}.dot.orange{background:#e67855}.dot.gold{background:var(--gold)}
+    .mission{margin-top:15px;padding:14px;background:#143f38;border:1px solid #26665a;border-radius:15px}
+    .mission b{display:block;color:#8ee2d0;margin-bottom:4px}.mission span{color:#d6e7e2;font-size:14px}
+    .feedback{min-height:48px;margin-top:13px;padding:10px 12px;border-radius:12px;background:#252724;border:1px dashed #40433d;color:#b9beb6;font-size:13px}
+    .feedback.success{background:#263b25;border-color:#4c7745;color:#d4efcf}
+    .feedback.error{background:#412824;border-color:#78433b;color:#f5d0ca}
+    .lessonFoot{padding:12px;border-top:1px solid #343632;background:#1f201e;display:grid;grid-template-columns:52px 1fr;gap:9px}
+    .menuBtn{border:1px solid #3b3e39;background:#2b2d29;color:#cfd3cc;border-radius:12px;font-size:20px;cursor:pointer}
+    .mainBtn{height:54px;border:0;border-radius:12px;background:linear-gradient(#82b958,#6ba947);color:white;font-weight:950;font-size:17px;cursor:pointer;box-shadow:inset 0 -4px rgba(0,0,0,.12),0 8px 18px rgba(0,0,0,.16)}
+    .mainBtn:hover{filter:brightness(1.05)}
+    .mainBtn:disabled{cursor:not-allowed;background:#4a5046;color:#8f968b;box-shadow:none}
+    .hintBtn{margin-top:10px;border:1px solid #42453f;background:transparent;color:#c9cdc6;padding:8px 11px;border-radius:10px;cursor:pointer;font-weight:800;font-size:12px}
+    .hintBtn:hover{background:#30332e}
+    .path{display:flex;flex-wrap:wrap;gap:7px;margin-top:18px}
+    .pathNode{width:36px;height:36px;border-radius:10px;border:1px solid #3d403a;background:#292b28;color:#80867d;display:grid;place-items:center;font-size:12px;font-weight:950}
+    .pathNode.done{background:#23433a;border-color:#2e7868;color:#8ce1cf}
+    .pathNode.current{background:var(--accent);border-color:#6ce6d3;color:#083c35;box-shadow:0 0 0 3px rgba(41,198,173,.16)}
+    .pathNode.locked{opacity:.45}
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.62);z-index:100;display:none;align-items:center;justify-content:center;padding:16px}
+    .overlay.open{display:flex}
+    .modal{width:min(920px,96vw);max-height:90dvh;overflow:auto;background:#f7f5eb;color:#26322e;border-radius:20px;box-shadow:0 24px 80px rgba(0,0,0,.42)}
+    .modalHead{position:sticky;top:0;display:flex;align-items:center;gap:10px;padding:16px 18px;background:#f7f5eb;border-bottom:1px solid #d9ddd4;z-index:2}
+    .modalHead h2{margin:0;font-size:22px}.modalHead button{margin-left:auto;border:0;background:#e8ebe4;width:36px;height:36px;border-radius:10px;cursor:pointer;font-size:18px}
+    .modalBody{padding:18px}
+    .lessonGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+    .lessonCard{border:1px solid #d9dfd6;background:white;border-radius:14px;padding:13px;display:flex;gap:11px;align-items:center;cursor:pointer}
+    .lessonCard:hover{border-color:#8abf76}
+    .lessonCard.locked{opacity:.48;cursor:not-allowed}
+    .lessonCard .n{width:37px;height:37px;border-radius:11px;background:#e5f3df;display:grid;place-items:center;font-weight:950;color:#46733a}
+    .lessonCard strong{display:block}.lessonCard small{color:#708078}
+    .planDays{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .planDay{background:white;border:1px solid #d9dfd6;border-radius:16px;overflow:hidden}
+    .planDay h3{margin:0;padding:13px 15px;background:#2f6758;color:white}
+    .planRow{display:grid;grid-template-columns:76px 1fr;gap:8px;padding:10px 13px;border-top:1px solid #e8ece5;font-size:13px}
+    .planRow b{color:#3b6658}
+    .quizBox{display:grid;gap:9px;margin-top:14px}
+    .quizChoice{border:1px solid #454943;background:#2b2e2a;color:#edf0ea;border-radius:11px;padding:11px 12px;text-align:left;cursor:pointer;font-weight:800}
+    .quizChoice:hover{background:#343833}.quizChoice.correct{background:#244b29;border-color:#62a968}.quizChoice.wrong{background:#4a2925;border-color:#a65c51}
+    .celebrate{text-align:center;padding:18px 0 3px}.celebrate .big{font-size:54px}.celebrate h2{margin:4px 0}.celebrate p{color:#bfc4bc}
+    @media(max-width:920px){
+      body{overflow:auto;background:#20211f}.app{height:auto;min-height:100dvh}.desktop{grid-template-columns:1fr;grid-template-rows:auto auto;padding:8px;gap:8px}
+      .boardArea{min-height:auto}.boardWrap{width:min(100%,72dvh)}.lessonPanel{min-height:520px}.lessonBody{overflow:visible}
+      .topBtn.planText span{display:none}.topBtn.planText:after{content:"แผน"}
     }
-    @media(max-width:560px){
-      .wrap{width:min(calc(100% - 20px),var(--max))}.goalGrid,.pieces,.games,.teacher{grid-template-columns:1fr}
-      .steps{grid-template-columns:1fr 1fr}.checklist{grid-template-columns:1fr}
-      .slot{grid-template-columns:1fr;gap:5px}.slot .pill{grid-column:auto;justify-self:start}
-      .miniBoard{border-width:5px}.token{font-size:8px}.nav{min-height:60px}.brandmark{width:36px;height:36px}
-      h1{letter-spacing:-.5px}
+    @media(max-width:600px){
+      .app{grid-template-rows:52px auto}.topbar{padding:0 9px}.brand small{display:none}.topBtn{padding:7px 8px;font-size:12px}
+      .desktop{padding:0;gap:0}.boardArea{border-radius:0}.boardWrap{width:100vw;max-width:none}.boardCaption{font-size:11px;left:8px;bottom:8px}
+      .lessonPanel{border-radius:0;border-left:0;border-right:0}.lessonHead{height:46px}.lessonBody{padding:17px 14px}
+      .coach{width:52px;height:52px;flex-basis:52px;font-size:27px;border-radius:14px}.speech{font-size:14px;padding:12px}
+      .lessonGrid,.planDays{grid-template-columns:1fr}.piece .name{display:none}.piece .glyph{font-size:clamp(15px,6vw,32px)}
     }
-    @media print{
-      .topbar,.heroBtns,.progress,#quizArea{display:none!important}body{background:white}.card,.heroCard{box-shadow:none}
-      section{break-inside:avoid}.dayPanel{display:block!important}.tabs{display:none}.hero{padding:20px 0}
-    }
+    @media print{body{overflow:visible;background:white}.topbar,.boardArea,.lessonPanel{display:none}.overlay{position:static!important;display:block!important;background:white;padding:0}.modal{width:100%;max-height:none;box-shadow:none}.modalHead button{display:none}.modalBody{padding:0}.planDays{display:block}.planDay{margin-bottom:14px}}
   </style>
 </head>
 <body>
-<div class="progress"><span id="progressBar"></span></div>
-<header class="topbar">
-  <div class="wrap nav">
-    <a class="brand" href="#top"><span class="brandmark">มร</span><span>หมากรุกไทย 2 วัน</span></a>
-    <nav class="navlinks" aria-label="เมนูหลัก">
-      <a href="#plan">แผน 2 วัน</a><a href="#pieces">วิธีเดิน</a><a href="#thinking">วิธีคิด</a><a href="#assessment">ประเมินผล</a>
-      <button class="ghost" id="presentBtn" type="button">โหมดฉาย</button>
-    </nav>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brandmark">มร</div>
+      <div>Makruk Learn<small>หมากรุกไทยทีละขั้น</small></div>
+    </div>
+    <div class="topActions">
+      <button class="topBtn planText" id="planBtn" type="button">แผนสอน 2 วัน</button>
+      <button class="topBtn" id="resetBtn" type="button" title="เริ่มบทเรียนใหม่">เริ่มใหม่</button>
+    </div>
+  </header>
+
+  <main class="desktop">
+    <section class="boardArea" aria-label="กระดานฝึกหมากรุกไทย">
+      <div class="boardWrap">
+        <div class="board" id="board"></div>
+        <div class="statusToast" id="toast"></div>
+        <div class="boardCaption" id="boardCaption">กระดานหมากรุกไทย 8 × 8</div>
+      </div>
+    </section>
+
+    <aside class="lessonPanel">
+      <div class="lessonHead">
+        <button class="iconBtn" id="prevBtn" type="button" aria-label="บทก่อนหน้า">←</button>
+        <div class="lessonTitle" id="lessonTitle">เริ่มเรียน</div>
+        <span class="dayTag" id="dayTag">DAY 1</span>
+      </div>
+
+      <div class="lessonProgress">
+        <div class="progressMeta"><span id="progressText">บท 1 / 13</span><span id="progressPercent">0%</span></div>
+        <div class="progressTrack"><div class="progressFill" id="progressFill"></div></div>
+      </div>
+
+      <div class="lessonBody">
+        <div class="coachRow">
+          <div class="coach" aria-hidden="true">🧑‍🏫</div>
+          <div class="speech" id="speech"></div>
+        </div>
+
+        <div class="lessonExplain">
+          <h1 id="lessonHeading"></h1>
+          <p id="lessonDescription"></p>
+
+          <div class="ruleCard" id="ruleCard">
+            <div class="label">จำง่าย ๆ</div>
+            <div class="ruleBig" id="ruleBig"></div>
+            <div class="legend" id="legend"></div>
+          </div>
+
+          <div class="mission" id="mission">
+            <b>ภารกิจ</b>
+            <span id="missionText"></span>
+          </div>
+
+          <div class="quizBox" id="quizBox" hidden></div>
+
+          <button class="hintBtn" id="hintBtn" type="button">💡 ดูคำใบ้</button>
+          <div class="feedback" id="feedback">อ่านคำอธิบาย แล้วกด “เริ่มฝึก”</div>
+
+          <div class="path" id="path" aria-label="ความคืบหน้าบทเรียน"></div>
+        </div>
+      </div>
+
+      <div class="lessonFoot">
+        <button class="menuBtn" id="menuBtn" type="button" aria-label="สารบัญบทเรียน">☷</button>
+        <button class="mainBtn" id="mainBtn" type="button">เริ่มฝึก</button>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<div class="overlay" id="menuOverlay">
+  <div class="modal">
+    <div class="modalHead"><h2>บทเรียนทั้งหมด</h2><button type="button" data-close="menuOverlay">×</button></div>
+    <div class="modalBody"><div class="lessonGrid" id="lessonGrid"></div></div>
   </div>
-</header>
+</div>
 
-<main id="top">
-  <section class="hero">
-    <div class="wrap heroGrid">
-      <div>
-        <div class="eyebrow">♟️ สำหรับเด็กประถมและผู้เริ่มต้นจากศูนย์</div>
-        <h1>หมากรุกไทย<br><span>2 วัน เล่นเป็น</span></h1>
-        <p class="lead">เรียนแบบ “เล่นก่อน จำทีหลัง” ใช้ภาพ กิจกรรม และเกมย่อย ให้ผู้เรียนค่อย ๆ จาก <b>เดินเป็น → เล่นเป็น → เริ่มคิดเป็น</b></p>
-        <div class="heroBtns">
-          <a class="btn primary" href="#plan">เริ่มบทเรียน Day 1 ↓</a>
-          <button class="btn secondary" type="button" onclick="window.print()">พิมพ์เป็นเอกสาร</button>
+<div class="overlay" id="planOverlay">
+  <div class="modal">
+    <div class="modalHead"><h2>แผนการสอน 2 วัน · วันละ 6 ชั่วโมง</h2><button type="button" data-close="planOverlay">×</button></div>
+    <div class="modalBody">
+      <p style="margin-top:0;color:#64746c">หน้า Learn ใช้สอนทีละขั้น ส่วนตารางนี้สำหรับครูวางเวลาในห้องเรียน แนะนำให้แต่ละชั่วโมงใช้ <b>อธิบาย 10–15 นาที → ฝึก 35–40 นาที → สรุป 5–10 นาที</b></p>
+      <div class="planDays">
+        <div class="planDay">
+          <h3>DAY 1 · เดินเป็น</h3>
+          <div class="planRow"><b>09–10</b><span>รู้จักกระดาน เป้าหมาย และ <b>ขุน</b></span></div>
+          <div class="planRow"><b>10–11</b><span><b>เรือ</b> · ฝึกเส้นตรงและสิ่งกีดขวาง</span></div>
+          <div class="planRow"><b>11–12</b><span><b>ม้า</b> · ฝึกรูปตัว L และการกระโดด</span></div>
+          <div class="planRow"><b>13–14</b><span><b>เม็ด + โคน</b> · เปรียบเทียบความต่าง</span></div>
+          <div class="planRow"><b>14–15</b><span><b>เบี้ย + เบี้ยหงาย</b> · เดิน กิน และหงาย</span></div>
+          <div class="planRow"><b>15–16</b><span>เกมย่อยรวมหมาก + Checkpoint Day 1</span></div>
         </div>
-        <div class="stats">
-          <div class="stat"><strong>2 วัน</strong><span>จบหลักสูตร</span></div>
-          <div class="stat"><strong>6 ชม./วัน</strong><span>09:00–16:00*</span></div>
-          <div class="stat"><strong>60%</strong><span>เน้นลงมือเล่น</span></div>
-        </div>
-        <p style="font-size:12px;color:#73837f;margin-top:8px">* พักกลางวัน 12:00–13:00 ไม่นับใน 6 ชั่วโมงเรียน</p>
-      </div>
-      <div class="heroCard">
-        <div style="font-weight:900;margin-bottom:12px">ตำแหน่งเริ่มต้นแบบย่อ</div>
-        <div class="miniBoard" id="startBoard" aria-label="กระดานหมากรุกไทยตำแหน่งเริ่มต้น"></div>
-        <div class="boardNote"><span>▲ ฝ่ายดำ</span><span>เบี้ยเริ่มที่แถว 3 ของแต่ละฝ่าย</span><span>ฝ่ายขาว ▼</span></div>
-      </div>
-    </div>
-  </section>
-
-  <section id="goals">
-    <div class="wrap">
-      <div class="sectionHead">
-        <div><div class="kicker">เป้าหมายปลายทาง</div><h2>จบ 2 วัน เด็กควรทำอะไรได้?</h2></div>
-        <p>ไม่เน้นจำทฤษฎียาว ๆ เป้าหมายคือให้เล่นเกมจริงได้อย่างถูกต้อง และเริ่มมีนิสัย “คิดก่อนเดิน”</p>
-      </div>
-      <div class="goalGrid">
-        <div class="card goal"><span class="num">1</span><div><strong>จัดกระดานได้</strong><span>รู้จักชื่อและตำแหน่งหมาก</span></div></div>
-        <div class="card goal"><span class="num">2</span><div><strong>เดินหมากถูก</strong><span>ขุน เม็ด โคน ม้า เรือ เบี้ย</span></div></div>
-        <div class="card goal"><span class="num">3</span><div><strong>เข้าใจเบี้ยหงาย</strong><span>รู้จังหวะเปลี่ยนและวิธีเดิน</span></div></div>
-        <div class="card goal"><span class="num">4</span><div><strong>รู้จักรุก–หนีรุก</strong><span>ขุนถูกโจมตีต้องแก้ทันที</span></div></div>
-        <div class="card goal"><span class="num">5</span><div><strong>เล่นจบเกมได้</strong><span>ตั้งแต่เริ่มจนรุกจนหรือเสมอ</span></div></div>
-        <div class="card goal"><span class="num">6</span><div><strong>เริ่มคิด 1–2 ตา</strong><span>มองภัยก่อนจับหมากเดิน</span></div></div>
-      </div>
-    </div>
-  </section>
-
-  <section id="plan">
-    <div class="wrap">
-      <div class="sectionHead">
-        <div><div class="kicker">แผนการสอน</div><h2>12 ชั่วโมง แบ่งให้เด็กไม่ล้า</h2></div>
-        <p>แต่ละชั่วโมงใช้รูปแบบสั้น ๆ: <b>สาธิต 10–15 นาที → เล่น 35–40 นาที → สรุป 5–10 นาที</b></p>
-      </div>
-
-      <div class="tabs" role="tablist">
-        <button class="tab active" data-day="day1" role="tab">Day 1 · เดินเป็น</button>
-        <button class="tab" data-day="day2" role="tab">Day 2 · เล่นเป็น + คิดเป็น</button>
-      </div>
-
-      <div class="dayPanel active" id="day1">
-        <div class="dayHero">
-          <div class="daySummary">
-            <div>DAY 1 · 6 ชั่วโมง</div>
-            <h3>รู้จักหมาก → เดินเป็น</h3>
-            <p>วันนี้ยังไม่รีบแข่งขันเต็มเกม เป้าหมายคือให้เด็กกล้าจับหมากและเข้าใจรูปแบบการเดินทุกตัว</p>
-          </div>
-          <div class="formula">
-            <div style="font-weight:900;color:#8b6a1f">ประโยคที่ครูใช้ตลอดวัน</div>
-            <div class="big">“ลองเดินให้ดูได้ไหม?”</div>
-            <div>ให้เด็กตอบด้วยการ <b>ลงมือเดิน</b> มากกว่าตอบเป็นคำพูด</div>
-          </div>
-        </div>
-        <div class="timeline">
-          <div class="card slot"><div class="time">09:00–10:00</div><div><h4>1. รู้จักสนามและจัดกองทัพ</h4><p>กระดาน 8×8 เป้าหมายของเกม ชื่อหมาก และตำแหน่งเริ่มต้น</p></div><span class="pill">เกมจัดกระดาน</span></div>
-          <div class="card slot"><div class="time">10:00–11:00</div><div><h4>2. เบี้ย + เบี้ยหงาย</h4><p>เดินตรง กินเฉียง เริ่มจากแถวที่ 3 และหงายเมื่อถึงแถวที่ 6 ของฝ่ายตน</p></div><span class="pill">ศึกเบี้ย 4×4</span></div>
-          <div class="card slot"><div class="time">11:00–12:00</div><div><h4>3. เม็ด + โคน</h4><p>เม็ดเดินเฉียง 1 ช่อง / โคนเดินเฉียง 1 ช่อง หรือเดินตรงไปข้างหน้า 1 ช่อง</p></div><span class="pill">หาช่องเดินได้</span></div>
-          <div class="card slot"><div class="time">13:00–14:00</div><div><h4>4. ม้า + เรือ</h4><p>ม้าเดินรูปตัว L และกระโดดข้ามได้ / เรือวิ่งตรงไกลแต่ข้ามหมากไม่ได้</p></div><span class="pill">ม้าหาสมบัติ</span></div>
-          <div class="card slot"><div class="time">14:00–15:00</div><div><h4>5. ขุน + ช่องปลอดภัย</h4><p>ขุนเดินรอบตัว 1 ช่อง แต่ห้ามเข้าไปในช่องที่ฝ่ายตรงข้ามโจมตี</p></div><span class="pill">พาขุนหนี</span></div>
-          <div class="card slot"><div class="time">15:00–16:00</div><div><h4>6. รวมหมากทั้งหมด</h4><p>ทบทวนแบบเกมเร็ว แล้วเล่น Mini Game ด้วยหมากจำนวนน้อยก่อนเต็มกระดาน</p></div><span class="pill">Checkpoint Day 1</span></div>
-        </div>
-        <div class="note">💡 <b>พักสายตา 3–5 นาที</b> แทรกระหว่างกิจกรรมได้ทุกชั่วโมง โดยไม่ต้องเพิ่มเนื้อหาใหม่ระหว่างพัก</div>
-      </div>
-
-      <div class="dayPanel" id="day2">
-        <div class="dayHero">
-          <div class="daySummary">
-            <div>DAY 2 · 6 ชั่วโมง</div>
-            <h3>เล่นเป็น → เริ่มคิดเป็น</h3>
-            <p>นำกติกาจากวันแรกมาใช้กับสถานการณ์จริง ฝึกมองภัย รุก หนีรุก รุกจน และเล่นเกมเต็ม</p>
-          </div>
-          <div class="formula">
-            <div style="font-weight:900;color:#8b6a1f">เป้าหมายสำคัญกว่าชนะ</div>
-            <div class="big">“คิดก่อนจับหมาก”</div>
-            <div>เด็กที่หยุดมองกระดานก่อนเดิน ถือว่าพัฒนาถูกทางแล้ว</div>
-          </div>
-        </div>
-        <div class="timeline">
-          <div class="card slot"><div class="time">09:00–10:00</div><div><h4>1. ทบทวน + กินและป้องกัน</h4><p>มองว่าตัวไหนถูกโจมตี ตัวไหนมีคนช่วย และอะไรคือ “เสียหมากฟรี”</p></div><span class="pill">กินได้ไหม?</span></div>
-          <div class="card slot"><div class="time">10:00–11:00</div><div><h4>2. รุก + วิธีหนีรุก</h4><p>เมื่อขุนถูกรุก ให้มอง 3 ทาง: หนีขุน / กินตัวรุก / เอาหมากมาปิดหรือช่วย</p></div><span class="pill">ช่วยขุน!</span></div>
-          <div class="card slot"><div class="time">11:00–12:00</div><div><h4>3. รุกจน</h4><p>แยกให้ออกระหว่าง “รุก” กับ “รุกจน” ด้วย Puzzle ตำแหน่งง่าย ๆ</p></div><span class="pill">Puzzle 1 ตา</span></div>
-          <div class="card slot"><div class="time">13:00–14:00</div><div><h4>4. สูตรคิดก่อนเดิน + เปิดเกม</h4><p>ดูเขา → ดูเรา → ค่อยเดิน และพัฒนาหมากออกมาช่วยกันโดยไม่ท่องสูตรยาว</p></div><span class="pill">คิดดัง ๆ ก่อนเดิน</span></div>
-          <div class="card slot"><div class="time">14:00–15:00</div><div><h4>5. เกมเต็มแบบมีโค้ช</h4><p>จับคู่เล่นเต็มกระดาน ครูหยุดเฉพาะจังหวะสำคัญ แล้วถามให้เด็กคิดเอง</p></div><span class="pill">Coached Game</span></div>
-          <div class="card slot"><div class="time">15:00–16:00</div><div><h4>6. Mini Tournament + 5 ด่าน</h4><p>แข่งขันสั้น 2–3 รอบ พร้อมประเมินทักษะ ไม่ตัดสินจากแพ้–ชนะอย่างเดียว</p></div><span class="pill">จบหลักสูตร 🎉</span></div>
+        <div class="planDay">
+          <h3>DAY 2 · เล่นเป็น + คิดเป็น</h3>
+          <div class="planRow"><b>09–10</b><span>ทบทวน + การกินและการป้องกัน</span></div>
+          <div class="planRow"><b>10–11</b><span><b>รุก</b> · มองแนวโจมตีขุน</span></div>
+          <div class="planRow"><b>11–12</b><span><b>หนีรุก + รุกจน</b> · แก้สถานการณ์</span></div>
+          <div class="planRow"><b>13–14</b><span>สูตร <b>ดูเขา → ดูเรา → ค่อยเดิน</b></span></div>
+          <div class="planRow"><b>14–15</b><span>เกมเต็มแบบมีครูคอยถามนำ</span></div>
+          <div class="planRow"><b>15–16</b><span>Mini Tournament + ประเมิน 5 ด่าน</span></div>
         </div>
       </div>
+      <div style="margin-top:15px;background:#e8f3e3;border-radius:13px;padding:13px 15px"><b>เป้าหมายปลายหลักสูตร:</b> จัดกระดานได้ · เดินหมากถูก · เข้าใจเบี้ยหงาย · รู้จักรุก/หนีรุก/รุกจน · เล่นจบเกมได้ · เริ่มคิดก่อนเดิน 1–2 ตา</div>
     </div>
-  </section>
-
-  <section id="pieces">
-    <div class="wrap">
-      <div class="sectionHead">
-        <div><div class="kicker">ภาพจำง่าย</div><h2>หมากแต่ละตัว เดินอย่างไร?</h2></div>
-        <p>ช่องสีเขียวคือ “ช่องที่เดินได้” ในตัวอย่าง เมื่อไม่มีหมากอื่นมาขวาง</p>
-      </div>
-      <div class="pieces" id="pieceCards"></div>
-      <div class="note">🧠 <b>จำแบบเด็ก:</b> เม็ด = เฉียงสั้น · โคน = เฉียงสั้น + หน้า 1 · ม้า = ตัว L · เรือ = เส้นตรงยาว · ขุน = รอบตัว 1 · เบี้ย = เดินตรงกินเฉียง</div>
-    </div>
-  </section>
-
-  <section id="thinking">
-    <div class="wrap">
-      <div class="sectionHead">
-        <div><div class="kicker">นิสัยของนักหมากรุก</div><h2>สูตร “ดูเขา → ดูเรา → ค่อยเดิน”</h2></div>
-        <p>ไม่ต้องคำนวณไกลตั้งแต่วันแรก แค่ให้เด็กหยุดคิด 5–10 วินาทีก่อนจับหมาก ก็เป็นพื้นฐานที่ดีมาก</p>
-      </div>
-      <div class="steps">
-        <div class="card step"><div class="bubble">1</div><h3>ดูเขา</h3><p>เขากำลังขู่อะไรเรา?</p></div>
-        <div class="card step"><div class="bubble">2</div><h3>ดูเรา</h3><p>เรากินอะไรเขาได้?</p></div>
-        <div class="card step"><div class="bubble">3</div><h3>ดูความปลอดภัย</h3><p>เดินแล้วหมากเราจะโดนกินไหม?</p></div>
-        <div class="card step"><div class="bubble">4</div><h3>ค่อยเดิน</h3><p>เลือกตาที่ปลอดภัยและมีเหตุผล</p></div>
-      </div>
-    </div>
-  </section>
-
-  <section id="minigames">
-    <div class="wrap">
-      <div class="sectionHead">
-        <div><div class="kicker">กิจกรรมแทนการท่องจำ</div><h2>Mini Games ที่ใช้สอนได้ทันที</h2></div>
-        <p>เปิดทีละเกมตามบทเรียน ใช้กระดานจริงได้ทั้งหมด</p>
-      </div>
-      <div class="games">
-        <details open><summary>🌱 ศึกเบี้ย 4×4</summary><p>วางเบี้ยคนละ 4 ตัว เป้าหมายคือพาเบี้ยไปถึงเขตหงาย ฝึกเดินตรง กินเฉียง และคิดหลบกัน</p></details>
-        <details><summary>🐴 ม้าตามหาสมบัติ</summary><p>วางเหรียญหรือจุดหมาย 3 จุด ให้ผู้เรียนพาม้าไปเก็บโดยใช้จำนวนตาน้อยที่สุด</p></details>
-        <details><summary>🚤 เขาวงกตเรือ</summary><p>ใช้เบี้ยเป็นกำแพง ให้เรือเดินจาก A ไป B โดยห้ามกระโดดข้ามหมาก ช่วยให้เห็น “แนวเปิด–แนวปิด”</p></details>
-        <details><summary>👑 พาขุนหนี</summary><p>วางขุนกับหมากโจมตี 1–2 ตัว ให้ผู้เรียนชี้ทุกช่องที่ขุนหนีได้ และอธิบายว่าช่องใดอันตราย</p></details>
-        <details><summary>🛡️ ช่วยขุน!</summary><p>ตั้งตำแหน่งที่ขุนถูกรุก แล้วถาม 3 ทางเลือก: หนีได้ไหม? กินตัวรุกได้ไหม? เอาหมากมาช่วยได้ไหม?</p></details>
-        <details><summary>🔎 กินได้ไหม?</summary><p>ตั้งตำแหน่งง่าย ๆ 3–4 ตัว ให้เด็กตัดสินใจก่อนกินว่า “กินแล้วโดนกินคืนหรือไม่”</p></details>
-      </div>
-    </div>
-  </section>
-
-  <section id="assessment">
-    <div class="wrap">
-      <div class="sectionHead">
-        <div><div class="kicker">ประเมินแบบไม่กดดัน</div><h2>5 ด่านก่อนรับดาว “เล่นเป็นแล้ว”</h2></div>
-        <p>ผ่าน 4 ใน 5 ด่าน ถือว่าเล่นหมากรุกไทยเบื้องต้นได้ โดยผลแพ้–ชนะไม่ใช่เกณฑ์หลัก</p>
-      </div>
-      <div class="checklist">
-        <div class="card check"><div class="star">⭐</div><strong>ด่าน 1</strong><span>จัดกระดานได้ถูก</span></div>
-        <div class="card check"><div class="star">⭐</div><strong>ด่าน 2</strong><span>เดินหมากที่กำหนดได้</span></div>
-        <div class="card check"><div class="star">⭐</div><strong>ด่าน 3</strong><span>มองว่าตัวไหนถูกกินได้</span></div>
-        <div class="card check"><div class="star">⭐</div><strong>ด่าน 4</strong><span>แก้สถานการณ์ขุนถูกรุก</span></div>
-        <div class="card check"><div class="star">⭐</div><strong>ด่าน 5</strong><span>เล่นเกมจริงจนจบได้</span></div>
-      </div>
-
-      <div class="card quiz" id="quizArea" style="margin-top:18px">
-        <h3 style="margin-top:0">🎯 Quiz ท้ายคาบ 5 ข้อ</h3>
-        <div id="questions"></div>
-        <div id="score">เลือกคำตอบให้ครบ แล้วดูคะแนนตรงนี้</div>
-      </div>
-    </div>
-  </section>
-
-  <section id="teacher">
-    <div class="wrap">
-      <div class="sectionHead">
-        <div><div class="kicker">สำหรับผู้สอน</div><h2>สิ่งที่ควรเน้น / ยังไม่ต้องรีบสอน</h2></div>
-        <p>หลักสูตรสั้น 2 วันต้องเลือก “แกนสำคัญ” เพื่อให้เด็กมีพื้นที่ฝึกจริง</p>
-      </div>
-      <div class="teacher">
-        <div class="card">
-          <h3>✅ เน้นให้มาก</h3>
-          <p>เดินถูก · มองหมากที่ถูกโจมตี · ป้องกันขุน · รุกและหนีรุก · คิดก่อนจับหมาก · เล่นเกมจริงหลายรอบ</p>
-        </div>
-        <div class="card">
-          <h3>⏳ เก็บไว้ระดับถัดไป</h3>
-          <p>Opening ที่ต้องจำหลายตา · สูตรบังคับจนยาว · การคำนวณ 4–5 ตา · กติกานับปลายกระดานแบบละเอียด · ทฤษฎีแข่งขัน</p>
-        </div>
-      </div>
-      <div class="note">📌 <b>ต่างจากหมากรุกสากลที่ควรรู้:</b> เบี้ยหมากรุกไทยไม่เดินเปิดสองช่อง ไม่มีการเข้าป้อม และไม่มี en passant</div>
-    </div>
-  </section>
-</main>
-
-<footer>
-  <div class="wrap">
-    <b>หมากรุกไทย 2 วัน เล่นเป็น</b><br>
-    สื่อการสอนสำหรับเด็กประถมและผู้เริ่มต้น · ออกแบบให้ใช้ได้ทั้งมือถือ แท็บเล็ต และจอโปรเจกเตอร์
   </div>
-</footer>
+</div>
 
 <script>
-  const setup = [
-    ['เรือ','ม้า','โคน','เม็ด','ขุน','โคน','ม้า','เรือ'],
-    [null,null,null,null,null,null,null,null],
-    ['เบี้ย','เบี้ย','เบี้ย','เบี้ย','เบี้ย','เบี้ย','เบี้ย','เบี้ย'],
-    [null,null,null,null,null,null,null,null],
-    [null,null,null,null,null,null,null,null],
-    ['เบี้ย','เบี้ย','เบี้ย','เบี้ย','เบี้ย','เบี้ย','เบี้ย','เบี้ย'],
-    [null,null,null,null,null,null,null,null],
-    ['เรือ','ม้า','โคน','ขุน','เม็ด','โคน','ม้า','เรือ']
-  ];
-  const board = document.getElementById('startBoard');
-  setup.forEach((row,r)=>row.forEach((p,c)=>{
-    const sq=document.createElement('div'); sq.className='sq '+((r+c)%2?'dark':'light');
-    if(p){const t=document.createElement('div');t.className='token '+(r<4?'black':'white');t.textContent=p;sq.appendChild(t)}
-    board.appendChild(sq);
-  }));
+(function(){
+  'use strict';
 
-  const pieces = [
-    {name:'ขุน',sub:'หัวใจของเกม',rule:'เดินได้รอบตัวครั้งละ 1 ช่อง',moves:[[1,1],[1,2],[1,3],[2,1],[2,3],[3,1],[3,2],[3,3]],icon:'ขุน'},
-    {name:'เม็ด',sub:'หมากเฉียงสั้น',rule:'เดินเฉียงครั้งละ 1 ช่อง',moves:[[1,1],[1,3],[3,1],[3,3]],icon:'เม็ด'},
-    {name:'โคน',sub:'เฉียง + ไปหน้า',rule:'เฉียง 1 ช่อง หรือเดินตรงไปข้างหน้า 1 ช่อง',moves:[[1,1],[1,2],[1,3],[3,1],[3,3]],icon:'โคน'},
-    {name:'ม้า',sub:'กระโดดได้',rule:'เดินรูปตัว L: 2 ช่อง + 1 ช่อง',moves:[[0,1],[0,3],[1,0],[1,4],[3,0],[3,4],[4,1],[4,3]],icon:'ม้า'},
-    {name:'เรือ',sub:'เส้นตรงระยะไกล',rule:'เดินแนวตั้งหรือแนวนอนได้หลายช่อง แต่ข้ามหมากไม่ได้',moves:[[0,2],[1,2],[2,0],[2,1],[2,3],[2,4],[3,2],[4,2]],icon:'เรือ',line:true},
-    {name:'เบี้ย',sub:'เดินตรง กินเฉียง',rule:'เดินหน้า 1 ช่อง แต่กินเฉียงหน้า 1 ช่อง',moves:[[1,2]],capture:[[1,1],[1,3]],icon:'เบี้ย'}
-  ];
-  const cards=document.getElementById('pieceCards');
-  pieces.forEach(p=>{
-    const el=document.createElement('article');el.className='card pieceCard';
-    const grid=Array.from({length:25},(_,i)=>{
-      const r=Math.floor(i/5),c=i%5;
-      let cls='';
-      if(r===2&&c===2) cls='piece';
-      else if(p.moves.some(x=>x[0]===r&&x[1]===c)) cls=p.line?'line':'move';
-      else if((p.capture||[]).some(x=>x[0]===r&&x[1]===c)) cls='capture';
-      return '<span class="'+cls+'">'+(cls==='piece'?p.name:(cls==='capture'?'กิน':''))+'</span>';
-    }).join('');
-    el.innerHTML='<div class="pieceTop"><div class="pieceIcon">'+p.icon+'</div><div><h3>'+p.name+'</h3><small>'+p.sub+'</small></div></div><div class="moveGrid">'+grid+'</div><div class="rule">'+p.rule+'</div><div class="hint">'+(p.name==='เบี้ย'?'เขียว = เดิน · ส้ม = กิน':'เขียว/ฟ้า = ช่องที่เดินได้')+'</div>';
-    cards.appendChild(el);
-  });
+  var files = ['a','b','c','d','e','f','g','h'];
+  var boardEl = document.getElementById('board');
+  var speechEl = document.getElementById('speech');
+  var headingEl = document.getElementById('lessonHeading');
+  var descEl = document.getElementById('lessonDescription');
+  var ruleEl = document.getElementById('ruleBig');
+  var missionEl = document.getElementById('missionText');
+  var feedbackEl = document.getElementById('feedback');
+  var legendEl = document.getElementById('legend');
+  var mainBtn = document.getElementById('mainBtn');
+  var hintBtn = document.getElementById('hintBtn');
+  var prevBtn = document.getElementById('prevBtn');
+  var quizBox = document.getElementById('quizBox');
+  var boardCaption = document.getElementById('boardCaption');
+  var toast = document.getElementById('toast');
+  var lessonTitle = document.getElementById('lessonTitle');
+  var dayTag = document.getElementById('dayTag');
+  var progressText = document.getElementById('progressText');
+  var progressPercent = document.getElementById('progressPercent');
+  var progressFill = document.getElementById('progressFill');
+  var pathEl = document.getElementById('path');
 
-  document.querySelectorAll('.tab').forEach(tab=>{
-    tab.addEventListener('click',()=>{
-      document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-      document.querySelectorAll('.dayPanel').forEach(x=>x.classList.remove('active'));
-      tab.classList.add('active');document.getElementById(tab.dataset.day).classList.add('active');
+  function pos(file, rank){ return {r:8-rank,c:files.indexOf(file)}; }
+  function same(a,b){ return a.r===b.r && a.c===b.c; }
+  function key(p){ return p.r + '-' + p.c; }
+
+  var pieceGlyph = {
+    king:'ข', rook:'ร', knight:'ม', met:'ม็', khon:'ค', pawn:'บ', promoted:'ห'
+  };
+  var pieceName = {
+    king:'ขุน', rook:'เรือ', knight:'ม้า', met:'เม็ด', khon:'โคน', pawn:'เบี้ย', promoted:'เบี้ยหงาย'
+  };
+
+  var lessons = [
+    {
+      title:'รู้จักกระดาน',day:1,type:'intro',
+      speech:'ก่อนเดินหมาก เรามารู้จักสนามกันก่อน กระดานหมากรุกไทยมี <strong>8 × 8 = 64 ช่อง</strong>',
+      heading:'สนามของหมากรุกไทย',
+      description:'ผู้เล่นมีคนละ 16 ตัว เป้าหมายคือทำให้ขุนฝ่ายตรงข้าม “รุกจน” จนไม่มีทางหนี',
+      rule:'จำก่อนเพียง 2 อย่าง: กระดาน 8 × 8 และต้องปกป้องขุน',
+      mission:'มองหาตัวอักษร a–h และเลข 1–8 รอบกระดาน แล้วกด “เข้าใจแล้ว”',
+      caption:'บท 1 · กระดาน 8 × 8',
+      hint:'ไฟล์ a–h เรียงจากซ้ายไปขวา ส่วนแถว 1–8 เรียงจากล่างขึ้นบน',
+      pieces:[],
+      mainText:'เข้าใจแล้ว'
+    },
+    {
+      title:'ขุน',day:1,type:'move',piece:'king',start:pos('d',4),
+      speech:'เริ่มจาก <strong>ขุน</strong> ก่อน ขุนเป็นหมากสำคัญที่สุด ถ้าถูกรุกจน เกมจบทันที',
+      heading:'ขุน · เดินรอบตัว',
+      description:'ขุนเดินได้ 1 ช่องทุกทิศ: หน้า หลัง ซ้าย ขวา และเฉียง แต่ห้ามเดินเข้าช่องที่ถูกฝ่ายตรงข้ามโจมตี',
+      rule:'ขุน = รอบตัว 1 ช่อง',
+      mission:'กด “เริ่มฝึก” แล้วพาขุนไปยังช่องสีเขียวช่องใดก็ได้ 1 ครั้ง',
+      caption:'ขุนอยู่ที่ d4',
+      hint:'มองรอบขุนทั้ง 8 ช่อง',
+      legal:function(s){var out=[];for(var dr=-1;dr<=1;dr++)for(var dc=-1;dc<=1;dc++)if(dr||dc)out.push({r:s.r+dr,c:s.c+dc});return out;},
+      mainText:'เริ่มฝึก'
+    },
+    {
+      title:'เรือ',day:1,type:'move',piece:'rook',start:pos('d',4),
+      speech:'ต่อไปคือ <strong>เรือ</strong> หมากที่มองทางตรงได้ไกลมาก',
+      heading:'เรือ · วิ่งเป็นเส้นตรง',
+      description:'เรือเดินได้ไกลตามแนวตั้งหรือแนวนอน แต่กระโดดข้ามหมากตัวอื่นไม่ได้',
+      rule:'เรือ = ตรงยาว ↑ ↓ ← →',
+      mission:'พาเรือไปยังช่องสีเขียวช่องใดก็ได้',
+      caption:'เรืออยู่ที่ d4',
+      hint:'มองเป็นเครื่องหมาย + จากตำแหน่งเรือ',
+      legal:function(s){var out=[];for(var i=0;i<8;i++){if(i!==s.r)out.push({r:i,c:s.c});if(i!==s.c)out.push({r:s.r,c:i});}return out;},
+      mainText:'เริ่มฝึก'
+    },
+    {
+      title:'ม้า',day:1,type:'move',piece:'knight',start:pos('d',4),
+      speech:'ม้าเป็นตัวพิเศษ เพราะ <strong>กระโดดข้ามหมาก</strong> ตัวอื่นได้',
+      heading:'ม้า · เดินรูปตัว L',
+      description:'ม้าเดิน 2 ช่องในทิศหนึ่ง แล้วเลี้ยวอีก 1 ช่อง รวมเป็นรูปตัว L',
+      rule:'ม้า = 2 ช่อง + เลี้ยว 1',
+      mission:'เลือกปลายทางสีเขียวของม้า 1 ช่อง',
+      caption:'ม้าอยู่ที่ d4',
+      hint:'จาก d4 ม้าจะมีปลายทางได้มากที่สุด 8 จุด',
+      legal:function(s){var ds=[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];return ds.map(function(d){return {r:s.r+d[0],c:s.c+d[1]};});},
+      mainText:'เริ่มฝึก'
+    },
+    {
+      title:'เม็ด',day:1,type:'move',piece:'met',start:pos('d',4),
+      speech:'<strong>เม็ด</strong> ไม่เหมือนควีนในหมากรุกสากล เม็ดของหมากรุกไทยเดินสั้นมาก',
+      heading:'เม็ด · เฉียง 1 ช่อง',
+      description:'เม็ดเดินเฉียงได้ครั้งละ 1 ช่องเท่านั้น',
+      rule:'เม็ด = เฉียง 1 ช่อง ↖ ↗ ↙ ↘',
+      mission:'พาเม็ดไปยังช่องสีเขียว 1 ครั้ง',
+      caption:'เม็ดอยู่ที่ d4',
+      hint:'มองเฉียงออกจากเม็ด 4 มุม',
+      legal:function(s){return [{r:s.r-1,c:s.c-1},{r:s.r-1,c:s.c+1},{r:s.r+1,c:s.c-1},{r:s.r+1,c:s.c+1}];},
+      mainText:'เริ่มฝึก'
+    },
+    {
+      title:'โคน',day:1,type:'move',piece:'khon',start:pos('d',4),
+      speech:'<strong>โคน</strong> คล้ายเม็ด แต่มีทางเดินเพิ่มอีก 1 ช่อง คือ “ตรงไปข้างหน้า”',
+      heading:'โคน · เฉียง + หน้า',
+      description:'โคนเดินเฉียง 1 ช่องได้ทุกมุม และเดินตรงไปข้างหน้า 1 ช่อง',
+      rule:'โคน = เฉียง 4 ช่อง + หน้า 1 ช่อง',
+      mission:'ลองพาโคนไปช่องสีเขียวที่ต้องการ',
+      caption:'โคนฝ่ายขาวอยู่ที่ d4 · เดินขึ้นด้านบน',
+      hint:'ถ้าจำเม็ดได้ ให้เพิ่มช่อง “ด้านหน้าตรง ๆ” อีก 1 ช่อง',
+      legal:function(s){return [{r:s.r-1,c:s.c-1},{r:s.r-1,c:s.c},{r:s.r-1,c:s.c+1},{r:s.r+1,c:s.c-1},{r:s.r+1,c:s.c+1}];},
+      mainText:'เริ่มฝึก'
+    },
+    {
+      title:'เบี้ย',day:1,type:'pawn',piece:'pawn',start:pos('d',4),
+      speech:'เบี้ยดูธรรมดา แต่ต้องจำให้แม่นว่า <strong>“เดินตรง แต่กินเฉียง”</strong>',
+      heading:'เบี้ย · เดินกับกินไม่เหมือนกัน',
+      description:'เบี้ยฝ่ายขาวเดินตรงขึ้น 1 ช่อง และกินหมากฝ่ายตรงข้ามที่อยู่เฉียงหน้าซ้ายหรือขวา 1 ช่อง ไม่มีการเดินเปิด 2 ช่อง',
+      rule:'เดินตรง 1 · กินเฉียงหน้า 1',
+      mission:'เลือกได้ทั้งเดินตรงไป d5 หรือกินหมากสีดำที่ c5 / e5',
+      caption:'สีเขียว = เดิน · วงส้ม = กิน',
+      hint:'ถ้าไม่มีหมากให้กิน เบี้ยเดินได้เฉพาะตรงหน้า',
+      enemies:[{piece:'pawn',at:pos('c',5)},{piece:'pawn',at:pos('e',5)}],
+      legal:function(){return [pos('d',5),pos('c',5),pos('e',5)];},
+      captures:[pos('c',5),pos('e',5)],
+      mainText:'เริ่มฝึก'
+    },
+    {
+      title:'เบี้ยหงาย',day:1,type:'promote',piece:'pawn',start:pos('d',5),
+      speech:'เมื่อเบี้ยเดินถึง <strong>แถวที่ 6 ของฝ่ายตน</strong> จะกลายเป็น “เบี้ยหงาย”',
+      heading:'เบี้ยหงาย · รางวัลของเบี้ย',
+      description:'เบี้ยหงายเดินเหมือนเม็ด คือเฉียง 1 ช่อง การหงายเกิดทันทีเมื่อเบี้ยไปถึงแถวที่ 6',
+      rule:'ถึงแถว 6 → หงาย → เดินเหมือนเม็ด',
+      mission:'พาเบี้ยจาก d5 ไป d6 แล้วดูการเปลี่ยนเป็นเบี้ยหงาย',
+      caption:'เบี้ยกำลังจะถึง d6',
+      hint:'มีเพียงช่องเดียว: เดินตรงไป d6',
+      legal:function(){return [pos('d',6)];},
+      mainText:'เริ่มฝึก'
+    },
+    {
+      title:'รุก',day:2,type:'check',piece:'rook',start:pos('a',4),
+      speech:'Day 2 เริ่มด้วยคำสำคัญมาก: <strong>“รุก”</strong> คือขุนกำลังถูกโจมตี',
+      heading:'รุก · ทำให้ขุนอยู่ในแนวโจมตี',
+      description:'ถ้าขุนถูกรุก ผู้เล่นต้องแก้การรุกทันที ก่อนคิดเรื่องอื่น',
+      rule:'รุก = ขุนกำลังถูกโจมตี',
+      mission:'พาเรือขาวไป h4 หรือ a7 เพื่อรุกขุนดำที่ h7',
+      caption:'หาทางให้เรือมองเห็นขุนดำ',
+      hint:'เรือต้องอยู่ “ไฟล์เดียวกัน” หรือ “แถวเดียวกัน” กับขุนดำ',
+      pieces:[{piece:'rook',side:'white',at:pos('a',4)},{piece:'king',side:'black',at:pos('h',7)}],
+      legal:function(){return [pos('h',4),pos('a',7)];},
+      mainText:'เริ่มฝึก'
+    },
+    {
+      title:'หนีรุก',day:2,type:'escape',piece:'king',start:pos('d',4),
+      speech:'เมื่อขุนถูกรุก เราต้องทำให้ขุน <strong>ปลอดภัยทันที</strong>',
+      heading:'หนีรุก · หาช่องปลอดภัย',
+      description:'วิธีแก้รุกมีหลายแบบ เช่น เดินขุนหนี กินตัวที่มารุก หรือเอาหมากมาปิดทางโจมตี',
+      rule:'ถูกรุก → แก้รุกก่อนทุกอย่าง',
+      mission:'เรือดำบน d8 กำลังรุกขุนขาว d4 พาขุนออกจากแนว d-file ไปช่องปลอดภัย',
+      caption:'ขุนขาวกำลังถูกรุกตามแนวตั้ง',
+      hint:'อย่าเดินค้างอยู่ในคอลัมน์ d',
+      pieces:[{piece:'king',side:'white',at:pos('d',4)},{piece:'rook',side:'black',at:pos('d',8)}],
+      legal:function(){return [pos('c',3),pos('c',4),pos('c',5),pos('e',3),pos('e',4),pos('e',5)];},
+      mainText:'เริ่มฝึก'
+    },
+    {
+      title:'รุกจน',day:2,type:'quiz',
+      speech:'ถ้าขุนถูกรุกและ <strong>ไม่มีวิธีแก้ให้ปลอดภัย</strong> เรียกว่า “รุกจน”',
+      heading:'รุกจน · เกมจบ',
+      description:'ดูตำแหน่งนี้: เรือขาว h1 รุกขุนดำ h8 และขุนขาว f7 ช่วยคุมช่องหนี',
+      rule:'รุก + หนีไม่ได้ + กันไม่ได้ = รุกจน',
+      mission:'ตอบคำถาม: ตำแหน่งนี้ “รุกจน” แล้วหรือยัง?',
+      caption:'ขุนดำ h8 ถูกเรือขาวรุก',
+      hint:'ตรวจ 3 ช่องหนีของขุนดำ: g8, g7, h7',
+      pieces:[{piece:'rook',side:'white',at:pos('h',1)},{piece:'king',side:'white',at:pos('f',7)},{piece:'king',side:'black',at:pos('h',8)}],
+      choices:[{text:'รุกจนแล้ว',correct:true},{text:'ยังหนีได้',correct:false}],
+      mainText:'ตอบคำถาม'
+    },
+    {
+      title:'คิดก่อนเดิน',day:2,type:'quiz',
+      speech:'ตอนนี้รู้กติกาหลักแล้ว สิ่งที่จะทำให้เล่นดีขึ้นคือ <strong>หยุดคิดก่อนจับหมาก</strong>',
+      heading:'ดูเขา → ดูเรา → ค่อยเดิน',
+      description:'ก่อนเดินทุกครั้ง ให้ถามสั้น ๆ: เขาขู่อะไร? เรากินอะไรได้? ถ้าเดินแล้วเราจะเสียอะไรไหม?',
+      rule:'1 ดูเขา · 2 ดูเรา · 3 ดูความปลอดภัย · 4 ค่อยเดิน',
+      mission:'ข้อใดคือสิ่งที่ควรทำก่อนจับหมากเดิน?',
+      caption:'นิสัยสำคัญกว่าการจำสูตรยาว',
+      hint:'นักหมากรุกที่ดีไม่รีบจับหมากทันที',
+      pieces:[{piece:'king',side:'white',at:pos('d',1)},{piece:'rook',side:'white',at:pos('a',1)},{piece:'pawn',side:'white',at:pos('d',3)},{piece:'rook',side:'black',at:pos('h',8)},{piece:'king',side:'black',at:pos('e',8)}],
+      choices:[{text:'ดูว่าเขาขู่อะไรก่อน',correct:true},{text:'รีบเดินตัวที่ชอบทันที',correct:false},{text:'มองเฉพาะหมากของเรา',correct:false}],
+      mainText:'ตอบคำถาม'
+    },
+    {
+      title:'พร้อมเล่นจริง',day:2,type:'finish',
+      speech:'เยี่ยมมาก! ตอนนี้คุณรู้จักหมากทุกตัว และเข้าใจรุก–รุกจนแล้ว 🎉',
+      heading:'พร้อมลงกระดานจริง',
+      description:'เป้าหมายต่อไปไม่ใช่ชนะทุกเกม แต่คือ “เดินถูก คิดก่อนเดิน และเรียนรู้จากทุกตา”',
+      rule:'เดินถูก → มองภัย → ปกป้องขุน → ค่อยวางแผน',
+      mission:'จัดกระดานจริงแล้วลองเล่นเกมเต็ม 1 เกมกับเพื่อน',
+      caption:'ตำแหน่งเริ่มต้นของหมากรุกไทย',
+      hint:'ถ้าจำตำแหน่งไม่ได้ เปิดสารบัญแล้วทบทวนได้ทุกบท',
+      fullSetup:true,
+      mainText:'เรียนซ้ำตั้งแต่ต้น'
+    }
+  ];
+
+  var state = {
+    lesson:Math.max(0,Math.min(lessons.length-1,parseInt(localStorage.getItem('makrukLesson')||'0',10))),
+    unlocked:Math.max(0,Math.min(lessons.length-1,parseInt(localStorage.getItem('makrukUnlocked')||'0',10))),
+    phase:'intro', current:null, completed:false, hint:false
+  };
+
+  function inBoard(p){return p && p.r>=0&&p.r<8&&p.c>=0&&p.c<8;}
+  function normalize(arr){return (arr||[]).filter(inBoard);}
+  function pieceHtml(type,side){
+    return '<div class="piece '+side+' '+(type==='king'?'big':'')+'" data-piece="'+type+'"><div class="glyph">'+pieceGlyph[type]+'</div><div class="name">'+pieceName[type]+'</div></div>';
+  }
+  function fullSetup(){
+    var list=[], backWhite=['rook','knight','khon','king','met','khon','knight','rook'];
+    var backBlack=['rook','knight','khon','met','king','khon','knight','rook'];
+    for(var c=0;c<8;c++){
+      list.push({piece:backBlack[c],side:'black',at:{r:0,c:c}});
+      list.push({piece:'pawn',side:'black',at:{r:2,c:c}});
+      list.push({piece:'pawn',side:'white',at:{r:5,c:c}});
+      list.push({piece:backWhite[c],side:'white',at:{r:7,c:c}});
+    }
+    return list;
+  }
+
+  function basePieces(l){
+    if(l.fullSetup)return fullSetup();
+    if(l.pieces)return l.pieces.map(function(x){return {piece:x.piece,side:x.side,at:{r:x.at.r,c:x.at.c}};});
+    if(l.piece && l.start)return [{piece:l.piece,side:'white',at:{r:l.start.r,c:l.start.c}}].concat((l.enemies||[]).map(function(x){return {piece:x.piece,side:'black',at:{r:x.at.r,c:x.at.c}};}));
+    return [];
+  }
+
+  function renderBoard(){
+    var l=lessons[state.lesson], pieces=basePieces(l);
+    if(state.current && l.piece){
+      var found=false;
+      pieces.forEach(function(x){if(x.side==='white'&&x.piece===l.piece&&!found){x.at={r:state.current.r,c:state.current.c};found=true;}});
+    }
+    var legal = state.phase==='active' && l.legal ? normalize(l.legal(l.start||state.current||{r:0,c:0})) : [];
+    var captures=(l.captures||[]);
+    boardEl.innerHTML='';
+    for(var r=0;r<8;r++){
+      for(var c=0;c<8;c++){
+        var s=document.createElement('div');
+        s.className='square '+(((r+c)%2===0)?'light':'dark');
+        var p={r:r,c:c};
+        if(c===0)s.innerHTML+='<span class="coord rank">'+(8-r)+'</span>';
+        if(r===7)s.innerHTML+='<span class="coord file">'+files[c]+'</span>';
+        if(state.current && same(p,state.current))s.classList.add('last');
+        var cap=captures.some(function(x){return same(x,p);});
+        if(legal.some(function(x){return same(x,p);})){
+          s.classList.add('clickable');
+          if(l.type==='escape' && !state.hint)s.classList.add('quizTarget');
+          else s.classList.add(cap?'capture':'target');
+          s.dataset.r=r;s.dataset.c=c;
+        }
+        var pc=pieces.find(function(x){return same(x.at,p);});
+        if(pc)s.innerHTML+=pieceHtml(pc.piece,pc.side);
+        boardEl.appendChild(s);
+      }
+    }
+  }
+
+  function renderLesson(){
+    var l=lessons[state.lesson];
+    state.phase='intro';state.current=l.start?{r:l.start.r,c:l.start.c}:null;state.completed=false;state.hint=false;
+    lessonTitle.textContent=l.title;
+    dayTag.textContent='DAY '+l.day;
+    speechEl.innerHTML=l.speech;
+    headingEl.textContent=l.heading;
+    descEl.textContent=l.description;
+    ruleEl.textContent=l.rule;
+    missionEl.textContent=l.mission;
+    boardCaption.textContent=l.caption;
+    hintBtn.hidden=l.type==='finish';
+    feedbackEl.className='feedback';
+    feedbackEl.textContent=l.type==='intro'?'มองกระดานให้คุ้น แล้วกด “เข้าใจแล้ว”':'อ่านคำอธิบาย แล้วกด “'+l.mainText+'”';
+    quizBox.hidden=true;quizBox.innerHTML='';
+    legendEl.innerHTML='';
+    if(l.type==='pawn')legendEl.innerHTML='<span><i class="dot"></i> เดินได้</span><span><i class="dot orange"></i> กินได้</span>';
+    else if(['move','promote','check','escape'].indexOf(l.type)>=0)legendEl.innerHTML='<span><i class="dot"></i> เป้าหมายที่ถูกต้อง</span>';
+    var pct=Math.round((state.lesson)/(lessons.length-1)*100);
+    progressText.textContent='บท '+(state.lesson+1)+' / '+lessons.length;
+    progressPercent.textContent=pct+'%';
+    progressFill.style.width=pct+'%';
+    prevBtn.disabled=state.lesson===0;
+    prevBtn.style.opacity=state.lesson===0?'.35':'1';
+    mainBtn.disabled=false;
+    mainBtn.textContent=l.mainText;
+    renderPath();
+    renderBoard();
+    localStorage.setItem('makrukLesson',String(state.lesson));
+  }
+
+  function renderPath(){
+    pathEl.innerHTML='';
+    lessons.forEach(function(l,i){
+      var n=document.createElement('div');
+      n.className='pathNode '+(i<state.lesson?'done':i===state.lesson?'current':i<=state.unlocked?'':'locked');
+      n.textContent=i+1;
+      n.title=l.title;
+      pathEl.appendChild(n);
     });
+  }
+
+  function activateLesson(){
+    var l=lessons[state.lesson];
+    if(l.type==='intro'){
+      completeLesson('พร้อมแล้ว! ต่อไปมารู้จัก “ขุน” กัน');
+      return;
+    }
+    if(l.type==='finish'){
+      state.lesson=0;state.unlocked=Math.max(state.unlocked,lessons.length-1);renderLesson();return;
+    }
+    if(l.type==='quiz'){
+      state.phase='active';
+      quizBox.hidden=false;
+      quizBox.innerHTML='';
+      l.choices.forEach(function(ch){
+        var b=document.createElement('button');b.className='quizChoice';b.type='button';b.textContent=ch.text;
+        b.addEventListener('click',function(){answerQuiz(b,ch.correct);});
+        quizBox.appendChild(b);
+      });
+      mainBtn.disabled=true;mainBtn.textContent='เลือกคำตอบด้านบน';
+      feedbackEl.textContent='เลือกคำตอบที่คิดว่าถูก';
+      renderBoard();return;
+    }
+    state.phase='active';
+    mainBtn.disabled=true;
+    mainBtn.textContent='ลองเดินบนกระดาน';
+    feedbackEl.textContent='แตะ/คลิกช่องเป้าหมายบนกระดาน';
+    renderBoard();
+  }
+
+  function answerQuiz(btn,correct){
+    if(state.completed)return;
+    if(correct){
+      btn.classList.add('correct');
+      quizBox.querySelectorAll('button').forEach(function(x){x.disabled=true;});
+      completeLesson('ถูกต้อง! '+(lessons[state.lesson].type==='quiz'?'เข้าใจแนวคิดสำคัญแล้ว':''));
+      showToast('ถูกต้อง ✓','good');
+    }else{
+      btn.classList.add('wrong');feedbackEl.className='feedback error';feedbackEl.textContent='ยังไม่ใช่ ลองคิดอีกครั้ง หรือกดดูคำใบ้';
+      showToast('ลองอีกครั้ง','bad');
+    }
+  }
+
+  function handleBoardClick(e){
+    var sq=e.target.closest('.square.clickable');if(!sq)return;
+    var l=lessons[state.lesson];if(state.phase!=='active'||state.completed)return;
+    var dest={r:+sq.dataset.r,c:+sq.dataset.c};
+    var legal=normalize(l.legal?l.legal(l.start||state.current):[]);
+    if(!legal.some(function(x){return same(x,dest);})){showToast('ช่องนี้ยังไปไม่ได้','bad');return;}
+    state.current=dest;
+    if(l.type==='promote'){
+      l.piece='promoted';
+      renderBoard();
+      l.piece='pawn';
+      completeLesson('สำเร็จ! เมื่อถึง d6 เบี้ยจะ “หงาย” และต่อไปเดินเฉียง 1 ช่องเหมือนเม็ด');
+    }else if(l.type==='pawn'){
+      var isCap=(l.captures||[]).some(function(x){return same(x,dest);});
+      completeLesson(isCap?'เยี่ยม! เบี้ย “กินเฉียง” ถูกต้อง':'เยี่ยม! เบี้ย “เดินตรง” ถูกต้อง');
+    }else if(l.type==='check'){
+      completeLesson('รุก! ตอนนี้เรือขาวอยู่ในแนวเดียวกับขุนดำแล้ว');
+    }else if(l.type==='escape'){
+      completeLesson('ปลอดภัย! ขุนออกจากแนวเรือดำแล้ว');
+    }else{
+      completeLesson('ถูกต้อง! '+pieceName[l.piece]+' เดินมาถึง '+files[dest.c]+(8-dest.r));
+    }
+    showToast('เก่งมาก! ✓','good');
+    renderBoard();
+  }
+
+  function completeLesson(message){
+    state.completed=true;state.phase='done';
+    feedbackEl.className='feedback success';feedbackEl.textContent=message;
+    var next=Math.min(lessons.length-1,state.lesson+1);
+    state.unlocked=Math.max(state.unlocked,next);
+    localStorage.setItem('makrukUnlocked',String(state.unlocked));
+    mainBtn.disabled=false;
+    mainBtn.textContent=state.lesson===lessons.length-1?'เรียนซ้ำตั้งแต่ต้น':'บทถัดไป →';
+    renderPath();
+  }
+
+  function nextLesson(){
+    if(state.lesson>=lessons.length-1){state.lesson=0;renderLesson();return;}
+    state.lesson++;state.unlocked=Math.max(state.unlocked,state.lesson);renderLesson();
+  }
+
+  function showHint(){
+    var l=lessons[state.lesson];state.hint=true;
+    feedbackEl.className='feedback';
+    feedbackEl.textContent='💡 '+l.hint;
+    if(state.phase==='active')renderBoard();
+  }
+
+  function showToast(text,kind){
+    toast.textContent=text;toast.className='statusToast show '+(kind||'');
+    clearTimeout(showToast.t);showToast.t=setTimeout(function(){toast.className='statusToast';},1350);
+  }
+
+  function buildLessonGrid(){
+    var grid=document.getElementById('lessonGrid');grid.innerHTML='';
+    lessons.forEach(function(l,i){
+      var card=document.createElement('div');
+      var locked=i>state.unlocked;
+      card.className='lessonCard'+(locked?' locked':'');
+      card.innerHTML='<div class="n">'+(i+1)+'</div><div><strong>'+l.title+'</strong><small>Day '+l.day+(i<state.lesson?' · เรียนแล้ว':'')+'</small></div>';
+      if(!locked)card.addEventListener('click',function(){state.lesson=i;closeOverlay('menuOverlay');renderLesson();});
+      grid.appendChild(card);
+    });
+  }
+
+  function openOverlay(id){if(id==='menuOverlay')buildLessonGrid();document.getElementById(id).classList.add('open');}
+  function closeOverlay(id){document.getElementById(id).classList.remove('open');}
+
+  mainBtn.addEventListener('click',function(){if(state.completed)nextLesson();else activateLesson();});
+  boardEl.addEventListener('click',handleBoardClick);
+  hintBtn.addEventListener('click',showHint);
+  prevBtn.addEventListener('click',function(){if(state.lesson>0){state.lesson--;renderLesson();}});
+  document.getElementById('menuBtn').addEventListener('click',function(){openOverlay('menuOverlay');});
+  document.getElementById('planBtn').addEventListener('click',function(){openOverlay('planOverlay');});
+  document.querySelectorAll('[data-close]').forEach(function(b){b.addEventListener('click',function(){closeOverlay(b.dataset.close);});});
+  document.querySelectorAll('.overlay').forEach(function(o){o.addEventListener('click',function(e){if(e.target===o)closeOverlay(o.id);});});
+  document.getElementById('resetBtn').addEventListener('click',function(){
+    if(confirm('ต้องการเริ่มบทเรียนใหม่ตั้งแต่บทแรกใช่ไหม?')){
+      localStorage.removeItem('makrukLesson');localStorage.removeItem('makrukUnlocked');
+      state.lesson=0;state.unlocked=0;renderLesson();
+    }
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape')document.querySelectorAll('.overlay.open').forEach(function(x){x.classList.remove('open');});
+    if(e.key==='ArrowLeft'&&state.lesson>0){state.lesson--;renderLesson();}
+    if(e.key==='ArrowRight'&&state.completed)nextLesson();
   });
 
-  const quiz = [
-    {q:'1) หมากตัวใดเดินรูปตัว L และกระโดดข้ามหมากได้?',a:['เรือ','ม้า','โคน'],ok:1},
-    {q:'2) เม็ดเดินอย่างไร?',a:['เฉียง 1 ช่อง','ตรงได้ไกล','รอบตัว 1 ช่อง'],ok:0},
-    {q:'3) เบี้ยกินหมากฝ่ายตรงข้ามอย่างไร?',a:['กินตรงหน้า','กินเฉียงหน้า','กินด้านข้าง'],ok:1},
-    {q:'4) ถ้าขุนถูกรุก สิ่งแรกที่ต้องทำคืออะไร?',a:['เดินหมากอะไรก็ได้','แก้การรุกให้ขุนปลอดภัย','รีบกินเบี้ย'],ok:1},
-    {q:'5) สูตรคิดก่อนเดินคือข้อใด?',a:['จับก่อน คิดทีหลัง','ดูเขา → ดูเรา → ค่อยเดิน','เดินตัวเดิมทุกครั้ง'],ok:1}
-  ];
-  let answered={};
-  const qs=document.getElementById('questions'),score=document.getElementById('score');
-  quiz.forEach((item,qi)=>{
-    const row=document.createElement('div');row.className='q';
-    row.innerHTML='<strong>'+item.q+'</strong><div class="choices">'+item.a.map((x,i)=>'<button class="choice" type="button" data-q="'+qi+'" data-a="'+i+'">'+x+'</button>').join('')+'</div>';
-    qs.appendChild(row);
-  });
-  qs.addEventListener('click',e=>{
-    if(!e.target.classList.contains('choice'))return;
-    const q=+e.target.dataset.q,a=+e.target.dataset.a;answered[q]=a;
-    e.target.parentElement.querySelectorAll('.choice').forEach((b,i)=>{b.classList.remove('ok','no');if(i===quiz[q].ok)b.classList.add('ok');else if(i===a)b.classList.add('no')});
-    const done=Object.keys(answered).length,correct=quiz.reduce((n,x,i)=>n+(answered[i]===x.ok?1:0),0);
-    score.textContent=done<quiz.length?'ตอบแล้ว '+done+'/5 · ถูก '+correct+' ข้อ':'คะแนน '+correct+'/5 '+(correct>=4?'🎉 พร้อมไปเล่นเกมจริงแล้ว!':'🌱 ทบทวนอีกนิด แล้วลองใหม่ได้');
-  });
-
-  const presentBtn=document.getElementById('presentBtn');
-  presentBtn.addEventListener('click',()=>{document.body.classList.toggle('presentation');presentBtn.textContent=document.body.classList.contains('presentation')?'ออกจากโหมดฉาย':'โหมดฉาย'});
-  addEventListener('scroll',()=>{
-    const h=document.documentElement.scrollHeight-innerHeight;
-    document.getElementById('progressBar').style.width=(h?scrollY/h*100:0)+'%';
-  },{passive:true});
+  renderLesson();
+})();
 </script>
 </body>
 </html>
