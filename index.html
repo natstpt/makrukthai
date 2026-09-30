@@ -9,7 +9,7 @@
   <style>
     :root{
       --bg:#262724;--panel:#1f201e;--panel2:#292b28;--ink:#f7f5ec;--muted:#b9bcb5;
-      --green:#77a653;--green2:#5e8d40;--light:#edeccc;--boardGreen:#769c57;
+      --green:#77a653;--green2:#5e8d40;--light:#f0d9b5;--boardGreen:#b58863;
       --accent:#29c6ad;--accent2:#15a48e;--gold:#f2c14e;--danger:#e06a5f;
       --line:#3a3c38;--shadow:0 18px 50px rgba(0,0,0,.22);--r:18px;
       --font:"Noto Sans Thai","Leelawadee UI",Tahoma,sans-serif;
@@ -29,25 +29,25 @@
     .desktop{min-height:0;display:grid;grid-template-columns:minmax(0,1.82fr) minmax(330px,.98fr);gap:10px;padding:10px}
     .boardArea{min-width:0;min-height:0;background:#20211f;border-radius:10px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
     .boardWrap{width:min(100%,calc(100dvh - 78px));max-width:980px;aspect-ratio:1;position:relative;user-select:none;touch-action:manipulation}
-    .board{display:grid;grid-template-columns:repeat(8,1fr);width:100%;height:100%;box-shadow:0 12px 38px rgba(0,0,0,.25)}
+    .board{display:grid;grid-template-columns:repeat(8,1fr);width:100%;height:100%;box-shadow:0 12px 38px rgba(0,0,0,.25);position:relative;z-index:1}
     .square{position:relative;display:grid;place-items:center;cursor:default}
     .square.light{background:var(--light)}
     .square.dark{background:var(--boardGreen)}
     .square.clickable{cursor:pointer}
-    .square.target:after{content:"";width:28%;aspect-ratio:1;border-radius:50%;background:rgba(38,161,105,.62);box-shadow:0 0 0 5px rgba(255,255,255,.22);position:absolute}
+    .square.target:after{content:"";width:24%;aspect-ratio:1;border-radius:50%;background:rgba(33,79,48,.48);box-shadow:0 1px 3px rgba(0,0,0,.18);position:absolute;z-index:5;pointer-events:none}
     .square.capture:after{content:"";position:absolute;inset:8%;border:7px solid rgba(235,115,78,.8);border-radius:50%}
     .square.quizTarget:after{content:"?";position:absolute;width:34%;aspect-ratio:1;border-radius:50%;background:rgba(255,255,255,.8);color:#3a5137;display:grid;place-items:center;font-weight:950;font-size:clamp(16px,2.2vw,30px)}
     .square.last{box-shadow:inset 0 0 0 6px rgba(242,193,78,.72)}
     .coord{position:absolute;font-weight:900;font-size:clamp(10px,1.25vw,17px);opacity:.8;pointer-events:none}
     .rank{left:7px;top:4px}.file{right:7px;bottom:3px}
-    .light .coord{color:#6d9250}.dark .coord{color:#f1f0d3}
-    .piece{width:72%;height:72%;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:4;box-shadow:0 5px 10px rgba(0,0,0,.28),inset 0 -8px 10px rgba(0,0,0,.13),inset 0 4px 7px rgba(255,255,255,.28);transition:transform .18s ease}
-    .piece.white{background:linear-gradient(145deg,#fffdf5,#deddd1);border:3px solid #4f514d;color:#30322f}
-    .piece.black{background:linear-gradient(145deg,#555753,#2f302e);border:3px solid #20211f;color:#f5f4ec}
-    .piece.big{width:77%;height:77%}
-    .piece .glyph{font-size:clamp(15px,3vw,42px);font-weight:950;line-height:.92}
-    .piece .name{font-size:clamp(7px,1vw,14px);font-weight:900;line-height:1;margin-top:4px}
+    .light .coord{color:#b58863}.dark .coord{color:#f0d9b5}
+    .piece{width:88%;height:88%;display:block;z-index:4;filter:drop-shadow(0 5px 3px rgba(32,20,12,.25));transition:transform .18s ease;pointer-events:none}
+    .piece.big{width:92%;height:92%}
+    .piece img{display:block;width:100%;height:100%;object-fit:contain}
     .piece.moved{transform:scale(.94)}
+    .arrowLayer{position:absolute;inset:0;width:100%;height:100%;z-index:7;pointer-events:none;overflow:visible}
+    .arrowLine{stroke:rgba(224,75,58,.84);stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 1px 1px rgba(0,0,0,.3))}
+    .arrowPreview{opacity:.72}
     .boardCaption{position:absolute;left:14px;bottom:14px;background:rgba(31,32,30,.88);backdrop-filter:blur(8px);padding:8px 12px;border-radius:12px;color:#e5e7e1;font-size:13px;box-shadow:0 6px 20px rgba(0,0,0,.18);z-index:9}
     .statusToast{position:absolute;top:16px;left:50%;transform:translate(-50%,-15px);opacity:0;background:#fff;color:#28302c;padding:10px 16px;border-radius:999px;font-weight:900;z-index:10;box-shadow:0 10px 30px rgba(0,0,0,.25);transition:.24s}
     .statusToast.show{opacity:1;transform:translate(-50%,0)}
@@ -126,7 +126,7 @@
       .desktop{padding:0;gap:0}.boardArea{border-radius:0}.boardWrap{width:100vw;max-width:none}.boardCaption{font-size:11px;left:8px;bottom:8px}
       .lessonPanel{border-radius:0;border-left:0;border-right:0}.lessonHead{height:46px}.lessonBody{padding:17px 14px}
       .coach{width:52px;height:52px;flex-basis:52px;font-size:27px;border-radius:14px}.speech{font-size:14px;padding:12px}
-      .lessonGrid,.planDays{grid-template-columns:1fr}.piece .name{display:none}.piece .glyph{font-size:clamp(15px,6vw,32px)}
+      .lessonGrid,.planDays{grid-template-columns:1fr}
     }
     @media print{body{overflow:visible;background:white}.topbar,.boardArea,.lessonPanel{display:none}.overlay{position:static!important;display:block!important;background:white;padding:0}.modal{width:100%;max-height:none;box-shadow:none}.modalHead button{display:none}.modalBody{padding:0}.planDays{display:block}.planDay{margin-bottom:14px}}
   </style>
@@ -148,6 +148,10 @@
     <section class="boardArea" aria-label="กระดานฝึกหมากรุกไทย">
       <div class="boardWrap">
         <div class="board" id="board"></div>
+        <svg class="arrowLayer" id="arrowLayer" viewBox="0 0 100 100" aria-hidden="true">
+          <defs><marker id="arrowHead" markerWidth="4" markerHeight="4" refX="3.2" refY="2" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L4,2 L0,4 Z" fill="rgba(224,75,58,.84)"></path></marker></defs>
+          <g id="savedArrows"></g><g id="previewArrow"></g>
+        </svg>
         <div class="statusToast" id="toast"></div>
         <div class="boardCaption" id="boardCaption">กระดานหมากรุกไทย 8 × 8</div>
       </div>
@@ -246,6 +250,9 @@
 
   var files = ['a','b','c','d','e','f','g','h'];
   var boardEl = document.getElementById('board');
+  var boardWrap = document.querySelector('.boardWrap');
+  var savedArrowsEl = document.getElementById('savedArrows');
+  var previewArrowEl = document.getElementById('previewArrow');
   var speechEl = document.getElementById('speech');
   var headingEl = document.getElementById('lessonHeading');
   var descEl = document.getElementById('lessonDescription');
@@ -270,11 +277,11 @@
   function same(a,b){ return a.r===b.r && a.c===b.c; }
   function key(p){ return p.r + '-' + p.c; }
 
-  var pieceGlyph = {
-    king:'ข', rook:'ร', knight:'ม', met:'ม็', khon:'ค', pawn:'บ', promoted:'ห'
-  };
   var pieceName = {
     king:'ขุน', rook:'เรือ', knight:'ม้า', met:'เม็ด', khon:'โคน', pawn:'เบี้ย', promoted:'เบี้ยหงาย'
+  };
+  var pieceFile = {
+    king:'K', rook:'R', knight:'N', met:'Q', khon:'B', pawn:'P', promoted:'F'
   };
 
   var lessons = [
@@ -445,13 +452,55 @@
   var state = {
     lesson:Math.max(0,Math.min(lessons.length-1,parseInt(localStorage.getItem('makrukLesson')||'0',10))),
     unlocked:Math.max(0,Math.min(lessons.length-1,parseInt(localStorage.getItem('makrukUnlocked')||'0',10))),
-    phase:'intro', current:null, completed:false, hint:false
+    phase:'intro', current:null, completed:false, hint:false, arrows:[], arrowStart:null
   };
 
   function inBoard(p){return p && p.r>=0&&p.r<8&&p.c>=0&&p.c<8;}
   function normalize(arr){return (arr||[]).filter(inBoard);}
   function pieceHtml(type,side){
-    return '<div class="piece '+side+' '+(type==='king'?'big':'')+'" data-piece="'+type+'"><div class="glyph">'+pieceGlyph[type]+'</div><div class="name">'+pieceName[type]+'</div></div>';
+    var color=side==='white'?'w':'r';
+    var src='assets/pieces/makruk/ada/'+color+pieceFile[type]+'.svg';
+    return '<div class="piece '+side+' '+(type==='king'?'big':'')+'" data-piece="'+type+'"><img src="'+src+'" alt="'+pieceName[type]+'ฝ่าย'+(side==='white'?'ขาว':'แดง')+'" draggable="false"></div>';
+  }
+
+  function squareFromPointer(e){
+    var rect=boardWrap.getBoundingClientRect();
+    if(e.clientX<rect.left||e.clientX>rect.right||e.clientY<rect.top||e.clientY>rect.bottom)return null;
+    return {r:Math.min(7,Math.max(0,Math.floor((e.clientY-rect.top)/rect.height*8))),c:Math.min(7,Math.max(0,Math.floor((e.clientX-rect.left)/rect.width*8)))};
+  }
+
+  function arrowSvg(from,to,preview){
+    var x1=(from.c+.5)*12.5,y1=(from.r+.5)*12.5,x2=(to.c+.5)*12.5,y2=(to.r+.5)*12.5;
+    return '<line class="arrowLine'+(preview?' arrowPreview':'')+'" x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" marker-end="url(#arrowHead)"></line>';
+  }
+
+  function renderArrows(){
+    savedArrowsEl.innerHTML=state.arrows.map(function(a){return arrowSvg(a.from,a.to,false);}).join('');
+  }
+
+  function clearArrows(){
+    state.arrows=[];state.arrowStart=null;savedArrowsEl.innerHTML='';previewArrowEl.innerHTML='';
+  }
+
+  function beginArrow(e){
+    if(e.button!==2)return;
+    e.preventDefault();
+    state.arrowStart=squareFromPointer(e);
+    if(state.arrowStart){previewArrowEl.innerHTML=arrowSvg(state.arrowStart,state.arrowStart,true);boardWrap.setPointerCapture(e.pointerId);}
+  }
+
+  function moveArrow(e){
+    if(!state.arrowStart)return;
+    var dest=squareFromPointer(e);if(dest)previewArrowEl.innerHTML=arrowSvg(state.arrowStart,dest,true);
+  }
+
+  function endArrow(e){
+    if(!state.arrowStart)return;
+    var from=state.arrowStart,to=squareFromPointer(e);state.arrowStart=null;previewArrowEl.innerHTML='';
+    if(!to||same(from,to)){clearArrows();return;}
+    var found=state.arrows.findIndex(function(a){return same(a.from,from)&&same(a.to,to);});
+    if(found>=0)state.arrows.splice(found,1);else state.arrows.push({from:from,to:to});
+    renderArrows();
   }
   function fullSetup(){
     var list=[], backWhite=['rook','knight','khon','king','met','khon','knight','rook'];
@@ -505,6 +554,7 @@
 
   function renderLesson(){
     var l=lessons[state.lesson];
+    clearArrows();
     state.phase='intro';state.current=l.start?{r:l.start.r,c:l.start.c}:null;state.completed=false;state.hint=false;
     lessonTitle.textContent=l.title;
     dayTag.textContent='DAY '+l.day;
@@ -513,7 +563,7 @@
     descEl.textContent=l.description;
     ruleEl.textContent=l.rule;
     missionEl.textContent=l.mission;
-    boardCaption.textContent=l.caption;
+    boardCaption.textContent=l.caption+' · คลิกขวาค้างแล้วลากเพื่อวาดลูกศร';
     hintBtn.hidden=l.type==='finish';
     feedbackEl.className='feedback';
     feedbackEl.textContent=l.type==='intro'?'มองกระดานให้คุ้น แล้วกด “เข้าใจแล้ว”':'อ่านคำอธิบาย แล้วกด “'+l.mainText+'”';
@@ -570,7 +620,7 @@
     state.phase='active';
     mainBtn.disabled=true;
     mainBtn.textContent='ลองเดินบนกระดาน';
-    feedbackEl.textContent='แตะ/คลิกช่องเป้าหมายบนกระดาน';
+    feedbackEl.textContent='แตะ/คลิกจุดวงกลมบนกระดาน · ครูลากคลิกขวาเพื่อวาดลูกศร';
     renderBoard();
   }
 
@@ -658,6 +708,11 @@
 
   mainBtn.addEventListener('click',function(){if(state.completed)nextLesson();else activateLesson();});
   boardEl.addEventListener('click',handleBoardClick);
+  boardWrap.addEventListener('contextmenu',function(e){e.preventDefault();});
+  boardWrap.addEventListener('pointerdown',beginArrow);
+  boardWrap.addEventListener('pointermove',moveArrow);
+  boardWrap.addEventListener('pointerup',endArrow);
+  boardWrap.addEventListener('pointercancel',function(){state.arrowStart=null;previewArrowEl.innerHTML='';});
   hintBtn.addEventListener('click',showHint);
   prevBtn.addEventListener('click',function(){if(state.lesson>0){state.lesson--;renderLesson();}});
   document.getElementById('menuBtn').addEventListener('click',function(){openOverlay('menuOverlay');});
