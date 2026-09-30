@@ -29,10 +29,10 @@
     .desktop{min-height:0;display:grid;grid-template-columns:minmax(0,1.82fr) minmax(330px,.98fr);gap:10px;padding:10px}
     .boardArea{min-width:0;min-height:0;background:#20211f;border-radius:10px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
     .boardWrap{width:min(100%,calc(100dvh - 78px));max-width:980px;aspect-ratio:1;position:relative;user-select:none;touch-action:manipulation}
-    .board{display:grid;grid-template-columns:repeat(8,1fr);width:100%;height:100%;box-shadow:0 12px 38px rgba(0,0,0,.25);position:relative;z-index:1}
-    .square{position:relative;display:grid;place-items:center;cursor:default}
-    .square.light{background:var(--light)}
-    .square.dark{background:var(--boardGreen)}
+    .board{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));grid-template-rows:repeat(8,minmax(0,1fr));width:100%;height:100%;box-shadow:0 12px 38px rgba(0,0,0,.25);position:relative;z-index:1;background:var(--light);outline:1px solid #987451}
+    .square{position:relative;display:grid;place-items:center;cursor:default;min-width:0;min-height:0;border-right:1px solid #987451;border-bottom:1px solid #987451;overflow:hidden}
+    .square:nth-child(8n){border-right:0}
+    .square:nth-last-child(-n+8){border-bottom:0}
     .square.clickable{cursor:pointer}
     .square.target:after{content:"";width:24%;aspect-ratio:1;border-radius:50%;background:rgba(33,79,48,.48);box-shadow:0 1px 3px rgba(0,0,0,.18);position:absolute;z-index:5;pointer-events:none}
     .square.capture:after{content:"";position:absolute;inset:8%;border:7px solid rgba(235,115,78,.8);border-radius:50%}
@@ -40,8 +40,8 @@
     .square.last{box-shadow:inset 0 0 0 6px rgba(242,193,78,.72)}
     .coord{position:absolute;font-weight:900;font-size:clamp(10px,1.25vw,17px);opacity:.8;pointer-events:none}
     .rank{left:7px;top:4px}.file{right:7px;bottom:3px}
-    .light .coord{color:#b58863}.dark .coord{color:#f0d9b5}
-    .piece{width:88%;height:88%;display:block;z-index:4;filter:drop-shadow(0 5px 3px rgba(32,20,12,.25));transition:transform .18s ease;pointer-events:none}
+    .square .coord{color:#795535}
+    .piece{position:absolute;width:88%;height:88%;display:block;z-index:4;filter:drop-shadow(0 5px 3px rgba(32,20,12,.25));transition:transform .18s ease;pointer-events:none}
     .piece.big{width:92%;height:92%}
     .piece img{display:block;width:100%;height:100%;object-fit:contain}
     .piece.moved{transform:scale(.94)}
@@ -249,6 +249,7 @@
   'use strict';
 
   var files = ['a','b','c','d','e','f','g','h'];
+  var displayFiles = ['ก','ข','ค','ง','จ','ฉ','ช','ญ'];
   var boardEl = document.getElementById('board');
   var boardWrap = document.querySelector('.boardWrap');
   var savedArrowsEl = document.getElementById('savedArrows');
@@ -449,6 +450,14 @@
     }
   ];
 
+  // Keep internal coordinates stable while displaying Thai notation throughout lessons.
+  lessons.forEach(function(lesson){
+    ['speech','description','mission','caption','hint','rule'].forEach(function(field){
+      if(typeof lesson[field]!=='string')return;
+      lesson[field]=lesson[field].replace(/a–h/g,'ก–ญ').replace(/d-file/g,'แนว ง').replace(/คอลัมน์ d/g,'คอลัมน์ ง').replace(/([a-h])([1-8])/g,function(match,file,rank){return displayFiles[files.indexOf(file)]+rank;}).replace(/ขุนดำ/g,'ขุนแดง').replace(/เรือดำ/g,'เรือแดง').replace(/หมากสีดำ/g,'หมากสีแดง');
+    });
+  });
+
   var state = {
     lesson:Math.max(0,Math.min(lessons.length-1,parseInt(localStorage.getItem('makrukLesson')||'0',10))),
     unlocked:Math.max(0,Math.min(lessons.length-1,parseInt(localStorage.getItem('makrukUnlocked')||'0',10))),
@@ -533,10 +542,10 @@
     for(var r=0;r<8;r++){
       for(var c=0;c<8;c++){
         var s=document.createElement('div');
-        s.className='square '+(((r+c)%2===0)?'light':'dark');
+        s.className='square';
         var p={r:r,c:c};
         if(c===0)s.innerHTML+='<span class="coord rank">'+(8-r)+'</span>';
-        if(r===7)s.innerHTML+='<span class="coord file">'+files[c]+'</span>';
+        if(r===7)s.innerHTML+='<span class="coord file">'+displayFiles[c]+'</span>';
         if(state.current && same(p,state.current))s.classList.add('last');
         var cap=captures.some(function(x){return same(x,p);});
         if(legal.some(function(x){return same(x,p);})){
@@ -648,7 +657,7 @@
       l.piece='promoted';
       renderBoard();
       l.piece='pawn';
-      completeLesson('สำเร็จ! เมื่อถึง d6 เบี้ยจะ “หงาย” และต่อไปเดินเฉียง 1 ช่องเหมือนเม็ด');
+      completeLesson('สำเร็จ! เมื่อถึง ง6 เบี้ยจะ “หงาย” และต่อไปเดินเฉียง 1 ช่องเหมือนเม็ด');
     }else if(l.type==='pawn'){
       var isCap=(l.captures||[]).some(function(x){return same(x,dest);});
       completeLesson(isCap?'เยี่ยม! เบี้ย “กินเฉียง” ถูกต้อง':'เยี่ยม! เบี้ย “เดินตรง” ถูกต้อง');
@@ -657,7 +666,7 @@
     }else if(l.type==='escape'){
       completeLesson('ปลอดภัย! ขุนออกจากแนวเรือดำแล้ว');
     }else{
-      completeLesson('ถูกต้อง! '+pieceName[l.piece]+' เดินมาถึง '+files[dest.c]+(8-dest.r));
+      completeLesson('ถูกต้อง! '+pieceName[l.piece]+' เดินมาถึง '+displayFiles[dest.c]+(8-dest.r));
     }
     showToast('เก่งมาก! ✓','good');
     renderBoard();
