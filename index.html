@@ -202,7 +202,7 @@
       </div>
 
       <div class="lessonProgress">
-        <div class="progressMeta"><span id="progressText">บท 1 / 13</span><span id="progressPercent">0%</span></div>
+        <div class="progressMeta"><span id="progressText">บท 1 / 14</span><span id="progressPercent">0%</span></div>
         <div class="progressTrack"><div class="progressFill" id="progressFill"></div></div>
       </div>
 
@@ -266,7 +266,7 @@
           <div class="planRow"><b>10–11</b><span><b>เรือ</b> · ฝึกเส้นตรงและสิ่งกีดขวาง</span></div>
           <div class="planRow"><b>11–12</b><span><b>ม้า</b> · ฝึกรูปตัว L และการกระโดด</span></div>
           <div class="planRow"><b>13–14</b><span><b>เม็ด + โคน</b> · เปรียบเทียบความต่าง</span></div>
-          <div class="planRow"><b>14–15</b><span><b>เบี้ย + เบี้ยหงาย</b> · เดิน กิน และหงาย</span></div>
+          <div class="planRow"><b>14–15</b><span><b>เบี้ย + เบี้ยหงาย</b> · เดินเบี้ย กิน หงาย และฝึกเดินเบี้ยหงาย</span></div>
           <div class="planRow"><b>15–16</b><span>เกมย่อยรวมหมาก + Checkpoint Day 1</span></div>
         </div>
         <div class="planDay">
@@ -433,6 +433,18 @@
       mainText:'เริ่มฝึก'
     },
     {
+      title:'เดินเบี้ยหงาย',day:1,type:'move',piece:'promoted',start:pos('d',6),
+      speech:'เบี้ยหงายแล้ว! ทีนี้มาลองเดิน <strong>เบี้ยหงาย</strong> ด้วยตัวเองกัน เดินเฉียงได้ทั้งไปข้างหน้าและถอยหลัง',
+      heading:'เบี้ยหงาย · ลองเดินเฉียง',
+      description:'เบี้ยธรรมดาเดินตรงไปข้างหน้า แต่เบี้ยหงายเดินเฉียง 1 ช่องได้ทั้ง 4 มุม เหมือนเม็ด เดินตรงหรือเดินเฉียงไกลกว่า 1 ช่องไม่ได้',
+      rule:'เบี้ยหงาย = เฉียง 1 ช่อง ทั้งหน้าและหลัง ↖ ↗ ↙ ↘',
+      mission:'เลือกเบี้ยหงายที่ ง6 แล้วลองเดินเฉียงไป ค7 จ7 ค5 หรือ จ5 หนึ่งครั้ง',
+      caption:'เบี้ยหงายอยู่ที่ ง6 · ลองเดินเฉียงหน้า หรือเฉียงถอยหลัง',
+      hint:'มอง 4 มุมรอบเบี้ยหงาย: ค7 จ7 ค5 และ จ5 ไม่ใช่ช่องตรงหน้า ง7',
+      legal:function(s){return [{r:s.r-1,c:s.c-1},{r:s.r-1,c:s.c+1},{r:s.r+1,c:s.c-1},{r:s.r+1,c:s.c+1}];},
+      mainText:'เริ่มฝึก'
+    },
+    {
       title:'รุก',day:2,type:'check',piece:'rook',start:pos('a',4),
       speech:'Day 2 เริ่มด้วยคำสำคัญมาก: <strong>“รุก”</strong> คือขุนกำลังถูกโจมตี',
       heading:'รุก · ทำให้ขุนอยู่ในแนวโจมตี',
@@ -506,9 +518,24 @@
     });
   });
 
+  function savedProgress(storageKey){
+    var value=parseInt(localStorage.getItem(storageKey)||'0',10);
+    return Number.isFinite(value)?Math.max(0,Math.min(lessons.length-1,value)):0;
+  }
+
+  var savedLesson=savedProgress('makrukLesson'),savedUnlocked=savedProgress('makrukUnlocked');
+  // A lesson was inserted at index 8. Keep returning learners on their original lesson.
+  if(localStorage.getItem('makrukCurriculumVersion')!=='2'){
+    if(savedLesson>=8)savedLesson=Math.min(lessons.length-1,savedLesson+1);
+    if(savedUnlocked>=8)savedUnlocked=Math.min(lessons.length-1,savedUnlocked+1);
+    localStorage.setItem('makrukLesson',String(savedLesson));
+    localStorage.setItem('makrukUnlocked',String(savedUnlocked));
+    localStorage.setItem('makrukCurriculumVersion','2');
+  }
+
   var state = {
-    lesson:Math.max(0,Math.min(lessons.length-1,parseInt(localStorage.getItem('makrukLesson')||'0',10))),
-    unlocked:Math.max(0,Math.min(lessons.length-1,parseInt(localStorage.getItem('makrukUnlocked')||'0',10))),
+    lesson:savedLesson,
+    unlocked:savedUnlocked,
     phase:'intro', current:null, completed:false, hint:false, arrows:[], arrowStart:null,
     selected:false, promoted:false, captured:null, tool:'move', gesture:null, suppressClick:false,
     focus:null, showDestinations:localStorage.getItem('makrukDestinations')!=='false'
@@ -833,7 +860,7 @@
     boardCaption.textContent=pieceName[l.piece]+'อยู่ที่ '+displayFiles[dest.c]+(8-dest.r);
     if(l.type==='promote'){
       state.promoted=true;boardCaption.textContent='เบี้ยหงายอยู่ที่ '+displayFiles[dest.c]+(8-dest.r);
-      completeLesson('สำเร็จ! เมื่อถึง ง6 เบี้ยจะ “หงาย” และต่อไปเดินเฉียง 1 ช่องเหมือนเม็ด');
+      completeLesson('สำเร็จ! เมื่อถึง ง6 เบี้ยจะ “หงาย” บทถัดไปมาลองเดินเบี้ยหงายจริงกัน');
     }else if(l.type==='pawn'){
       var isCap=(l.captures||[]).some(function(x){return same(x,dest);});
       completeLesson(isCap?'เยี่ยม! เบี้ย “กินเฉียง” ถูกต้อง':'เยี่ยม! เบี้ย “เดินตรง” ถูกต้อง');
