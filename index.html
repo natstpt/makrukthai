@@ -68,6 +68,7 @@
     .piece.big{width:88%;height:88%}
     .piece img{display:block;width:100%;height:100%;object-fit:contain}
     .piece.moved{transform:scale(.94)}
+    .goalStar{position:absolute;inset:0;display:grid;place-items:center;z-index:6;color:#f4c542;font-size:clamp(20px,4vw,42px);line-height:1;text-shadow:0 2px 2px #7d5b19,0 0 5px #fff4b6;pointer-events:none}
     .arrowLayer{position:absolute;inset:0;width:100%;height:100%;z-index:7;pointer-events:none;overflow:hidden}
     .arrowShape{fill:var(--arrow)}
     .arrowPreview{opacity:.72}
@@ -97,22 +98,26 @@
     .speech{position:relative;background:#f7f7f4;color:#2d302d;border-radius:15px;padding:14px 16px;font-size:15px;line-height:1.55;flex:1;box-shadow:0 7px 18px rgba(0,0,0,.13)}
     .speech:before{content:"";position:absolute;left:-9px;top:21px;border-style:solid;border-width:9px 10px 9px 0;border-color:transparent #f7f7f4 transparent transparent}
     .speech strong{color:#1f5e50}
-    .lessonExplain{margin-top:20px}
+    .lessonExplain{margin-top:12px}
     .lessonExplain h1{font-size:clamp(25px,3vw,38px);line-height:1.2;margin:0 0 7px}
     .lessonExplain p{color:#c2c6bf;margin:0 0 15px}
-    .ruleCard{background:#2a2c28;border:1px solid #3a3d38;border-radius:15px;padding:14px 15px;margin-top:13px}
+    .lessonDetails{margin:10px 0 0;border:1px solid #3a3d38;border-radius:12px;background:#242623;color:#b9c0b3}
+    .lessonDetails summary{padding:10px 12px;cursor:pointer;font-weight:800;font-size:12px;color:#c6d8b8}
+    .lessonDetailsContent{padding:0 12px 12px}
+    .lessonDetailsContent>p{font-size:13px;color:#bdc3b9;line-height:1.5;margin:0 0 10px}
+    .ruleCard{background:#2a2c28;border:1px solid #3a3d38;border-radius:12px;padding:11px 12px;margin-top:8px}
     .ruleCard .label{font-size:11px;color:#99a097;font-weight:900;letter-spacing:.8px;margin-bottom:5px}
     .ruleBig{font-size:18px;font-weight:950}
     .legend{display:flex;gap:13px;flex-wrap:wrap;color:#b8beb5;font-size:12px;margin-top:11px}
     .legend span{display:flex;align-items:center;gap:6px}
     .dot{width:12px;height:12px;border-radius:50%;background:var(--arrow)}.dot.captureDot{background:transparent;border:2px solid var(--arrow)}.dot.gold{background:var(--gold)}
-    .mission{margin-top:15px;padding:14px;background:#143f38;border:1px solid #26665a;border-radius:15px}
+    .mission{margin-top:10px;padding:11px 13px;background:#143f38;border:1px solid #26665a;border-radius:13px}
     .mission b{display:block;color:#8ee2d0;margin-bottom:4px}.mission span{color:#d6e7e2;font-size:14px}
-    .practiceCard{margin-top:12px;padding:13px 14px;border:1px solid #454c3c;border-radius:13px;background:#2a2e24}
+    .practiceCard{margin-top:10px;padding:10px 12px;border:1px solid #454c3c;border-radius:12px;background:#2a2e24}
     .practiceCard.ready{background:#263b25;border-color:#648b48}
     .practiceCard strong{display:block;font-size:16px;color:#dcf0c6;margin-bottom:5px}
-    .practiceCard p{margin:0;font-size:12px;color:#bdc8b5;line-height:1.5}
-    .feedback{min-height:48px;margin-top:13px;padding:10px 12px;border-radius:12px;background:#252724;border:1px dashed #40433d;color:#b9beb6;font-size:13px}
+    .practiceCard p{display:none}
+    .feedback{min-height:40px;margin-top:9px;padding:9px 11px;border-radius:12px;background:#252724;border:1px dashed #40433d;color:#b9beb6;font-size:13px}
     .feedback.success{background:#263b25;border-color:#4c7745;color:#d4efcf}
     .feedback.error{background:#412824;border-color:#78433b;color:#f5d0ca}
     .lessonFoot{padding:12px;border-top:1px solid #343632;background:#1f201e;display:grid;grid-template-columns:52px 1fr;gap:9px}
@@ -124,6 +129,8 @@
     .hintBtn:hover{background:#30332e}
     .lessonActions{display:flex;gap:8px;flex-wrap:wrap}
     .path{display:flex;flex-wrap:wrap;gap:7px;margin-top:18px}
+    .pathDetails{margin-top:10px;border-top:1px solid #383b35;padding-top:8px}
+    .pathDetails summary{cursor:pointer;color:#9fa89a;font-size:12px;font-weight:800}
     .pathNode{width:36px;height:36px;border-radius:10px;border:1px solid #3d403a;background:#292b28;color:#80867d;display:grid;place-items:center;font-size:12px;font-weight:950}
     .pathNode.done{background:#23433a;border-color:#2e7868;color:#8ce1cf}
     .pathNode.current{background:var(--accent);border-color:#6ce6d3;color:#083c35;box-shadow:0 0 0 3px rgba(41,198,173,.16)}
@@ -160,25 +167,26 @@
     .moveHistory{margin-top:10px;font-size:12px;color:#acb8a5;max-height:120px;overflow:auto;line-height:1.7}
     .sourceNotes{margin-top:12px;padding:11px 13px;border:1px solid #444a3d;border-radius:12px;color:#cbd7c0;font-size:13px;line-height:1.6}
     .sourceNotes summary{cursor:pointer;font-weight:800;color:#cce4b7}.sourceNotes p{margin:10px 0 0;color:#cbd7c0}.sourceNotes a{color:#8ee2d0}
-    .notationForm{margin-top:14px;padding:14px;border:1px solid #548663;background:#243c2b;border-radius:12px}
-    .notationForm label{display:block;font-weight:800;margin-bottom:8px}.notationForm input{width:100%;min-height:46px;padding:10px 12px;border:1px solid #83a770;border-radius:8px;background:#f5f5e9;color:#243122;font:inherit}
-    .notationForm button{margin-top:8px;min-height:44px;padding:8px 14px;border:0;border-radius:8px;background:#76a64f;color:white;font-weight:800;cursor:pointer}
-    .notationForm small{display:block;line-height:1.5;margin-top:8px;color:#bed0b5}
-    .notationForm button:disabled{opacity:.45;cursor:default}
+    .notationForm{margin-top:10px;padding:11px;border:1px solid #548663;background:#243c2b;border-radius:12px}
+    .notationForm[hidden]{display:none}
+    .notationPrompt{font-weight:850;font-size:13px;margin-bottom:8px}
     .scoreSheetWrap{margin-top:12px}.scoreScroll{max-height:240px;overflow:auto;border:1px solid #454c3c;border-radius:10px}
     .scoreSheet{width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap}.scoreSheet th,.scoreSheet td{padding:9px 7px;text-align:left;border-bottom:1px solid #3c4235}.scoreSheet th{position:sticky;top:0;background:#293322;color:#d8e8c7}.scoreSheet caption{text-align:left;font-weight:800;margin-bottom:8px}.scoreSheet td:first-child{color:#a4b693}
     .scoreTools{display:flex;gap:8px;flex-wrap:wrap}.scoreHint{color:#aebfa0;font-size:12px;margin:8px 0 0;line-height:1.5}
     .quizBox{display:grid;gap:9px;margin-top:14px}
+    .quizPrompt{grid-column:1/-1;margin:0 0 2px;font-size:16px;font-weight:900;line-height:1.35}
     .quizChoice{border:1px solid #454943;background:#2b2e2a;color:#edf0ea;border-radius:11px;padding:11px 12px;text-align:left;cursor:pointer;font-weight:800}
     .quizChoice:hover{background:#343833}.quizChoice.correct{background:#244b29;border-color:#62a968}.quizChoice.wrong{background:#4a2925;border-color:#a65c51}
     .app.coordinateQuiz #quizBox{grid-template-columns:repeat(3,minmax(0,1fr))}
     .app.coordinateQuiz .quizChoice{text-align:center;font-size:18px;min-height:52px}
+    .notationChoices{grid-template-columns:1fr}
+    .notationChoices .quizChoice{min-height:48px;font-size:16px;text-align:center;font-variant-numeric:tabular-nums}
     .celebrate{text-align:center;padding:18px 0 3px}.celebrate .big{font-size:54px}.celebrate h2{margin:4px 0}.celebrate p{color:#bfc4bc}
     @media(max-width:920px){
       body{overflow:auto;background:#20211f}.app{height:auto;min-height:100dvh}.desktop{grid-template-columns:1fr;grid-template-rows:auto auto;padding:8px;gap:8px}
       .boardArea{min-height:auto}.boardWrap{width:min(100%,66dvh)}.lessonPanel{min-height:520px}.lessonBody{overflow:visible}
       .topBtn.planText span{display:none}.topBtn.planText:after{content:"แผนสอน"}
-      .app.coordinateQuiz .coachRow,.app.coordinateQuiz .lessonExplain>h1,.app.coordinateQuiz .lessonExplain>p,.app.coordinateQuiz #ruleCard,.app.coordinateQuiz .path{display:none}
+      .app.coordinateQuiz .coachRow,.app.coordinateQuiz .lessonDetails,.app.coordinateQuiz .pathDetails,.app.coordinateQuiz .lessonExplain>h1,.app.coordinateQuiz .lessonExplain>p,.app.coordinateQuiz #ruleCard,.app.coordinateQuiz .path,.app.coordinateQuiz .mission{display:none}
       .app.coordinateQuiz .lessonExplain,.app.coordinateQuiz .mission{margin-top:0}
       .app.coordinateQuiz .lessonBody{padding-top:12px}
     }
@@ -262,11 +270,18 @@
           <h1 id="lessonHeading"></h1>
           <p id="lessonDescription"></p>
 
-          <div class="ruleCard" id="ruleCard">
-            <div class="label">จำง่าย ๆ</div>
-            <div class="ruleBig" id="ruleBig"></div>
-            <div class="legend" id="legend"></div>
-          </div>
+          <details class="lessonDetails" id="lessonDetails">
+            <summary>ดูหลักและกติกาเพิ่มเติม</summary>
+            <div class="lessonDetailsContent">
+              <p id="lessonDescriptionMore"></p>
+              <div class="ruleCard" id="ruleCard">
+                <div class="label">จำง่าย ๆ</div>
+                <div class="ruleBig" id="ruleBig"></div>
+                <div class="legend" id="legend"></div>
+              </div>
+              <details class="sourceNotes" id="sourceNotes" hidden><summary>กติกาสำคัญที่ใช้ในบทนี้</summary><div id="sourceNotesBody"></div></details>
+            </div>
+          </details>
 
           <div class="mission" id="mission">
             <b>ภารกิจ</b>
@@ -279,12 +294,10 @@
           </div>
 
           <div class="quizBox" id="quizBox" hidden></div>
-          <form class="notationForm" id="notationForm" hidden autocomplete="off">
-            <label for="notationInput">ลองจดตาที่เพิ่งเดิน</label>
-            <input id="notationInput" type="text" maxlength="80" placeholder="เช่น ม.ข1 - ง2" aria-describedby="notationHelp">
-            <button id="notationSubmit" type="submit">ตรวจบันทึกตาเดิน</button>
-            <small id="notationHelp">ข ขุน · ร เรือ · ม ม้า · ค โคน · ม็ เม็ด · บ เบี้ย · ง เบี้ยหงาย<br>อักษรย่อ + ช่องต้นทาง - ช่องปลายทาง · X = กิน · + = รุก · # = รุกจน<br>ใช้เลขไทยหรืออารบิกได้ จุดและเว้นวรรคใส่หรือไม่ใส่ก็ได้</small>
-          </form>
+          <div class="notationForm" id="notationForm" hidden>
+            <div class="notationPrompt">ตานี้ควรบันทึกแบบไหน?</div>
+            <div class="quizBox notationChoices" id="notationChoices" role="group" aria-label="เลือกบันทึกตาเดิน"></div>
+          </div>
           <div class="gameNote" id="gameNote" hidden></div>
           <div class="moveHistory" id="moveHistory" hidden></div>
           <div class="scoreSheetWrap" id="scoreSheetWrap" hidden>
@@ -292,15 +305,13 @@
             <div class="scoreTools"><button class="hintBtn" id="copyScoreBtn" type="button" disabled>คัดลอกบันทึก</button><button class="hintBtn" id="exportScoreBtn" type="button" disabled>เก็บบันทึกเป็นไฟล์ .txt</button></div>
             <p class="scoreHint">เว็บช่วยจดเพื่อเรียนรู้รูปแบบ ในการแข่งขันมาตรฐานต้องจดด้วยตนเอง ดูข้อยกเว้นในกติกาหน้า 17 และ 24</p>
           </div>
-          <details class="sourceNotes" id="sourceNotes" hidden><summary>กติกาสำคัญที่ใช้ในบทนี้</summary><div id="sourceNotesBody"></div></details>
-
           <div class="lessonActions">
             <button class="hintBtn" id="hintBtn" type="button">💡 ดูคำใบ้</button>
             <button class="hintBtn" id="retryBtn" type="button" hidden>↺ เริ่มนับใหม่</button>
           </div>
           <div class="feedback" id="feedback" role="status" aria-live="polite">อ่านคำอธิบาย แล้วกด “เริ่มฝึก”</div>
 
-          <div class="path" id="path" aria-label="ความคืบหน้าบทเรียน"></div>
+          <details class="pathDetails"><summary>สารบัญบทเรียน</summary><div class="path" id="path" aria-label="ความคืบหน้าบทเรียน"></div></details>
         </div>
       </div>
 
@@ -427,8 +438,7 @@
   var Rules=window.MakrukRules;
   var Notation=window.MakrukNotation;
   var notationForm=document.getElementById('notationForm');
-  var notationInput=document.getElementById('notationInput');
-  var notationSubmit=document.getElementById('notationSubmit');
+  var notationChoices=document.getElementById('notationChoices');
   var sourceNotes=document.getElementById('sourceNotes');
   var sourceNotesBody=document.getElementById('sourceNotesBody');
   var scoreSheetWrap=document.getElementById('scoreSheetWrap');
@@ -437,6 +447,8 @@
   var speechEl = document.getElementById('speech');
   var headingEl = document.getElementById('lessonHeading');
   var descEl = document.getElementById('lessonDescription');
+  var descMoreEl = document.getElementById('lessonDescriptionMore');
+  var lessonDetails = document.getElementById('lessonDetails');
   var ruleEl = document.getElementById('ruleBig');
   var missionEl = document.getElementById('missionText');
   var feedbackEl = document.getElementById('feedback');
@@ -710,7 +722,7 @@
     selected:false, promoted:false, captured:null, tool:'move', gesture:null, suppressClick:false,
     focus:null, showDestinations:localStorage.getItem('makrukDestinations')!=='false',
     correctMoves:0,roundIndex:0,roundDone:false,quizCorrect:false,lastFrom:null,lastTo:null,
-    gamePieces:[],gameOver:false,gameResult:null,gameHistory:[],matchResults:[],pendingNotation:null,scoreMoves:[],savedScores:[]
+    gamePieces:[],gameOver:false,gameResult:null,gameHistory:[],matchResults:[],pendingNotation:null,starTarget:null,scoreMoves:[],savedScores:[]
   };
   destinationsToggle.checked=state.showDestinations;
 
@@ -742,18 +754,16 @@
     if(l.type==='game'){
       practiceCounter.textContent=l.requiredGames?'จบเกม '+state.matchResults.length+' / '+l.requiredGames+' เกม'+(ready?' · ครบเกณฑ์แล้ว ✓':''):'เดินฝ่ายขาวถูก '+state.correctMoves+' / '+l.requiredCorrect+' ตา'+(ready?' · ครบเกณฑ์แล้ว ✓':'');
       var score=state.matchResults.reduce(function(sum,result){return sum+(result==='white'?1:result===null ? 0.5 : 0);},0);
-      practiceRequirement.textContent=l.requiredGames?'เกณฑ์: จบ 3 เกม และเดินฝ่ายขาวถูกอย่างน้อย 3 ตา · คะแนนสะสม '+score+' · แพ้หรือเสมอก็เรียนรู้และผ่านได้':'เกณฑ์: เดินฝ่ายขาวถูกอย่างน้อย 6 ตา · เดินผิดไม่นับ';
-      practiceRequirement.textContent+=' · ฝึกต่อได้จนกด “ยอมรับผ่านบทนี้”';
+      practiceRequirement.textContent='ผ่านเมื่อครบจำนวนเกม · แพ้หรือเสมอก็ผ่านได้';
     }else if(l.piece){
       practiceCounter.textContent=l.type==='notation'?'จดถูก '+state.correctMoves+' / 5 ตา'+(ready?' · ครบเกณฑ์แล้ว ✓':''):l.id==='assessment'?'ผ่าน '+state.correctMoves+' / 5 ด่าน'+(ready?' · ครบทั้ง 5 ด่านแล้ว ✓':''):'เดินถูก '+state.correctMoves+' / '+l.requiredCorrect+' ครั้ง'+(ready?' · ครบเกณฑ์แล้ว ✓':'');
-      practiceRequirement.textContent=l.type==='notation'?'เกณฑ์: เดินตามโจทย์แล้วจดให้ถูก 5 ตา · ต้องจดถูกก่อนจึงนับ':l.id==='assessment'?'เกณฑ์: ทำครบทั้ง 5 ด่านตามลำดับ · เดินผิดลองใหม่ได้':l.type==='pawn'?'เกณฑ์: ผ่านโจทย์เดินตรง กินเฉียงซ้าย และกินเฉียงขวา รวม 3 ครั้ง · เดินผิดไม่นับ':l.challenges?'เกณฑ์: ทำโจทย์ถูกอย่างน้อย '+l.requiredCorrect+' ครั้ง · เดินผิดไม่นับ':'เกณฑ์: เดินถูกอย่างน้อย '+l.requiredCorrect+' ครั้ง · เดินผิดไม่นับ';
-      practiceRequirement.textContent+=' · ครบแล้วฝึกต่อได้ไม่จำกัด จนกด “ยอมรับผ่านบทนี้”';
+      practiceRequirement.textContent='ลองใหม่ได้เสมอ · ครบแล้วกดยอมรับเพื่อไปต่อ';
     }else if(l.type==='quiz'){
       practiceCounter.textContent='ตอบถูก '+state.correctMoves+' / '+(l.requiredCorrect||1)+' ข้อ'+(ready?' · ครบเกณฑ์แล้ว ✓':'');
-      practiceRequirement.textContent=l.coordinateLesson?'เกณฑ์: บอกชื่อช่องถูกครบ 5 ข้อ · ตอบผิดลองใหม่ได้ · ครบแล้วฝึกต่อได้จนกดยอมรับ':'เกณฑ์: ตอบถูกครบ '+l.requiredCorrect+' สถานการณ์ · ตอบผิดลองใหม่ได้ · ครบแล้วทบทวนต่อได้จนกดยอมรับ';
+      practiceRequirement.textContent='ตอบผิดลองใหม่ได้ · ครบแล้วกดยอมรับเพื่อไปต่อ';
     }
-    nextRoundBtn.hidden=!(state.phase==='active'&&state.roundDone&&(l.challenges||l.questions||l.type==='game'));
-    nextRoundBtn.textContent=l.type==='game'?'เปิดเกมฝึกถัดไป →':l.type==='quiz'?'ดูสถานการณ์ถัดไป →':'ฝึกโจทย์ถัดไป →';
+    nextRoundBtn.hidden=!(state.phase==='active'&&state.roundDone&&(l.challenges||l.questions||l.type==='game'||l.piece));
+    nextRoundBtn.textContent=l.type==='game'?'เกมถัดไป →':l.type==='notation'?'โจทย์จดตาถัดไป →':'ภารกิจถัดไป →';
     if(state.phase==='active'&&(isBoardPractice()||l.type==='quiz')){
       mainBtn.disabled=!ready;
       mainBtn.textContent=ready?'ยอมรับผ่านบทนี้ →':l.requiredGames?'จบเกมอีก '+Math.max(0,l.requiredGames-state.matchResults.length)+' เกมเพื่อผ่าน':l.type==='quiz'?'ตอบถูกอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ข้อเพื่อผ่าน':l.id==='assessment'?'ทำอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ด่านเพื่อผ่าน':'เดินถูกอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ครั้งเพื่อผ่าน';
@@ -769,20 +779,22 @@
     var start=task?task.start:l.start;
     if(l.type==='game')state.gamePieces=Rules.clonePieces(task?task.pieces:fullSetup());
     state.current=start?{r:start.r,c:start.c}:null;
+    state.starTarget=null;
     state.promoted=false;state.captured=null;state.selected=false;state.roundDone=false;state.hint=false;
     state.quizCorrect=false;state.gameOver=false;state.gameResult=null;state.gameHistory=[];
-    state.pendingNotation=null;state.scoreMoves=[];notationForm.hidden=true;notationInput.value='';notationInput.readOnly=false;notationInput.removeAttribute('aria-invalid');notationSubmit.disabled=false;
+    state.pendingNotation=null;state.scoreMoves=[];notationForm.hidden=true;notationChoices.innerHTML='';
+    if(state.current&&l.piece&&l.type!=='game'){var starMoves=goalDestinations();if(starMoves.length)state.starTarget=starMoves[0];}
     state.lastFrom=state.lastTo=null;state.focus=state.current||{r:7,c:0};
-    missionEl.textContent=l.requiredGames?'เกมที่ '+(state.roundIndex+1)+' · หาทางให้เรือรุกจนโดยขุนขาวช่วยคุมช่องหนี หรือเล่นต่อจนเกมจบ':task&&task.mission?'โจทย์ที่ '+(state.roundIndex+1)+' · '+task.mission:l.mission;
+    missionEl.textContent=l.requiredGames?'เกมที่ '+(state.roundIndex+1)+' · หาทางรุกจน':task&&task.mission?task.mission:l.type==='notation'?'เดินตามโจทย์ แล้วเลือกบันทึกที่ถูกต้อง':l.piece?'เดิน'+pieceName[activePiece()]+'ไปเก็บดาว':'ดูโจทย์แล้วเลือกคำตอบ';
     boardCaption.textContent=l.type==='game'?(l.requiredGames?'มินิเกมที่ '+(state.roundIndex+1):'เกมฝึกเต็มกระดาน')+' · คุณเล่นฝ่ายขาว':task&&task.mission?'โจทย์ที่ '+(state.roundIndex+1)+' · '+task.mission:state.current?pieceName[activePiece()]+'อยู่ที่ '+squareLabel(state.current):l.caption;
-    feedbackEl.className='feedback';feedbackEl.textContent=l.type==='game'?'เลือกหมากขาวตัวใดก็ได้ · ลองคิดก่อนเดินทุกตา':l.type==='quiz'?'ดูภาพบนกระดาน แล้วเลือกคำตอบ':'เลือก'+pieceName[activePiece()]+' แล้วลองเดินตามภารกิจ';
+    feedbackEl.className='feedback';feedbackEl.textContent=l.type==='game'?'เลือกหมาก แล้วเดินให้ปลอดภัย':l.type==='quiz'?'เลือกคำตอบด้านล่าง':'เดินไปเก็บดาวให้ครบ '+l.requiredCorrect+' ดวง';
     if(l.coordinateLesson){
       if(state.phase==='intro'){
         missionEl.textContent=l.mission;boardCaption.textContent=l.caption;
-        feedbackEl.textContent='อ่านชื่อทุกช่องให้คุ้น แล้วกด “เริ่มตอบชื่อช่อง”';
+        feedbackEl.textContent='ดูชื่อช่อง แล้วเริ่มตอบคำถาม';
       }else{
         state.focus={r:task.target.r,c:task.target.c};
-        feedbackEl.textContent='อ่านแนวตัวอักษรกับเลขแถวของช่องที่มีกรอบ แล้วเลือกคำตอบใต้ภารกิจ';
+        feedbackEl.textContent='ช่องที่ตีกรอบคือช่องไหน?';
       }
     }
     if(l.type==='quiz'&&state.phase==='active')renderQuiz();
@@ -949,6 +961,7 @@
   function goalDestinations(){
     var l=lessons[state.lesson],task=challenge();
     if(!isBoardPractice()||!state.current)return [];
+    if(state.starTarget)return [state.starTarget];
     if(!task||l.type==='game')return moveDestinations();
     if(task.goal)return [task.goal];
     if(task.goals)return task.goals;
@@ -978,6 +991,7 @@
           if(state.phase==='intro'||questionSquare&&(state.hint||state.quizCorrect))s.innerHTML+='<span class="squareCoordinate" aria-hidden="true">'+squareLabel(p)+'</span>';
           if(questionSquare)s.classList.add('coordinateTarget');
         }
+        if(state.starTarget&&!state.roundDone&&!state.pendingNotation&&same(p,state.starTarget))s.innerHTML+='<span class="goalStar" aria-hidden="true">★</span>';
         var pc=pieces.find(function(x){return same(x.at,p);});
         var source=canMove&&state.current&&same(p,state.current);
         if(canMove&&pc&&pc.side==='white'&&(source||l.type==='game'))s.classList.add('selectable');
@@ -992,7 +1006,7 @@
             if(show)s.classList.add(pc&&pc.side==='black'?'capture':'target');
           }
         }
-        s.setAttribute('aria-label',displayFiles[c]+(8-r)+(pc?' '+pieceName[pc.piece]+'ฝ่าย'+(pc.side==='white'?'ขาว':'แดง'): ' ช่องว่าง'));
+        s.setAttribute('aria-label',displayFiles[c]+(8-r)+(state.starTarget&&same(p,state.starTarget)?' ดาวเป้าหมาย':'')+(pc?' '+pieceName[pc.piece]+'ฝ่าย'+(pc.side==='white'?'ขาว':'แดง'): ' ช่องว่าง'));
         s.setAttribute('aria-pressed',String((source&&state.selected)||(state.arrowStart&&same(p,state.arrowStart))||false));
         if(pc)s.innerHTML+=pieceHtml(pc.piece,pc.side);
         boardEl.appendChild(s);
@@ -1003,19 +1017,22 @@
 
   function renderLesson(){
     var l=lessons[state.lesson];
+    missionEl.parentElement.hidden=false;
     appEl.classList.remove('coordinateQuiz');nextRoundHome.appendChild(nextRoundBtn);nextRoundBtn.style.marginTop='';
     clearArrows();
     state.phase='intro';state.current=l.start?{r:l.start.r,c:l.start.c}:null;state.completed=false;state.hint=false;
     state.selected=false;state.promoted=false;state.captured=null;state.focus=state.current||{r:7,c:0};
     state.correctMoves=0;state.roundIndex=0;state.roundDone=false;state.quizCorrect=false;state.lastFrom=state.lastTo=null;
-    state.matchResults=[];state.savedScores=[];state.pendingNotation=null;state.scoreMoves=[];notationForm.hidden=true;
+    state.matchResults=[];state.savedScores=[];state.pendingNotation=null;state.starTarget=null;state.scoreMoves=[];notationForm.hidden=true;notationChoices.innerHTML='';
     if(l.type==='notation'){notationForm.insertAdjacentElement('afterend',nextRoundBtn);nextRoundBtn.style.marginTop='10px';}
     state.tool='move';moveToolBtn.setAttribute('aria-pressed','true');arrowToolBtn.setAttribute('aria-pressed','false');boardWrap.classList.remove('arrowMode');
     lessonTitle.textContent=l.title;
     dayTag.textContent='DAY '+l.day;
-    speechEl.innerHTML=l.speech;
+    speechEl.textContent=l.type==='finish'?'เยี่ยมมาก! พร้อมใช้ความรู้บนกระดานจริง':l.type==='quiz'?'ดูโจทย์ แล้วเลือกคำตอบ':l.type==='notation'?'เดินหมาก แล้วเลือกวิธีจดที่ถูกต้อง':l.piece?'ลากหมากไปเก็บดาว':'มาลองทำภารกิจนี้กัน';
     headingEl.textContent=l.heading;
-    descEl.textContent=l.description;
+    descEl.textContent='';descEl.hidden=true;
+    descMoreEl.textContent=l.description;
+    lessonDetails.open=false;
     ruleEl.textContent=l.rule;
     renderSourceNotes(l);
     missionEl.textContent=l.mission;
@@ -1023,7 +1040,7 @@
     hintBtn.hidden=l.type==='finish';
     retryBtn.hidden=!isBoardPractice()&&l.type!=='quiz';
     feedbackEl.className='feedback';
-    feedbackEl.textContent=l.type==='intro'?'มองกระดานให้คุ้น แล้วกด “เข้าใจแล้ว”':'อ่านคำอธิบาย แล้วกด “'+l.mainText+'”';
+    feedbackEl.textContent=l.type==='intro'?'มองกระดาน แล้วกดเริ่ม':'กดเริ่มเพื่อทำภารกิจ';
     quizBox.hidden=true;quizBox.innerHTML='';
     legendEl.innerHTML='';
     if(l.coordinateLesson)legendEl.innerHTML='<span>อ่านตัวอักษรก่อน แล้วตามด้วยเลขแถว</span>';
@@ -1078,6 +1095,8 @@
   function renderQuiz(){
     var l=lessons[state.lesson],task=challenge();
     quizBox.hidden=false;quizBox.innerHTML='';
+    var prompt=document.createElement('p');prompt.className='quizPrompt';prompt.textContent=task&&task.mission?task.mission:l.mission;quizBox.appendChild(prompt);
+    missionEl.parentElement.hidden=true;
     if(l.coordinateLesson){quizBox.insertAdjacentElement('afterend',nextRoundBtn);nextRoundBtn.style.marginTop='10px';}
     else nextRoundBtn.style.marginTop='';
     (task?task.choices:l.choices).forEach(function(ch){
@@ -1095,17 +1114,32 @@
     });
   }
 
-  function checkStudentNotation(e){
-    e.preventDefault();var record=state.pendingNotation;
-    if(!record||state.completed)return;
-    if(!Notation.matchesNotation(notationInput.value,record)){
-      feedbackEl.className='feedback error';feedbackEl.textContent='ยังไม่ตรงตาที่เดิน · ตรวจอักษรย่อ ช่องต้นทาง ปลายทาง และเครื่องหมาย X / + / # แล้วลองจดใหม่';
-      notationInput.setAttribute('aria-invalid','true');return;
-    }
-    state.pendingNotation=null;state.correctMoves++;state.roundDone=true;
-    notationInput.removeAttribute('aria-invalid');notationInput.readOnly=true;notationInput.blur();notationSubmit.disabled=true;
-    feedbackEl.className='feedback success';feedbackEl.textContent='จดถูก! '+record.text+(record.promotionNote?' · '+record.promotionNote:'')+' · '+(practiceReady()?'ครบเกณฑ์แล้ว ฝึกต่อหรือกดยอมรับได้':'กด “ฝึกโจทย์ถัดไป” เพื่อฝึกตาต่อไป');
-    showToast('จดถูก '+state.correctMoves+' / 5 ✓','good');renderBoard();updatePracticeUI();
+  function notationChoicesFor(record){
+    var abbreviations=Notation.abbreviations,keys=Object.keys(abbreviations),wrongPiece=keys.find(function(key){return key!==record.piece;});
+    var fileList=['ก','ข','ค','ง','จ','ฉ','ช','ญ'],toFile=record.to.charAt(0),toRank=Number(record.to.charAt(1));
+    var shifted=fileList[(fileList.indexOf(toFile)+1)%fileList.length]+toRank;
+    var separator=record.capture?' X '+abbreviations[record.capture]+'.':' - ';
+    var correct=record.text;
+    var distractors=[abbreviations[wrongPiece]+'.'+record.from+separator+record.to+record.suffix,record.abbreviation+'.'+record.from+separator+shifted+record.suffix];
+    var options=[{text:correct,correct:true}].concat(distractors.map(function(text){return {text:text,correct:false};}));
+    var correctAt=state.roundIndex%3;
+    return options.map(function(_,index){return options[(index+correctAt)%options.length];});
+  }
+
+  function renderNotationChoices(record){
+    notationChoices.innerHTML='';
+    notationChoicesFor(record).forEach(function(choice){
+      var button=document.createElement('button');button.type='button';button.className='quizChoice';button.textContent=choice.text;
+      button.addEventListener('click',function(){
+        if(state.completed||!state.pendingNotation||state.roundDone)return;
+        if(!choice.correct){button.classList.add('wrong');button.disabled=true;feedbackEl.className='feedback error';feedbackEl.textContent='ยังไม่ใช่ ลองอีกตัวเลือก';showToast('ลองอีกครั้ง','bad');return;}
+        button.classList.add('correct');notationChoices.querySelectorAll('button').forEach(function(option){option.disabled=true;});
+        state.pendingNotation=null;state.correctMoves++;state.roundDone=true;
+        feedbackEl.className='feedback success';feedbackEl.textContent='จดถูกแล้ว! ⭐';
+        showToast('จดถูก '+state.correctMoves+' / '+lessons[state.lesson].requiredCorrect+' ✓','good');renderBoard();updatePracticeUI();
+      });
+      notationChoices.appendChild(button);
+    });
   }
 
   function scoreText(){
@@ -1248,7 +1282,7 @@
     state.lastFrom={r:state.current.r,c:state.current.c};state.lastTo=dest;
     state.current=dest;state.focus=dest;state.selected=false;
     if(l.type!=='notation')state.correctMoves++;
-    if(l.challenges)state.roundDone=l.type!=='notation';
+    if(l.challenges||l.piece)state.roundDone=l.type!=='notation';
     boardCaption.textContent=pieceName[activePiece()]+'อยู่ที่ '+displayFiles[dest.c]+(8-dest.r);
     var message;
     var task=challenge();
@@ -1265,12 +1299,12 @@
       message=task&&task.success?task.success:'ถูกต้อง! '+pieceName[activePiece()]+' เดินมาถึง '+squareLabel(dest);
     }
     if(l.type==='notation'){
-      state.pendingNotation=notation;notationForm.hidden=false;notationInput.value='';notationSubmit.disabled=false;
-      feedbackEl.className='feedback success';feedbackEl.textContent='เดินถูกแล้ว! ขั้นที่ 2: จดตาที่เพิ่งเดินในช่องบันทึก แล้วกดตรวจ · ยังไม่นับจนกว่าจะจดถูก';
-      renderBoard();updatePracticeUI();notationInput.focus();return;
+      state.pendingNotation=notation;notationForm.hidden=false;renderNotationChoices(notation);
+      feedbackEl.className='feedback';feedbackEl.textContent='เลือกบันทึกที่ตรงกับตานี้';
+      renderBoard();updatePracticeUI();return;
     }
     feedbackEl.className='feedback success';
-    feedbackEl.textContent=message+' · '+(practiceReady()?'ครบเกณฑ์แล้ว! ฝึกต่อได้ หรือกด “ยอมรับผ่านบทนี้”':state.roundDone?'กด “ฝึกโจทย์ถัดไป” เพื่อฝึกเพิ่ม':'เลือกหมากที่ตำแหน่งใหม่ แล้วลองเดินต่อ');
+    feedbackEl.textContent=state.starTarget?'เก็บดาวแล้ว! ⭐':message;
     showToast('เดินถูก '+state.correctMoves+' / '+l.requiredCorrect+' ✓','good');
     renderBoard();updatePracticeUI();
   }
@@ -1365,7 +1399,6 @@
     activateLesson();
   });
   nextRoundBtn.addEventListener('click',nextPracticeRound);
-  notationForm.addEventListener('submit',checkStudentNotation);
   document.getElementById('exportScoreBtn').addEventListener('click',function(){
     if(!state.scoreMoves.length&&!state.savedScores.length)return;
     var url=URL.createObjectURL(new Blob(['\uFEFF'+scoreText()],{type:'text/plain;charset=utf-8'}));
