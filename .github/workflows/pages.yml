@@ -27,6 +27,12 @@ jobs:
       - name: Verify Makruk rules and lesson positions
         run: node tests/makruk-rules.test.cjs
 
+      - name: Verify move notation
+        run: node tests/makruk-notation.test.cjs
+
+      - name: Verify rules curriculum and source references
+        run: node tests/rules-lessons.test.cjs
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
         with:
