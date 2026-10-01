@@ -35,18 +35,19 @@ const lessons = vm.runInContext(source.slice(start, end) + '\nlessons;', context
 no(Object.hasOwn(context, 'document'), 'actual curriculum loads without a DOM');
 no(Object.hasOwn(context, 'localStorage'), 'curriculum data evaluation has no progress side effects');
 const expectedIds = [
-  'board', 'setup', 'king', 'rook', 'knight', 'met', 'khon', 'pawn', 'promotion', 'promoted', 'notation',
-  'review', 'capture', 'defend', 'check', 'escape', 'block', 'take-checker', 'mate', 'draw-rules',
+  'board', 'king', 'rook', 'knight', 'met', 'khon', 'pawn', 'promotion', 'promoted', 'setup',
+  'review', 'capture', 'defend', 'check', 'escape', 'block', 'take-checker', 'mate', 'notation', 'draw-rules',
   'think', 'fair-play', 'game', 'mini', 'assessment', 'finish'
 ];
 check(Array.from(lessons, lesson => lesson.id), expectedIds, 'final 26 stable IDs appear in intended teaching order');
 check(lessons.length, 26, 'final curriculum has 26 lessons');
 check(new Set(lessons.map(lesson => lesson.id)).size, 26, 'all stable IDs are unique');
-check(lessons.filter(lesson => lesson.day === 1).length, 11, 'Day 1 has 11 lessons');
-check(lessons.filter(lesson => lesson.day === 2).length, 15, 'Day 2 has 15 lessons');
-check(lessons.findIndex(lesson => lesson.day === 2), 11, 'Day 2 begins after all 11 Day 1 lessons');
-yes(lessons.slice(0, 11).every(lesson => lesson.day === 1), 'Day 1 lessons form one contiguous section');
-yes(lessons.slice(11).every(lesson => lesson.day === 2), 'Day 2 lessons form one contiguous section');
+check(lessons.filter(lesson => lesson.day === 1).length, 10, 'Day 1 has 10 lessons');
+check(lessons.filter(lesson => lesson.day === 2).length, 16, 'Day 2 has 16 lessons');
+check(lessons.findIndex(lesson => lesson.day === 2), 10, 'Day 2 begins after all 10 Day 1 lessons');
+yes(lessons.slice(0, 10).every(lesson => lesson.day === 1), 'Day 1 lessons form one contiguous section');
+yes(lessons.slice(10).every(lesson => lesson.day === 2), 'Day 2 lessons form one contiguous section');
+check(lessons.findIndex(lesson => lesson.id === 'setup'), 9, 'full setup board is lesson 10 after piece-by-piece learning');
 const byId = id => lessons.find(lesson => lesson.id === id);
 
 // The supplied 2569 source has 36 PDF pages. Each source note must point inside
@@ -62,7 +63,7 @@ for (const lesson of lessons) {
 
 const setup = byId('setup');
 check(setup.type, 'quiz', 'setup uses short questions');
-check(setup.day, 1, 'setup belongs to Day 1');
+check(setup.day, 1, 'setup belongs to Day 1 after the piece introductions');
 check(setup.requiredCorrect, 3, 'setup requires three correct answers');
 check(setup.questions.length, 3, 'setup contains three questions');
 const expectedCounts = { king: 1, rook: 2, knight: 2, khon: 2, met: 1, pawn: 8 };
@@ -95,15 +96,15 @@ for (const [i, question] of setup.questions.entries()) {
 
 const notation = byId('notation');
 check(notation.type, 'notation', 'notation uses move-then-write practice');
-check(notation.day, 1, 'notation belongs to Day 1');
+check(notation.day, 2, 'notation follows the check and checkmate lessons on Day 2');
 check(notation.requiredCorrect, 5, 'notation requires five correct written moves');
 check(notation.challenges.length, 5, 'notation has five different move scenarios');
-check(Array.from(notation.challenges, task => task.expectedNotation), ['มข1-ง2', 'รก4Xง4', 'รก4-ญ4+', 'บง5-ง6', 'รก1-ญ1#'], 'expected full-origin Thai records cover all five scenarios');
+check(Array.from(notation.challenges, task => task.expectedNotation), ['มข1-ง2', 'รก4-ง4', 'บง5-ง6', 'รก4Xง4', 'รก1-ญ1#'], 'expected full-origin Thai records cover all five scenarios');
 const expectedEffects = [
   { capture: null, check: false, mate: false, promotion: false },
-  { capture: 'pawn', check: false, mate: false, promotion: false },
-  { capture: null, check: true, mate: false, promotion: false },
+  { capture: null, check: false, mate: false, promotion: false },
   { capture: null, check: false, mate: false, promotion: true },
+  { capture: 'pawn', check: false, mate: false, promotion: false },
   { capture: null, check: true, mate: true, promotion: false }
 ];
 for (const [i, task] of notation.challenges.entries()) {
@@ -127,7 +128,7 @@ for (const [i, task] of notation.challenges.entries()) {
 }
 check(Notation.formatMove([{ piece: 'knight', side: 'white', at: pos('b', 1) }], pos('b', 1), pos('f', 3)), null, 'incorrect b1-f3 example is not taught as a legal knight move');
 
-for (const [id, count, day] of [['setup', 3, 1], ['draw-rules', 4, 2], ['fair-play', 4, 2]]) {
+for (const [id, count, day] of [['setup', 3, 1], ['draw-rules', 4, 2], ['fair-play', 3, 2]]) {
   const lesson = byId(id);
   check(lesson.type, 'quiz', `${id}: quiz type`);
   check(lesson.day, day, `${id}: correct teaching day`);
@@ -146,14 +147,7 @@ for (const [id, count, day] of [['setup', 3, 1], ['draw-rules', 4, 2], ['fair-pl
   }
 }
 const draw = byId('draw-rules');
-const bothHaveMaterial = draw.questions[0].pieces;
-no(bothHaveMaterial.some(piece => piece.piece === 'pawn'), 'board-count example has no unpromoted pawns');
-yes(['white', 'black'].every(side => bothHaveMaterial.some(piece => piece.side === side && piece.piece !== 'king')), 'board-count example has material beyond a king on both sides');
-const bareKingCase = draw.questions[1].pieces;
-check(bareKingCase.length, 5, 'material-count example really has five pieces, so initial count is six');
-check(bareKingCase.filter(piece => piece.side === 'black').length, 1, 'material-count example has one bare opposing king');
-check(bareKingCase.filter(piece => piece.piece === 'rook' && piece.side === 'white').length, 2, 'material-count example really has two attacking rooks (limit eight)');
-no(bareKingCase.some(piece => piece.piece === 'pawn'), 'material-count example has no unpromoted pawns');
-check(Array.from(draw.questions, question => question.choices.findIndex(choice => choice.correct)), [0, 1, 2, 0], 'draw answers cover board count, initial material count, final attacking move and repetition');
+check(Array.from(draw.questions, question => question.choices.findIndex(choice => choice.correct)), [0, 0, 0, 0], 'beginner draw questions teach no winner, stalemate, agreement and asking the teacher');
+yes(draw.sourceNotes.some(note => note.text.includes('ศักดิ์หมาก')), 'advanced draw-counting details remain available in teacher notes');
 
-console.log(`Rules curriculum verified: ${assertions} assertions passed; 26 lessons / Day 1: 11 / Day 2: 15 / 5 notation moves / 11 new rule questions.`);
+console.log(`Rules curriculum verified: ${assertions} assertions passed; 26 lessons / Day 1: 10 / Day 2: 16 / 5 notation moves / 11 new rule questions.`);

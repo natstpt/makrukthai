@@ -24,7 +24,7 @@
         caption:title,hint:questions[0].hint,mainText:'เริ่มตอบคำถาม',sourceNotes:sourceNotes};
     }
 
-    var setup=quiz('setup','จัดหมากก่อนเริ่ม',2,
+    var setup=quiz('setup','จัดหมากก่อนเริ่ม',1,
       'ก่อนเล่น มาดู<strong>วิธีตั้งหมาก</strong>และใครเดินก่อนกัน',
       'ตั้งหมากให้ครบ · ขาวเริ่มก่อน',
       'แต่ละฝ่ายมีหมาก 16 ตัว ตั้งตามภาพ แล้วขาวเดินก่อน จากนั้นแดงเดินสลับกัน',
@@ -142,7 +142,7 @@
     var result=[];
     previous.forEach(function(lesson){
       result.push(lesson);
-      if(lesson.id==='check')result.push(setup);
+      if(lesson.id==='promoted')result.push(setup);
       if(lesson.id==='mate')result.push(notation);
       if(lesson.id==='mate')result.push(drawRules);
       if(lesson.id==='think')result.push(fairPlay);
