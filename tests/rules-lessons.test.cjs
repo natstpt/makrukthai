@@ -128,6 +128,20 @@ for (const [i, task] of notation.challenges.entries()) {
 }
 check(Notation.formatMove([{ piece: 'knight', side: 'white', at: pos('b', 1) }], pos('b', 1), pos('f', 3)), null, 'incorrect b1-f3 example is not taught as a legal knight move');
 
+const block = byId('block');
+check(block.challenges.length, 3, 'block lesson offers three piece types');
+for (const [i, task] of block.challenges.entries()) {
+  const board = [{ piece: task.piece, side: 'white', at: task.start }].concat(task.friends || [], task.enemies || []);
+  const king = board.find(piece => piece.side === 'white' && piece.piece === 'king');
+  const target = task.goals[0];
+  const replies = board.filter(piece => piece.side === 'white').flatMap(piece => Rules.legalDestinations(board, piece.at).map(at => ({ from: piece.at, to: at })));
+  yes(Rules.inCheck(board, 'white'), `block ${i + 1}: white king starts in check`);
+  check(Rules.legalDestinations(board, king.at).length, 0, `block ${i + 1}: king cannot escape the check`);
+  check(replies.length, 1, `block ${i + 1}: only one legal response is available`);
+  yes(same(replies[0].to, target), `block ${i + 1}: the only legal response blocks the rook`);
+  no(Rules.inCheck(Rules.applyMove(board, task.start, target), 'white'), `block ${i + 1}: blocking move makes the king safe`);
+}
+
 for (const [id, count, day] of [['setup', 3, 1], ['draw-rules', 4, 2], ['fair-play', 3, 2]]) {
   const lesson = byId(id);
   check(lesson.type, 'quiz', `${id}: quiz type`);
