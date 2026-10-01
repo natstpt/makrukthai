@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#20211f">
   <meta name="description" content="Makruk Learn บทเรียนหมากรุกไทยแบบทีละขั้น สำหรับเด็กและผู้เริ่มต้น">
+  <meta name="author" content="นายณัฐกมล สุนทรพิทักษ์">
   <title>Makruk Learn | เรียนหมากรุกไทยทีละขั้น</title>
   <style>
     :root{
@@ -19,8 +20,8 @@
     body{font-family:var(--font);background:var(--bg);color:var(--ink);overflow:hidden}
     button{font:inherit}
     [hidden]{display:none!important}
-    button:focus-visible,input:focus-visible{outline:3px solid #8ee2d0;outline-offset:3px}
-    .app{height:100dvh;display:grid;grid-template-rows:58px 1fr}
+    button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid #8ee2d0;outline-offset:3px}
+    .app{height:100dvh;display:grid;grid-template-rows:58px minmax(0,1fr) auto}
     .topbar{display:flex;align-items:center;padding:0 16px;gap:12px;background:#1d1e1c;border-bottom:1px solid #343632;z-index:20}
     .brand{display:flex;align-items:center;gap:9px;font-weight:950;letter-spacing:.2px;white-space:nowrap}
     .brandmark{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(145deg,var(--accent),var(--accent2));color:#073d36;font-weight:950;box-shadow:inset 0 -3px rgba(0,0,0,.12)}
@@ -40,7 +41,7 @@
     .arrowActions{display:flex;gap:2px}
     .destinationsControl{display:flex;align-items:center;gap:7px;min-height:40px;color:#d4dace;font-size:13px;cursor:pointer}
     .destinationsControl input{width:18px;height:18px;margin:0;accent-color:var(--arrow);cursor:pointer}
-    .boardWrap{width:min(100%,calc(100dvh - 248px));max-width:860px;aspect-ratio:1;flex-shrink:0;position:relative;user-select:none;touch-action:manipulation}
+    .boardWrap{width:min(100%,calc(100dvh - 304px));max-width:860px;aspect-ratio:1;flex-shrink:0;position:relative;user-select:none;touch-action:manipulation}
     .board{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));grid-template-rows:repeat(8,minmax(0,1fr));width:100%;height:100%;box-shadow:0 12px 38px rgba(0,0,0,.25);position:relative;z-index:1;background:var(--board);outline:1.5px solid var(--boardLine)}
     .square{position:relative;display:grid;place-items:center;cursor:default;min-width:0;min-height:0;border:0;border-right:1.5px solid var(--boardLine);border-bottom:1.5px solid var(--boardLine);padding:0;background:transparent;border-radius:0;overflow:hidden;touch-action:manipulation}
     .square:nth-child(8n){border-right:0}
@@ -133,6 +134,14 @@
     .modalHead{position:sticky;top:0;display:flex;align-items:center;gap:10px;padding:16px 18px;background:#f7f5eb;border-bottom:1px solid #d9ddd4;z-index:2}
     .modalHead h2{margin:0;font-size:22px}.modalHead button{margin-left:auto;border:0;background:#e8ebe4;width:36px;height:36px;border-radius:10px;cursor:pointer;font-size:18px}
     .modalBody{padding:18px}
+    .siteFooter{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 16px;background:#1d1e1c;border-top:1px solid #343632}
+    .footerByline{display:flex;align-items:center;gap:9px;min-width:0;font-size:13px;line-height:1.4}.footerByline small{display:block;color:#aab4a3;font-size:10px}.footerByline strong{overflow-wrap:anywhere}
+    .authorBadge{display:grid;place-items:center;width:32px;height:32px;flex-shrink:0;border:1px solid #5d7051;border-radius:50%;background:#2d3d28;color:#d6e8c5;font-weight:900}
+    .footerActions{display:flex;gap:7px;flex-shrink:0}.footerBtn{min-height:36px;border:1px solid #48543e;border-radius:9px;background:#2b3426;color:#d9e8cf;padding:7px 12px;cursor:pointer;font-size:12px;font-weight:800}.footerBtn:hover{background:#3b4b31}
+    .infoModal{width:min(680px,96vw)}.infoModal:focus{outline:none}.infoModal a{color:#23624f;text-underline-offset:3px;overflow-wrap:anywhere}
+    .authorProfile{display:grid;grid-template-columns:156px minmax(0,1fr);gap:22px;align-items:center}.authorPortrait{margin:0;text-align:center}.portraitPlaceholder{aspect-ratio:4/5;border:2px dashed #a6b49b;border-radius:18px;background:#edf2e7;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:14px;color:#627956;font-size:12px}.portraitPlaceholder svg{width:72px;height:72px}.authorPortrait figcaption{color:#6d7d65;font-size:11px;margin-top:8px}
+    .authorDetails h3{margin:0 0 8px;font-size:24px;line-height:1.45}.authorDetails p{margin:8px 0;line-height:1.6}.authorRole{color:#3f7258;font-weight:800}.infoIntro{margin:0 0 16px;color:#596b60;line-height:1.6}
+    .creditList{display:grid;gap:12px}.creditCard{border:1px solid #d5dfce;border-radius:13px;padding:14px;background:white}.creditCard h3{font-size:16px;margin:0 0 7px}.creditCard p{font-size:13px;line-height:1.65;margin:0;color:#506150}.creditLinks{display:flex;gap:5px 12px;flex-wrap:wrap;margin-top:5px}.creditLinks a{display:inline-flex;align-items:center;min-height:40px;font-size:13px;font-weight:800}.creditNotice{font-size:12px;color:#66745e;line-height:1.6;margin:16px 0 0}
     .lessonGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
     .lessonCard{border:1px solid #d9dfd6;background:white;border-radius:14px;padding:13px;display:flex;gap:11px;align-items:center;cursor:pointer}
     .lessonCard:hover{border-color:#8abf76}
@@ -174,15 +183,17 @@
       .app.coordinateQuiz .lessonBody{padding-top:12px}
     }
     @media(max-width:600px){
-      .app{grid-template-rows:52px auto}.topbar{padding:0 9px;gap:6px}.brand{font-size:14px;gap:6px}.brand small{display:none}.brandmark{width:30px;height:30px}.topActions{gap:4px}.topBtn{padding:7px 8px;font-size:12px}
+      .app{grid-template-rows:52px auto auto}.topbar{padding:0 9px;gap:6px}.brand{font-size:14px;gap:6px}.brand small{display:none}.brandmark{width:30px;height:30px}.topActions{gap:4px}.topBtn{padding:7px 8px;font-size:12px}
       .desktop{padding:0;gap:0}.boardArea{border-radius:0;padding:10px;gap:9px}.boardWrap{width:100%;max-width:none}.boardTools{display:grid;grid-template-columns:1fr auto;gap:3px}.toolGroup{grid-column:1/-1}.toolGroup .boardTool{flex:1}.boardTool{font-size:12px;padding:6px 8px;min-height:42px}.destinationsControl{font-size:12px}.arrowActions{margin-left:auto}
       .lessonPanel{border-radius:0;border-left:0;border-right:0}.lessonHead{height:46px}.lessonBody{padding:17px 14px}
       .coach{width:52px;height:52px;flex-basis:52px;font-size:27px;border-radius:14px}.speech{font-size:14px;padding:12px}
       .boardMeta{display:block;height:104px}.nextRoundBtn{margin-top:6px}
       .lessonGrid,.planDays{grid-template-columns:1fr}
       .rulesLink span{display:none}
+      .siteFooter{padding:12px 14px;flex-wrap:wrap;gap:10px}.footerByline{font-size:13px}.footerActions{width:100%}.footerBtn{min-height:44px;flex:1;font-size:13px}
+      .authorProfile{grid-template-columns:1fr;gap:18px;text-align:center}.authorPortrait{width:144px;justify-self:center}.authorDetails h3{font-size:22px}.modalHead h2{font-size:19px}
     }
-    @media print{body{overflow:visible;background:white}.topbar,.boardArea,.lessonPanel{display:none}.overlay{position:static!important;display:block!important;background:white;padding:0}.modal{width:100%;max-height:none;box-shadow:none}.modalHead button{display:none}.modalBody{padding:0}.planDays{display:block}.planDay{margin-bottom:14px}}
+    @media print{body{overflow:visible;background:white}.topbar,.boardArea,.lessonPanel,.siteFooter,#authorOverlay,#creditsOverlay{display:none!important}.overlay{position:static!important;display:block!important;background:white;padding:0}.modal{width:100%;max-height:none;box-shadow:none}.modalHead button{display:none}.modalBody{padding:0}.planDays{display:block}.planDay{margin-bottom:14px}}
   </style>
 </head>
 <body>
@@ -299,6 +310,13 @@
       </div>
     </aside>
   </main>
+  <footer class="siteFooter" aria-label="ผู้จัดทำและเครดิต">
+    <div class="footerByline"><span class="authorBadge" aria-hidden="true">ณ</span><div><small>ผู้จัดทำสื่อการสอน</small><strong>นายณัฐกมล สุนทรพิทักษ์</strong></div></div>
+    <nav class="footerActions" aria-label="ข้อมูลเว็บไซต์">
+      <button class="footerBtn" id="authorBtn" type="button" aria-haspopup="dialog" aria-controls="authorOverlay">ผู้จัดทำ</button>
+      <button class="footerBtn" id="creditsBtn" type="button" aria-haspopup="dialog" aria-controls="creditsOverlay">เครดิต</button>
+    </nav>
+  </footer>
 </div>
 
 <div class="overlay" id="menuOverlay">
@@ -337,6 +355,44 @@
       <div style="margin-top:15px;background:#e8f3e3;border-radius:13px;padding:13px 15px"><b>เป้าหมายปลายหลักสูตร:</b> จัดกระดานได้ · เดินหมากถูก · เข้าใจเบี้ยหงาย · รู้จักรุก/หนีรุก/รุกจน · เล่นจบเกมได้ · เริ่มคิดก่อนเดิน 1–2 ตา</div>
     </div>
   </div>
+</div>
+
+<div class="overlay" id="authorOverlay">
+  <section class="modal infoModal" role="dialog" aria-modal="true" aria-labelledby="authorDialogTitle" tabindex="-1">
+    <div class="modalHead"><h2 id="authorDialogTitle">ผู้จัดทำ</h2><button type="button" data-close="authorOverlay" aria-label="ปิดข้อมูลผู้จัดทำ">×</button></div>
+    <div class="modalBody authorProfile">
+      <figure class="authorPortrait">
+        <!-- Replace this placeholder with the author's photo when supplied. -->
+        <div class="portraitPlaceholder" id="authorPhotoPlaceholder">
+          <svg viewBox="0 0 96 96" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><circle cx="48" cy="30" r="16"/><path d="M16 82v-6a32 32 0 0164 0v6z"/></svg>
+          <span>พื้นที่สำหรับรูปผู้จัดทำ</span>
+        </div>
+        <figcaption>เตรียมไว้สำหรับเพิ่มรูปภายหลัง</figcaption>
+      </figure>
+      <div class="authorDetails">
+        <h3>นายณัฐกมล สุนทรพิทักษ์</h3>
+        <p class="authorRole">ผู้จัดทำสื่อการสอน Makruk Learn</p>
+        <p>สื่อการสอนหมากรุกไทยแบบทีละขั้น สำหรับผู้เริ่มต้น เรียนรู้ผ่านการลงมือเดินบนกระดาน</p>
+        <p><a href="https://github.com/natstpt/makrukthai" target="_blank" rel="noopener">ดูโครงการบน GitHub ↗</a></p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="overlay" id="creditsOverlay">
+  <section class="modal infoModal" role="dialog" aria-modal="true" aria-labelledby="creditsDialogTitle" tabindex="-1">
+    <div class="modalHead"><h2 id="creditsDialogTitle">เครดิตและแหล่งที่มา</h2><button type="button" data-close="creditsOverlay" aria-label="ปิดเครดิต">×</button></div>
+    <div class="modalBody">
+      <p class="infoIntro">ขอบคุณโครงการและแหล่งข้อมูลที่ช่วยให้สื่อการสอนนี้เกิดขึ้น โดยแยกส่วนที่นำมาใช้กับข้อมูลอ้างอิงไว้อย่างชัดเจน</p>
+      <div class="creditList">
+        <article class="creditCard"><h3>โค้ดเว็บไซต์และระบบบทเรียน</h3><p>กระดาน แบบฝึก การตรวจตาเดิน และการจดหมากพัฒนาภายในโครงการ Makruk Learn หน้าเว็บใช้ HTML, CSS และ JavaScript โดยไม่โหลดไลบรารีภายนอก</p><div class="creditLinks"><a href="https://github.com/natstpt/makrukthai" target="_blank" rel="noopener">ดูซอร์สโค้ดเว็บไซต์ ↗</a></div></article>
+        <article class="creditCard"><h3>ภาพหมาก SVG · Makruk Ada</h3><p>นำภาพหมาก 21 ไฟล์จากโครงการ PyChess Variants ของ gbtami มาเก็บโดยไม่แก้ไข ใช้ชุดขาว–แดงบนกระดาน ใบอนุญาตของโครงการต้นทาง: GNU AGPL v3</p><div class="creditLinks"><a href="https://github.com/gbtami/pychess-variants/tree/master/static/images/pieces/makruk/ada" target="_blank" rel="noopener">ชุดภาพต้นทาง ↗</a><a href="assets/pieces/makruk/ada/UPSTREAM-LICENSE.txt" target="_blank" rel="noopener">อ่านใบอนุญาต</a><a href="https://github.com/natstpt/makrukthai/blob/main/assets/pieces/makruk/ada/SOURCE.md" target="_blank" rel="noopener">ที่มาและรายการไฟล์ ↗</a></div></article>
+        <article class="creditCard"><h3>แหล่งอ้างอิงวิธีเดินหมาก</h3><p>ใช้คำอธิบาย Makruk ของ PyChess และ GNU XBoard ประกอบการตรวจวิธีเดิน เป็นข้อมูลอ้างอิง ไม่ใช่โค้ดที่คัดลอกมารันในเว็บนี้</p><div class="creditLinks"><a href="https://www.pychess.org/variants/makruk" target="_blank" rel="noopener">PyChess · Makruk ↗</a><a href="https://www.gnu.org/software/xboard/whats_new/rules/Makruk.html" target="_blank" rel="noopener">GNU XBoard · Makruk ↗</a></div></article>
+        <article class="creditCard"><h3>กติกาการแข่งขันหมากรุกไทย พ.ศ. 2569</h3><p>เอกสารของสมาคมกีฬากีฬาไทยแห่งประเทศไทย ในพระบรมราชูปถัมภ์ ใช้ไฟล์ต้นฉบับที่ผู้จัดทำส่งมาโดยไม่แก้ไข ลิขสิทธิ์เอกสารยังเป็นของเจ้าของสิทธิ์ตามต้นฉบับ แยกจากโค้ดเว็บไซต์และภาพหมาก</p><div class="creditLinks"><a href="assets/rules/makruk-rules-2569.pdf" target="_blank" rel="noopener">เปิดกติกา PDF</a><a href="https://github.com/natstpt/makrukthai/blob/main/assets/rules/SOURCE.md" target="_blank" rel="noopener">รายละเอียดที่มา ↗</a></div></article>
+      </div>
+      <p class="creditNotice">เครดิตนี้ไม่ใช่การรับรองเว็บไซต์จากเจ้าของแหล่งข้อมูล และไม่ได้กำหนดว่าไฟล์ทุกประเภทในโครงการใช้ใบอนุญาตเดียวกัน โปรดอ่านเงื่อนไขของแต่ละแหล่งก่อนนำไปใช้ต่อ</p>
+    </div>
+  </section>
 </div>
 
 <script src="makruk-rules.js"></script>
@@ -1282,15 +1338,23 @@
     });
   }
 
+  var overlayOpener=null;
   function openOverlay(id){
     if(id==='menuOverlay')buildLessonGrid();
     if(id==='planOverlay'){
       document.getElementById('startDay2Btn').disabled=state.unlocked<day2Start;
       document.getElementById('day2AccessHint').textContent=state.unlocked<day2Start?'เรียนวันที่ 1 ให้ครบ '+day2Start+' บทก่อน แล้วปุ่มนี้จะเปิด':'พร้อมแล้ว! เปิดวันที่ 2 หรือเลือกบทที่ปลดล็อกจากสารบัญได้';
     }
-    document.getElementById(id).classList.add('open');
+    overlayOpener=document.activeElement;
+    var overlay=document.getElementById(id),modal=overlay.querySelector('.modal');
+    overlay.classList.add('open');modal.scrollTop=0;
+    (modal.hasAttribute('tabindex')?modal:modal.querySelector('button')).focus({preventScroll:true});
   }
-  function closeOverlay(id){document.getElementById(id).classList.remove('open');}
+  function closeOverlay(id){
+    document.getElementById(id).classList.remove('open');
+    if(overlayOpener&&overlayOpener.isConnected)overlayOpener.focus({preventScroll:true});
+    overlayOpener=null;
+  }
 
   mainBtn.addEventListener('click',function(){
     if(state.completed){nextLesson();return;}
@@ -1345,6 +1409,8 @@
   prevBtn.addEventListener('click',function(){if(state.lesson>0){state.lesson--;renderLesson();}});
   document.getElementById('menuBtn').addEventListener('click',function(){openOverlay('menuOverlay');});
   document.getElementById('planBtn').addEventListener('click',function(){openOverlay('planOverlay');});
+  document.getElementById('authorBtn').addEventListener('click',function(){openOverlay('authorOverlay');});
+  document.getElementById('creditsBtn').addEventListener('click',function(){openOverlay('creditsOverlay');});
   document.getElementById('startDay2Btn').addEventListener('click',function(){if(state.unlocked<day2Start)return;state.lesson=day2Start;closeOverlay('planOverlay');renderLesson();});
   document.querySelectorAll('[data-close]').forEach(function(b){b.addEventListener('click',function(){closeOverlay(b.dataset.close);});});
   document.querySelectorAll('.overlay').forEach(function(o){o.addEventListener('click',function(e){if(e.target===o)closeOverlay(o.id);});});
@@ -1355,6 +1421,17 @@
     }
   });
   document.addEventListener('keydown',function(e){
+    var overlay=document.querySelector('.overlay.open');
+    if(overlay){
+      if(e.key==='Escape'){e.preventDefault();closeOverlay(overlay.id);}
+      else if(e.key==='Tab'){
+        var focusable=Array.from(overlay.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex="0"]')).filter(function(el){return el.getClientRects().length>0;});
+        var first=focusable[0],last=focusable[focusable.length-1],active=document.activeElement;
+        if(first&&e.shiftKey&&(active===first||!focusable.includes(active))){e.preventDefault();last.focus();}
+        else if(first&&!e.shiftKey&&active===last){e.preventDefault();first.focus();}
+      }
+      return;
+    }
     var target=e.target;
     if(target&&((target.matches&&target.matches('input,textarea,select'))||target.isContentEditable))return;
     if(e.key==='Escape'){
