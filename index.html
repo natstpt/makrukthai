@@ -59,6 +59,10 @@
     .coord{position:absolute;font-weight:900;font-size:clamp(10px,1.25vw,17px);opacity:.8;pointer-events:none}
     .rank{left:7px;top:4px}.file{right:7px;bottom:3px}
     .square .coord{color:#665a29;font-weight:700;opacity:.88}
+    .squareCoordinate{position:absolute;font-size:clamp(13px,2.15vw,25px);font-weight:800;color:#665a29;pointer-events:none;line-height:1}
+    .square.coordinateTarget:before{content:"";position:absolute;inset:8%;border:4px solid #355c22;z-index:6;pointer-events:none}
+    .square.coordinateTarget{background:rgba(109,158,68,.15)}
+    .square.coordinateTarget .squareCoordinate{color:#284e1b}
     .piece{position:absolute;width:88%;height:88%;display:block;z-index:4;pointer-events:none}
     .piece.big{width:88%;height:88%}
     .piece img{display:block;width:100%;height:100%;object-fit:contain}
@@ -148,11 +152,16 @@
     .quizBox{display:grid;gap:9px;margin-top:14px}
     .quizChoice{border:1px solid #454943;background:#2b2e2a;color:#edf0ea;border-radius:11px;padding:11px 12px;text-align:left;cursor:pointer;font-weight:800}
     .quizChoice:hover{background:#343833}.quizChoice.correct{background:#244b29;border-color:#62a968}.quizChoice.wrong{background:#4a2925;border-color:#a65c51}
+    .app.coordinateQuiz #quizBox{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .app.coordinateQuiz .quizChoice{text-align:center;font-size:18px;min-height:52px}
     .celebrate{text-align:center;padding:18px 0 3px}.celebrate .big{font-size:54px}.celebrate h2{margin:4px 0}.celebrate p{color:#bfc4bc}
     @media(max-width:920px){
       body{overflow:auto;background:#20211f}.app{height:auto;min-height:100dvh}.desktop{grid-template-columns:1fr;grid-template-rows:auto auto;padding:8px;gap:8px}
       .boardArea{min-height:auto}.boardWrap{width:min(100%,66dvh)}.lessonPanel{min-height:520px}.lessonBody{overflow:visible}
       .topBtn.planText span{display:none}.topBtn.planText:after{content:"แผนสอน"}
+      .app.coordinateQuiz .coachRow,.app.coordinateQuiz .lessonExplain>h1,.app.coordinateQuiz .lessonExplain>p,.app.coordinateQuiz #ruleCard,.app.coordinateQuiz .path{display:none}
+      .app.coordinateQuiz .lessonExplain,.app.coordinateQuiz .mission{margin-top:0}
+      .app.coordinateQuiz .lessonBody{padding-top:12px}
     }
     @media(max-width:600px){
       .app{grid-template-rows:52px auto}.topbar{padding:0 9px;gap:6px}.brand{font-size:14px;gap:6px}.brand small{display:none}.brandmark{width:30px;height:30px}.topActions{gap:4px}.topBtn{padding:7px 8px;font-size:12px}
@@ -326,6 +335,8 @@
   var destinationsToggle = document.getElementById('destinationsToggle');
   var retryBtn = document.getElementById('retryBtn');
   var nextRoundBtn = document.getElementById('nextRoundBtn');
+  var nextRoundHome = nextRoundBtn.parentElement;
+  var appEl = document.querySelector('.app');
   var practiceCard = document.getElementById('practiceCard');
   var practiceCounter = document.getElementById('practiceCounter');
   var practiceRequirement = document.getElementById('practiceRequirement');
@@ -366,16 +377,23 @@
 
   var lessons = [
     {
-      title:'รู้จักกระดาน',day:1,type:'intro',
-      speech:'ก่อนเดินหมาก เรามารู้จักสนามกันก่อน กระดานหมากรุกไทยมี <strong>8 × 8 = 64 ช่อง</strong>',
-      heading:'สนามของหมากรุกไทย',
-      description:'ผู้เล่นมีคนละ 16 ตัว เป้าหมายคือทำให้ขุนฝ่ายตรงข้าม “รุกจน” จนไม่มีทางหนี',
-      rule:'จำก่อนเพียง 2 อย่าง: กระดาน 8 × 8 และต้องปกป้องขุน',
-      mission:'มองหาตัวอักษร a–h และเลข 1–8 รอบกระดาน แล้วกด “เข้าใจแล้ว”',
-      caption:'บท 1 · กระดาน 8 × 8',
-      hint:'ไฟล์ a–h เรียงจากซ้ายไปขวา ส่วนแถว 1–8 เรียงจากล่างขึ้นบน',
+      title:'รู้จักกระดาน',day:1,type:'quiz',coordinateLesson:true,requiredCorrect:5,
+      speech:'กระดานมี <strong>8 × 8 = 64 ช่อง</strong> ทุกช่องมีชื่อ เช่น <strong>ก1</strong> หรือ <strong>ฉ8</strong> ดูชื่อทุกช่องก่อน แล้วค่อยลองตอบกัน',
+      heading:'กระดาน · อ่านชื่อช่อง',
+      description:'อ่านตัวอักษรจากแนวนอน ก ข ค ง จ ฉ ช ญ แล้วตามด้วยเลขแถว 1–8 โดยแถว 1 อยู่ด้านล่าง และแถว 8 อยู่ด้านบน',
+      rule:'ชื่อช่อง = ตัวอักษรแนวนอน + เลขแถว เช่น ฉ + 8 = ฉ8',
+      mission:'ดูชื่อทุกช่องให้คุ้น แล้วกด “เริ่มตอบชื่อช่อง” จากนั้นบอกว่าช่องที่มีกรอบสี่เหลี่ยมชื่ออะไร',
+      caption:'ชื่อครบ 64 ช่อง · ก1 ถึง ญ8',
+      hint:'ตัวอักษรอ่านจากซ้ายไปขวา ส่วนเลขแถวอ่านจากล่างขึ้นบน ลองเริ่มจาก ก1 ที่มุมล่างซ้าย',
       pieces:[],
-      mainText:'เข้าใจแล้ว'
+      questions:[
+        {target:pos('f',8),pieces:[],mission:'ช่องที่มีกรอบสี่เหลี่ยมชื่ออะไร?',choices:[{text:'ฉ7',correct:false},{text:'จ8',correct:false},{text:'ฉ8',correct:true}],hint:'ช่องนี้อยู่แนว ฉ และแถว 8 อ่านตัวอักษรก่อนเลข',explanation:'ถูกต้อง! แนว ฉ + แถว 8 = ฉ8'},
+        {target:pos('a',1),pieces:[],mission:'ช่องที่มีกรอบสี่เหลี่ยมชื่ออะไร?',choices:[{text:'ก1',correct:true},{text:'ก2',correct:false},{text:'ข1',correct:false}],hint:'มุมล่างซ้ายอยู่แนว ก และแถว 1',explanation:'ถูกต้อง! แนว ก + แถว 1 = ก1'},
+        {target:pos('h',5),pieces:[],mission:'ช่องที่มีกรอบสี่เหลี่ยมชื่ออะไร?',choices:[{text:'ช5',correct:false},{text:'ญ5',correct:true},{text:'ญ4',correct:false}],hint:'ช่องนี้อยู่แนวขวาสุด ญ และแถว 5',explanation:'ถูกต้อง! แนว ญ + แถว 5 = ญ5'},
+        {target:pos('c',3),pieces:[],mission:'ช่องที่มีกรอบสี่เหลี่ยมชื่ออะไร?',choices:[{text:'ค4',correct:false},{text:'ข3',correct:false},{text:'ค3',correct:true}],hint:'ลากสายตาจาก ค ด้านล่าง ขึ้นไปจนถึงแถว 3',explanation:'ถูกต้อง! แนว ค + แถว 3 = ค3'},
+        {target:pos('e',6),pieces:[],mission:'ช่องที่มีกรอบสี่เหลี่ยมชื่ออะไร?',choices:[{text:'จ6',correct:true},{text:'จ5',correct:false},{text:'ฉ6',correct:false}],hint:'ลากสายตาจาก จ ด้านล่าง ขึ้นไปจนถึงแถว 6',explanation:'ถูกต้อง! แนว จ + แถว 6 = จ6'}
+      ],
+      mainText:'เริ่มตอบชื่อช่อง →'
     },
     {
       title:'ขุน',day:1,type:'move',piece:'king',start:pos('d',4),
@@ -639,7 +657,7 @@
       practiceRequirement.textContent+=' · ครบแล้วฝึกต่อได้ไม่จำกัด จนกด “ยอมรับผ่านบทนี้”';
     }else if(l.type==='quiz'){
       practiceCounter.textContent='ตอบถูก '+state.correctMoves+' / '+(l.requiredCorrect||1)+' ข้อ'+(ready?' · ครบเกณฑ์แล้ว ✓':'');
-      practiceRequirement.textContent='เกณฑ์: ตอบถูกครบ 3 สถานการณ์ · ตอบผิดลองใหม่ได้ · ครบแล้วทบทวนต่อได้จนกดยอมรับ';
+      practiceRequirement.textContent=l.coordinateLesson?'เกณฑ์: บอกชื่อช่องถูกครบ 5 ข้อ · ตอบผิดลองใหม่ได้ · ครบแล้วฝึกต่อได้จนกดยอมรับ':'เกณฑ์: ตอบถูกครบ 3 สถานการณ์ · ตอบผิดลองใหม่ได้ · ครบแล้วทบทวนต่อได้จนกดยอมรับ';
     }
     nextRoundBtn.hidden=!(state.phase==='active'&&state.roundDone&&(l.challenges||l.questions||l.type==='game'));
     nextRoundBtn.textContent=l.type==='game'?'เปิดเกมฝึกถัดไป →':l.type==='quiz'?'ดูสถานการณ์ถัดไป →':'ฝึกโจทย์ถัดไป →';
@@ -652,6 +670,7 @@
 
   function startRound(){
     var l=lessons[state.lesson],task=challenge();
+    appEl.classList.toggle('coordinateQuiz',!!l.coordinateLesson&&state.phase==='active');
     clearArrows();
     var start=task?task.start:l.start;
     if(l.type==='game')state.gamePieces=Rules.clonePieces(task?task.pieces:fullSetup());
@@ -662,6 +681,15 @@
     missionEl.textContent=l.requiredGames?'เกมที่ '+(state.roundIndex+1)+' · หาทางให้เรือรุกจนโดยขุนขาวช่วยคุมช่องหนี หรือเล่นต่อจนเกมจบ':task&&task.mission?'โจทย์ที่ '+(state.roundIndex+1)+' · '+task.mission:l.mission;
     boardCaption.textContent=l.type==='game'?(l.requiredGames?'มินิเกมที่ '+(state.roundIndex+1):'เกมฝึกเต็มกระดาน')+' · คุณเล่นฝ่ายขาว':task&&task.mission?'โจทย์ที่ '+(state.roundIndex+1)+' · '+task.mission:state.current?pieceName[activePiece()]+'อยู่ที่ '+squareLabel(state.current):l.caption;
     feedbackEl.className='feedback';feedbackEl.textContent=l.type==='game'?'เลือกหมากขาวตัวใดก็ได้ · ลองคิดก่อนเดินทุกตา':l.type==='quiz'?'ดูภาพบนกระดาน แล้วเลือกคำตอบ':'เลือก'+pieceName[activePiece()]+' แล้วลองเดินตามภารกิจ';
+    if(l.coordinateLesson){
+      if(state.phase==='intro'){
+        missionEl.textContent=l.mission;boardCaption.textContent=l.caption;
+        feedbackEl.textContent='อ่านชื่อทุกช่องให้คุ้น แล้วกด “เริ่มตอบชื่อช่อง”';
+      }else{
+        state.focus={r:task.target.r,c:task.target.c};
+        feedbackEl.textContent='อ่านแนวตัวอักษรกับเลขแถวของช่องที่มีกรอบ แล้วเลือกคำตอบใต้ภารกิจ';
+      }
+    }
     if(l.type==='quiz'&&state.phase==='active')renderQuiz();
     updateGameUI();
     renderBoard();updatePracticeUI();
@@ -670,6 +698,7 @@
   function nextPracticeRound(){
     if(!state.roundDone)return;
     state.roundIndex++;setTool('move');startRound();
+    if(lessons[state.lesson].coordinateLesson&&window.matchMedia('(max-width:920px)').matches)boardWrap.scrollIntoView({block:'start'});
   }
   function pieceHtml(type,side){
     var color=side==='white'?'w':'r';
@@ -726,6 +755,7 @@
   function updateBoardHelp(){
     if(state.tool==='arrow')boardHelp.textContent=state.arrowStart?'เลือกช่องปลายทาง · แตะช่องเดิมหรือกด Esc เพื่อยกเลิก':'แตะช่องต้นทาง → แตะปลายทาง · ลากซ้ำเส้นเดิมเพื่อลบ';
     else if(state.completed)boardHelp.textContent='เข้าใจแล้ว · กดบทถัดไปเพื่อเรียนต่อ';
+    else if(lessons[state.lesson].coordinateLesson)boardHelp.textContent=state.phase==='intro'?'ดูชื่อครบ 64 ช่อง · พร้อมแล้วกด “เริ่มตอบชื่อช่อง”':state.roundDone?'ตอบถูกแล้ว · ดูสถานการณ์ถัดไปเพื่อฝึกต่อ':'อ่านช่องที่มีกรอบ · เลือกคำตอบใต้ภารกิจ';
     else if(isBoardPractice()){
       var progress='เดินถูก '+state.correctMoves+'/'+lessons[state.lesson].requiredCorrect+' · ';
       boardHelp.textContent=progress+(state.roundDone?'ใช้ปุ่มด้านข้างเพื่อฝึกต่อ':state.selected?'เลือกปลายทาง · แตะหมากเดิมหรือ Esc เพื่อยกเลิก':'เลือกหมากขาว → เลือกปลายทาง');
@@ -833,6 +863,7 @@
 
   function renderBoard(){
     var focused=boardEl.contains(document.activeElement),l=lessons[state.lesson],pieces=boardPieces();
+    var coordinateTask=l.coordinateLesson?challenge():null;
     var canMove=state.tool==='move'&&isBoardPractice()&&!state.completed&&!state.roundDone;
     var destinations=canMove&&state.selected?moveDestinations():[];
     var answers=goalDestinations();
@@ -846,6 +877,11 @@
         s.tabIndex=state.focus&&same(state.focus,p)?0:-1;
         if(c===0)s.innerHTML+='<span class="coord rank">'+(8-r)+'</span>';
         if(r===7)s.innerHTML+='<span class="coord file">'+displayFiles[c]+'</span>';
+        if(coordinateTask){
+          var questionSquare=state.phase!=='intro'&&same(p,coordinateTask.target);
+          if(state.phase==='intro'||questionSquare&&(state.hint||state.quizCorrect))s.innerHTML+='<span class="squareCoordinate" aria-hidden="true">'+squareLabel(p)+'</span>';
+          if(questionSquare)s.classList.add('coordinateTarget');
+        }
         var pc=pieces.find(function(x){return same(x.at,p);});
         var source=canMove&&state.current&&same(p,state.current);
         if(canMove&&pc&&pc.side==='white'&&(source||l.type==='game'))s.classList.add('selectable');
@@ -871,6 +907,7 @@
 
   function renderLesson(){
     var l=lessons[state.lesson];
+    appEl.classList.remove('coordinateQuiz');nextRoundHome.appendChild(nextRoundBtn);nextRoundBtn.style.marginTop='';
     clearArrows();
     state.phase='intro';state.current=l.start?{r:l.start.r,c:l.start.c}:null;state.completed=false;state.hint=false;
     state.selected=false;state.promoted=false;state.captured=null;state.focus=state.current||{r:7,c:0};
@@ -891,7 +928,8 @@
     feedbackEl.textContent=l.type==='intro'?'มองกระดานให้คุ้น แล้วกด “เข้าใจแล้ว”':'อ่านคำอธิบาย แล้วกด “'+l.mainText+'”';
     quizBox.hidden=true;quizBox.innerHTML='';
     legendEl.innerHTML='';
-    if(l.type==='pawn')legendEl.innerHTML='<span><i class="dot"></i> เดินได้</span><span><i class="dot captureDot"></i> กินได้</span>';
+    if(l.coordinateLesson)legendEl.innerHTML='<span>อ่านตัวอักษรก่อน แล้วตามด้วยเลขแถว</span>';
+    else if(l.type==='pawn')legendEl.innerHTML='<span><i class="dot"></i> เดินได้</span><span><i class="dot captureDot"></i> กินได้</span>';
     else if(isBoardPractice())legendEl.innerHTML='<span><i class="dot"></i> ตาเดินที่ถูกกติกา</span><span><i class="dot captureDot"></i> กินได้</span>';
     var pct=Math.round((state.lesson)/(lessons.length-1)*100);
     progressText.textContent='บท '+(state.lesson+1)+' / '+lessons.length;
@@ -928,6 +966,7 @@
     }
     if(l.type==='quiz'){
       state.phase='active';
+      if(l.coordinateLesson){startRound();return;}
       renderQuiz();
       feedbackEl.textContent='เลือกคำตอบที่คิดว่าถูก';
       renderBoard();updatePracticeUI();return;
@@ -941,6 +980,8 @@
   function renderQuiz(){
     var l=lessons[state.lesson],task=challenge();
     quizBox.hidden=false;quizBox.innerHTML='';
+    if(l.coordinateLesson){quizBox.insertAdjacentElement('afterend',nextRoundBtn);nextRoundBtn.style.marginTop='10px';}
+    else nextRoundBtn.style.marginTop='';
     (task?task.choices:l.choices).forEach(function(ch){
       var b=document.createElement('button');b.className='quizChoice';b.type='button';b.textContent=ch.text;
       b.addEventListener('click',function(){answerQuiz(b,ch.correct);});quizBox.appendChild(b);
@@ -949,6 +990,7 @@
 
   function answerQuiz(btn,correct){
     if(state.completed||state.quizCorrect)return;
+    var l=lessons[state.lesson];
     if(correct){
       btn.classList.add('correct');
       quizBox.querySelectorAll('button').forEach(function(x){x.disabled=true;});
@@ -957,6 +999,7 @@
       var task=challenge();
       feedbackEl.className='feedback success';feedbackEl.textContent=(task?task.explanation:'ถูกต้อง!')+' · '+(practiceReady()?'ครบเกณฑ์แล้ว ฝึกต่อหรือกดยอมรับเมื่อเข้าใจ':'กด “ดูสถานการณ์ถัดไป” เพื่อฝึกต่อ');
       updatePracticeUI();
+      if(l.coordinateLesson)renderBoard();
       showToast('ถูกต้อง ✓','good');
     }else{
       btn.classList.add('wrong');feedbackEl.className='feedback error';feedbackEl.textContent='ยังไม่ใช่ ลองคิดอีกครั้ง หรือกดดูคำใบ้';
@@ -1114,7 +1157,9 @@
     var l=lessons[state.lesson];state.hint=true;
     feedbackEl.className='feedback';
     var task=challenge(),hint=l.hint;
-    if(l.type==='game'){
+    if(l.coordinateLesson){
+      hint=state.phase==='intro'?l.hint:state.quizCorrect?'ตอบข้อนี้ถูกแล้ว กด “ดูสถานการณ์ถัดไป” เพื่อฝึกต่อ':task.hint;
+    }else if(l.type==='game'){
       hint=task&&state.gameHistory.length===0?task.hint:l.requiredGames?'ใช้เรือตัดช่องหนี แล้วให้ขุนขาวช่วยคุมช่องที่เหลือ อย่าวางเรือประชิดขุนแดงโดยไม่มีตัวคุม':l.hint;
       if(Rules.inCheck(state.gamePieces,'white'))hint='ขุนกำลังถูกรุก: ลองหนีรุก ปิดแนวรุก หรือกินตัวที่รุก โดยขุนต้องปลอดภัย';
     }else if(l.piece){
