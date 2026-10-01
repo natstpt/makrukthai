@@ -31,6 +31,7 @@
     .topBtn:hover{background:#333630}
     .desktop{min-height:0;display:grid;grid-template-columns:minmax(0,1.82fr) minmax(330px,.98fr);gap:10px;padding:10px}
     .boardArea{min-width:0;min-height:0;background:#20211f;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:12px;position:relative;overflow:hidden}
+    .mobileCoachRow{display:none}
     .boardTools{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;width:100%;max-width:860px;flex-shrink:0}
     .toolGroup{display:flex;gap:4px;background:#161815;border:1px solid #363a32;padding:3px;border-radius:11px}
     .boardTool{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:7px 10px;border:1px solid transparent;border-radius:8px;background:transparent;color:#bdc3b8;cursor:pointer;font-size:13px;font-weight:800;white-space:nowrap}
@@ -191,20 +192,28 @@
       .app.coordinateQuiz .lessonExplain,.app.coordinateQuiz .mission{margin-top:0}
       .app.coordinateQuiz .lessonBody{padding-top:12px}
     }
-    @media(max-width:700px){
-      .app{grid-template-rows:54px auto auto}.topbar{padding:0 8px;gap:5px}.brand{font-size:14px;gap:6px}.brand small{display:none}.brandmark{width:30px;height:30px}.topActions{gap:4px}.topBtn{padding:8px 9px;font-size:13px;min-height:42px}
-      .desktop{padding:0;gap:0}.boardArea{border-radius:0;padding:9px;gap:8px}.boardWrap{width:100%;max-width:none}.boardTools{display:grid;grid-template-columns:1fr;gap:6px}.toolGroup,.boardToggles,.arrowActions{grid-column:1/-1}.toolGroup{width:100%}.toolGroup .boardTool{flex:1}.boardTool{font-size:15px;padding:8px 9px;min-height:46px}.boardToggles{justify-content:space-between;gap:4px}.destinationsControl{font-size:14px;min-height:46px;padding:4px}.arrowActions{justify-content:flex-end}
-      .lessonPanel{border-radius:0;border-left:0;border-right:0}.lessonHead{height:50px}.lessonBody{padding:16px 13px}
-      .coach{width:48px;height:48px;flex-basis:48px;font-size:25px;border-radius:14px}.speech{font-size:16px;padding:12px}.lessonExplain h1{font-size:27px}.quizPrompt{font-size:19px}.quizChoice{font-size:17px;min-height:54px}
-      .boardMeta{display:block;height:104px}.nextRoundBtn{margin-top:6px}
+    @media(max-width:1100px){
+      html,body{height:100%;overflow:hidden;overscroll-behavior:none}.app{height:100dvh;min-height:0;grid-template-rows:44px minmax(0,1fr) 36px}.topbar{padding:0 7px;gap:4px;min-width:0}.brand{font-size:13px;gap:5px}.brand small{display:none}.brandmark{width:28px;height:28px}.topActions{gap:3px;min-width:0}.topBtn{padding:5px 7px;font-size:11px;min-height:34px}
+      .desktop{height:100%;min-height:0;display:flex;flex-direction:column;padding:0;gap:0;overflow:hidden}.boardArea{order:0;flex:1 1 auto;min-height:0;justify-content:flex-start;gap:4px;padding:4px 8px 2px;border-radius:0;overflow:hidden}
+      .mobileCoachRow{display:flex;align-items:center;gap:8px;width:100%;flex:0 0 auto;min-height:44px;padding:2px 2px 4px;order:-1}.mobileCoachRow .coach{width:40px;height:40px;flex-basis:40px;font-size:22px;border-radius:12px}.mobileCoachRow .speech{font-size:clamp(15px,4vw,18px);line-height:1.28;padding:8px 11px;border-radius:12px}
+      .boardTools{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:2px;width:100%;max-width:none;flex:0 0 auto}.toolGroup{display:grid;grid-template-columns:1fr 1fr;gap:1px;padding:2px}.toolGroup .boardTool{justify-content:center}.boardTool{font-size:12px;padding:4px 5px;min-height:34px;gap:3px}.boardTool svg{width:15px;height:15px}.boardToggles{display:grid;grid-template-columns:1fr;gap:0;align-content:center}.destinationsControl{gap:4px;min-height:25px;padding:0;font-size:12px;white-space:nowrap}.destinationsControl input{width:16px;height:16px}.arrowActions{gap:0;justify-content:flex-end}.arrowActions .boardTool{width:31px;padding:3px}.arrowActions #clearArrowsBtn{font-size:0}.arrowActions #clearArrowsBtn:before{content:'×';font-size:20px}
+      .boardWrap{width:min(100%,calc(100dvh - 380px));height:min(100%,calc(100dvh - 380px));max-width:none;min-width:0;min-height:0;flex:0 1 auto;aspect-ratio:1}.boardMeta{width:100%;height:auto;min-height:21px;flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:12px}.boardCaption{font-size:13px}.boardHelp{display:none}.nextRoundBtn{min-height:34px;margin:0;padding:4px 8px;font-size:13px}
+      .lessonPanel{order:1;flex:0 0 auto;min-height:0;max-height:38dvh;overflow:hidden;border-radius:0;border:0;border-top:1px solid #393c35;grid-template-rows:auto auto auto;background:#1d1f1c}.lessonHead{height:38px;min-height:38px;padding:0 8px}.lessonTitle{font-size:15px}.lessonProgress{display:none}.lessonBody{min-height:0;overflow:hidden;padding:4px 10px 2px}.coachRow,.lessonDetails,.pathDetails,.lessonExplain>h1,.lessonExplain>p,.lessonExplain>.mission,.lessonExplain>.gameNote,.lessonExplain>.moveHistory,.lessonExplain>.scoreSheetWrap{display:none!important}.lessonExplain{margin:0}.practiceCard{margin:0;padding:4px 8px;border:0;background:transparent;text-align:center}.practiceCard strong{font-size:clamp(15px,4vw,19px);margin:0}.practiceCard p{display:none}.lessonActions{justify-content:center;gap:6px;margin-top:2px}.hintBtn{margin:0;min-height:34px;padding:5px 10px;font-size:13px}.lessonFoot{grid-template-columns:42px 1fr;gap:6px;padding:5px 8px}.menuBtn{min-height:40px}.mainBtn{height:42px;min-height:42px;font-size:15px}.feedback{display:none}
+      .quizBox{gap:5px;margin:2px 0}.quizPrompt{display:none}.quizChoice{min-height:39px;padding:6px 10px;font-size:15px;line-height:1.2;text-align:center}.notationForm{margin:0;padding:4px 7px;border:0;background:transparent}.notationPrompt{font-size:13px;text-align:center;margin:0}.notationChoices{gap:4px}.notationChoices .quizChoice{min-height:36px;font-size:14px;padding:4px 6px}
+      .app.activeQuiz .boardWrap,.app.activeNotation .boardWrap{width:min(100%,calc(100dvh - 470px));height:min(100%,calc(100dvh - 470px))}.app.activeQuiz .lessonPanel,.app.activeNotation .lessonPanel{max-height:47dvh}
+      .app.activeNotation #practiceCard{display:none}.app.activeQuiz #practiceCard{display:block;padding:2px 0}.app.activeQuiz .lessonBody,.app.activeNotation .lessonBody{padding:3px 8px 1px}.app.activeQuiz .lessonActions,.app.activeNotation .lessonActions{display:none}
+      .app.activeQuiz .feedback{display:block;min-height:0;margin:0;padding:3px 6px;border:0;background:transparent;text-align:center;font-size:13px}
+      .square .coord{font-size:clamp(12px,3vw,18px)}.square.coordinateTarget:before{border-width:3px;inset:7%}.squareCoordinate{font-size:clamp(15px,4.4vw,24px)}
+      .siteFooter{height:36px;min-height:36px;padding:2px 7px;justify-content:center}.footerByline{display:none}.footerActions{width:auto;gap:5px}.footerBtn{min-height:30px;padding:3px 10px;font-size:11px}
       .lessonGrid,.planDays{grid-template-columns:1fr}
       .rulesLink span{display:none}
-      .siteFooter{padding:12px 14px;flex-wrap:wrap;gap:10px}.footerByline{font-size:13px}.footerActions{width:100%}.footerBtn{min-height:44px;flex:1;font-size:13px}
       .authorProfile{grid-template-columns:1fr;gap:18px;text-align:center}.authorPortrait{width:144px;justify-self:center}.authorDetails h3{font-size:22px}.modalHead h2{font-size:19px}
     }
-    @media(min-width:701px) and (max-width:1100px){
-      .boardTools{justify-content:center;gap:8px 18px}.boardToggles{gap:16px}.boardTool{font-size:15px;min-height:46px}
-      .lessonBody{padding:20px clamp(18px,4vw,36px)}.lessonExplain h1{font-size:clamp(28px,3.4vw,36px)}.speech{font-size:18px}
+    @media(max-width:480px){
+      .boardTools{grid-template-columns:minmax(0,1fr) auto}.toolGroup{grid-column:1}.boardToggles{grid-column:1/-1;display:flex;justify-content:space-evenly}.arrowActions{grid-column:2;grid-row:1}.mobileCoachRow .speech{font-size:15px}
+    }
+    @media(min-width:481px) and (max-width:1100px){
+      .boardTool{font-size:14px;min-height:40px}.destinationsControl{font-size:14px;min-height:30px}.destinationsControl input{width:19px;height:19px}.mobileCoachRow .speech{font-size:18px}.quizChoice{font-size:17px;min-height:46px}
     }
     @media print{body{overflow:visible;background:white}.topbar,.boardArea,.lessonPanel,.siteFooter,#authorOverlay,#creditsOverlay{display:none!important}.overlay{position:static!important;display:block!important;background:white;padding:0}.modal{width:100%;max-height:none;box-shadow:none}.modalHead button{display:none}.modalBody{padding:0}.planDays{display:block}.planDay{margin-bottom:14px}}
   </style>
@@ -239,6 +248,7 @@
           <button class="boardTool" id="clearArrowsBtn" type="button" disabled>ล้างลูกศร</button>
         </div>
       </div>
+      <div class="mobileCoachRow"><div class="coach" aria-hidden="true">🧑‍🏫</div><div class="speech" id="mobileSpeech"></div></div>
       <div class="boardWrap">
         <div class="board" id="board" role="group" aria-label="กระดาน 8 คูณ 8 ใช้ปุ่มลูกศรเลื่อนช่อง และ Enter เพื่อเลือก" aria-describedby="boardHelp"></div>
         <svg class="arrowLayer" id="arrowLayer" viewBox="0 0 800 800" aria-hidden="true">
@@ -454,6 +464,7 @@
   var scoreBody=document.querySelector('#scoreSheet tbody');
   var dragPiece = document.getElementById('dragPiece');
   var speechEl = document.getElementById('speech');
+  var mobileSpeechEl = document.getElementById('mobileSpeech');
   var headingEl = document.getElementById('lessonHeading');
   var descEl = document.getElementById('lessonDescription');
   var descMoreEl = document.getElementById('lessonDescriptionMore');
@@ -785,6 +796,8 @@
   function startRound(){
     var l=lessons[state.lesson],task=challenge();
     appEl.classList.toggle('coordinateQuiz',!!l.coordinateLesson&&state.phase==='active');
+    appEl.classList.toggle('activeQuiz',l.type==='quiz'&&state.phase==='active');
+    appEl.classList.remove('activeNotation');
     clearArrows();
     var start=task?task.start:l.start;
     if(l.type==='game')state.gamePieces=Rules.clonePieces(task?task.pieces:fullSetup());
@@ -804,6 +817,7 @@
     }
     state.lastFrom=state.lastTo=null;state.focus=state.current||{r:7,c:0};
     missionEl.textContent=l.requiredGames?'เกมที่ '+(state.roundIndex+1)+' · หาทางรุกจน':task&&task.mission?task.mission:l.type==='notation'?'เดินตามโจทย์ แล้วเลือกบันทึกที่ถูกต้อง':l.piece?'เดิน'+pieceName[activePiece()]+'ไปเก็บดาว':'ดูโจทย์แล้วเลือกคำตอบ';
+    mobileSpeechEl.textContent=l.type==='notation'?'เดินหมาก แล้วเลือกบันทึกที่ถูกต้อง':l.type==='game'?'เลือกหมากขาว แล้วทำภารกิจ':l.type==='quiz'?task&&task.mission?task.mission:l.mission:task&&task.mission?task.mission:l.piece?state.showStarHint?'เดิน'+pieceName[activePiece()]+'ไปเก็บดาว ⭐':'ลองเดิน'+pieceName[activePiece()]:'มาลองทำภารกิจนี้กัน';
     boardCaption.textContent=l.type==='game'?(l.requiredGames?'มินิเกมที่ '+(state.roundIndex+1):'เกมฝึกเต็มกระดาน')+' · คุณเล่นฝ่ายขาว':task&&task.mission?'โจทย์ที่ '+(state.roundIndex+1)+' · '+task.mission:state.current?pieceName[activePiece()]+'อยู่ที่ '+squareLabel(state.current):l.caption;
     feedbackEl.className='feedback';feedbackEl.textContent=l.type==='game'?'เลือกหมาก แล้วเดินให้ปลอดภัย':l.type==='quiz'?'เลือกคำตอบด้านล่าง':'เดินไปเก็บดาวให้ครบ '+l.requiredCorrect+' ดวง';
     if(l.coordinateLesson){
@@ -1035,17 +1049,22 @@
   function renderLesson(){
     var l=lessons[state.lesson];
     missionEl.parentElement.hidden=false;
-    appEl.classList.remove('coordinateQuiz');nextRoundHome.appendChild(nextRoundBtn);nextRoundBtn.style.marginTop='';
+    appEl.classList.remove('coordinateQuiz','activeQuiz','activeNotation');nextRoundHome.appendChild(nextRoundBtn);nextRoundBtn.style.marginTop='';
     clearArrows();
     state.phase='intro';state.current=l.start?{r:l.start.r,c:l.start.c}:null;state.completed=false;state.hint=false;
     state.selected=false;state.promoted=false;state.captured=null;state.focus=state.current||{r:7,c:0};
     state.correctMoves=0;state.roundIndex=0;state.roundDone=false;state.quizCorrect=false;state.lastFrom=state.lastTo=null;
     state.matchResults=[];state.savedScores=[];state.pendingNotation=null;state.starTarget=null;state.lastStarTarget=null;state.scoreMoves=[];notationForm.hidden=true;notationChoices.innerHTML='';
-    if(l.type==='notation'){notationForm.insertAdjacentElement('afterend',nextRoundBtn);nextRoundBtn.style.marginTop='10px';}
+    if(l.type==='notation'){
+      if(window.matchMedia('(max-width:700px)').matches)nextRoundHome.appendChild(nextRoundBtn);
+      else notationForm.insertAdjacentElement('afterend',nextRoundBtn);
+      nextRoundBtn.style.marginTop=window.matchMedia('(max-width:700px)').matches?'0':'10px';
+    }
     state.tool='move';moveToolBtn.setAttribute('aria-pressed','true');arrowToolBtn.setAttribute('aria-pressed','false');boardWrap.classList.remove('arrowMode');
     lessonTitle.textContent=l.title;
     dayTag.textContent='DAY '+l.day;
     speechEl.textContent=l.type==='finish'?'เยี่ยมมาก! พร้อมใช้ความรู้บนกระดานจริง':l.type==='quiz'?'ดูโจทย์ แล้วเลือกคำตอบ':l.type==='notation'?'เดินหมาก แล้วเลือกวิธีจดที่ถูกต้อง':l.piece?'ลากหมากไปเก็บดาว':'มาลองทำภารกิจนี้กัน';
+    mobileSpeechEl.textContent=l.type==='finish'?'พร้อมใช้ความรู้บนกระดานจริง':l.type==='quiz'?l.mission:l.type==='notation'?'เดินหมาก แล้วเลือกบันทึกที่ถูกต้อง':l.piece?state.showStarHint?'เดิน'+pieceName[l.piece]+'ไปเก็บดาว ⭐':'ลองเดิน'+pieceName[l.piece]:'มาลองทำภารกิจนี้กัน';
     headingEl.textContent=l.heading;
     descEl.textContent='';descEl.hidden=true;
     descMoreEl.textContent=l.description;
@@ -1097,7 +1116,7 @@
       state.lesson=0;state.unlocked=Math.max(state.unlocked,lessons.length-1);renderLesson();return;
     }
     if(l.type==='quiz'){
-      state.phase='active';
+      state.phase='active';appEl.classList.add('activeQuiz');
       if(l.coordinateLesson){startRound();return;}
       renderQuiz();
       feedbackEl.textContent='เลือกคำตอบที่คิดว่าถูก';
@@ -1114,7 +1133,11 @@
     quizBox.hidden=false;quizBox.innerHTML='';
     var prompt=document.createElement('p');prompt.className='quizPrompt';prompt.textContent=task&&task.mission?task.mission:l.mission;quizBox.appendChild(prompt);
     missionEl.parentElement.hidden=true;
-    if(l.coordinateLesson){quizBox.insertAdjacentElement('afterend',nextRoundBtn);nextRoundBtn.style.marginTop='10px';}
+    if(l.coordinateLesson){
+      if(window.matchMedia('(max-width:700px)').matches)nextRoundHome.appendChild(nextRoundBtn);
+      else quizBox.insertAdjacentElement('afterend',nextRoundBtn);
+      nextRoundBtn.style.marginTop=window.matchMedia('(max-width:700px)').matches?'0':'10px';
+    }
     else nextRoundBtn.style.marginTop='';
     (task?task.choices:l.choices).forEach(function(ch){
       var b=document.createElement('button');b.className='quizChoice';b.type='button';b.textContent=ch.text;
@@ -1178,7 +1201,7 @@
       state.quizCorrect=true;
       state.correctMoves++;state.roundDone=true;
       var task=challenge();
-      feedbackEl.className='feedback success';feedbackEl.textContent=(task?task.explanation:'ถูกต้อง!')+' · '+(practiceReady()?'ครบเกณฑ์แล้ว ฝึกต่อหรือกดยอมรับเมื่อเข้าใจ':'กด “ดูสถานการณ์ถัดไป” เพื่อฝึกต่อ');
+      feedbackEl.className='feedback success';feedbackEl.textContent=window.matchMedia('(max-width:1100px)').matches?'ถูกต้อง! ✓':(task?task.explanation:'ถูกต้อง!')+' · '+(practiceReady()?'ครบเกณฑ์แล้ว ฝึกต่อหรือกดยอมรับเมื่อเข้าใจ':'กด “ดูสถานการณ์ถัดไป” เพื่อฝึกต่อ');
       updatePracticeUI();
       if(l.coordinateLesson)renderBoard();
       showToast('ถูกต้อง ✓','good');
@@ -1316,7 +1339,7 @@
       message=task&&task.success?task.success:'ถูกต้อง! '+pieceName[activePiece()]+' เดินมาถึง '+squareLabel(dest);
     }
     if(l.type==='notation'){
-      state.pendingNotation=notation;notationForm.hidden=false;renderNotationChoices(notation);
+      state.pendingNotation=notation;notationForm.hidden=false;appEl.classList.add('activeNotation');renderNotationChoices(notation);
       feedbackEl.className='feedback';feedbackEl.textContent='เลือกบันทึกที่ตรงกับตานี้';
       renderBoard();updatePracticeUI();return;
     }
@@ -1456,7 +1479,10 @@
   });
   starHintToggle.addEventListener('change',function(){
     state.showStarHint=starHintToggle.checked;
-    localStorage.setItem('makrukStarHint',String(state.showStarHint));renderBoard();
+    localStorage.setItem('makrukStarHint',String(state.showStarHint));
+    var l=lessons[state.lesson],task=challenge();
+    if(state.phase==='active'&&l.piece&&(!task||!task.mission))mobileSpeechEl.textContent=state.showStarHint?'เดิน'+pieceName[activePiece()]+'ไปเก็บดาว ⭐':'ลองเดิน'+pieceName[activePiece()];
+    renderBoard();
   });
   retryBtn.addEventListener('click',function(){renderLesson();activateLesson();});
   hintBtn.addEventListener('click',showHint);
