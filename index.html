@@ -500,187 +500,187 @@
   var lessons = [
     {
       title:'รู้จักกระดาน',day:1,type:'quiz',coordinateLesson:true,requiredCorrect:5,
-      speech:'กระดานมี <strong>8 × 8 = 64 ช่อง</strong> ทุกช่องมีชื่อ เช่น <strong>ก1</strong> หรือ <strong>ฉ8</strong> ดูชื่อทุกช่องก่อน แล้วค่อยลองตอบกัน',
-      heading:'กระดาน · อ่านชื่อช่อง',
-      description:'อ่านตัวอักษรจากแนวนอน ก ข ค ง จ ฉ ช ญ แล้วตามด้วยเลขแถว 1–8 โดยแถว 1 อยู่ด้านล่าง และแถว 8 อยู่ด้านบน',
-      rule:'ชื่อช่อง = ตัวอักษรแนวนอน + เลขแถว เช่น ฉ + 8 = ฉ8',
-      mission:'ดูชื่อทุกช่องให้คุ้น แล้วกด “เริ่มตอบชื่อช่อง” จากนั้นบอกว่าช่องที่มีกรอบสี่เหลี่ยมชื่ออะไร',
+      speech:'กระดานมี <strong>64 ช่อง</strong> ทุกช่องมีชื่อ เช่น ก1 หรือ ฉ8 ลองหาชื่อช่องไปด้วยกัน',
+      heading:'รู้จักช่องบนกระดาน',
+      description:'ดูตัวอักษร ก–ญ ที่ด้านล่าง และเลข 1–8 ที่ด้านข้าง',
+      rule:'ตัวอักษรก่อน แล้วตามด้วยเลข · ฉ + 8 = ฉ8',
+      mission:'มองชื่อช่อง แล้วเลือกชื่อของช่องที่มีกรอบ',
       caption:'ชื่อครบ 64 ช่อง · ก1 ถึง ญ8',
-      hint:'ตัวอักษรอ่านจากซ้ายไปขวา ส่วนเลขแถวอ่านจากล่างขึ้นบน ลองเริ่มจาก ก1 ที่มุมล่างซ้าย',
+      hint:'ดูก่อนว่าช่องอยู่ตรงตัวอักษรใด แล้วดูเลขด้านข้าง',
       pieces:[],
       questions:[
-        {target:pos('f',8),pieces:[],mission:'ช่องที่มีกรอบสี่เหลี่ยมชื่ออะไร?',choices:[{text:'ฉ7',correct:false},{text:'จ8',correct:false},{text:'ฉ8',correct:true}],hint:'ช่องนี้อยู่แนว ฉ และแถว 8 อ่านตัวอักษรก่อนเลข',explanation:'ถูกต้อง! แนว ฉ + แถว 8 = ฉ8'},
-        {target:pos('a',1),pieces:[],mission:'ช่องที่มีกรอบสี่เหลี่ยมชื่ออะไร?',choices:[{text:'ก1',correct:true},{text:'ก2',correct:false},{text:'ข1',correct:false}],hint:'มุมล่างซ้ายอยู่แนว ก และแถว 1',explanation:'ถูกต้อง! แนว ก + แถว 1 = ก1'},
-        {target:pos('h',5),pieces:[],mission:'ช่องที่มีกรอบสี่เหลี่ยมชื่ออะไร?',choices:[{text:'ช5',correct:false},{text:'ญ5',correct:true},{text:'ญ4',correct:false}],hint:'ช่องนี้อยู่แนวขวาสุด ญ และแถว 5',explanation:'ถูกต้อง! แนว ญ + แถว 5 = ญ5'},
-        {target:pos('c',3),pieces:[],mission:'ช่องที่มีกรอบสี่เหลี่ยมชื่ออะไร?',choices:[{text:'ค4',correct:false},{text:'ข3',correct:false},{text:'ค3',correct:true}],hint:'ลากสายตาจาก ค ด้านล่าง ขึ้นไปจนถึงแถว 3',explanation:'ถูกต้อง! แนว ค + แถว 3 = ค3'},
-        {target:pos('e',6),pieces:[],mission:'ช่องที่มีกรอบสี่เหลี่ยมชื่ออะไร?',choices:[{text:'จ6',correct:true},{text:'จ5',correct:false},{text:'ฉ6',correct:false}],hint:'ลากสายตาจาก จ ด้านล่าง ขึ้นไปจนถึงแถว 6',explanation:'ถูกต้อง! แนว จ + แถว 6 = จ6'}
+        {target:pos('f',8),pieces:[],mission:'ช่องที่มีกรอบชื่ออะไร?',choices:[{text:'ฉ7',correct:false},{text:'จ8',correct:false},{text:'ฉ8',correct:true}],hint:'ดูตัวอักษรด้านล่าง แล้วดูเลขด้านข้าง',explanation:'ใช่แล้ว! ช่องนี้คือ ฉ8'},
+        {target:pos('a',1),pieces:[],mission:'ช่องที่มีกรอบชื่ออะไร?',choices:[{text:'ก1',correct:true},{text:'ก2',correct:false},{text:'ข1',correct:false}],hint:'มุมล่างซ้ายอยู่ตรง ก และเลข 1',explanation:'ใช่แล้ว! ช่องนี้คือ ก1'},
+        {target:pos('h',5),pieces:[],mission:'ช่องที่มีกรอบชื่ออะไร?',choices:[{text:'ช5',correct:false},{text:'ญ5',correct:true},{text:'ญ4',correct:false}],hint:'ขอบขวาสุดอยู่ตรง ญ',explanation:'ใช่แล้ว! ช่องนี้คือ ญ5'},
+        {target:pos('c',3),pieces:[],mission:'ช่องที่มีกรอบชื่ออะไร?',choices:[{text:'ค4',correct:false},{text:'ข3',correct:false},{text:'ค3',correct:true}],hint:'ดูตัวอักษร ค และเลข 3',explanation:'ใช่แล้ว! ช่องนี้คือ ค3'},
+        {target:pos('e',6),pieces:[],mission:'ช่องที่มีกรอบชื่ออะไร?',choices:[{text:'จ6',correct:true},{text:'จ5',correct:false},{text:'ฉ6',correct:false}],hint:'ดูตัวอักษร จ และเลข 6',explanation:'ใช่แล้ว! ช่องนี้คือ จ6'}
       ],
       mainText:'เริ่มตอบชื่อช่อง →'
     },
     {
       title:'ขุน',day:1,type:'move',piece:'king',start:pos('d',4),
-      speech:'เริ่มจาก <strong>ขุน</strong> ก่อน ขุนเป็นหมากสำคัญที่สุด ถ้าถูกรุกจน เกมจบทันที',
-      heading:'ขุน · เดินรอบตัว',
-      description:'ขุนเดินได้ 1 ช่องทุกทิศ: หน้า หลัง ซ้าย ขวา และเฉียง แต่ห้ามเดินเข้าช่องที่ถูกฝ่ายตรงข้ามโจมตี',
-      rule:'ขุน = รอบตัว 1 ช่อง',
-      mission:'ลองเดินขุนจากตำแหน่งปัจจุบันไปรอบตัวครั้งละ 1 ช่อง อย่างน้อย 3 ครั้ง',
-      caption:'ขุนอยู่ที่ d4',
-      hint:'มองรอบขุนทั้ง 8 ช่อง',
+      speech:'ขุนเดินทีละช่องได้รอบตัว มาลองดูทางเดินของขุนกัน',
+      heading:'ขุน · เดินใกล้ ๆ',
+      description:'ขุนเดินได้ 1 ช่อง ไปได้ทุกทิศ',
+      rule:'ขุนเดินรอบตัว ทีละ 1 ช่อง',
+      mission:'ลองพาขุนเดินไปเก็บดาว 3 ครั้ง',
+      caption:'เลือกช่องรอบขุน',
+      hint:'ขุนเดินไปช่องที่ติดกันได้ทั้ง 8 ทิศ',
       legal:function(s){var out=[];for(var dr=-1;dr<=1;dr++)for(var dc=-1;dc<=1;dc++)if(dr||dc)out.push({r:s.r+dr,c:s.c+dc});return out;},
       mainText:'เริ่มฝึก'
     },
     {
       title:'เรือ',day:1,type:'move',piece:'rook',start:pos('d',4),
-      speech:'ต่อไปคือ <strong>เรือ</strong> หมากที่มองทางตรงได้ไกลมาก',
-      heading:'เรือ · วิ่งเป็นเส้นตรง',
-      description:'เรือเดินได้ไกลตามแนวตั้งหรือแนวนอน แต่กระโดดข้ามหมากตัวอื่นไม่ได้',
-      rule:'เรือ = ตรงยาว ↑ ↓ ← →',
-      mission:'ลองเดินเรือตามแนวตั้งและแนวนอนจากตำแหน่งปัจจุบัน อย่างน้อย 3 ครั้ง',
-      caption:'เรืออยู่ที่ d4',
-      hint:'มองเป็นเครื่องหมาย + จากตำแหน่งเรือ',
+      speech:'เรือเดินตรงได้ไกล แต่ข้ามหมากไม่ได้',
+      heading:'เรือ · เดินตรง',
+      description:'เรือเดินตรงขึ้น ลง ซ้าย หรือขวา ไปได้ไกลจนมีหมากขวาง',
+      rule:'เรือเดินตรง · ห้ามข้ามหมาก',
+      mission:'ลองพาเรือเดินตรงไปเก็บดาว 3 ครั้ง',
+      caption:'ลองเดินเรือเป็นเส้นตรง',
+      hint:'เลือกทางตรงที่ไม่มีหมากขวาง',
       legal:function(s){var out=[];for(var i=0;i<8;i++){if(i!==s.r)out.push({r:i,c:s.c});if(i!==s.c)out.push({r:s.r,c:i});}return out;},
       mainText:'เริ่มฝึก'
     },
     {
       title:'ม้า',day:1,type:'move',piece:'knight',start:pos('d',4),
-      speech:'ม้าเป็นตัวพิเศษ เพราะ <strong>กระโดดข้ามหมาก</strong> ตัวอื่นได้',
-      heading:'ม้า · เดินรูปตัว L',
-      description:'ม้าเดิน 2 ช่องในทิศหนึ่ง แล้วเลี้ยวอีก 1 ช่อง รวมเป็นรูปตัว L',
-      rule:'ม้า = 2 ช่อง + เลี้ยว 1',
-      mission:'ลองเดินม้ารูปตัว L จากตำแหน่งปัจจุบัน อย่างน้อย 3 ครั้ง',
-      caption:'ม้าอยู่ที่ d4',
-      hint:'จาก d4 ม้าจะมีปลายทางได้มากที่สุด 8 จุด',
+      speech:'ม้าเดินเป็นรูปตัวแอล และกระโดดข้ามหมากได้',
+      heading:'ม้า · กระโดดเป็นตัว L',
+      description:'ม้าไป 2 ช่อง แล้วเลี้ยวอีก 1 ช่อง',
+      rule:'ม้า = 2 ช่อง แล้วเลี้ยว 1',
+      mission:'ลองพาม้าเดินเป็นตัว L ไปเก็บดาว 3 ครั้ง',
+      caption:'ลองกระโดดม้าเป็นตัว L',
+      hint:'ไป 2 ช่อง แล้วเลี้ยวซ้ายหรือขวา 1 ช่อง',
       legal:function(s){var ds=[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];return ds.map(function(d){return {r:s.r+d[0],c:s.c+d[1]};});},
       mainText:'เริ่มฝึก'
     },
     {
       title:'เม็ด',day:1,type:'move',piece:'met',start:pos('d',4),
-      speech:'<strong>เม็ด</strong> ไม่เหมือนควีนในหมากรุกสากล เม็ดของหมากรุกไทยเดินสั้นมาก',
-      heading:'เม็ด · เฉียง 1 ช่อง',
-      description:'เม็ดเดินเฉียงได้ครั้งละ 1 ช่องเท่านั้น',
-      rule:'เม็ด = เฉียง 1 ช่อง ↖ ↗ ↙ ↘',
-      mission:'ลองเดินเม็ดเฉียง 1 ช่องจากตำแหน่งปัจจุบัน อย่างน้อย 3 ครั้ง',
-      caption:'เม็ดอยู่ที่ d4',
-      hint:'มองเฉียงออกจากเม็ด 4 มุม',
+      speech:'เม็ดเดินเฉียงได้ทีละช่อง',
+      heading:'เม็ด · เดินเฉียง',
+      description:'เม็ดเดินเฉียง 1 ช่อง ไปได้ 4 มุม',
+      rule:'เม็ด = เฉียง 1 ช่อง',
+      mission:'ลองพาเม็ดเดินเฉียงไปเก็บดาว 3 ครั้ง',
+      caption:'ลองเดินเม็ดเฉียง',
+      hint:'มองช่องเฉียงรอบเม็ด',
       legal:function(s){return [{r:s.r-1,c:s.c-1},{r:s.r-1,c:s.c+1},{r:s.r+1,c:s.c-1},{r:s.r+1,c:s.c+1}];},
       mainText:'เริ่มฝึก'
     },
     {
       title:'โคน',day:1,type:'move',piece:'khon',start:pos('d',4),
-      speech:'<strong>โคน</strong> คล้ายเม็ด แต่มีทางเดินเพิ่มอีก 1 ช่อง คือ “ตรงไปข้างหน้า”',
-      heading:'โคน · เฉียง + หน้า',
-      description:'โคนเดินเฉียง 1 ช่องได้ทุกมุม และเดินตรงไปข้างหน้า 1 ช่อง',
-      rule:'โคน = เฉียง 4 ช่อง + หน้า 1 ช่อง',
-      mission:'ลองเดินโคนเฉียง 1 ช่องหรือตรงไปข้างหน้า 1 ช่อง อย่างน้อย 3 ครั้ง',
-      caption:'โคนฝ่ายขาวอยู่ที่ d4 · เดินขึ้นด้านบน',
-      hint:'ถ้าจำเม็ดได้ ให้เพิ่มช่อง “ด้านหน้าตรง ๆ” อีก 1 ช่อง',
+      speech:'โคนเดินเฉียงเหมือนเม็ด และเดินหน้าตรงได้อีกหนึ่งช่อง',
+      heading:'โคน · เฉียงหรือเดินหน้า',
+      description:'โคนเดินเฉียง 1 ช่อง หรือเดินตรงไปข้างหน้า 1 ช่อง',
+      rule:'โคน = เฉียง 1 หรือเดินหน้า 1',
+      mission:'ลองพาโคนเดินไปเก็บดาว 3 ครั้ง',
+      caption:'ลองเดินโคนเฉียงและเดินหน้า',
+      hint:'ลองช่องเฉียง หรือช่องตรงด้านหน้า',
       legal:function(s){return [{r:s.r-1,c:s.c-1},{r:s.r-1,c:s.c},{r:s.r-1,c:s.c+1},{r:s.r+1,c:s.c-1},{r:s.r+1,c:s.c+1}];},
       mainText:'เริ่มฝึก'
     },
     {
       title:'เบี้ย',day:1,type:'pawn',piece:'pawn',start:pos('d',4),
-      speech:'เบี้ยดูธรรมดา แต่ต้องจำให้แม่นว่า <strong>“เดินตรง แต่กินเฉียง”</strong>',
-      heading:'เบี้ย · เดินกับกินไม่เหมือนกัน',
-      description:'เบี้ยฝ่ายขาวเดินตรงขึ้น 1 ช่อง และกินหมากฝ่ายตรงข้ามที่อยู่เฉียงหน้าซ้ายหรือขวา 1 ช่อง ไม่มีการเดินเปิด 2 ช่อง',
-      rule:'เดินตรง 1 · กินเฉียงหน้า 1',
-      mission:'เลือกได้ทั้งเดินตรงไป d5 หรือกินหมากสีดำที่ c5 / e5',
-      caption:'สีเขียว = เดิน · วงส้ม = กิน',
-      hint:'ถ้าไม่มีหมากให้กิน เบี้ยเดินได้เฉพาะตรงหน้า',
+      speech:'เบี้ยเดินตรง แต่ถ้าจะกินหมาก ต้องกินเฉียง',
+      heading:'เบี้ย · เดินตรง กินเฉียง',
+      description:'เบี้ยเดินหน้า 1 ช่อง กินหมากเฉียงหน้า 1 ช่อง',
+      rule:'เดินตรง 1 · กินเฉียง 1',
+      mission:'ลองเดินเบี้ยตรง แล้วลองกินเฉียง',
+      caption:'จุด = เดิน · วงกลม = กิน',
+      hint:'ไม่มีหมากให้กิน ก็เดินตรงไปข้างหน้า',
       enemies:[{piece:'pawn',at:pos('c',5)},{piece:'pawn',at:pos('e',5)}],
       legal:function(){return [pos('d',5),pos('c',5),pos('e',5)];},
       captures:[pos('c',5),pos('e',5)],
       challenges:[
-        {start:pos('d',3),enemies:[],goal:pos('d',4),mission:'โจทย์เดินตรง: พาเบี้ยจาก ง3 ไป ง4',hint:'ไม่มีหมากให้กิน จึงเดินตรงไปข้างหน้า 1 ช่อง'},
-        {start:pos('e',4),enemies:[{piece:'pawn',side:'black',at:pos('d',5)}],goal:pos('d',5),mission:'โจทย์กินเฉียงซ้าย: พาเบี้ย จ4 กินเบี้ยแดงที่ ง5',hint:'เบี้ยกินหมากเฉียงหน้าซ้าย 1 ช่อง ไม่ใช่เดินตรง'},
-        {start:pos('c',4),enemies:[{piece:'pawn',side:'black',at:pos('d',5)}],goal:pos('d',5),mission:'โจทย์กินเฉียงขวา: พาเบี้ย ค4 กินเบี้ยแดงที่ ง5',hint:'เบี้ยกินหมากเฉียงหน้าขวา 1 ช่อง'}
+        {start:pos('d',3),enemies:[],goal:pos('d',4),mission:'เดินเบี้ยตรงไป ง4',hint:'เดินตรงไปข้างหน้า 1 ช่อง'},
+        {start:pos('e',4),enemies:[{piece:'pawn',side:'black',at:pos('d',5)}],goal:pos('d',5),mission:'ให้เบี้ย จ4 กินหมากที่ ง5',hint:'เบี้ยกินเฉียงหน้า 1 ช่อง'},
+        {start:pos('c',4),enemies:[{piece:'pawn',side:'black',at:pos('d',5)}],goal:pos('d',5),mission:'ให้เบี้ย ค4 กินหมากที่ ง5',hint:'เบี้ยกินเฉียงหน้า 1 ช่อง'}
       ],
       mainText:'เริ่มฝึก'
     },
     {
       title:'เบี้ยหงาย',day:1,type:'promote',piece:'pawn',start:pos('d',5),
-      speech:'เมื่อเบี้ยเดินถึง <strong>แถวที่ 6 ของฝ่ายตน</strong> จะกลายเป็น “เบี้ยหงาย”',
-      heading:'เบี้ยหงาย · รางวัลของเบี้ย',
-      description:'เบี้ยหงายเดินเหมือนเม็ด คือเฉียง 1 ช่อง การหงายเกิดทันทีเมื่อเบี้ยไปถึงแถวที่ 6',
-      rule:'ถึงแถว 6 → หงาย → เดินเหมือนเม็ด',
-      mission:'พาเบี้ยจาก d5 ไป d6 แล้วดูการเปลี่ยนเป็นเบี้ยหงาย',
-      caption:'เบี้ยกำลังจะถึง d6',
-      hint:'มีเพียงช่องเดียว: เดินตรงไป d6',
+      speech:'เบี้ยขาวถึงแถว 6 แล้วจะหงายเป็นเบี้ยหงาย',
+      heading:'เบี้ยหงาย · เบี้ยเปลี่ยนร่าง',
+      description:'เบี้ยขาวถึงแถว 6 ก็หงายทันที จากนั้นเดินเฉียงเหมือนเม็ด',
+      rule:'เบี้ยถึงแถว 6 → หงาย',
+      mission:'พาเบี้ยขึ้นไปแถว 6 แล้วดูการเปลี่ยนร่าง',
+      caption:'เบี้ยอยู่ก่อนถึงแถว 6 หนึ่งช่อง',
+      hint:'เดินเบี้ยตรงขึ้นไปอีก 1 ช่อง',
       legal:function(){return [pos('d',6)];},
       challenges:[
-        {start:pos('d',5),goal:pos('d',6),mission:'พาเบี้ยจาก ง5 ไป ง6 แล้วดูการหงาย'},
-        {start:pos('a',5),goal:pos('a',6),mission:'พาเบี้ยจาก ก5 ไป ก6 แล้วดูการหงาย'},
-        {start:pos('g',5),goal:pos('g',6),mission:'พาเบี้ยจาก ช5 ไป ช6 แล้วดูการหงาย'}
+        {start:pos('d',5),goal:pos('d',6),mission:'พาเบี้ย ง5 ไป ง6 เพื่อหงาย'},
+        {start:pos('a',5),goal:pos('a',6),mission:'พาเบี้ย ก5 ไป ก6 เพื่อหงาย'},
+        {start:pos('g',5),goal:pos('g',6),mission:'พาเบี้ย ช5 ไป ช6 เพื่อหงาย'}
       ],
       mainText:'เริ่มฝึก'
     },
     {
       title:'เดินเบี้ยหงาย',day:1,type:'move',piece:'promoted',start:pos('d',6),
-      speech:'เบี้ยหงายแล้ว! ทีนี้มาลองเดิน <strong>เบี้ยหงาย</strong> ด้วยตัวเองกัน เดินเฉียงได้ทั้งไปข้างหน้าและถอยหลัง',
-      heading:'เบี้ยหงาย · ลองเดินเฉียง',
-      description:'เบี้ยธรรมดาเดินตรงไปข้างหน้า แต่เบี้ยหงายเดินเฉียง 1 ช่องได้ทั้ง 4 มุม เหมือนเม็ด เดินตรงหรือเดินเฉียงไกลกว่า 1 ช่องไม่ได้',
-      rule:'เบี้ยหงาย = เฉียง 1 ช่อง ทั้งหน้าและหลัง ↖ ↗ ↙ ↘',
-      mission:'ลองเดินเบี้ยหงายเฉียง 1 ช่อง ทั้งหน้าและหลังจากตำแหน่งปัจจุบัน อย่างน้อย 3 ครั้ง',
-      caption:'เบี้ยหงายอยู่ที่ ง6 · ลองเดินเฉียงหน้า หรือเฉียงถอยหลัง',
-      hint:'มอง 4 มุมรอบเบี้ยหงาย: ค7 จ7 ค5 และ จ5 ไม่ใช่ช่องตรงหน้า ง7',
+      speech:'เบี้ยหงายเดินเฉียงทีละช่อง ได้ทั้งไปข้างหน้าและถอยหลัง',
+      heading:'เดินเบี้ยหงาย',
+      description:'เบี้ยหงายเดินเฉียง 1 ช่องได้ 4 ทิศ เหมือนเม็ด',
+      rule:'เบี้ยหงาย = เฉียง 1 ช่อง',
+      mission:'ลองเดินเบี้ยหงายเฉียงไปเก็บดาว 3 ครั้ง',
+      caption:'ลองเดินเฉียงรอบเบี้ยหงาย',
+      hint:'มองเฉียงทั้ง 4 มุม รอบเบี้ยหงาย',
       legal:function(s){return [{r:s.r-1,c:s.c-1},{r:s.r-1,c:s.c+1},{r:s.r+1,c:s.c-1},{r:s.r+1,c:s.c+1}];},
       mainText:'เริ่มฝึก'
     },
     {
       title:'รุก',day:2,type:'check',piece:'rook',start:pos('a',4),
-      speech:'ต่อไปคือคำสำคัญมาก: <strong>“รุก”</strong> คือขุนกำลังถูกโจมตี',
-      heading:'รุก · ทำให้ขุนอยู่ในแนวโจมตี',
-      description:'ถ้าขุนถูกรุก ผู้เล่นต้องแก้การรุกทันที ก่อนคิดเรื่องอื่น',
-      rule:'รุก = ขุนกำลังถูกโจมตี',
-      mission:'พาเรือขาวไป h4 หรือ a7 เพื่อรุกขุนดำที่ h7',
-      caption:'หาทางให้เรือมองเห็นขุนดำ',
-      hint:'เรือต้องอยู่ “ไฟล์เดียวกัน” หรือ “แถวเดียวกัน” กับขุนดำ',
+      speech:'“รุก” แปลว่าเรากำลังโจมตีขุนของอีกฝ่าย',
+      heading:'รุก · โจมตีขุน',
+      description:'เรือรุกขุนได้ เมื่ออยู่แนวตรงเดียวกันและไม่มีหมากขวาง',
+      rule:'รุก = โจมตีขุน',
+      mission:'พาเรือไปอยู่แนวเดียวกับขุนแดง',
+      caption:'หาแนวตรงไปยังขุน',
+      hint:'เรือเดินตรง ลองหาแถวหรือแนวตั้งเดียวกับขุน',
       pieces:[{piece:'rook',side:'white',at:pos('a',4)},{piece:'king',side:'black',at:pos('h',7)}],
       legal:function(){return [pos('h',4),pos('a',7)];},
       challenges:[
-        {start:pos('a',4),enemies:[{piece:'king',side:'black',at:pos('h',7)}],mission:'พาเรือขาว ก4 ไปช่องที่รุกขุนแดง ญ7'},
-        {start:pos('h',3),enemies:[{piece:'king',side:'black',at:pos('b',6)}],mission:'พาเรือขาว ญ3 ไปช่องที่รุกขุนแดง ข6'},
-        {start:pos('c',2),enemies:[{piece:'king',side:'black',at:pos('g',7)}],mission:'พาเรือขาว ค2 ไปช่องที่รุกขุนแดง ช7'}
+        {start:pos('a',4),enemies:[{piece:'king',side:'black',at:pos('h',7)}],mission:'ให้เรือ ก4 รุกขุน ญ7'},
+        {start:pos('h',3),enemies:[{piece:'king',side:'black',at:pos('b',6)}],mission:'ให้เรือ ญ3 รุกขุน ข6'},
+        {start:pos('c',2),enemies:[{piece:'king',side:'black',at:pos('g',7)}],mission:'ให้เรือ ค2 รุกขุน ช7'}
       ],
       mainText:'เริ่มฝึก'
     },
     {
       title:'หนีรุก',day:2,type:'escape',piece:'king',start:pos('d',4),
-      speech:'เมื่อขุนถูกรุก เราต้องทำให้ขุน <strong>ปลอดภัยทันที</strong>',
-      heading:'หนีรุก · หาช่องปลอดภัย',
-      description:'วิธีแก้รุกมีหลายแบบ เช่น เดินขุนหนี กินตัวที่มารุก หรือเอาหมากมาปิดทางโจมตี',
-      rule:'ถูกรุก → แก้รุกก่อนทุกอย่าง',
-      mission:'เรือดำบน d8 กำลังรุกขุนขาว d4 พาขุนออกจากแนว d-file ไปช่องปลอดภัย',
-      caption:'ขุนขาวกำลังถูกรุกตามแนวตั้ง',
-      hint:'อย่าเดินค้างอยู่ในคอลัมน์ d',
+      speech:'ถ้าขุนถูกรุก ต้องช่วยขุนให้ปลอดภัยก่อน',
+      heading:'แก้รุก · ช่วยขุนให้ปลอดภัย',
+      description:'บทนี้ลองพาขุนหนีออกจากทางเรือ',
+      rule:'ขุนถูกรุก → ช่วยขุนก่อน',
+      mission:'เรือแดงกำลังรุกขุน พาขุนหนีออกจากทางเรือ',
+      caption:'พาขุนออกจากแนวเรือ',
+      hint:'อย่าให้ขุนอยู่แถวเดียวกับเรือ',
       pieces:[{piece:'king',side:'white',at:pos('d',4)},{piece:'rook',side:'black',at:pos('d',8)}],
       legal:function(){return [pos('c',3),pos('c',4),pos('c',5),pos('e',3),pos('e',4),pos('e',5)];},
       challenges:[
-        {start:pos('d',4),enemies:[{piece:'rook',side:'black',at:pos('d',8)}],mission:'เรือแดง ง8 กำลังรุกขุน ง4 พาขุนไปช่องปลอดภัย'},
-        {start:pos('e',3),enemies:[{piece:'rook',side:'black',at:pos('e',8)}],mission:'เรือแดง จ8 กำลังรุกขุน จ3 พาขุนไปช่องปลอดภัย'},
-        {start:pos('c',5),enemies:[{piece:'rook',side:'black',at:pos('c',8)}],mission:'เรือแดง ค8 กำลังรุกขุน ค5 พาขุนไปช่องปลอดภัย'}
+        {start:pos('d',4),enemies:[{piece:'rook',side:'black',at:pos('d',8)}],mission:'พาขุน ง4 หนีเรือแดงที่ ง8'},
+        {start:pos('e',3),enemies:[{piece:'rook',side:'black',at:pos('e',8)}],mission:'พาขุน จ3 หนีเรือแดงที่ จ8'},
+        {start:pos('c',5),enemies:[{piece:'rook',side:'black',at:pos('c',8)}],mission:'พาขุน ค5 หนีเรือแดงที่ ค8'}
       ],
       mainText:'เริ่มฝึก'
     },
     {
       title:'รุกจน',day:2,type:'quiz',
-      speech:'ถ้าขุนถูกรุกและ <strong>ไม่มีวิธีแก้ให้ปลอดภัย</strong> เรียกว่า “รุกจน”',
+      speech:'“รุกจน” คือขุนถูกรุก และไม่มีทางช่วยให้ปลอดภัย',
       heading:'รุกจน · เกมจบ',
-      description:'ดูตำแหน่งนี้: เรือขาว h1 รุกขุนดำ h8 และขุนขาว f7 ช่วยคุมช่องหนี',
-      rule:'รุก + หนีไม่ได้ + กันไม่ได้ = รุกจน',
-      mission:'ตอบคำถาม: ตำแหน่งนี้ “รุกจน” แล้วหรือยัง?',
-      caption:'ขุนดำ h8 ถูกเรือขาวรุก',
-      hint:'ตรวจ 3 ช่องหนีของขุนดำ: g8, g7, h7',
+      description:'ดูว่าขุนถูกรุกไหม แล้วมีทางหนีหรือไม่',
+      rule:'ถูกรุก + ไม่มีทางแก้ = รุกจน',
+      mission:'ขุนแดงปลอดภัยหรือถูกรุกจน?',
+      caption:'ช่วยกันหาทางหนีของขุน',
+      hint:'ดูว่าขุนเดินไปช่องอื่นได้ไหม',
       pieces:[{piece:'rook',side:'white',at:pos('h',1)},{piece:'king',side:'white',at:pos('f',7)},{piece:'king',side:'black',at:pos('h',8)}],
       choices:[{text:'รุกจนแล้ว',correct:true},{text:'ยังหนีได้',correct:false}],
       mainText:'ตอบคำถาม'
     },
     {
       title:'คิดก่อนเดิน',day:2,type:'quiz',
-      speech:'ตอนนี้รู้กติกาหลักแล้ว สิ่งที่จะทำให้เล่นดีขึ้นคือ <strong>หยุดคิดก่อนจับหมาก</strong>',
-      heading:'ดูเขา → ดูเรา → ค่อยเดิน',
-      description:'ก่อนเดินทุกครั้ง ให้ถามสั้น ๆ: เขาขู่อะไร? เรากินอะไรได้? ถ้าเดินแล้วเราจะเสียอะไรไหม?',
-      rule:'1 ดูเขา · 2 ดูเรา · 3 ดูความปลอดภัย · 4 ค่อยเดิน',
-      mission:'ข้อใดคือสิ่งที่ควรทำก่อนจับหมากเดิน?',
+      speech:'ก่อนเดิน หยุดคิดสักนิด แล้วค่อยขยับหมาก',
+      heading:'คิดก่อนเดิน',
+      description:'มองหมากของอีกฝ่าย แล้วค่อยเลือกหมากของเรา',
+      rule:'ดูเขา → ดูเรา → ค่อยเดิน',
+      mission:'ก่อนเดิน ควรคิดถึงอะไรก่อน?',
       caption:'นิสัยสำคัญกว่าการจำสูตรยาว',
       hint:'นักหมากรุกที่ดีไม่รีบจับหมากทันที',
       pieces:[{piece:'king',side:'white',at:pos('d',1)},{piece:'rook',side:'white',at:pos('a',1)},{piece:'pawn',side:'white',at:pos('d',3)},{piece:'rook',side:'black',at:pos('h',8)},{piece:'king',side:'black',at:pos('e',8)}],
@@ -1201,12 +1201,12 @@
       state.quizCorrect=true;
       state.correctMoves++;state.roundDone=true;
       var task=challenge();
-      feedbackEl.className='feedback success';feedbackEl.textContent=window.matchMedia('(max-width:1100px)').matches?'ถูกต้อง! ✓':(task?task.explanation:'ถูกต้อง!')+' · '+(practiceReady()?'ครบเกณฑ์แล้ว ฝึกต่อหรือกดยอมรับเมื่อเข้าใจ':'กด “ดูสถานการณ์ถัดไป” เพื่อฝึกต่อ');
+      feedbackEl.className='feedback success';feedbackEl.textContent=practiceReady()?'ถูกต้อง! ครบแล้ว ฝึกต่อหรือกดยอมรับได้':'ถูกต้อง! ไปข้อต่อไปกัน';
       updatePracticeUI();
       if(l.coordinateLesson)renderBoard();
       showToast('ถูกต้อง ✓','good');
     }else{
-      btn.classList.add('wrong');feedbackEl.className='feedback error';feedbackEl.textContent='ยังไม่ใช่ ลองคิดอีกครั้ง หรือกดดูคำใบ้';
+      btn.classList.add('wrong');feedbackEl.className='feedback error';feedbackEl.textContent='ยังไม่ใช่ ลองอีกครั้ง หรือดูคำใบ้ได้นะ';
       showToast('ลองอีกครั้ง','bad');
     }
   }
@@ -1299,11 +1299,11 @@
       var alreadySelected=state.selected&&state.current&&same(state.current,dest);
       state.current=dest;state.selected=!alreadySelected;
       feedbackEl.className='feedback';
-      feedbackEl.textContent=state.selected?'เลือก'+pieceName[activePiece()]+'แล้ว → เลือกปลายทางบนกระดาน':'ยกเลิกการเลือกแล้ว · เลือกตัวหมากเพื่อเดินอีกครั้ง';
+      feedbackEl.textContent=state.selected?'เลือก'+pieceName[activePiece()]+'แล้ว แตะช่องที่จะไป':'ยกเลิกแล้ว แตะหมากเพื่อเลือกใหม่';
       renderBoard();updateBoardHelp();return;
     }
     if(!state.selected){
-      feedbackEl.className='feedback';feedbackEl.textContent='เลือก'+(l.type==='game'?'หมาก':pieceName[activePiece()])+'ฝ่ายขาวก่อน แล้วเลือกปลายทาง';
+      feedbackEl.className='feedback';feedbackEl.textContent='แตะหมากฝ่ายขาวก่อนนะ';
       return;
     }
     attemptMove(dest);
@@ -1312,10 +1312,10 @@
   function attemptMove(dest){
     var l=lessons[state.lesson];if(state.phase!=='active'||state.completed||state.roundDone||!state.selected)return;
     var candidates=moveDestinations();
-    if(!candidates.some(function(x){return same(x,dest);})){moveError('ตานี้เดินไม่ได้ หรือทำให้ขุนไม่ปลอดภัย · ลองเลือกช่องใหม่');return;}
+    if(!candidates.some(function(x){return same(x,dest);})){moveError('ช่องนี้ยังเดินไม่ได้ ลองอีกช่องนะ');return;}
     if(l.type==='game'){playGameMove(dest);return;}
     var legal=goalDestinations();
-    if(!legal.some(function(x){return same(x,dest);})){moveError(l.type==='check'?'ยังไม่รุกขุนแดง · ลองหาแนวโจมตี': 'ตานี้เดินได้ แต่ยังไม่ตรงภารกิจ · อ่านโจทย์แล้วลองใหม่');return;}
+    if(!legal.some(function(x){return same(x,dest);})){moveError(l.type==='check'?'ยังไม่รุกขุน ลองอีกช่องนะ':'ยังไม่ตรงโจทย์ ลองอีกครั้งนะ');return;}
     var notation=l.type==='notation'?Notation.formatMove(boardPieces(),state.current,dest):null;
     var isCap=boardPieces().some(function(x){return x.side==='black'&&same(x.at,dest);});
     if(isCap)state.captured=dest;
@@ -1328,15 +1328,15 @@
     var task=challenge();
     if(activePiece()==='pawn'&&dest.r===2){
       state.promoted=true;boardCaption.textContent='เบี้ยหงายอยู่ที่ '+displayFiles[dest.c]+(8-dest.r);
-      message='สำเร็จ! เมื่อถึง '+squareLabel(dest)+' เบี้ยจะ “หงาย”';
+      message='ถึงแถว 6 แล้ว! เบี้ยหงายแล้ว';
     }else if(l.type==='pawn'){
       message=isCap?'เยี่ยม! เบี้ย “กินเฉียง” ถูกต้อง':'เยี่ยม! เบี้ย “เดินตรง” ถูกต้อง';
     }else if(l.type==='check'){
-      message='รุก! ตอนนี้เรือขาวอยู่ในแนวเดียวกับขุนแดงแล้ว';
+      message='รุกแล้ว! เรือขาวเล็งขุนแดงอยู่';
     }else if(l.type==='escape'){
-      message='ปลอดภัย! ขุนออกจากแนวเรือแดงแล้ว';
+      message='ขุนปลอดภัยแล้ว!';
     }else{
-      message=task&&task.success?task.success:'ถูกต้อง! '+pieceName[activePiece()]+' เดินมาถึง '+squareLabel(dest);
+      message=task&&task.success?task.success:'ถูกต้อง!';
     }
     if(l.type==='notation'){
       state.pendingNotation=notation;notationForm.hidden=false;appEl.classList.add('activeNotation');renderNotationChoices(notation);
