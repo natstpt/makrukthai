@@ -39,8 +39,9 @@
     .boardTool:hover:not(:disabled){background:#30372b;color:#edf5e6}
     .boardTool:disabled{opacity:.35;cursor:default}
     .arrowActions{display:flex;gap:2px}
-    .destinationsControl{display:flex;align-items:center;gap:7px;min-height:40px;color:#d4dace;font-size:13px;cursor:pointer}
-    .destinationsControl input{width:18px;height:18px;margin:0;accent-color:var(--arrow);cursor:pointer}
+    .boardToggles{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+    .destinationsControl{display:flex;align-items:center;gap:8px;min-height:44px;color:#e2e8dd;font-size:15px;font-weight:750;cursor:pointer;padding:4px 6px}
+    .destinationsControl input{width:22px;height:22px;margin:0;accent-color:var(--arrow);cursor:pointer;flex:none}
     .boardWrap{width:min(100%,calc(100dvh - 304px));max-width:860px;aspect-ratio:1;flex-shrink:0;position:relative;user-select:none;touch-action:manipulation}
     .board{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));grid-template-rows:repeat(8,minmax(0,1fr));width:100%;height:100%;box-shadow:0 12px 38px rgba(0,0,0,.25);position:relative;z-index:1;background:var(--board);outline:1.5px solid var(--boardLine)}
     .square{position:relative;display:grid;place-items:center;cursor:default;min-width:0;min-height:0;border:0;border-right:1.5px solid var(--boardLine);border-bottom:1.5px solid var(--boardLine);padding:0;background:transparent;border-radius:0;overflow:hidden;touch-action:manipulation}
@@ -76,8 +77,8 @@
     .dragPiece img{width:100%;height:100%;object-fit:contain}
     .boardMeta{width:100%;max-width:860px;height:76px;flex-shrink:0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:start;color:#cbd1c5;font-size:12px;line-height:1.5}
     .nextRoundBtn{border-color:#708b54;color:#d8edbf;background:#2b3b22;min-height:44px}
-    .boardCaption{font-weight:800}
-    .boardHelp{color:#9ca695;margin-top:2px}
+    .boardCaption{font-weight:800;font-size:14px}
+    .boardHelp{color:#b3bba9;margin-top:3px;font-size:13px}
     .statusToast{position:absolute;top:16px;left:50%;transform:translate(-50%,-15px);opacity:0;background:#fff;color:#28302c;padding:10px 16px;border-radius:999px;font-weight:900;z-index:10;box-shadow:0 10px 30px rgba(0,0,0,.25);transition:.24s;pointer-events:none}
     .statusToast.show{opacity:1;transform:translate(-50%,0)}
     .statusToast.good{background:#e8f7df;color:#2e6224}
@@ -92,10 +93,10 @@
     .progressMeta{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#aeb2aa;margin-bottom:8px}
     .progressTrack{height:8px;background:#343632;border-radius:999px;overflow:hidden}
     .progressFill{height:100%;background:linear-gradient(90deg,var(--accent),#70d45f);width:0;transition:width .35s ease}
-    .lessonBody{min-height:0;overflow:auto;padding:22px 20px 18px}
+    .lessonBody{min-height:0;overflow:auto;padding:22px 20px 18px;font-size:16px}
     .coachRow{display:flex;gap:12px;align-items:flex-start}
     .coach{flex:0 0 66px;width:66px;height:66px;border-radius:18px;background:linear-gradient(145deg,#815c3e,#5a3e2b);display:grid;place-items:center;font-size:34px;box-shadow:0 8px 18px rgba(0,0,0,.23)}
-    .speech{position:relative;background:#f7f7f4;color:#2d302d;border-radius:15px;padding:14px 16px;font-size:15px;line-height:1.55;flex:1;box-shadow:0 7px 18px rgba(0,0,0,.13)}
+    .speech{position:relative;background:#f7f7f4;color:#2d302d;border-radius:15px;padding:14px 16px;font-size:17px;line-height:1.55;flex:1;box-shadow:0 7px 18px rgba(0,0,0,.13)}
     .speech:before{content:"";position:absolute;left:-9px;top:21px;border-style:solid;border-width:9px 10px 9px 0;border-color:transparent #f7f7f4 transparent transparent}
     .speech strong{color:#1f5e50}
     .lessonExplain{margin-top:12px}
@@ -115,14 +116,14 @@
     .mission b{display:block;color:#8ee2d0;margin-bottom:4px}.mission span{color:#d6e7e2;font-size:14px}
     .practiceCard{margin-top:10px;padding:10px 12px;border:1px solid #454c3c;border-radius:12px;background:#2a2e24}
     .practiceCard.ready{background:#263b25;border-color:#648b48}
-    .practiceCard strong{display:block;font-size:16px;color:#dcf0c6;margin-bottom:5px}
+    .practiceCard strong{display:block;font-size:18px;color:#dcf0c6;margin-bottom:5px}
     .practiceCard p{display:none}
-    .feedback{min-height:40px;margin-top:9px;padding:9px 11px;border-radius:12px;background:#252724;border:1px dashed #40433d;color:#b9beb6;font-size:13px}
+    .feedback{min-height:46px;margin-top:9px;padding:10px 12px;border-radius:12px;background:#252724;border:1px dashed #40433d;color:#c9cec5;font-size:15px;line-height:1.45}
     .feedback.success{background:#263b25;border-color:#4c7745;color:#d4efcf}
     .feedback.error{background:#412824;border-color:#78433b;color:#f5d0ca}
     .lessonFoot{padding:12px;border-top:1px solid #343632;background:#1f201e;display:grid;grid-template-columns:52px 1fr;gap:9px}
     .menuBtn{border:1px solid #3b3e39;background:#2b2d29;color:#cfd3cc;border-radius:12px;font-size:20px;cursor:pointer}
-    .mainBtn{height:54px;border:0;border-radius:12px;background:linear-gradient(#82b958,#6ba947);color:white;font-weight:950;font-size:17px;cursor:pointer;box-shadow:inset 0 -4px rgba(0,0,0,.12),0 8px 18px rgba(0,0,0,.16)}
+    .mainBtn{height:56px;border:0;border-radius:12px;background:linear-gradient(#82b958,#6ba947);color:white;font-weight:950;font-size:18px;cursor:pointer;box-shadow:inset 0 -4px rgba(0,0,0,.12),0 8px 18px rgba(0,0,0,.16)}
     .mainBtn:hover{filter:brightness(1.05)}
     .mainBtn:disabled{cursor:not-allowed;background:#4a5046;color:#8f968b;box-shadow:none}
     .hintBtn{margin-top:10px;border:1px solid #42453f;background:transparent;color:#c9cdc6;padding:8px 11px;border-radius:10px;cursor:pointer;font-weight:800;font-size:12px}
@@ -174,32 +175,36 @@
     .scoreSheet{width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap}.scoreSheet th,.scoreSheet td{padding:9px 7px;text-align:left;border-bottom:1px solid #3c4235}.scoreSheet th{position:sticky;top:0;background:#293322;color:#d8e8c7}.scoreSheet caption{text-align:left;font-weight:800;margin-bottom:8px}.scoreSheet td:first-child{color:#a4b693}
     .scoreTools{display:flex;gap:8px;flex-wrap:wrap}.scoreHint{color:#aebfa0;font-size:12px;margin:8px 0 0;line-height:1.5}
     .quizBox{display:grid;gap:9px;margin-top:14px}
-    .quizPrompt{grid-column:1/-1;margin:0 0 2px;font-size:16px;font-weight:900;line-height:1.35}
-    .quizChoice{border:1px solid #454943;background:#2b2e2a;color:#edf0ea;border-radius:11px;padding:11px 12px;text-align:left;cursor:pointer;font-weight:800}
+    .quizPrompt{grid-column:1/-1;margin:0 0 2px;font-size:18px;font-weight:900;line-height:1.4}
+    .quizChoice{border:1px solid #454943;background:#2b2e2a;color:#edf0ea;border-radius:11px;padding:13px 14px;text-align:left;cursor:pointer;font-weight:800;font-size:16px;line-height:1.45;min-height:50px}
     .quizChoice:hover{background:#343833}.quizChoice.correct{background:#244b29;border-color:#62a968}.quizChoice.wrong{background:#4a2925;border-color:#a65c51}
     .app.coordinateQuiz #quizBox{grid-template-columns:repeat(3,minmax(0,1fr))}
     .app.coordinateQuiz .quizChoice{text-align:center;font-size:18px;min-height:52px}
     .notationChoices{grid-template-columns:1fr}
     .notationChoices .quizChoice{min-height:48px;font-size:16px;text-align:center;font-variant-numeric:tabular-nums}
     .celebrate{text-align:center;padding:18px 0 3px}.celebrate .big{font-size:54px}.celebrate h2{margin:4px 0}.celebrate p{color:#bfc4bc}
-    @media(max-width:920px){
-      body{overflow:auto;background:#20211f}.app{height:auto;min-height:100dvh}.desktop{grid-template-columns:1fr;grid-template-rows:auto auto;padding:8px;gap:8px}
-      .boardArea{min-height:auto}.boardWrap{width:min(100%,66dvh)}.lessonPanel{min-height:520px}.lessonBody{overflow:visible}
+    @media(max-width:1100px){
+      body{overflow:auto;background:#20211f}.app{height:auto;min-height:100dvh}.desktop{grid-template-columns:1fr;grid-template-rows:auto auto;padding:10px;gap:10px}
+      .boardArea{min-height:auto;overflow:visible;padding:14px}.boardWrap{width:min(100%,min(90dvh,820px))}.lessonPanel{min-height:520px}.lessonBody{overflow:visible}
       .topBtn.planText span{display:none}.topBtn.planText:after{content:"แผนสอน"}
       .app.coordinateQuiz .coachRow,.app.coordinateQuiz .lessonDetails,.app.coordinateQuiz .pathDetails,.app.coordinateQuiz .lessonExplain>h1,.app.coordinateQuiz .lessonExplain>p,.app.coordinateQuiz #ruleCard,.app.coordinateQuiz .path,.app.coordinateQuiz .mission{display:none}
       .app.coordinateQuiz .lessonExplain,.app.coordinateQuiz .mission{margin-top:0}
       .app.coordinateQuiz .lessonBody{padding-top:12px}
     }
-    @media(max-width:600px){
-      .app{grid-template-rows:52px auto auto}.topbar{padding:0 9px;gap:6px}.brand{font-size:14px;gap:6px}.brand small{display:none}.brandmark{width:30px;height:30px}.topActions{gap:4px}.topBtn{padding:7px 8px;font-size:12px}
-      .desktop{padding:0;gap:0}.boardArea{border-radius:0;padding:10px;gap:9px}.boardWrap{width:100%;max-width:none}.boardTools{display:grid;grid-template-columns:1fr auto;gap:3px}.toolGroup{grid-column:1/-1}.toolGroup .boardTool{flex:1}.boardTool{font-size:12px;padding:6px 8px;min-height:42px}.destinationsControl{font-size:12px}.arrowActions{margin-left:auto}
-      .lessonPanel{border-radius:0;border-left:0;border-right:0}.lessonHead{height:46px}.lessonBody{padding:17px 14px}
-      .coach{width:52px;height:52px;flex-basis:52px;font-size:27px;border-radius:14px}.speech{font-size:14px;padding:12px}
+    @media(max-width:700px){
+      .app{grid-template-rows:54px auto auto}.topbar{padding:0 8px;gap:5px}.brand{font-size:14px;gap:6px}.brand small{display:none}.brandmark{width:30px;height:30px}.topActions{gap:4px}.topBtn{padding:8px 9px;font-size:13px;min-height:42px}
+      .desktop{padding:0;gap:0}.boardArea{border-radius:0;padding:9px;gap:8px}.boardWrap{width:100%;max-width:none}.boardTools{display:grid;grid-template-columns:1fr;gap:6px}.toolGroup,.boardToggles,.arrowActions{grid-column:1/-1}.toolGroup{width:100%}.toolGroup .boardTool{flex:1}.boardTool{font-size:15px;padding:8px 9px;min-height:46px}.boardToggles{justify-content:space-between;gap:4px}.destinationsControl{font-size:14px;min-height:46px;padding:4px}.arrowActions{justify-content:flex-end}
+      .lessonPanel{border-radius:0;border-left:0;border-right:0}.lessonHead{height:50px}.lessonBody{padding:16px 13px}
+      .coach{width:48px;height:48px;flex-basis:48px;font-size:25px;border-radius:14px}.speech{font-size:16px;padding:12px}.lessonExplain h1{font-size:27px}.quizPrompt{font-size:19px}.quizChoice{font-size:17px;min-height:54px}
       .boardMeta{display:block;height:104px}.nextRoundBtn{margin-top:6px}
       .lessonGrid,.planDays{grid-template-columns:1fr}
       .rulesLink span{display:none}
       .siteFooter{padding:12px 14px;flex-wrap:wrap;gap:10px}.footerByline{font-size:13px}.footerActions{width:100%}.footerBtn{min-height:44px;flex:1;font-size:13px}
       .authorProfile{grid-template-columns:1fr;gap:18px;text-align:center}.authorPortrait{width:144px;justify-self:center}.authorDetails h3{font-size:22px}.modalHead h2{font-size:19px}
+    }
+    @media(min-width:701px) and (max-width:1100px){
+      .boardTools{justify-content:center;gap:8px 18px}.boardToggles{gap:16px}.boardTool{font-size:15px;min-height:46px}
+      .lessonBody{padding:20px clamp(18px,4vw,36px)}.lessonExplain h1{font-size:clamp(28px,3.4vw,36px)}.speech{font-size:18px}
     }
     @media print{body{overflow:visible;background:white}.topbar,.boardArea,.lessonPanel,.siteFooter,#authorOverlay,#creditsOverlay{display:none!important}.overlay{position:static!important;display:block!important;background:white;padding:0}.modal{width:100%;max-height:none;box-shadow:none}.modalHead button{display:none}.modalBody{padding:0}.planDays{display:block}.planDay{margin-bottom:14px}}
   </style>
@@ -225,7 +230,10 @@
           <button class="boardTool" id="moveToolBtn" type="button" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 3l14 9-7 1-4 7z"/></svg>เดินหมาก</button>
           <button class="boardTool" id="arrowToolBtn" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 19L19 5M9 5h10v10"/></svg>วาดลูกศร</button>
         </div>
-        <label class="destinationsControl" title="Show piece destinations"><input id="destinationsToggle" type="checkbox" checked>แสดงตาเดิน</label>
+        <div class="boardToggles">
+          <label class="destinationsControl" title="Show piece destinations"><input id="destinationsToggle" type="checkbox" checked>แสดงตาเดิน</label>
+          <label class="destinationsControl" title="เปิดหรือซ่อนดาวคำใบ้"><input id="starHintToggle" type="checkbox" checked>ดาวคำใบ้</label>
+        </div>
         <div class="arrowActions">
           <button class="boardTool" id="undoArrowBtn" type="button" aria-label="ลบลูกศรล่าสุด" title="ลบลูกศรล่าสุด" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 5L3 10l5 5M3 10h11a6 6 0 010 12"/></svg></button>
           <button class="boardTool" id="clearArrowsBtn" type="button" disabled>ล้างลูกศร</button>
@@ -426,6 +434,7 @@
   var clearArrowsBtn = document.getElementById('clearArrowsBtn');
   var undoArrowBtn = document.getElementById('undoArrowBtn');
   var destinationsToggle = document.getElementById('destinationsToggle');
+  var starHintToggle = document.getElementById('starHintToggle');
   var retryBtn = document.getElementById('retryBtn');
   var nextRoundBtn = document.getElementById('nextRoundBtn');
   var nextRoundHome = nextRoundBtn.parentElement;
@@ -720,11 +729,12 @@
     unlocked:savedUnlocked,
     phase:'intro', current:null, completed:false, hint:false, arrows:[], arrowStart:null,
     selected:false, promoted:false, captured:null, tool:'move', gesture:null, suppressClick:false,
-    focus:null, showDestinations:localStorage.getItem('makrukDestinations')!=='false',
+    focus:null, showDestinations:localStorage.getItem('makrukDestinations')!=='false',showStarHint:localStorage.getItem('makrukStarHint')!=='false',
     correctMoves:0,roundIndex:0,roundDone:false,quizCorrect:false,lastFrom:null,lastTo:null,
-    gamePieces:[],gameOver:false,gameResult:null,gameHistory:[],matchResults:[],pendingNotation:null,starTarget:null,scoreMoves:[],savedScores:[]
+    gamePieces:[],gameOver:false,gameResult:null,gameHistory:[],matchResults:[],pendingNotation:null,starTarget:null,lastStarTarget:null,scoreMoves:[],savedScores:[]
   };
   destinationsToggle.checked=state.showDestinations;
+  starHintToggle.checked=state.showStarHint;
 
   function inBoard(p){return p && p.r>=0&&p.r<8&&p.c>=0&&p.c<8;}
   function normalize(arr){return (arr||[]).filter(inBoard);}
@@ -783,7 +793,15 @@
     state.promoted=false;state.captured=null;state.selected=false;state.roundDone=false;state.hint=false;
     state.quizCorrect=false;state.gameOver=false;state.gameResult=null;state.gameHistory=[];
     state.pendingNotation=null;state.scoreMoves=[];notationForm.hidden=true;notationChoices.innerHTML='';
-    if(state.current&&l.piece&&l.type!=='game'){var starMoves=goalDestinations();if(starMoves.length)state.starTarget=starMoves[0];}
+    if(state.current&&l.piece&&l.type!=='game'){
+      var starMoves=goalDestinations();
+      if(starMoves.length){
+        var starOptions=starMoves.filter(function(square){return !state.lastStarTarget||!same(square,state.lastStarTarget);});
+        if(!starOptions.length)starOptions=starMoves;
+        state.starTarget=starOptions[Math.floor(Math.random()*starOptions.length)];
+        state.lastStarTarget={r:state.starTarget.r,c:state.starTarget.c};
+      }
+    }
     state.lastFrom=state.lastTo=null;state.focus=state.current||{r:7,c:0};
     missionEl.textContent=l.requiredGames?'เกมที่ '+(state.roundIndex+1)+' · หาทางรุกจน':task&&task.mission?task.mission:l.type==='notation'?'เดินตามโจทย์ แล้วเลือกบันทึกที่ถูกต้อง':l.piece?'เดิน'+pieceName[activePiece()]+'ไปเก็บดาว':'ดูโจทย์แล้วเลือกคำตอบ';
     boardCaption.textContent=l.type==='game'?(l.requiredGames?'มินิเกมที่ '+(state.roundIndex+1):'เกมฝึกเต็มกระดาน')+' · คุณเล่นฝ่ายขาว':task&&task.mission?'โจทย์ที่ '+(state.roundIndex+1)+' · '+task.mission:state.current?pieceName[activePiece()]+'อยู่ที่ '+squareLabel(state.current):l.caption;
@@ -805,7 +823,7 @@
   function nextPracticeRound(){
     if(!state.roundDone)return;
     state.roundIndex++;setTool('move');startRound();
-    if((lessons[state.lesson].coordinateLesson||lessons[state.lesson].type==='notation')&&window.matchMedia('(max-width:920px)').matches)boardWrap.scrollIntoView({block:'start'});
+    if((lessons[state.lesson].coordinateLesson||lessons[state.lesson].type==='notation'||lessons[state.lesson].piece)&&window.matchMedia('(max-width:1100px)').matches)boardWrap.scrollIntoView({block:'start'});
   }
   function pieceHtml(type,side){
     var color=side==='white'?'w':'r';
@@ -961,7 +979,6 @@
   function goalDestinations(){
     var l=lessons[state.lesson],task=challenge();
     if(!isBoardPractice()||!state.current)return [];
-    if(state.starTarget)return [state.starTarget];
     if(!task||l.type==='game')return moveDestinations();
     if(task.goal)return [task.goal];
     if(task.goals)return task.goals;
@@ -991,7 +1008,7 @@
           if(state.phase==='intro'||questionSquare&&(state.hint||state.quizCorrect))s.innerHTML+='<span class="squareCoordinate" aria-hidden="true">'+squareLabel(p)+'</span>';
           if(questionSquare)s.classList.add('coordinateTarget');
         }
-        if(state.starTarget&&!state.roundDone&&!state.pendingNotation&&same(p,state.starTarget))s.innerHTML+='<span class="goalStar" aria-hidden="true">★</span>';
+        if(state.showStarHint&&state.starTarget&&!state.roundDone&&!state.pendingNotation&&same(p,state.starTarget))s.innerHTML+='<span class="goalStar" aria-hidden="true">★</span>';
         var pc=pieces.find(function(x){return same(x.at,p);});
         var source=canMove&&state.current&&same(p,state.current);
         if(canMove&&pc&&pc.side==='white'&&(source||l.type==='game'))s.classList.add('selectable');
@@ -1006,7 +1023,7 @@
             if(show)s.classList.add(pc&&pc.side==='black'?'capture':'target');
           }
         }
-        s.setAttribute('aria-label',displayFiles[c]+(8-r)+(state.starTarget&&same(p,state.starTarget)?' ดาวเป้าหมาย':'')+(pc?' '+pieceName[pc.piece]+'ฝ่าย'+(pc.side==='white'?'ขาว':'แดง'): ' ช่องว่าง'));
+        s.setAttribute('aria-label',displayFiles[c]+(state.showStarHint&&state.starTarget&&same(p,state.starTarget)?' ดาวคำใบ้':'')+(pc?' '+pieceName[pc.piece]+'ฝ่าย'+(pc.side==='white'?'ขาว':'แดง'): ' ช่องว่าง'));
         s.setAttribute('aria-pressed',String((source&&state.selected)||(state.arrowStart&&same(p,state.arrowStart))||false));
         if(pc)s.innerHTML+=pieceHtml(pc.piece,pc.side);
         boardEl.appendChild(s);
@@ -1023,7 +1040,7 @@
     state.phase='intro';state.current=l.start?{r:l.start.r,c:l.start.c}:null;state.completed=false;state.hint=false;
     state.selected=false;state.promoted=false;state.captured=null;state.focus=state.current||{r:7,c:0};
     state.correctMoves=0;state.roundIndex=0;state.roundDone=false;state.quizCorrect=false;state.lastFrom=state.lastTo=null;
-    state.matchResults=[];state.savedScores=[];state.pendingNotation=null;state.starTarget=null;state.scoreMoves=[];notationForm.hidden=true;notationChoices.innerHTML='';
+    state.matchResults=[];state.savedScores=[];state.pendingNotation=null;state.starTarget=null;state.lastStarTarget=null;state.scoreMoves=[];notationForm.hidden=true;notationChoices.innerHTML='';
     if(l.type==='notation'){notationForm.insertAdjacentElement('afterend',nextRoundBtn);nextRoundBtn.style.marginTop='10px';}
     state.tool='move';moveToolBtn.setAttribute('aria-pressed','true');arrowToolBtn.setAttribute('aria-pressed','false');boardWrap.classList.remove('arrowMode');
     lessonTitle.textContent=l.title;
@@ -1304,7 +1321,7 @@
       renderBoard();updatePracticeUI();return;
     }
     feedbackEl.className='feedback success';
-    feedbackEl.textContent=state.starTarget?'เก็บดาวแล้ว! ⭐':message;
+    feedbackEl.textContent=state.showStarHint&&state.starTarget?'เก็บดาวแล้ว! ⭐':message;
     showToast('เดินถูก '+state.correctMoves+' / '+l.requiredCorrect+' ✓','good');
     renderBoard();updatePracticeUI();
   }
@@ -1436,6 +1453,10 @@
   destinationsToggle.addEventListener('change',function(){
     state.showDestinations=destinationsToggle.checked;
     localStorage.setItem('makrukDestinations',String(state.showDestinations));renderBoard();
+  });
+  starHintToggle.addEventListener('change',function(){
+    state.showStarHint=starHintToggle.checked;
+    localStorage.setItem('makrukStarHint',String(state.showStarHint));renderBoard();
   });
   retryBtn.addEventListener('click',function(){renderLesson();activateLesson();});
   hintBtn.addEventListener('click',showHint);
