@@ -756,7 +756,7 @@
     selected:false, promoted:false, captured:null, tool:'move', gesture:null, suppressClick:false,
     focus:null, showDestinations:localStorage.getItem('makrukDestinations')!=='false',showStarHint:localStorage.getItem('makrukStarHint')!=='false',
     correctMoves:0,roundIndex:0,roundDone:false,quizCorrect:false,lastFrom:null,lastTo:null,
-    gamePieces:[],gameOver:false,gameResult:null,gameHistory:[],matchResults:[],pendingNotation:null,starTarget:null,lastStarTarget:null,scoreMoves:[],savedScores:[]
+    gamePieces:[],gameOver:false,gameResult:null,gameHistory:[],matchResults:[],pendingNotation:null,starTarget:null,lastStarTarget:null,lastPracticeStart:null,scoreMoves:[],savedScores:[]
   };
   destinationsToggle.checked=state.showDestinations;
   starHintToggle.checked=state.showStarHint;
@@ -782,6 +782,7 @@
     var l=lessons[state.lesson];
     return (isBoardPractice()||l.type==='quiz')&&state.correctMoves>=(l.requiredCorrect||1)&&(!l.requiredGames||state.matchResults.length>=l.requiredGames);
   }
+  function isStarPractice(l){return !!l.piece&&l.type!=='game'&&l.type!=='notation'&&l.id!=='assessment';}
   function updatePracticeUI(){
     var l=lessons[state.lesson],ready=practiceReady();
     practiceCard.hidden=!isBoardPractice()&&l.type!=='quiz';
@@ -791,17 +792,17 @@
       var score=state.matchResults.reduce(function(sum,result){return sum+(result==='white'?1:result===null ? 0.5 : 0);},0);
       practiceRequirement.textContent='ผ่านเมื่อครบจำนวนเกม · แพ้หรือเสมอก็ผ่านได้';
     }else if(l.piece){
-      practiceCounter.textContent=l.type==='notation'?'จดถูก '+state.correctMoves+' / 5 ตา'+(ready?' · ครบเกณฑ์แล้ว ✓':''):l.id==='assessment'?'ผ่าน '+state.correctMoves+' / 5 ด่าน'+(ready?' · ครบทั้ง 5 ด่านแล้ว ✓':''):'เดินถูก '+state.correctMoves+' / '+l.requiredCorrect+' ครั้ง'+(ready?' · ครบเกณฑ์แล้ว ✓':'');
-      practiceRequirement.textContent='ลองใหม่ได้เสมอ · ครบแล้วกดยอมรับเพื่อไปต่อ';
+      practiceCounter.textContent=l.type==='notation'?'จดถูก '+state.correctMoves+' / 5 ตา'+(ready?' · ครบเกณฑ์แล้ว ✓':''):l.id==='assessment'?'ผ่าน '+state.correctMoves+' / 5 ด่าน'+(ready?' · ครบทั้ง 5 ด่านแล้ว ✓':''):isStarPractice(l)?'เก็บดาว '+state.correctMoves+' / '+l.requiredCorrect+' ดวง'+(ready?' · ผ่านด่านแล้ว ✓':''):'เดินถูก '+state.correctMoves+' / '+l.requiredCorrect+' ครั้ง'+(ready?' · ครบเกณฑ์แล้ว ✓':'');
+      practiceRequirement.textContent=isStarPractice(l)?'ทำภารกิจสำเร็จเพื่อเก็บดาว · เก็บครบแล้วกดยอมรับเพื่อไปต่อ':'ลองใหม่ได้เสมอ · ครบแล้วกดยอมรับเพื่อไปต่อ';
     }else if(l.type==='quiz'){
       practiceCounter.textContent='ตอบถูก '+state.correctMoves+' / '+(l.requiredCorrect||1)+' ข้อ'+(ready?' · ครบเกณฑ์แล้ว ✓':'');
       practiceRequirement.textContent='ตอบผิดลองใหม่ได้ · ครบแล้วกดยอมรับเพื่อไปต่อ';
     }
     nextRoundBtn.hidden=!(state.phase==='active'&&state.roundDone&&(l.challenges||l.questions||l.type==='game'||l.piece));
-    nextRoundBtn.textContent=l.type==='game'?'เกมถัดไป →':l.type==='notation'?'โจทย์จดตาถัดไป →':'ภารกิจถัดไป →';
+    nextRoundBtn.textContent=l.type==='game'?'เกมถัดไป →':l.type==='notation'?'โจทย์จดตาถัดไป →':isStarPractice(l)?'ไปเก็บดาวดวงถัดไป ⭐':'ภารกิจถัดไป →';
     if(state.phase==='active'&&(isBoardPractice()||l.type==='quiz')){
       mainBtn.disabled=!ready;
-      mainBtn.textContent=ready?'ยอมรับผ่านบทนี้ →':l.requiredGames?'จบเกมอีก '+Math.max(0,l.requiredGames-state.matchResults.length)+' เกมเพื่อผ่าน':l.type==='quiz'?'ตอบถูกอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ข้อเพื่อผ่าน':l.id==='assessment'?'ทำอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ด่านเพื่อผ่าน':'เดินถูกอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ครั้งเพื่อผ่าน';
+      mainBtn.textContent=ready?'ยอมรับผ่านบทนี้ →':l.requiredGames?'จบเกมอีก '+Math.max(0,l.requiredGames-state.matchResults.length)+' เกมเพื่อผ่าน':l.type==='quiz'?'ตอบถูกอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ข้อเพื่อผ่าน':l.id==='assessment'?'ทำอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ด่านเพื่อผ่าน':isStarPractice(l)?'เก็บดาวอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ดวงเพื่อผ่าน':'เดินถูกอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ครั้งเพื่อผ่าน';
       if(l.type==='notation'&&!ready)mainBtn.textContent='จดถูกอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ตาเพื่อผ่าน';
     }
     updateBoardHelp();
@@ -814,8 +815,12 @@
     appEl.classList.remove('activeNotation');
     clearArrows();
     var start=task?task.start:l.start;
+    if(!task&&l.type==='move'&&state.roundIndex>0){
+      do{start={r:Math.floor(Math.random()*8),c:Math.floor(Math.random()*8)};}while(state.lastPracticeStart&&same(start,state.lastPracticeStart));
+    }
     if(l.type==='game')state.gamePieces=Rules.clonePieces(task?task.pieces:fullSetup());
     state.current=start?{r:start.r,c:start.c}:null;
+    if(start&&l.type==='move')state.lastPracticeStart={r:start.r,c:start.c};
     state.starTarget=null;
     state.promoted=false;state.captured=null;state.selected=false;state.roundDone=false;state.hint=false;
     state.quizCorrect=false;state.gameOver=false;state.gameResult=null;state.gameHistory=[];
@@ -833,7 +838,7 @@
     missionEl.textContent=l.requiredGames?'เกมที่ '+(state.roundIndex+1)+' · หาทางรุกจน':task&&task.mission?task.mission:l.type==='notation'?'เดินตามโจทย์ แล้วเลือกบันทึกที่ถูกต้อง':l.piece?'เดิน'+pieceName[activePiece()]+'ไปเก็บดาว':'ดูโจทย์แล้วเลือกคำตอบ';
     mobileSpeechEl.textContent=l.type==='notation'?'เดินหมาก แล้วเลือกบันทึกที่ถูกต้อง':l.type==='game'?'เลือกหมากขาว แล้วทำภารกิจ':l.type==='quiz'?task&&task.mission?task.mission:l.mission:task&&task.mission?task.mission:l.piece?state.showStarHint?'เดิน'+pieceName[activePiece()]+'ไปเก็บดาว ⭐':'ลองเดิน'+pieceName[activePiece()]:'มาลองทำภารกิจนี้กัน';
     boardCaption.textContent=l.type==='game'?(l.requiredGames?'มินิเกมที่ '+(state.roundIndex+1):'เกมฝึกเต็มกระดาน')+' · คุณเล่นฝ่ายขาว':task&&task.mission?'โจทย์ที่ '+(state.roundIndex+1)+' · '+task.mission:state.current?pieceName[activePiece()]+'อยู่ที่ '+squareLabel(state.current):l.caption;
-    feedbackEl.className='feedback';feedbackEl.textContent=l.type==='game'?'เลือกหมาก แล้วเดินให้ปลอดภัย':l.type==='quiz'?'เลือกคำตอบด้านล่าง':'เดินไปเก็บดาวให้ครบ '+l.requiredCorrect+' ดวง';
+    feedbackEl.className='feedback';feedbackEl.textContent=l.type==='game'?'เลือกหมาก แล้วเดินให้ปลอดภัย':l.type==='quiz'?'เลือกคำตอบด้านล่าง':isStarPractice(l)?'เดินไปเก็บดาวให้ครบ '+l.requiredCorrect+' ดวง':'เดินให้ถูกตามภารกิจ';
     if(l.coordinateLesson){
       if(state.phase==='intro'){
         missionEl.textContent=l.mission;boardCaption.textContent=l.caption;
@@ -1007,7 +1012,10 @@
   function goalDestinations(){
     var l=lessons[state.lesson],task=challenge();
     if(!isBoardPractice()||!state.current)return [];
-    if(!task||l.type==='game')return moveDestinations();
+    if(!task||l.type==='game'){
+      if(l.type==='move'&&state.showStarHint&&state.starTarget)return [state.starTarget];
+      return moveDestinations();
+    }
     if(task.goal)return [task.goal];
     if(task.goals)return task.goals;
     if(l.type==='check')return moveDestinations().filter(function(p){return Rules.inCheck(Rules.applyMove(boardPieces(),state.current,p),'black');});
@@ -1067,7 +1075,7 @@
     clearArrows();
     state.phase='intro';state.current=l.start?{r:l.start.r,c:l.start.c}:null;state.completed=false;state.hint=false;
     state.selected=false;state.promoted=false;state.captured=null;state.focus=state.current||{r:7,c:0};
-    state.correctMoves=0;state.roundIndex=0;state.roundDone=false;state.quizCorrect=false;state.lastFrom=state.lastTo=null;
+    state.correctMoves=0;state.roundIndex=0;state.roundDone=false;state.quizCorrect=false;state.lastFrom=state.lastTo=null;state.lastPracticeStart=null;
     state.matchResults=[];state.savedScores=[];state.pendingNotation=null;state.starTarget=null;state.lastStarTarget=null;state.scoreMoves=[];notationForm.hidden=true;notationChoices.innerHTML='';
     if(l.type==='notation'){
       if(window.matchMedia('(max-width:700px)').matches)nextRoundHome.appendChild(nextRoundBtn);
@@ -1358,8 +1366,8 @@
       renderBoard();updatePracticeUI();return;
     }
     feedbackEl.className='feedback success';
-    feedbackEl.textContent=state.showStarHint&&state.starTarget?'เก็บดาวแล้ว! ⭐':message;
-    showToast('เดินถูก '+state.correctMoves+' / '+l.requiredCorrect+' ✓','good');
+    feedbackEl.textContent=isStarPractice(l)?'เก็บดาวแล้ว! ⭐ '+state.correctMoves+' / '+l.requiredCorrect:message;
+    showToast(isStarPractice(l)?'เก็บดาว '+state.correctMoves+' / '+l.requiredCorrect+' ✓':'เดินถูก '+state.correctMoves+' / '+l.requiredCorrect+' ✓','good');
     renderBoard();updatePracticeUI();
   }
 
