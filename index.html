@@ -487,7 +487,7 @@
     },
     {
       title:'รุก',day:2,type:'check',piece:'rook',start:pos('a',4),
-      speech:'Day 2 เริ่มด้วยคำสำคัญมาก: <strong>“รุก”</strong> คือขุนกำลังถูกโจมตี',
+      speech:'ต่อไปคือคำสำคัญมาก: <strong>“รุก”</strong> คือขุนกำลังถูกโจมตี',
       heading:'รุก · ทำให้ขุนอยู่ในแนวโจมตี',
       description:'ถ้าขุนถูกรุก ผู้เล่นต้องแก้การรุกทันที ก่อนคิดเรื่องอื่น',
       rule:'รุก = ขุนกำลังถูกโจมตี',
@@ -645,7 +645,7 @@
     nextRoundBtn.textContent=l.type==='game'?'เปิดเกมฝึกถัดไป →':l.type==='quiz'?'ดูสถานการณ์ถัดไป →':'ฝึกโจทย์ถัดไป →';
     if(state.phase==='active'&&(isBoardPractice()||l.type==='quiz')){
       mainBtn.disabled=!ready;
-      mainBtn.textContent=ready?'ยอมรับผ่านบทนี้ →':l.requiredGames?'จบเกมอีก '+Math.max(0,l.requiredGames-state.matchResults.length)+' เกมเพื่อผ่าน':l.type==='quiz'?'ตอบถูกอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ข้อเพื่อผ่าน':'เดินถูกอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ครั้งเพื่อผ่าน';
+      mainBtn.textContent=ready?'ยอมรับผ่านบทนี้ →':l.requiredGames?'จบเกมอีก '+Math.max(0,l.requiredGames-state.matchResults.length)+' เกมเพื่อผ่าน':l.type==='quiz'?'ตอบถูกอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ข้อเพื่อผ่าน':l.id==='assessment'?'ทำอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ด่านเพื่อผ่าน':'เดินถูกอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ครั้งเพื่อผ่าน';
     }
     updateBoardHelp();
   }
