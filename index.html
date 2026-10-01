@@ -21,18 +21,29 @@
     button{font:inherit}
     [hidden]{display:none!important}
     button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid #8ee2d0;outline-offset:3px}
-    .app{height:100dvh;display:grid;grid-template-rows:58px minmax(0,1fr) auto}
+    .app{height:100dvh;display:grid;grid-template-rows:58px minmax(0,1fr)}
     .topbar{display:flex;align-items:center;padding:0 16px;gap:12px;background:#1d1e1c;border-bottom:1px solid #343632;z-index:20}
     .brand{display:flex;align-items:center;gap:9px;font-weight:950;letter-spacing:.2px;white-space:nowrap}
     .brandmark{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(145deg,var(--accent),var(--accent2));color:#073d36;font-weight:950;box-shadow:inset 0 -3px rgba(0,0,0,.12)}
     .brand small{display:block;font-size:10px;color:#9fa49c;font-weight:700;line-height:1}
     .topActions{margin-left:auto;display:flex;gap:8px}
+    .topMenu{position:relative}
+    .topMenu>summary,.boardToolsDetails>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:center;min-height:38px;padding:6px 12px;border:1px solid #3b3d39;border-radius:10px;background:#282a27;color:#e1e5dd;font-weight:850;white-space:nowrap}
+    .topMenu>summary::-webkit-details-marker,.boardToolsDetails>summary::-webkit-details-marker{display:none}
+    .topMenu>summary:after,.boardToolsDetails>summary:after{content:'⌄';margin-left:8px;color:#9eaa95}
+    .topMenu[open]>summary:after,.boardToolsDetails[open]>summary:after{content:'⌃'}
+    .topMenuPanel{position:absolute;right:0;top:calc(100% + 7px);z-index:50;display:grid;grid-template-columns:1fr 1fr;gap:7px;width:min(310px,calc(100vw - 20px));padding:10px;border:1px solid #42463d;border-radius:13px;background:#20221f;box-shadow:var(--shadow)}
+    .topMenuPanel .topBtn{min-height:42px;text-align:center;font-size:13px}
+    .topMenuAuthor{grid-column:1/-1;padding:8px 4px 3px;color:#e4e9df;text-align:center;font-size:13px;font-weight:800}
     .topBtn{border:1px solid #3b3d39;background:#282a27;color:#dfe2dc;padding:8px 11px;border-radius:10px;font-weight:800;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
     .topBtn:hover{background:#333630}
     .desktop{min-height:0;display:grid;grid-template-columns:minmax(0,1.82fr) minmax(330px,.98fr);gap:10px;padding:10px}
     .boardArea{min-width:0;min-height:0;background:#20211f;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:12px;position:relative;overflow:hidden}
     .mobileCoachRow{display:none}
     .boardTools{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;width:100%;max-width:860px;flex-shrink:0}
+    .boardToolsDetails{position:relative;z-index:15;width:100%;max-width:860px;flex-shrink:0}
+    .boardToolsDetails>summary{width:max-content;min-height:34px;padding:4px 10px;font-size:13px}
+    .boardToolsDetails .boardTools{position:absolute;left:0;top:calc(100% + 5px);width:100%;padding:8px 10px;border:1px solid #41443c;border-radius:12px;background:#20221f;box-shadow:var(--shadow)}
     .toolGroup{display:flex;gap:4px;background:#161815;border:1px solid #363a32;padding:3px;border-radius:11px}
     .boardTool{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:7px 10px;border:1px solid transparent;border-radius:8px;background:transparent;color:#bdc3b8;cursor:pointer;font-size:13px;font-weight:800;white-space:nowrap}
     .boardTool svg{width:18px;height:18px;flex-shrink:0}
@@ -78,7 +89,7 @@
     .dragPiece img{width:100%;height:100%;object-fit:contain}
     .boardMeta{width:100%;max-width:860px;height:76px;flex-shrink:0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:start;color:#cbd1c5;font-size:12px;line-height:1.5}
     .nextRoundBtn{border-color:#708b54;color:#d8edbf;background:#2b3b22;min-height:44px}
-    .boardCaption{font-weight:800;font-size:14px}
+    .boardCaption{font-weight:800;font-size:16px}
     .boardHelp{color:#b3bba9;margin-top:3px;font-size:13px}
     .statusToast{position:absolute;top:16px;left:50%;transform:translate(-50%,-15px);opacity:0;background:#fff;color:#28302c;padding:10px 16px;border-radius:999px;font-weight:900;z-index:10;box-shadow:0 10px 30px rgba(0,0,0,.25);transition:.24s;pointer-events:none}
     .statusToast.show{opacity:1;transform:translate(-50%,0)}
@@ -88,21 +99,21 @@
     .lessonHead{height:50px;display:flex;align-items:center;border-bottom:1px solid #32342f;padding:0 13px;gap:10px;background:#1c1d1b}
     .iconBtn{width:36px;height:36px;border:0;background:transparent;color:#b8bcb4;border-radius:9px;cursor:pointer;font-size:20px}
     .iconBtn:hover{background:#2b2d29;color:white}
-    .lessonTitle{flex:1;text-align:center;font-weight:950}
+    .lessonTitle{flex:1;text-align:center;font-weight:950;font-size:18px}
     .dayTag{font-size:11px;padding:4px 8px;border-radius:999px;background:#2f3930;color:#bde0aa;font-weight:900}
-    .lessonProgress{padding:12px 16px;border-bottom:1px solid #30322e}
-    .progressMeta{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#aeb2aa;margin-bottom:8px}
-    .progressTrack{height:8px;background:#343632;border-radius:999px;overflow:hidden}
+    .lessonProgress{padding:5px 16px;border-bottom:1px solid #30322e}
+    .progressMeta{display:none}
+    .progressTrack{height:4px;background:#343632;border-radius:999px;overflow:hidden}
     .progressFill{height:100%;background:linear-gradient(90deg,var(--accent),#70d45f);width:0;transition:width .35s ease}
     .lessonBody{min-height:0;overflow:auto;padding:22px 20px 18px;font-size:16px}
     .coachRow{display:flex;gap:12px;align-items:flex-start}
     .coach{flex:0 0 66px;width:66px;height:66px;border-radius:18px;background:linear-gradient(145deg,#815c3e,#5a3e2b);display:grid;place-items:center;font-size:34px;box-shadow:0 8px 18px rgba(0,0,0,.23)}
-    .speech{position:relative;background:#f7f7f4;color:#2d302d;border-radius:15px;padding:14px 16px;font-size:17px;line-height:1.55;flex:1;box-shadow:0 7px 18px rgba(0,0,0,.13)}
+    .speech{position:relative;background:#f7f7f4;color:#2d302d;border-radius:15px;padding:14px 16px;font-size:18px;line-height:1.5;flex:1;box-shadow:0 7px 18px rgba(0,0,0,.13)}
     .speech:before{content:"";position:absolute;left:-9px;top:21px;border-style:solid;border-width:9px 10px 9px 0;border-color:transparent #f7f7f4 transparent transparent}
     .speech strong{color:#1f5e50}
     .lessonExplain{margin-top:12px}
     .lessonExplain h1{font-size:clamp(25px,3vw,38px);line-height:1.2;margin:0 0 7px}
-    .lessonExplain p{color:#c2c6bf;margin:0 0 15px}
+    .lessonExplain p{color:#c2c6bf;margin:0 0 15px;font-size:17px;line-height:1.55}
     .lessonDetails{margin:10px 0 0;border:1px solid #3a3d38;border-radius:12px;background:#242623;color:#b9c0b3}
     .lessonDetails summary{padding:10px 12px;cursor:pointer;font-weight:800;font-size:12px;color:#c6d8b8}
     .lessonDetailsContent{padding:0 12px 12px}
@@ -114,10 +125,10 @@
     .legend span{display:flex;align-items:center;gap:6px}
     .dot{width:12px;height:12px;border-radius:50%;background:var(--arrow)}.dot.captureDot{background:transparent;border:2px solid var(--arrow)}.dot.gold{background:var(--gold)}
     .mission{margin-top:10px;padding:11px 13px;background:#143f38;border:1px solid #26665a;border-radius:13px}
-    .mission b{display:block;color:#8ee2d0;margin-bottom:4px}.mission span{color:#d6e7e2;font-size:14px}
+    .mission b{display:block;color:#8ee2d0;margin-bottom:4px;font-size:15px}.mission span{color:#d6e7e2;font-size:17px;line-height:1.5}
     .practiceCard{margin-top:10px;padding:10px 12px;border:1px solid #454c3c;border-radius:12px;background:#2a2e24}
     .practiceCard.ready{background:#263b25;border-color:#648b48}
-    .practiceCard strong{display:block;font-size:18px;color:#dcf0c6;margin-bottom:5px}
+    .practiceCard strong{display:block;font-size:20px;color:#dcf0c6;margin-bottom:5px}
     .practiceCard p{display:none}
     .feedback{min-height:46px;margin-top:9px;padding:10px 12px;border-radius:12px;background:#252724;border:1px dashed #40433d;color:#c9cec5;font-size:15px;line-height:1.45}
     .feedback.success{background:#263b25;border-color:#4c7745;color:#d4efcf}
@@ -143,7 +154,7 @@
     .modalHead{position:sticky;top:0;display:flex;align-items:center;gap:10px;padding:16px 18px;background:#f7f5eb;border-bottom:1px solid #d9ddd4;z-index:2}
     .modalHead h2{margin:0;font-size:22px}.modalHead button{margin-left:auto;border:0;background:#e8ebe4;width:36px;height:36px;border-radius:10px;cursor:pointer;font-size:18px}
     .modalBody{padding:18px}
-    .siteFooter{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 16px;background:#1d1e1c;border-top:1px solid #343632}
+    .siteFooter{display:none}
     .footerByline{display:flex;align-items:center;gap:9px;min-width:0;font-size:13px;line-height:1.4}.footerByline small{display:block;color:#aab4a3;font-size:10px}.footerByline strong{overflow-wrap:anywhere}
     .authorBadge{display:grid;place-items:center;width:32px;height:32px;flex-shrink:0;border:1px solid #5d7051;border-radius:50%;background:#2d3d28;color:#d6e8c5;font-weight:900}
     .footerActions{display:flex;gap:7px;flex-shrink:0}.footerBtn{min-height:36px;border:1px solid #48543e;border-radius:9px;background:#2b3426;color:#d9e8cf;padding:7px 12px;cursor:pointer;font-size:12px;font-weight:800}.footerBtn:hover{background:#3b4b31}
@@ -193,18 +204,17 @@
       .app.coordinateQuiz .lessonBody{padding-top:12px}
     }
     @media(max-width:1100px){
-      html,body{height:100%;overflow:hidden;overscroll-behavior:none}.app{height:100dvh;min-height:0;grid-template-rows:44px minmax(0,1fr) 36px}.topbar{padding:0 7px;gap:4px;min-width:0}.brand{font-size:13px;gap:5px}.brand small{display:none}.brandmark{width:28px;height:28px}.topActions{gap:3px;min-width:0}.topBtn{padding:5px 7px;font-size:11px;min-height:34px}
+      html,body{height:100%;overflow:hidden;overscroll-behavior:none}.app{height:100dvh;min-height:0;grid-template-rows:44px minmax(0,1fr)}.topbar{padding:0 7px;gap:4px;min-width:0}.brand{font-size:13px;gap:5px}.brand small{display:none}.brandmark{width:28px;height:28px}.topActions{gap:3px;min-width:0}.topBtn{padding:5px 7px;font-size:11px;min-height:34px}.topMenu>summary{min-height:34px;padding:4px 9px;font-size:12px}.topMenuPanel{width:min(290px,calc(100vw - 14px))}
       .desktop{height:100%;min-height:0;display:flex;flex-direction:column;padding:0;gap:0;overflow:hidden}.boardArea{order:0;flex:1 1 auto;min-height:0;justify-content:flex-start;gap:4px;padding:4px 8px 2px;border-radius:0;overflow:hidden}
       .mobileCoachRow{display:flex;align-items:center;gap:8px;width:100%;flex:0 0 auto;min-height:44px;padding:2px 2px 4px;order:-1}.mobileCoachRow .coach{width:40px;height:40px;flex-basis:40px;font-size:22px;border-radius:12px}.mobileCoachRow .speech{font-size:clamp(15px,4vw,18px);line-height:1.28;padding:8px 11px;border-radius:12px}
       .boardTools{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:2px;width:100%;max-width:none;flex:0 0 auto}.toolGroup{display:grid;grid-template-columns:1fr 1fr;gap:1px;padding:2px}.toolGroup .boardTool{justify-content:center}.boardTool{font-size:12px;padding:4px 5px;min-height:34px;gap:3px}.boardTool svg{width:15px;height:15px}.boardToggles{display:grid;grid-template-columns:1fr;gap:0;align-content:center}.destinationsControl{gap:4px;min-height:25px;padding:0;font-size:12px;white-space:nowrap}.destinationsControl input{width:16px;height:16px}.arrowActions{gap:0;justify-content:flex-end}.arrowActions .boardTool{width:31px;padding:3px}.arrowActions #clearArrowsBtn{font-size:0}.arrowActions #clearArrowsBtn:before{content:'×';font-size:20px}
       .boardWrap{width:min(100%,calc(100dvh - 380px));height:min(100%,calc(100dvh - 380px));max-width:none;min-width:0;min-height:0;flex:0 1 auto;aspect-ratio:1}.boardMeta{width:100%;height:auto;min-height:21px;flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:12px}.boardCaption{font-size:13px}.boardHelp{display:none}.nextRoundBtn{min-height:34px;margin:0;padding:4px 8px;font-size:13px}
-      .lessonPanel{order:1;flex:0 0 auto;min-height:0;max-height:38dvh;overflow:hidden;border-radius:0;border:0;border-top:1px solid #393c35;grid-template-rows:auto auto auto;background:#1d1f1c}.lessonHead{height:38px;min-height:38px;padding:0 8px}.lessonTitle{font-size:15px}.lessonProgress{display:none}.lessonBody{min-height:0;overflow:hidden;padding:4px 10px 2px}.coachRow,.lessonDetails,.pathDetails,.lessonExplain>h1,.lessonExplain>p,.lessonExplain>.mission,.lessonExplain>.gameNote,.lessonExplain>.moveHistory,.lessonExplain>.scoreSheetWrap{display:none!important}.lessonExplain{margin:0}.practiceCard{margin:0;padding:4px 8px;border:0;background:transparent;text-align:center}.practiceCard strong{font-size:clamp(15px,4vw,19px);margin:0}.practiceCard p{display:none}.lessonActions{justify-content:center;gap:6px;margin-top:2px}.hintBtn{margin:0;min-height:34px;padding:5px 10px;font-size:13px}.lessonFoot{grid-template-columns:42px 1fr;gap:6px;padding:5px 8px}.menuBtn{min-height:40px}.mainBtn{height:42px;min-height:42px;font-size:15px}.feedback{display:none}
+      .lessonPanel{order:1;flex:0 0 auto;min-height:0;max-height:38dvh;overflow:hidden;border-radius:0;border:0;border-top:1px solid #393c35;grid-template-rows:auto auto auto;background:#1d1f1c}.lessonHead{height:38px;min-height:38px;padding:0 8px}.lessonTitle{font-size:16px}.lessonProgress{display:none}.lessonBody{min-height:0;overflow:hidden;padding:4px 10px 2px}.coachRow,.lessonDetails,.pathDetails,.lessonExplain>h1,.lessonExplain>p,.lessonExplain>.mission,.lessonExplain>.gameNote,.lessonExplain>.moveHistory,.lessonExplain>.scoreSheetWrap{display:none!important}.lessonExplain{margin:0}.practiceCard{margin:0;padding:4px 8px;border:0;background:transparent;text-align:center}.practiceCard strong{font-size:clamp(17px,4vw,21px);margin:0}.practiceCard p{display:none}.lessonActions{justify-content:center;gap:6px;margin-top:2px}.hintBtn{margin:0;min-height:34px;padding:5px 10px;font-size:14px}.lessonFoot{grid-template-columns:42px 1fr;gap:6px;padding:5px 8px}.menuBtn{min-height:40px}.mainBtn{height:42px;min-height:42px;font-size:16px}.feedback{display:none}
       .quizBox{gap:5px;margin:2px 0}.quizPrompt{display:none}.quizChoice{min-height:39px;padding:6px 10px;font-size:15px;line-height:1.2;text-align:center}.notationForm{margin:0;padding:4px 7px;border:0;background:transparent}.notationPrompt{font-size:13px;text-align:center;margin:0}.notationChoices{gap:4px}.notationChoices .quizChoice{min-height:36px;font-size:14px;padding:4px 6px}
       .app.activeQuiz .boardWrap,.app.activeNotation .boardWrap{width:min(100%,calc(100dvh - 470px));height:min(100%,calc(100dvh - 470px))}.app.activeQuiz .lessonPanel,.app.activeNotation .lessonPanel{max-height:47dvh}
       .app.activeNotation #practiceCard{display:none}.app.activeQuiz #practiceCard{display:block;padding:2px 0}.app.activeQuiz .lessonBody,.app.activeNotation .lessonBody{padding:3px 8px 1px}.app.activeQuiz .lessonActions,.app.activeNotation .lessonActions{display:none}
       .app.activeQuiz .feedback{display:block;min-height:0;margin:0;padding:3px 6px;border:0;background:transparent;text-align:center;font-size:13px}
       .square .coord{font-size:clamp(12px,3vw,18px)}.square.coordinateTarget:before{border-width:3px;inset:7%}.squareCoordinate{font-size:clamp(15px,4.4vw,24px)}
-      .siteFooter{height:36px;min-height:36px;padding:2px 7px;justify-content:center}.footerByline{display:none}.footerActions{width:auto;gap:5px}.footerBtn{min-height:30px;padding:3px 10px;font-size:11px}
       .lessonGrid,.planDays{grid-template-columns:1fr}
       .rulesLink span{display:none}
       .authorProfile{grid-template-columns:1fr;gap:18px;text-align:center}.authorPortrait{width:144px;justify-self:center}.authorDetails h3{font-size:22px}.modalHead h2{font-size:19px}
@@ -226,28 +236,39 @@
       <div>Makruk Learn<small>หมากรุกไทยทีละขั้น</small></div>
     </div>
     <div class="topActions">
-      <a class="topBtn rulesLink" id="rulesPdfLink" href="assets/rules/makruk-rules-2569.pdf" target="_blank" rel="noopener" title="เปิดกติกาหมากรุกไทย พ.ศ. 2569 ในแท็บใหม่">กติกา<span>&nbsp;PDF</span></a>
-      <button class="topBtn planText" id="planBtn" type="button"><span>แผนสอน 2 วัน</span></button>
-      <button class="topBtn" id="resetBtn" type="button" title="เริ่มบทเรียนใหม่">เริ่มใหม่</button>
+      <details class="topMenu">
+        <summary>เพิ่มเติม</summary>
+        <div class="topMenuPanel">
+          <a class="topBtn rulesLink" id="rulesPdfLink" href="assets/rules/makruk-rules-2569.pdf" target="_blank" rel="noopener" title="เปิดกติกาหมากรุกไทย พ.ศ. 2569 ในแท็บใหม่">กติกา PDF</a>
+          <button class="topBtn planText" id="planBtn" type="button">แผนสอน 2 วัน</button>
+          <button class="topBtn" id="resetBtn" type="button" title="เริ่มบทเรียนใหม่">เริ่มใหม่</button>
+          <button class="topBtn" id="authorBtn" type="button" aria-haspopup="dialog" aria-controls="authorOverlay">ผู้จัดทำ</button>
+          <button class="topBtn" id="creditsBtn" type="button" aria-haspopup="dialog" aria-controls="creditsOverlay">เครดิต</button>
+          <div class="topMenuAuthor">สื่อการสอนโดย นายณัฐกมล สุนทรพิทักษ์</div>
+        </div>
+      </details>
     </div>
   </header>
 
   <main class="desktop">
     <section class="boardArea" aria-label="กระดานฝึกหมากรุกไทย">
-      <div class="boardTools" role="toolbar" aria-label="เครื่องมือกระดาน">
-        <div class="toolGroup">
-          <button class="boardTool" id="moveToolBtn" type="button" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 3l14 9-7 1-4 7z"/></svg>เดินหมาก</button>
-          <button class="boardTool" id="arrowToolBtn" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 19L19 5M9 5h10v10"/></svg>วาดลูกศร</button>
+      <details class="boardToolsDetails">
+        <summary>เครื่องมือกระดาน</summary>
+        <div class="boardTools" role="toolbar" aria-label="เครื่องมือกระดาน">
+          <div class="toolGroup">
+            <button class="boardTool" id="moveToolBtn" type="button" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 3l14 9-7 1-4 7z"/></svg>เดินหมาก</button>
+            <button class="boardTool" id="arrowToolBtn" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 19L19 5M9 5h10v10"/></svg>วาดลูกศร</button>
+          </div>
+          <div class="boardToggles">
+            <label class="destinationsControl" title="Show piece destinations"><input id="destinationsToggle" type="checkbox" checked>แสดงตาเดิน</label>
+            <label class="destinationsControl" title="เปิดหรือซ่อนดาวคำใบ้"><input id="starHintToggle" type="checkbox" checked>ดาวคำใบ้</label>
+          </div>
+          <div class="arrowActions">
+            <button class="boardTool" id="undoArrowBtn" type="button" aria-label="ลบลูกศรล่าสุด" title="ลบลูกศรล่าสุด" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 5L3 10l5 5M3 10h11a6 6 0 010 12"/></svg></button>
+            <button class="boardTool" id="clearArrowsBtn" type="button" disabled>ล้างลูกศร</button>
+          </div>
         </div>
-        <div class="boardToggles">
-          <label class="destinationsControl" title="Show piece destinations"><input id="destinationsToggle" type="checkbox" checked>แสดงตาเดิน</label>
-          <label class="destinationsControl" title="เปิดหรือซ่อนดาวคำใบ้"><input id="starHintToggle" type="checkbox" checked>ดาวคำใบ้</label>
-        </div>
-        <div class="arrowActions">
-          <button class="boardTool" id="undoArrowBtn" type="button" aria-label="ลบลูกศรล่าสุด" title="ลบลูกศรล่าสุด" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 5L3 10l5 5M3 10h11a6 6 0 010 12"/></svg></button>
-          <button class="boardTool" id="clearArrowsBtn" type="button" disabled>ล้างลูกศร</button>
-        </div>
-      </div>
+      </details>
       <div class="mobileCoachRow"><div class="coach" aria-hidden="true">🧑‍🏫</div><div class="speech" id="mobileSpeech"></div></div>
       <div class="boardWrap">
         <div class="board" id="board" role="group" aria-label="กระดาน 8 คูณ 8 ใช้ปุ่มลูกศรเลื่อนช่อง และ Enter เพื่อเลือก" aria-describedby="boardHelp"></div>
@@ -329,7 +350,7 @@
           </div>
           <div class="feedback" id="feedback" role="status" aria-live="polite">อ่านคำอธิบาย แล้วกด “เริ่มฝึก”</div>
 
-          <details class="pathDetails"><summary>สารบัญบทเรียน</summary><div class="path" id="path" aria-label="ความคืบหน้าบทเรียน"></div></details>
+          <details class="pathDetails" hidden><summary>สารบัญบทเรียน</summary><div class="path" id="path" aria-label="ความคืบหน้าบทเรียน"></div></details>
         </div>
       </div>
 
@@ -339,13 +360,6 @@
       </div>
     </aside>
   </main>
-  <footer class="siteFooter" aria-label="ผู้จัดทำและเครดิต">
-    <div class="footerByline"><span class="authorBadge" aria-hidden="true">ณ</span><div><small>ผู้จัดทำสื่อการสอน</small><strong>นายณัฐกมล สุนทรพิทักษ์</strong></div></div>
-    <nav class="footerActions" aria-label="ข้อมูลเว็บไซต์">
-      <button class="footerBtn" id="authorBtn" type="button" aria-haspopup="dialog" aria-controls="authorOverlay">ผู้จัดทำ</button>
-      <button class="footerBtn" id="creditsBtn" type="button" aria-haspopup="dialog" aria-controls="creditsOverlay">เครดิต</button>
-    </nav>
-  </footer>
 </div>
 
 <div class="overlay" id="menuOverlay">
@@ -1487,6 +1501,7 @@
   retryBtn.addEventListener('click',function(){renderLesson();activateLesson();});
   hintBtn.addEventListener('click',showHint);
   prevBtn.addEventListener('click',function(){if(state.lesson>0){state.lesson--;renderLesson();}});
+  document.querySelector('.topMenuPanel').addEventListener('click',function(e){if(e.target.closest('button,a'))this.closest('details').open=false;});
   document.getElementById('menuBtn').addEventListener('click',function(){openOverlay('menuOverlay');});
   document.getElementById('planBtn').addEventListener('click',function(){openOverlay('planOverlay');});
   document.getElementById('authorBtn').addEventListener('click',function(){openOverlay('authorOverlay');});
