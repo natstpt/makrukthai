@@ -97,15 +97,16 @@ for (const [i, question] of setup.questions.entries()) {
 const notation = byId('notation');
 check(notation.type, 'notation', 'notation uses move-then-write practice');
 check(notation.day, 2, 'notation follows the check and checkmate lessons on Day 2');
-check(notation.requiredCorrect, 5, 'notation requires five correct written moves');
-check(notation.challenges.length, 5, 'notation has five different move scenarios');
-check(Array.from(notation.challenges, task => task.expectedNotation), ['มข1-ง2', 'รก4-ง4', 'บง5-ง6', 'รก4Xง4', 'รก1-ญ1#'], 'expected full-origin Thai records cover all five scenarios');
+check(notation.requiredCorrect, 6, 'notation requires six correct written moves');
+check(notation.challenges.length, 6, 'notation has six different move scenarios');
+check(Array.from(notation.challenges, task => task.expectedNotation), ['มข1-ง2', 'รก4-ง4', 'บง5-ง6', 'รก4Xง4', 'รก1-ญ1#', 'รก4-ญ4+'], 'expected full-origin Thai records cover all six scenarios');
 const expectedEffects = [
   { capture: null, check: false, mate: false, promotion: false },
   { capture: null, check: false, mate: false, promotion: false },
   { capture: null, check: false, mate: false, promotion: true },
   { capture: 'pawn', check: false, mate: false, promotion: false },
-  { capture: null, check: true, mate: true, promotion: false }
+  { capture: null, check: true, mate: true, promotion: false },
+  { capture: null, check: true, mate: false, promotion: false }
 ];
 for (const [i, task] of notation.challenges.entries()) {
   const board = [{ piece: task.piece || notation.piece, side: 'white', at: task.start }].concat(task.friends || [], task.enemies || []);
@@ -175,3 +176,4 @@ for (const [i, question] of byId('mate').questions.entries()) {
   check(status.state, i === 1 ? 'playing' : 'checkmate', `Day 1 mate ${i + 1}: diagram matches the answer`);
 }
 console.log(`Rules curriculum verified: ${assertions} assertions passed; 26 lessons / Day 1: 14 / Day 2: 12.`);
+

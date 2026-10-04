@@ -41,7 +41,7 @@
     var destination = squareLabel(to);
     var suffix = mate ? '#' : check ? '+' : '';
     return {
-      text: abbreviations[moving.piece] + '.' + origin + (captured ? ' X ' + abbreviations[captured.piece] + '.' : ' - ') + destination + suffix,
+      text: abbreviations[moving.piece] + '.' + origin + (captured ? ' × ' + abbreviations[captured.piece] + '.' : ' - ') + destination + suffix,
       piece: moving.piece,
       abbreviation: abbreviations[moving.piece],
       side: moving.side,
@@ -102,3 +102,4 @@
     matchesNotation: matchesNotation
   };
 });
+

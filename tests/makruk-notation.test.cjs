@@ -60,13 +60,13 @@ for (const target of Object.keys(N.abbreviations).filter(type => type !== 'king'
   const board = [p('rook', 'white', 'a', 4), p(target, 'black', 'd', 4)];
   const snapshot = JSON.stringify(board);
   const record = N.formatMove(board, pos('a', 4), pos('d', 4));
-  check(record.text, `ร.ก4 X ${N.abbreviations[target]}.ง4`, `${target} captured abbreviation`);
+  check(record.text, `ร.ก4 × ${N.abbreviations[target]}.ง4`, `${target} captured abbreviation`);
   check(record.capture, target, `${target} capture type retained`);
   yes(N.matchesNotation(record.text, record), `${target} canonical capture accepted`);
   yes(N.matchesNotation('ร.ก4 x ง4', record), `${target} destination-only capture accepted`);
   yes(N.matchesNotation('ร.ก๔ × ง๔', record), `${target} multiplication mark and Thai digits accepted`);
   no(N.matchesNotation('ร.ก4 - ง4', record), `${target} missing capture marker rejected`);
-  no(N.matchesNotation('ร.ก4 X ข.ง4', record), `${target} wrong captured type rejected`);
+  no(N.matchesNotation('ร.ก4 × ข.ง4', record), `${target} wrong captured type rejected`);
   check(JSON.stringify(board), snapshot, `${target} capture formatter does not mutate board`);
 }
 
@@ -90,7 +90,7 @@ no(N.matchesNotation('ร.ก1 - ญ1', mating), 'missing mate marker rejected')
 
 const captureCheckBoard = [p('king', 'white', 'a', 1), p('rook', 'white', 'a', 4), p('pawn', 'black', 'h', 4), p('king', 'black', 'h', 8)];
 const capturingCheck = N.formatMove(captureCheckBoard, pos('a', 4), pos('h', 4));
-check(capturingCheck.text, 'ร.ก4 X บ.ญ4+', 'capture and check combined');
+check(capturingCheck.text, 'ร.ก4 × บ.ญ4+', 'capture and check combined');
 yes(N.matchesNotation('ร.ก4 × ญ4+', capturingCheck), 'capture-check optional target type accepted');
 no(N.matchesNotation('ร.ก4 × บ.ญ4', capturingCheck), 'capture does not waive check marker requirement');
 
@@ -119,3 +119,4 @@ vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../makruk-notation.js')
 check(browser.MakrukNotation.formatMove(knightBoard, pos('b', 1), pos('d', 2)).text, knight.text, 'browser UMD exports functional module');
 yes(browser.MakrukNotation.matchesNotation('มข๑-ง๒', knight), 'browser matcher agrees with CommonJS');
 console.log(`Makruk notation verified: ${assertions} assertions passed.`);
+
