@@ -21,7 +21,7 @@ for(const piece of ['king','rook','knight','met','khon','promoted']){
     const lesson={id:piece,type:'move',piece,start,routePuzzle:true,requiredCorrect:3};
     const state={lesson:0,phase:'active',current:start,selected:true,completed:false,roundDone:false,showStarHint,starTarget:route.at,correctMoves:0,routeMoves:0};
     const context={Rules,lessons:[lesson],state,pieceName:{[piece]:piece},displayFiles:'กขคงจฉชญ',
-      boardCaption:{},feedbackEl:{},showToast(){},renderBoard(){},updatePracticeUI(){},isStarPractice(){return true;},
+      boardCaption:{},feedbackEl:{},queueMoveFeedback(){},showToast(){},renderBoard(){},updatePracticeUI(){},isStarPractice(){return true;},
       moveError(){context.errors++;},errors:0};
     vm.createContext(context);vm.runInContext(functions,context);
     context.attemptMove(start);assert.equal(context.errors,1);assert.equal(state.correctMoves,0);
@@ -36,3 +36,4 @@ for(const piece of ['king','rook','knight','met','khon','promoted']){
   }
 }
 console.log(`Production puzzle flow verified: ${scenarios} piece / hint scenarios, illegal steps and duplicate awards rejected.`);
+

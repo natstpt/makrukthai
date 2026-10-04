@@ -323,6 +323,8 @@
     .notationPrimer img{width:30%;height:35%;object-fit:contain}.notationPrimer strong{font-size:clamp(22px,4vw,42px)}.notationPrimer small{font-size:16px;color:#cadbbd}
     .notationTable{width:100%;border-collapse:collapse;font-size:18px}.notationTable td,.notationTable th{padding:10px;border-bottom:1px solid #526347;text-align:left}.notationTable img{width:32px;height:36px;vertical-align:middle;margin-right:8px}
     .lessonReward button:disabled{opacity:.65;cursor:default}
+    .moveGhost{position:absolute;z-index:11;pointer-events:none;will-change:transform}.moveGhost img{width:100%;height:100%;object-fit:contain}
+    .musicBtn{min-width:38px;font-size:22px;padding:3px 9px;flex:none}.musicBtn[aria-pressed="true"]{background:#36522b;border-color:#88b366;color:#e2f3d6}
     @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.square.starCollected:before{display:none}}
   </style>
 </head>
@@ -335,9 +337,11 @@
     </div>
     <div class="mobileLessonTitle" id="mobileLessonTitle"></div>
     <div class="topActions">
+      <button class="topBtn musicBtn" id="musicBtn" type="button" aria-pressed="false" aria-label="เปิดเพลงคลอ">♪</button>
       <details class="topMenu">
         <summary>เพิ่มเติม</summary>
         <div class="topMenuPanel">
+          <button class="topBtn" id="effectsBtn" type="button" aria-pressed="true">เสียงเดิน / รุก: เปิด</button>
           <button class="topBtn" id="notationHelpBtn" type="button">ตารางจดหมาก</button>
           <a class="topBtn rulesLink" id="rulesPdfLink" href="assets/rules/makruk-rules-2569.pdf" target="_blank" rel="noopener" title="เปิดกติกาหมากรุกไทย พ.ศ. 2569 ในแท็บใหม่">กติกา PDF</a>
           <button class="topBtn planText" id="planBtn" type="button">แผนสอน 2 วัน</button>
@@ -498,7 +502,7 @@
           <h3>DAY 2 · เล่นเป็น + คิดเป็น</h3>
           <div class="planRow"><b>09–10</b><span><b>ทบทวนและป้องกันหมาก</b><small>บท 15–16 · หมากช่วยดูแลกัน</small></span></div>
           <div class="planRow"><b>10–11</b><span><b>บังขุนและกินตัวที่รุก</b><small>บท 17–18 · เรียนวิธีแก้รุกเพิ่มอีกสองวิธี</small></span></div>
-          <div class="planRow"><b>11–12</b><span><b>จดหมากและเกมเสมอ</b><small>บท 19–20 · เลือกบันทึกจาก 3 ตัวเลือก เรียนเรื่องอับ ส่วนการนับให้ครูช่วย</small></span></div>
+          <div class="planRow"><b>11–12</b><span><b>จดหมากและเกมเสมอ</b><small>บท 19–20 · เลือกบันทึกจาก 3 ตัวเลือก เรียนเรื่องอับ ส่วนการนับให้กรรมการช่วย</small></span></div>
           <div class="planRow"><b>13–14</b><span>สูตร <b>ดูเขา → ดูเรา → ค่อยเดิน</b> <small>บท 21–22 · คิดก่อนเดิน จับหมาก นาฬิกา และน้ำใจนักกีฬา</small></span></div>
           <div class="planRow"><b>14–15</b><span>เกมเต็มแบบมีครูคอยถามนำ <small>บท 23 · คู่ฝึกแดงเดินตอบ พร้อมใบบันทึกขาว–แดง</small></span></div>
           <div class="planRow"><b>15–16</b><span>Mini Tournament + ประเมิน 5 ด่าน <small>บท 24–25 · มินิเกม 3 รอบและด่านสรุป 5 เรื่อง</small></span></div>
@@ -554,10 +558,11 @@
 <div class="overlay" id="notationHelpOverlay"><div class="modal infoModal" role="dialog" aria-modal="true" aria-labelledby="notationHelpTitle" tabindex="-1"><div class="modalHead"><h2 id="notationHelpTitle">ตารางช่วยจำการจดหมาก</h2><button type="button" data-close="notationHelpOverlay" aria-label="ปิด">×</button></div><div class="modalBody"><p>อ่านทีละส่วน: ชื่อหมาก → ช่องเริ่ม → เดินหรือกิน → ช่องที่ไป</p><table class="notationTable"><thead><tr><th>ชื่อย่อ</th><th>ตัวหมาก</th></tr></thead><tbody><tr><td><img src="assets/pieces/makruk/ada/wK.svg" alt="">ข.</td><td>ขุน</td></tr><tr><td><img src="assets/pieces/makruk/ada/wR.svg" alt="">ร.</td><td>เรือ</td></tr><tr><td><img src="assets/pieces/makruk/ada/wN.svg" alt="">ม.</td><td>ม้า</td></tr><tr><td><img src="assets/pieces/makruk/ada/wB.svg" alt="">ค.</td><td>โคน</td></tr><tr><td><img src="assets/pieces/makruk/ada/wQ.svg" alt="">ม็.</td><td>เม็ด</td></tr><tr><td><img src="assets/pieces/makruk/ada/wP.svg" alt="">บ.</td><td>เบี้ย</td></tr><tr><td><img src="assets/pieces/makruk/ada/wF.svg" alt="">ง.</td><td>เบี้ยหงาย</td></tr></tbody></table><p><b>-</b> เดิน · <b>×</b> กิน · <b>+</b> รุก · <b>#</b> รุกจน</p><p><b>ม.ข1 - ง2</b><br>ม้าเดินจาก ข1 ไป ง2</p><p><b>ร.ก4 × บ.ง4</b><br>เรือจาก ก4 กินเบี้ยที่ ง4</p><p>เติม + ท้ายบันทึกเมื่อรุก หรือ # เมื่อรุกจน<br>รุกจน หมายถึงขุนถูกรุกและไม่มีวิธีแก้ให้ปลอดภัย</p><p>เบี้ยถึงแถวหงาย: จดตาที่เดินด้วย บ. แล้วตาถัดไปใช้ ง. ไม่มีการเลือกเปลี่ยนเป็นตัวอื่น</p><p>ผลเกม: <b>1-0</b> ขาวชนะ · <b>0-1</b> แดงชนะ · <b>½-½</b> เสมอ (เขียน 0.5-0.5 ได้)</p><p>จุดหลังชื่อย่อช่วยแยกชื่อหมากจากชื่อช่อง หนังสือบางเล่มใช้ X หรือ x แทน × ซึ่งหมายถึงกินเหมือนกัน</p></div></div></div>
 <script src="makruk-rules.js?v=20261004-learn"></script>
 <script src="makruk-notation.js?v=20261004-practice5"></script>
-<script src="day2-lessons.js?v=20261004-learn"></script>
-<script src="rules-lessons.js?v=20261004-practice5"></script>
-<script src="learning-design.js?v=20261004-practice5"></script>
-<script src="practice-sets.js?v=20261004-practice5"></script>
+<script src="day2-lessons.js?v=20261005-feedback"></script>
+<script src="rules-lessons.js?v=20261005-feedback"></script>
+<script src="learning-design.js?v=20261005-feedback"></script>
+<script src="practice-sets.js?v=20261005-feedback"></script>
+<script src="presentation.js?v=20261005-feedback"></script>
 <script>
 (function(){
   'use strict';
@@ -852,6 +857,18 @@
     });
   });
 
+  var presentation=window.MakrukPresentation.create({board:boardEl,wrap:boardWrap});
+  var gameReplyTimer=null;
+  function cancelGameReply(){
+    if(gameReplyTimer!==null){clearTimeout(gameReplyTimer);gameReplyTimer=null;}
+    state.replyPending=false;presentation.clearMotion();
+  }
+  function queueMoveFeedback(from,to,piece,side,after){
+    presentation.queueMove({from:{r:from.r,c:from.c},to:{r:to.r,c:to.c},
+      src:'assets/pieces/makruk/ada/'+(side==='white'?'w':'r')+pieceFile[piece]+'.svg',
+      skipAnimation:!!state.moveWasDragged,check:Rules.inCheck(after,side==='white'?'black':'white')});
+  }
+
   function savedProgress(storageKey){
     var value=parseInt(localStorage.getItem(storageKey)||'0',10);
     return Number.isFinite(value)?Math.max(0,Math.min(lessons.length-1,value)):0;
@@ -934,6 +951,7 @@
       mainBtn.textContent=nextRoundAvailable?(l.type==='quiz'?'ข้อถัดไป →':nextRoundBtn.textContent):ready?'ผ่านบทนี้ →':l.requiredGames?'จบเกมอีก '+Math.max(0,l.requiredGames-state.matchResults.length)+' เกมเพื่อผ่าน':l.type==='quiz'?'ตอบถูกอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ข้อเพื่อผ่าน':l.id==='assessment'?'ทำอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ด่านเพื่อผ่าน':isStarPractice(l)?'เก็บดาวอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ดวงเพื่อผ่าน':'เดินถูกอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ครั้งเพื่อผ่าน';
       if(l.type==='notation'&&!ready&&!nextRoundAvailable)mainBtn.textContent='จดถูกอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ตาเพื่อผ่าน';
     }
+    if(state.replyPending){mainBtn.disabled=true;mainBtn.textContent='รอฝ่ายแดงเดิน…';nextRoundBtn.hidden=true;}
     updateBoardHelp();
     if(state.phase==='active'){
       var text=state.roundDone?ready?'ครบแล้ว! กดผ่านบทนี้ได้เลย':'เยี่ยมมาก! พร้อมแล้วไปโจทย์ถัดไป':l.type==='quiz'?(challenge()||l).mission:missionEl.textContent;
@@ -942,6 +960,7 @@
   }
 
   function startRound(){
+    cancelGameReply();
     var l=lessons[state.lesson],task=challenge();
     appEl.classList.toggle('coordinateQuiz',!!l.coordinateLesson&&state.phase==='active');
     appEl.classList.toggle('activeQuiz',l.type==='quiz'&&state.phase==='active');
@@ -1056,10 +1075,11 @@
       var progress='เดินถูก '+state.correctMoves+'/'+lessons[state.lesson].requiredCorrect+' · ';
       boardHelp.textContent=progress+(state.roundDone?'ใช้ปุ่มด้านข้างเพื่อฝึกต่อ':state.selected?'เลือกปลายทาง · แตะหมากเดิมหรือ Esc เพื่อยกเลิก':'เลือกหมากขาว → เลือกปลายทาง');
     }
-    else boardHelp.textContent='ครูวาดลูกศรได้ด้วยคลิกขวาค้างแล้วลาก หรือเลือก “วาดลูกศร”';
+    else boardHelp.textContent='วาดลูกศรได้ด้วยคลิกขวาค้างแล้วลาก หรือเลือก “วาดลูกศร”';
   }
 
   function beginPointer(e){
+    if(state.replyPending)return;
     var at=squareFromPointer(e);if(!at||state.gesture)return;
     if(e.button===2){
       e.preventDefault();state.arrowStart=at;
@@ -1103,7 +1123,7 @@
     else if(gesture.dragging){
       state.suppressClick=true;
       setTimeout(function(){state.suppressClick=false;},250);
-      if(to&&!same(gesture.from,to))attemptMove(to);else renderBoard();
+      if(to&&!same(gesture.from,to)){state.moveWasDragged=true;try{attemptMove(to);}finally{state.moveWasDragged=false;}}else renderBoard();
     }
   }
   function fullSetup(){
@@ -1165,7 +1185,7 @@
   function renderBoard(){
     var focused=boardEl.contains(document.activeElement),l=lessons[state.lesson],pieces=boardPieces();
     var coordinateTask=l.coordinateLesson?challenge():null;
-    var canMove=state.phase==='active'&&state.tool==='move'&&isBoardPractice()&&!state.completed&&!state.roundDone&&!state.pendingNotation;
+    var canMove=state.phase==='active'&&state.tool==='move'&&isBoardPractice()&&!state.completed&&!state.roundDone&&!state.pendingNotation&&!state.replyPending;
     var destinations=canMove&&state.selected||state.phase==='demo'?moveDestinations():[];
     var answers=l.routePuzzle&&state.hint&&state.starTarget?routeHintSteps():goalDestinations();
     boardEl.innerHTML='';
@@ -1209,9 +1229,11 @@
     if(focused&&state.focus){var focusSquare=boardEl.querySelector('[data-r="'+state.focus.r+'"][data-c="'+state.focus.c+'"]');if(focusSquare)focusSquare.focus({preventScroll:true});}
     renderDemonstration();
     renderNotationPrimer();
+    presentation.flush();
   }
 
   function renderLesson(){
+    cancelGameReply();
     var l=lessons[state.lesson];
     state.practiceSet=Math.max(0,Math.min(4,parseInt(localStorage.getItem('makrukPracticeSet:'+l.id)||'0',10)||0));
     missionEl.parentElement.hidden=false;
@@ -1438,7 +1460,7 @@
     gameNote.hidden=moveHistory.hidden=scoreSheetWrap.hidden=!isGame;
     document.getElementById('copyScoreBtn').disabled=document.getElementById('exportScoreBtn').disabled=(!state.scoreMoves.length&&!state.savedScores.length)||!isGame;
     if(!isGame)return;
-    gameNote.textContent='คุณ = ขาว · คู่ฝึก = แดงอย่างง่าย · ครูช่วยชวนคิด: เขาขู่อะไร? เราปลอดภัยไหม? ระบบตรวจการเดิน รุกจน และอับ ส่วนการนับศักดิ์หมาก/ศักดิ์กระดาน ให้ครูช่วยดูบนกระดานจริง';
+    gameNote.textContent='คุณ = ขาว · คู่ฝึก = แดงอย่างง่าย · ลองคิด: เขาขู่อะไร? เราปลอดภัยไหม? ระบบตรวจการเดิน รุกจน และอับ ส่วนการนับศักดิ์หมาก/ศักดิ์กระดาน ให้กรรมการช่วยดูบนกระดานจริง';
     moveHistory.textContent=state.gameHistory.length?state.gameHistory.slice(-8).join(' · '):'ตาเดินล่าสุดจะแสดงที่นี่หลังเริ่มเล่น';
     scoreBody.innerHTML='';
     for(var i=0;i<state.scoreMoves.length;i+=2){
@@ -1453,7 +1475,7 @@
     if(l.requiredGames)state.matchResults.push(status.winner);
     state.savedScores.push({title:'เกมที่ '+(state.roundIndex+1),moves:state.scoreMoves.slice(),result:status.winner==='white'?'1-0':status.winner==='black'?'0-1':'0.5-0.5'});
     var message=status.state==='checkmate'?(status.winner==='white'?'คุณรุกจนแล้ว! ฝ่ายขาวชนะ':'ขุนขาวถูกรุกจน ฝ่ายแดงชนะ'):status.state==='stalemate'?'อับ: ฝ่ายที่ถึงตาเดินไม่ถูกรุก แต่ไม่มีตาเดิน เกมเสมอ':'เหลือขุนทั้งสองฝ่าย เกมเสมอ';
-    feedbackEl.className='feedback success';feedbackEl.textContent=message+' · คุยกับครูว่าได้เรียนรู้อะไร แล้วเล่นเกมถัดไป หรือกดผ่านบทนี้เมื่อเล่นครบแล้ว';
+    feedbackEl.className='feedback success';feedbackEl.textContent=message+' · ลองทบทวนว่าได้เรียนรู้อะไร แล้วเล่นเกมถัดไป หรือกดผ่านบทนี้เมื่อเล่นครบแล้ว';
     boardCaption.textContent=message;
     showToast(status.winner==='white'?'รุกจน ✓':'จบเกมฝึกแล้ว','good');
   }
@@ -1476,36 +1498,49 @@
   }
 
   function playGameMove(dest){
+    if(state.replyPending)return;
     var from={r:state.current.r,c:state.current.c};
     var moving=state.gamePieces.find(function(x){return same(x.at,from);});
     state.scoreMoves.push(Notation.formatMove(state.gamePieces,from,dest));
     state.gamePieces=Rules.applyMove(state.gamePieces,from,dest);
+    queueMoveFeedback(from,dest,moving.piece,'white',state.gamePieces);
     state.correctMoves++;state.selected=false;state.current=null;state.focus=dest;
     state.gameHistory.push('ขาว '+pieceName[moving.piece]+' '+squareLabel(from)+'→'+squareLabel(dest));
     state.lastFrom=from;state.lastTo=dest;
     var redStatus=Rules.gameStatus(state.gamePieces,'black');
-    if(redStatus.state!=='playing'){finishGame(redStatus);}
+    if(redStatus.state!=='playing')finishGame(redStatus);
     else{
-      var reply=chooseRedMove(state.gamePieces);
-      var redPiece=state.gamePieces.find(function(x){return same(x.at,reply.from);});
-      state.scoreMoves.push(Notation.formatMove(state.gamePieces,reply.from,reply.to));
-      state.gamePieces=Rules.applyMove(state.gamePieces,reply.from,reply.to);
-      state.gameHistory.push('แดง '+pieceName[redPiece.piece]+' '+squareLabel(reply.from)+'→'+squareLabel(reply.to));
-      state.lastFrom=reply.from;state.lastTo=reply.to;
-      var whiteStatus=Rules.gameStatus(state.gamePieces,'white');
-      if(whiteStatus.state!=='playing')finishGame(whiteStatus);
-      else{
-        feedbackEl.className='feedback'+(whiteStatus.check?' error':' success');
-        feedbackEl.textContent=whiteStatus.check?'สีแดงรุกขุนขาว! ต้องหนีรุก ปิดแนว หรือกินตัวที่รุกก่อน':
-          'เดินถูก! สีแดงเดิน'+pieceName[redPiece.piece]+' '+squareLabel(reply.from)+' → '+squareLabel(reply.to)+' · ถึงตาคุณ คิดก่อนเลือกหมาก';
-        boardCaption.textContent=whiteStatus.check?'ถึงตาฝ่ายขาว · ขุนกำลังถูกรุก':'ถึงตาฝ่ายขาว · ตาแดงล่าสุด '+squareLabel(reply.from)+' → '+squareLabel(reply.to);
-        showToast('เดินฝ่ายขาวถูก '+state.correctMoves+' ตา ✓','good');
-      }
+      state.replyPending=true;
+      feedbackEl.className='feedback'+(redStatus.check?' success':'');
+      feedbackEl.textContent=redStatus.check?'รุก! รอดูว่าฝ่ายแดงจะแก้รุกอย่างไร':'เดินแล้ว · รอฝ่ายแดงเดินตอบ';
+      boardCaption.textContent='ถึงตาฝ่ายแดง';
+      gameReplyTimer=setTimeout(function(){
+        gameReplyTimer=null;state.replyPending=false;
+        var reply=chooseRedMove(state.gamePieces);
+        if(!reply){finishGame(Rules.gameStatus(state.gamePieces,'black'));updateGameUI();renderBoard();updatePracticeUI();return;}
+        var redPiece=state.gamePieces.find(function(x){return same(x.at,reply.from);});
+        state.scoreMoves.push(Notation.formatMove(state.gamePieces,reply.from,reply.to));
+        state.gamePieces=Rules.applyMove(state.gamePieces,reply.from,reply.to);
+        queueMoveFeedback(reply.from,reply.to,redPiece.piece,'black',state.gamePieces);
+        state.gameHistory.push('แดง '+pieceName[redPiece.piece]+' '+squareLabel(reply.from)+'→'+squareLabel(reply.to));
+        state.lastFrom=reply.from;state.lastTo=reply.to;
+        var whiteStatus=Rules.gameStatus(state.gamePieces,'white');
+        if(whiteStatus.state!=='playing')finishGame(whiteStatus);
+        else{
+          feedbackEl.className='feedback'+(whiteStatus.check?' error':' success');
+          feedbackEl.textContent=whiteStatus.check?'สีแดงรุกขุนขาว! ต้องหนีรุก บังทาง หรือกินตัวที่รุกก่อน':
+            'สีแดงเดิน'+pieceName[redPiece.piece]+' '+squareLabel(reply.from)+' → '+squareLabel(reply.to)+' · ถึงตาคุณแล้ว';
+          boardCaption.textContent=whiteStatus.check?'ถึงตาฝ่ายขาว · ขุนกำลังถูกรุก':'ถึงตาฝ่ายขาว';
+          showToast('เดินฝ่ายขาวถูก '+state.correctMoves+' ตา ✓','good');
+        }
+        updateGameUI();renderBoard();updatePracticeUI();
+      },presentation.replyDelay());
     }
     updateGameUI();renderBoard();updatePracticeUI();
   }
 
   function handleBoardClick(e){
+    if(state.replyPending)return;
     if(state.suppressClick){state.suppressClick=false;return;}
     var sq=e.target.closest('.square');if(!sq)return;
     var dest={r:+sq.dataset.r,c:+sq.dataset.c};state.focus=dest;
@@ -1532,12 +1567,13 @@
   }
 
   function attemptMove(dest){
-    var l=lessons[state.lesson];if(state.phase!=='active'||state.completed||state.roundDone||!state.selected)return;
+    var l=lessons[state.lesson];if(state.phase!=='active'||state.completed||state.roundDone||state.replyPending||!state.selected)return;
     var candidates=moveDestinations();
     if(!candidates.some(function(x){return same(x,dest);})){moveError('ช่องนี้ยังเดินไม่ได้ ลองอีกช่องนะ');return;}
     if(l.type==='game'){playGameMove(dest);return;}
     var legal=goalDestinations();
     if(!legal.some(function(x){return same(x,dest);})){moveError(l.type==='check'?'ยังไม่รุกขุน ลองอีกช่องนะ':'ยังไม่ตรงโจทย์ ลองอีกครั้งนะ');return;}
+    queueMoveFeedback(state.current,dest,activePiece(),'white',Rules.applyMove(boardPieces(),state.current,dest));
     var notation=l.type==='notation'?Notation.formatMove(boardPieces(),state.current,dest):null;
     var isCap=boardPieces().some(function(x){return x.side==='black'&&same(x.at,dest);});
     if(isCap)state.captured=dest;
@@ -1681,6 +1717,7 @@
   }
 
   mainBtn.addEventListener('click',function(){
+    if(state.replyPending)return;
     if(state.completed){nextLesson();return;}
     if(state.phase==='active'){
       if(state.roundDone&&!practiceReady()){nextPracticeRound();return;}
