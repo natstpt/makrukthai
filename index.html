@@ -912,10 +912,11 @@
       practiceRequirement.textContent='ตอบผิดลองใหม่ได้ · ครบแล้วกดยอมรับเพื่อไปต่อ';
     }
     nextRoundBtn.hidden=!(state.phase==='active'&&state.roundDone&&(l.challenges||l.questions||l.type==='game'||l.piece));
-    nextRoundBtn.textContent=l.type==='game'?'เกมถัดไป →':l.type==='notation'?'โจทย์จดตาถัดไป →':isStarPractice(l)?'ไปเก็บดาวดวงถัดไป ⭐':'ภารกิจถัดไป →';
+    nextRoundBtn.textContent=l.type==='quiz'?'ข้อถัดไป →':l.type==='game'?'เกมถัดไป →':l.type==='notation'?'โจทย์จดตาถัดไป →':isStarPractice(l)?'ไปเก็บดาวดวงถัดไป ⭐':'ภารกิจถัดไป →';
     if(state.phase==='active'&&(isBoardPractice()||l.type==='quiz')){
-      mainBtn.disabled=!ready;
-      mainBtn.textContent=ready?'ยอมรับผ่านบทนี้ →':l.requiredGames?'จบเกมอีก '+Math.max(0,l.requiredGames-state.matchResults.length)+' เกมเพื่อผ่าน':l.type==='quiz'?'ตอบถูกอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ข้อเพื่อผ่าน':l.id==='assessment'?'ทำอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ด่านเพื่อผ่าน':isStarPractice(l)?'เก็บดาวอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ดวงเพื่อผ่าน':'เดินถูกอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ครั้งเพื่อผ่าน';
+      var nextRoundAvailable=state.roundDone&&!ready;
+      mainBtn.disabled=!ready&&!nextRoundAvailable;
+      mainBtn.textContent=nextRoundAvailable?(l.type==='quiz'?'ข้อถัดไป →':nextRoundBtn.textContent):ready?'ยอมรับผ่านบทนี้ →':l.requiredGames?'จบเกมอีก '+Math.max(0,l.requiredGames-state.matchResults.length)+' เกมเพื่อผ่าน':l.type==='quiz'?'ตอบถูกอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ข้อเพื่อผ่าน':l.id==='assessment'?'ทำอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ด่านเพื่อผ่าน':isStarPractice(l)?'เก็บดาวอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ดวงเพื่อผ่าน':'เดินถูกอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ครั้งเพื่อผ่าน';
       if(l.type==='notation'&&!ready)mainBtn.textContent='จดถูกอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ตาเพื่อผ่าน';
     }
     updateBoardHelp();
@@ -1644,6 +1645,7 @@
   mainBtn.addEventListener('click',function(){
     if(state.completed){nextLesson();return;}
     if(state.phase==='active'){
+      if(state.roundDone&&!practiceReady()){nextPracticeRound();return;}
       if(!practiceReady())return;
       completeLesson('ยอมรับผ่านบทนี้แล้ว');return;
     }
