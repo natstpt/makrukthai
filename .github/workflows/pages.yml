@@ -33,6 +33,12 @@ jobs:
       - name: Verify rules curriculum and source references
         run: node tests/rules-lessons.test.cjs
 
+      - name: Verify reachable multi-move puzzles
+        run: node tests/learning-design.test.cjs
+
+      - name: Verify multi-move star awards
+        run: node tests/puzzle-flow.test.cjs
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
         with:

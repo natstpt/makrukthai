@@ -28,7 +28,7 @@ const end = source.indexOf('// Keep internal coordinates stable', start);
 yes(start >= 0 && end > start, 'lesson data and factory calls have portable extraction boundaries');
 const context = { window: {}, pos };
 vm.createContext(context);
-for (const filename of ['day2-lessons.js', 'rules-lessons.js']) {
+for (const filename of ['day2-lessons.js', 'rules-lessons.js', 'learning-design.js']) {
   vm.runInContext(fs.readFileSync(path.join(repo, filename), 'utf8'), context, { filename });
 }
 const lessons = vm.runInContext(source.slice(start, end) + '\nlessons;', context, { filename: 'inline-curriculum-data' });
@@ -36,17 +36,17 @@ no(Object.hasOwn(context, 'document'), 'actual curriculum loads without a DOM');
 no(Object.hasOwn(context, 'localStorage'), 'curriculum data evaluation has no progress side effects');
 const expectedIds = [
   'board', 'king', 'rook', 'knight', 'met', 'khon', 'pawn', 'promotion', 'promoted', 'setup',
-  'review', 'capture', 'defend', 'check', 'escape', 'block', 'take-checker', 'mate', 'notation', 'draw-rules',
+  'capture', 'check', 'escape', 'mate', 'review', 'defend', 'block', 'take-checker', 'notation', 'draw-rules',
   'think', 'fair-play', 'game', 'mini', 'assessment', 'finish'
 ];
 check(Array.from(lessons, lesson => lesson.id), expectedIds, 'final 26 stable IDs appear in intended teaching order');
 check(lessons.length, 26, 'final curriculum has 26 lessons');
 check(new Set(lessons.map(lesson => lesson.id)).size, 26, 'all stable IDs are unique');
-check(lessons.filter(lesson => lesson.day === 1).length, 10, 'Day 1 has 10 lessons');
-check(lessons.filter(lesson => lesson.day === 2).length, 16, 'Day 2 has 16 lessons');
-check(lessons.findIndex(lesson => lesson.day === 2), 10, 'Day 2 begins after all 10 Day 1 lessons');
-yes(lessons.slice(0, 10).every(lesson => lesson.day === 1), 'Day 1 lessons form one contiguous section');
-yes(lessons.slice(10).every(lesson => lesson.day === 2), 'Day 2 lessons form one contiguous section');
+check(lessons.filter(lesson => lesson.day === 1).length, 14, 'Day 1 has 14 foundational lessons');
+check(lessons.filter(lesson => lesson.day === 2).length, 12, 'Day 2 has 12 extension lessons');
+check(lessons.findIndex(lesson => lesson.day === 2), 14, 'Day 2 begins after all fundamentals');
+yes(lessons.slice(0, 14).every(lesson => lesson.day === 1), 'Day 1 lessons form one contiguous section');
+yes(lessons.slice(14).every(lesson => lesson.day === 2), 'Day 2 lessons form one contiguous section');
 check(lessons.findIndex(lesson => lesson.id === 'setup'), 9, 'full setup board is lesson 10 after piece-by-piece learning');
 const byId = id => lessons.find(lesson => lesson.id === id);
 
@@ -161,7 +161,17 @@ for (const [id, count, day] of [['setup', 3, 1], ['draw-rules', 4, 2], ['fair-pl
   }
 }
 const draw = byId('draw-rules');
+check(Rules.gameStatus(draw.questions[1].pieces, 'black').state, 'stalemate', 'Day 2 stalemate diagram really has no legal red move and no check');
 check(Array.from(draw.questions, question => question.choices.findIndex(choice => choice.correct)), [0, 0, 0, 0], 'beginner draw questions teach no winner, stalemate, agreement and asking the teacher');
 yes(draw.sourceNotes.some(note => note.text.includes('ศักดิ์หมาก')), 'advanced draw-counting details remain available in teacher notes');
 
-console.log(`Rules curriculum verified: ${assertions} assertions passed; 26 lessons / Day 1: 10 / Day 2: 16 / 5 notation moves / 11 new rule questions.`);
+for (const lesson of lessons) {
+  yes(lesson.teachingSteps.length >= 2, `${lesson.id}: introduction then explanation precedes practice`);
+  yes(lesson.teachingSteps.every(text => typeof text === 'string' && text.length < 110), `${lesson.id}: child-sized teaching sentences`);
+}
+for (const [i, question] of byId('mate').questions.entries()) {
+  check(question.choices.length, 2, `Day 1 mate ${i + 1}: only mate versus escape, no advanced stalemate choice`);
+  const status = Rules.gameStatus(question.pieces, 'black');
+  check(status.state, i === 1 ? 'playing' : 'checkmate', `Day 1 mate ${i + 1}: diagram matches the answer`);
+}
+console.log(`Rules curriculum verified: ${assertions} assertions passed; 26 lessons / Day 1: 14 / Day 2: 12.`);
