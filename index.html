@@ -326,6 +326,58 @@
     .moveGhost{position:absolute;z-index:11;pointer-events:none;will-change:transform}.moveGhost img{width:100%;height:100%;object-fit:contain}
     .musicBtn{min-width:38px;font-size:22px;padding:3px 9px;flex:none}.musicBtn[aria-pressed="true"]{background:#36522b;border-color:#88b366;color:#e2f3d6}
     @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.square.starCollected:before{display:none}}
+
+    /* Focus layout: one instruction, one board, one primary action. */
+    .topbar{display:none}.app{grid-template-rows:minmax(0,1fr)}
+    #nextRoundBtn,.lessonActions,.feedback.success{display:none!important}
+    .desktop{height:100%;padding:12px;gap:14px}
+    .boardArea{min-height:0;overflow:hidden;padding:10px;gap:12px}
+    .boardWrap{width:min(100%,calc(100dvh - 44px));height:auto;flex:none}
+    .lessonPanel{grid-template-rows:auto auto minmax(0,1fr) auto}
+    .lessonBody{padding:18px;overflow:auto}.speech{font-size:20px;line-height:1.55;font-weight:600}
+    .lessonHead{height:46px}.lessonTitle{font-size:18px}.lessonExplain h1{font-size:22px}
+    .practiceCard{margin-top:18px}.practiceCard strong{font-size:18px;font-weight:700}
+    #practiceSetLabel{font-size:13px;font-weight:500;line-height:1.4;color:#b7c2af}
+    .lessonFoot{padding:10px;gap:8px;grid-template-columns:48px minmax(0,1fr)}
+    .mainBtn{font-size:18px;height:auto;min-height:52px;padding:10px 12px;line-height:1.35}
+    .menuBtn{min-width:44px;min-height:48px}.quizChoice{font-size:18px;line-height:1.45}
+    .menuTools{display:grid;gap:10px}.quickHelp{display:flex;gap:10px;flex-wrap:wrap}
+    .menuTools button,.menuTools a{min-height:44px;font-size:16px}
+    .settingsGroup,.menuTools .boardToolsDetails{position:static;width:100%;max-width:none;border:1px solid #48523f;border-radius:12px;background:#252d22}
+    .settingsGroup>summary,.menuTools .boardToolsDetails>summary{display:flex;align-items:center;justify-content:space-between;min-height:48px;width:100%;height:auto;font-size:16px;padding:12px 14px;cursor:pointer;color:#edf3e7;border:0;background:transparent;list-style:none}
+    .menuTools .boardToolsDetails>summary:after{content:'⌄';font-size:18px}
+    .menuTools .boardToolsDetails .boardTools{position:static;display:flex;flex-wrap:wrap;width:100%;box-shadow:none;padding:10px;border:0;gap:10px}
+    .menuTools .boardToggles{display:flex;flex-wrap:wrap;gap:8px}.menuTools .destinationsControl{min-height:44px;white-space:normal;font-size:15px}
+    .menuTools .destinationsControl input{width:22px;height:22px}.menuTools .arrowActions #clearArrowsBtn{font-size:15px;width:auto}
+    .menuTools .arrowActions #clearArrowsBtn:before{content:none}.menuTools .toolGroup{display:flex}
+    .soundSettings,.extraSettings{padding:10px 12px;display:grid;gap:10px}.musicSetting{display:flex;justify-content:space-between;align-items:center;font-size:16px;gap:12px}
+    .extraSettings{grid-template-columns:1fr 1fr}.topMenuAuthor{font-size:12px}.menuLessonHeading{font-size:18px;margin:24px 0 12px}
+    .pathModal .modalHead{padding:12px 16px}.pathModal .modalHead h2{font-size:21px}.pathModal .modalHead button{min-width:44px;min-height:44px}
+    .focusLessonTitle{font-size:13px;font-weight:600;color:#bdc8b4;margin:0 0 5px}.mobileCoachText{min-width:0;flex:1}
+    @media(max-width:699px){
+      .app{grid-template-rows:minmax(0,1fr);height:100dvh}
+      .desktop{display:grid;grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;padding:0;gap:0}
+      .boardArea{padding:12px 14px 10px;gap:12px;justify-content:center;min-height:0;overflow:hidden}
+      .mobileCoachRow{height:auto;min-height:0;max-height:27dvh;overflow:auto;flex:none;align-items:flex-start;gap:10px;padding:0;width:100%}
+      .mobileCoachRow .coach{margin-top:24px;width:30px;height:38px;flex-basis:30px;font-size:23px}
+      .mobileCoachRow .speech{font-size:17px;line-height:1.5;padding:10px 12px;font-weight:600}
+      .mobileCoachRow .speech:before{top:15px}
+      .boardWrap,.app.activeQuiz .boardWrap,.app.activeNotation .boardWrap{width:min(100%,calc(100dvh - 210px));height:auto;min-width:0;min-height:0;flex:none}
+      .lessonPanel,.app.activeQuiz .lessonPanel,.app.activeNotation .lessonPanel{height:auto;max-height:44dvh;min-height:0;grid-template-rows:minmax(0,1fr) auto;border:0;background:#1f211e}
+      .lessonBody,.app.activeQuiz .lessonBody,.app.activeNotation .lessonBody{min-height:0;padding:8px 14px 6px;overflow:auto;overscroll-behavior:contain}
+      .app.teaching .lessonBody{display:none}.app.teaching .lessonBody:after{display:none}
+      .practiceCard,.app.activeQuiz #practiceCard{padding:0;margin:0;background:transparent;border:0}
+      .practiceCard strong{font-size:16px;line-height:1.4;margin:0 0 5px;font-weight:700}
+      #practiceSetLabel{float:right;font-size:12px;margin:2px 0 0 8px}.challengeTrack{height:5px}
+      .lessonFoot{padding:8px 12px max(10px,env(safe-area-inset-bottom));grid-template-columns:44px minmax(0,1fr);gap:8px}
+      .mainBtn{min-height:50px;height:auto;font-size:17px;line-height:1.35;padding:10px 12px}.menuBtn{min-height:48px;font-size:20px}
+      .feedback,.app.activeQuiz .feedback{display:none}.feedback.error,.app.activeQuiz .feedback.error{display:block;font-size:16px;line-height:1.45;margin-top:6px;padding:0}
+      .quizBox{grid-template-columns:1fr;margin:10px 0 0;gap:7px}.quizChoice,.notationChoices .quizChoice{font-size:16px;line-height:1.4;min-height:44px;padding:9px 12px;text-align:left}
+      .app.coordinateQuiz #quizBox{grid-template-columns:repeat(3,minmax(0,1fr))}.app.coordinateQuiz .quizChoice{text-align:center;font-size:18px;min-height:46px}
+      .notationPrompt{font-size:15px;margin-bottom:6px}.notationForm{padding:0}.notationChoices{margin:0}
+      .statusToast{display:none}.menuTools .hintBtn{font-size:16px;min-height:44px}
+      .mapNode strong{font-size:18px}.mapNode small{font-size:13px}.modalBody{padding:14px}
+    }
   </style>
 </head>
 <body>
@@ -373,7 +425,7 @@
           </div>
         </div>
       </details>
-      <div class="mobileCoachRow"><div class="coach" aria-hidden="true">🧑‍🏫</div><div class="speech" id="mobileSpeech"></div></div>
+      <div class="mobileCoachRow"><div class="coach" aria-hidden="true">🧑‍🏫</div><div class="mobileCoachText"><div id="focusLessonTitle" class="focusLessonTitle"></div><div class="speech" id="mobileSpeech"></div></div></div>
       <div class="boardWrap">
         <div class="board" id="board" role="group" aria-label="กระดาน 8 คูณ 8 ใช้ปุ่มลูกศรเลื่อนช่อง และ Enter เพื่อเลือก" aria-describedby="boardHelp"></div>
         <svg class="arrowLayer" id="arrowLayer" viewBox="0 0 800 800" aria-hidden="true">
@@ -469,7 +521,7 @@
       </div>
 
       <div class="lessonFoot">
-        <button class="menuBtn" id="menuBtn" type="button" aria-label="สารบัญบทเรียน">☷</button>
+        <button class="menuBtn" id="menuBtn" type="button" aria-label="เมนูบทเรียนและเครื่องมือ" aria-haspopup="dialog" aria-controls="menuOverlay">☰</button>
         <button class="mainBtn" id="mainBtn" type="button">เริ่มฝึก</button>
       </div>
     </aside>
@@ -477,9 +529,17 @@
 </div>
 
 <div class="overlay" id="menuOverlay">
-  <div class="modal pathModal">
-    <div class="modalHead"><h2>บทเรียนทั้งหมด</h2><button type="button" data-close="menuOverlay">×</button></div>
-    <div class="modalBody"><div class="learningMap" id="lessonGrid"></div></div>
+  <div class="modal pathModal" role="dialog" aria-modal="true" aria-labelledby="learningMenuTitle" tabindex="-1">
+    <div class="modalHead"><h2 id="learningMenuTitle">เมนูบทเรียน</h2><button type="button" data-close="menuOverlay">×</button></div>
+    <div class="modalBody">
+      <section class="menuTools" id="menuTools" aria-label="เครื่องมือและการตั้งค่า">
+        <div class="quickHelp" id="quickHelp"></div>
+        <details class="settingsGroup"><summary>เสียงและเพลง</summary><div class="soundSettings"><label class="musicSetting" id="musicSetting">เพลงคลอ</label><div id="effectsSetting"></div></div></details>
+        <div id="boardSettings"></div>
+        <details class="settingsGroup"><summary>เพิ่มเติม</summary><div class="extraSettings" id="extraSettings"></div></details>
+      </section>
+      <h3 class="menuLessonHeading">เลือกบทเรียน</h3><div class="learningMap" id="lessonGrid"></div>
+    </div>
   </div>
 </div>
 
@@ -583,7 +643,13 @@
   var retryBtn = document.getElementById('retryBtn');
   var nextRoundBtn = document.getElementById('nextRoundBtn');
   var nextRoundHome = document.querySelector('.lessonActions');
-  document.querySelector('.topActions').prepend(document.querySelector('.boardToolsDetails'));
+  document.getElementById('boardSettings').appendChild(document.querySelector('.boardToolsDetails'));
+  document.getElementById('musicSetting').appendChild(document.getElementById('musicBtn'));
+  document.getElementById('effectsSetting').appendChild(document.getElementById('effectsBtn'));
+  document.getElementById('quickHelp').appendChild(document.getElementById('hintBtn'));
+  document.getElementById('quickHelp').appendChild(document.getElementById('retryBtn'));
+  var extraSettings=document.getElementById('extraSettings');
+  Array.from(document.querySelector('.topMenuPanel').children).forEach(function(el){extraSettings.appendChild(el);});
   var appEl = document.querySelector('.app');
   var practiceCard = document.getElementById('practiceCard');
   var practiceCounter = document.getElementById('practiceCounter');
@@ -954,7 +1020,8 @@
     if(state.replyPending){mainBtn.disabled=true;mainBtn.textContent='รอฝ่ายแดงเดิน…';nextRoundBtn.hidden=true;}
     updateBoardHelp();
     if(state.phase==='active'){
-      var text=state.roundDone?ready?'ครบแล้ว! กดผ่านบทนี้ได้เลย':'เยี่ยมมาก! พร้อมแล้วไปโจทย์ถัดไป':l.type==='quiz'?(challenge()||l).mission:missionEl.textContent;
+      var task=challenge()||l;
+      var text=state.roundDone?(l.type==='quiz'&&task.explanation?task.explanation:ready?'ครบแล้ว! กดผ่านบทนี้ได้เลย':'ถูกต้องแล้ว! ไปโจทย์ถัดไปกัน'):l.type==='quiz'?task.mission:missionEl.textContent;
       speechEl.textContent=text;mobileSpeechEl.textContent=text;
     }
   }
@@ -1252,6 +1319,7 @@
     state.tool='move';moveToolBtn.setAttribute('aria-pressed','true');arrowToolBtn.setAttribute('aria-pressed','false');boardWrap.classList.remove('arrowMode');
     lessonTitle.textContent=l.title;
     document.getElementById('mobileLessonTitle').textContent=l.title;
+    document.getElementById('focusLessonTitle').textContent='บท '+(state.lesson+1)+' · '+l.title;
     dayTag.textContent='DAY '+l.day;
     speechEl.textContent=l.type==='finish'?'เยี่ยมมาก! พร้อมใช้ความรู้บนกระดานจริง':l.type==='quiz'?'ดูโจทย์ แล้วเลือกคำตอบ':l.type==='notation'?'เดินหมาก แล้วเลือกวิธีจดที่ถูกต้อง':l.piece?'ลากหมากไปเก็บดาว':'มาลองทำภารกิจนี้กัน';
     mobileSpeechEl.textContent=l.type==='finish'?'พร้อมใช้ความรู้บนกระดานจริง':l.type==='quiz'?l.mission:l.type==='notation'?'เดินหมาก แล้วเลือกบันทึกที่ถูกต้อง':l.piece?state.showStarHint?'เดิน'+pieceName[l.piece]+'ไปเก็บดาว ⭐':'ลองเดิน'+pieceName[l.piece]:'มาลองทำภารกิจนี้กัน';
@@ -1700,7 +1768,11 @@
 
   var overlayOpener=null;
   function openOverlay(id){
-    if(id==='menuOverlay')buildLessonGrid();
+    if(id==='menuOverlay'){
+      buildLessonGrid();
+      hintBtn.disabled=state.phase==='done';
+      document.getElementById('quickHelp').hidden=lessons[state.lesson].type==='finish';
+    }
     if(id==='planOverlay'){
       document.getElementById('startDay2Btn').disabled=state.unlocked<day2Start;
       document.getElementById('day2AccessHint').textContent=state.unlocked<day2Start?'เรียนวันที่ 1 ให้ครบ '+day2Start+' บทก่อน แล้วปุ่มนี้จะเปิด':'พร้อมแล้ว! เปิดวันที่ 2 หรือเลือกบทที่ปลดล็อกจากสารบัญได้';
@@ -1785,7 +1857,10 @@
   retryBtn.addEventListener('click',function(){renderLesson();activateLesson();});
   hintBtn.addEventListener('click',showHint);
   prevBtn.addEventListener('click',function(){if(state.lesson>0){state.lesson--;renderLesson();}});
-  document.querySelector('.topMenuPanel').addEventListener('click',function(e){if(e.target.closest('button,a'))this.closest('details').open=false;});
+  document.getElementById('menuTools').addEventListener('click',function(e){
+    var control=e.target.closest('button,a');
+    if(control&&['hintBtn','retryBtn','moveToolBtn','arrowToolBtn','planBtn','notationHelpBtn','resetBtn','authorBtn','creditsBtn','rulesPdfLink'].includes(control.id))closeOverlay('menuOverlay');
+  },true);
   document.getElementById('menuBtn').addEventListener('click',function(){openOverlay('menuOverlay');});
   document.getElementById('planBtn').addEventListener('click',function(){openOverlay('planOverlay');});
   document.getElementById('notationHelpBtn').addEventListener('click',function(){openOverlay('notationHelpOverlay');});
@@ -1823,7 +1898,23 @@
     if(e.key==='ArrowRight'&&state.completed)nextLesson();
   });
 
+  function fitBoard(){
+    var area=document.querySelector('.boardArea'),coach=document.querySelector('.mobileCoachRow');
+    var style=getComputedStyle(area),paddingX=parseFloat(style.paddingLeft)+parseFloat(style.paddingRight),paddingY=parseFloat(style.paddingTop)+parseFloat(style.paddingBottom);
+    var coachHeight=coach.getClientRects().length?coach.getBoundingClientRect().height:0;
+    var gap=coachHeight?(parseFloat(style.rowGap)||0):0;
+    var size=Math.max(0,Math.min(1200,area.clientWidth-paddingX,area.clientHeight-paddingY-coachHeight-gap));
+    boardWrap.style.width=size+'px';boardWrap.style.height=size+'px';
+  }
+  if(typeof ResizeObserver==='function'){
+    var boardLayoutObserver=new ResizeObserver(fitBoard);
+    boardLayoutObserver.observe(document.querySelector('.boardArea'));
+    boardLayoutObserver.observe(document.querySelector('.mobileCoachRow'));
+  }
+  window.addEventListener('resize',fitBoard);
+  if(window.visualViewport)window.visualViewport.addEventListener('resize',fitBoard);
   renderLesson();
+  requestAnimationFrame(fitBoard);
 })();
 </script>
 </body>
