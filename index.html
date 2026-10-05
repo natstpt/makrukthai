@@ -392,6 +392,18 @@
     .authorProfile{grid-template-columns:180px minmax(0,1fr)}
     .authorPhoto{display:block;width:100%;height:auto;aspect-ratio:4/5;object-fit:cover;object-position:65% 40%;border-radius:18px;border:1px solid #cad1c1;box-shadow:0 5px 16px #17241718}
     @media(max-width:699px){.authorProfile{grid-template-columns:1fr}.authorPortrait{width:160px;max-width:100%}}
+    /* Teal and warm gold match the site's own brand and board palette. */
+    .mainBtn{background:linear-gradient(135deg,#38d2bc,#22b5a3);color:#073b35;box-shadow:inset 0 -3px #08756855,0 5px 14px #0002}
+    .mainBtn:hover:not(:disabled){background:linear-gradient(135deg,#58ddc9,#30c5b2);filter:none}
+    .mainBtn:active:not(:disabled){box-shadow:inset 0 2px 4px #075f5140}
+    .mainBtn:focus-visible{outline:3px solid #f2c14e;outline-offset:3px}
+    .mainBtn:disabled{background:#394744;color:#aebfba;box-shadow:none;filter:none}
+    .lessonTitleGroup{display:flex;align-items:center;justify-content:center;gap:9px;flex:1;min-width:0}
+    .lessonTitleGroup .lessonTitle{flex:0 1 auto;min-width:0;line-height:1.35;text-align:left}
+    .lessonLearningIcon{display:block;width:30px;height:30px;flex:0 0 30px;color:#55d5bf}
+    .mobileLessonLabel{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+    .mobileLessonLabel .lessonLearningIcon{width:20px;height:20px;flex-basis:20px}
+    .mobileLessonLabel .focusLessonTitle{margin:0;color:#d1e6de}
   </style>
 </head>
 <body>
@@ -438,7 +450,7 @@
           </div>
         </div>
       </details>
-      <div class="mobileCoachRow"><div class="coach" aria-hidden="true"><img class="coachPortrait" src="assets/images/lesson-guide.webp" width="384" height="384" alt="" decoding="async"></div><div class="mobileCoachText"><div id="focusLessonTitle" class="focusLessonTitle"></div><div class="speech" id="mobileSpeech"></div></div></div>
+      <div class="mobileCoachRow"><div class="coach" aria-hidden="true"><img class="coachPortrait" src="assets/images/lesson-guide.webp" width="384" height="384" alt="" decoding="async"></div><div class="mobileCoachText"><div class="mobileLessonLabel"><svg class="lessonLearningIcon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><path d="M16 12c-4-3-8-3-12-2v16c4-1 8-1 12 2 4-3 8-3 12-2V14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 12v16M8 15l4 1M8 20l4 1M20 20l4-1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="m24 3 1.5 4.5L30 9l-4.5 1.5L24 15l-1.5-4.5L18 9l4.5-1.5L24 3Z" fill="#f2c14e" stroke="#f2c14e" stroke-linejoin="round"/></svg><div id="focusLessonTitle" class="focusLessonTitle"></div></div><div class="speech" id="mobileSpeech"></div></div></div>
       <div class="boardWrap">
         <div class="board" id="board" role="group" aria-label="กระดาน 8 คูณ 8 ใช้ปุ่มลูกศรเลื่อนช่อง และ Enter เพื่อเลือก" aria-describedby="boardHelp"></div>
         <svg class="arrowLayer" id="arrowLayer" viewBox="0 0 800 800" aria-hidden="true">
@@ -467,7 +479,7 @@
     <aside class="lessonPanel">
       <div class="lessonHead">
         <button class="iconBtn" id="prevBtn" type="button" aria-label="บทก่อนหน้า">←</button>
-        <div class="lessonTitle" id="lessonTitle">เริ่มเรียน</div>
+        <div class="lessonTitleGroup"><svg class="lessonLearningIcon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><path d="M16 12c-4-3-8-3-12-2v16c4-1 8-1 12 2 4-3 8-3 12-2V14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 12v16M8 15l4 1M8 20l4 1M20 20l4-1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="m24 3 1.5 4.5L30 9l-4.5 1.5L24 15l-1.5-4.5L18 9l4.5-1.5L24 3Z" fill="#f2c14e" stroke="#f2c14e" stroke-linejoin="round"/></svg><div class="lessonTitle" id="lessonTitle">เริ่มเรียน</div></div>
       </div>
 
       <div class="lessonProgress">
