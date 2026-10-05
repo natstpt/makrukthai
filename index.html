@@ -378,6 +378,13 @@
       .statusToast{display:none}.menuTools .hintBtn{font-size:16px;min-height:44px}
       .mapNode strong{font-size:18px}.mapNode small{font-size:13px}.modalBody{padding:14px}
     }
+    /* Keep the supplied guide portrait clear without competing with the lesson. */
+    .coachRow .coach,.mobileCoachRow .coach{overflow:hidden;background:#080909;border:1px solid #42473d;box-shadow:none;display:block;padding:0;font-size:0}
+    .coachRow .coach{width:64px;height:72px;flex:0 0 64px;border-radius:16px}
+    .coachPortrait{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 0;transform:scale(1.45);transform-origin:50% 12%;pointer-events:none}
+    @media(max-width:699px){
+      .mobileCoachRow .coach{width:48px;height:56px;flex:0 0 48px;margin-top:24px;border-radius:13px}
+    }
   </style>
 </head>
 <body>
@@ -425,7 +432,7 @@
           </div>
         </div>
       </details>
-      <div class="mobileCoachRow"><div class="coach" aria-hidden="true">🧑‍🏫</div><div class="mobileCoachText"><div id="focusLessonTitle" class="focusLessonTitle"></div><div class="speech" id="mobileSpeech"></div></div></div>
+      <div class="mobileCoachRow"><div class="coach" aria-hidden="true"><img class="coachPortrait" src="assets/images/lesson-guide.webp" width="384" height="384" alt="" decoding="async"></div><div class="mobileCoachText"><div id="focusLessonTitle" class="focusLessonTitle"></div><div class="speech" id="mobileSpeech"></div></div></div>
       <div class="boardWrap">
         <div class="board" id="board" role="group" aria-label="กระดาน 8 คูณ 8 ใช้ปุ่มลูกศรเลื่อนช่อง และ Enter เพื่อเลือก" aria-describedby="boardHelp"></div>
         <svg class="arrowLayer" id="arrowLayer" viewBox="0 0 800 800" aria-hidden="true">
@@ -465,7 +472,7 @@
       <div class="lessonBody">
         <div class="stepTrail" id="stepTrail" aria-label="ขั้นตอนการเรียน"><span>รู้จัก</span><span>ดูวิธี</span><span>ลองเล่น</span></div>
         <div class="coachRow">
-          <div class="coach" aria-hidden="true">🧑‍🏫</div>
+          <div class="coach" aria-hidden="true"><img class="coachPortrait" src="assets/images/lesson-guide.webp" width="384" height="384" alt="" decoding="async"></div>
           <div class="speech" id="speech"></div>
         </div>
 
