@@ -12,6 +12,7 @@ function profile(ps){return JSON.stringify({status:['white','black'].map(s=>Rule
 function goals(t,l){const ps=pieces(t,l),legal=Rules.legalDestinations(ps,t.start);return t.goals||(t.goal?[t.goal]:l.type==='check'?legal.filter(to=>Rules.inCheck(Rules.applyMove(ps,t.start,to),'black')):legal);}
 function tacticalProfile(ps,l){return l.id==='draw-rules'?JSON.stringify(['white','black'].map(side=>Rules.gameStatus(ps,side))):profile(ps);}
 function valid(t,b,l){const ps=pieces(t,l),old=pieces(b,l);if(ps.some(p=>p.at.r<0||p.at.r>7||p.at.c<0||p.at.c>7)||new Set(ps.map(p=>p.at.r+','+p.at.c)).size!==ps.length)return false;
+if(l.id==='review'&&(t.start.r<2||t.start.r>5||t.start.c<2||t.start.c>5||goals(t,l).some(g=>g.r<1||g.r>6||g.c<1||g.c>6)))return false;
 if(Rules.inCheck(ps,'white')&&Rules.inCheck(ps,'black'))return false;
 if(l.type!=='quiz'&&Rules.inCheck(ps,'black'))return false;
 if(ps.some(p=>p.piece==='pawn'&&(p.side==='white'?p.at.r<3:p.at.r>4)))return false;
@@ -40,6 +41,7 @@ if(l.id==='block')accept(b);
 for(let mirror=0;mirror<2;mirror++)for(let dr=-7;dr<=7;dr++)for(let dc=-7;dc<=7;dc++)accept(transform(b,p=>({r:p.r+dr,c:(mirror?7-p.c:p.c)+dc})));
 // Keep the tactical relationships while moving a supporting piece to a new square.
 for(const seed of [b,...pool.slice(0,8)]){const ps=pieces(seed,l);for(let p=0;p<ps.length;p++){if(same(ps[p].at,seed.start)||(seed.goals||[seed.goal]).some(g=>same(g,ps[p].at)))continue;for(let r=0;r<8;r++)for(let c=0;c<8;c++){let t=clone(seed);let list=t.pieces||[null,...(t.friends||[]),...(t.enemies||[])];if(!list[p])continue;list[p].at={r,c};if(valid(t,seed,l))accept(t);}}if(pool.length>80)break;}
+if(l.id==='review'){const centerDistance=p=>Math.abs(p.r-3.5)+Math.abs(p.c-3.5);pool.sort((a,b)=>centerDistance(a.start)-centerDistance(b.start)||centerDistance(goals(a,l)[0])-centerDistance(goals(b,l)[0]));}
 return pool;});
 for(let set=0;set<5;set++)for(let i=0;i<count;i++){const pool=pools[i%bases.length];const chosen=pool.find(t=>!seen.has(signature(t,l)));if(!chosen)throw Error(l.id+' insufficient variants for set '+set+' task '+i+' pools '+pools.map(p=>p.length));add(chosen);}}
 if(all.length!==count*5)throw Error(l.id+' count '+all.length+' expected '+count*5);bank[l.id]=Array.from({length:5},(_,i)=>all.slice(i*count,(i+1)*count));console.log(l.id,all.length);
