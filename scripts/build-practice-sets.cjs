@@ -10,12 +10,13 @@ function pieces(t,l){return t.pieces||[{piece:t.piece||l.piece,side:'white',at:t
 function signature(t,l){return JSON.stringify([pieces(t,l).map(p=>[p.piece,p.side,p.at.r,p.at.c]).sort(),t.target,t.start,t.goals||t.goal]);}
 function profile(ps){return JSON.stringify({status:['white','black'].map(s=>Rules.gameStatus(ps,s)),edges:ps.map(p=>ps.map(q=>Rules.isAttacked([p,...ps.filter(x=>x!==p).map(x=>({...x,side:'obstacle'}))],q.at,p.side))),kingMoves:ps.filter(p=>p.piece==='king').map(p=>Rules.legalDestinations(ps,p.at).length>0)});}
 function goals(t,l){const ps=pieces(t,l),legal=Rules.legalDestinations(ps,t.start);return t.goals||(t.goal?[t.goal]:l.type==='check'?legal.filter(to=>Rules.inCheck(Rules.applyMove(ps,t.start,to),'black')):legal);}
-function tacticalProfile(ps,l){return l.id==='draw-rules'?JSON.stringify(['white','black'].map(side=>Rules.gameStatus(ps,side))):l.id==='block'?JSON.stringify({check:Rules.inCheck(ps,'white'),kingCanMove:ps.filter(p=>p.side==='white'&&p.piece==='king').some(p=>Rules.legalDestinations(ps,p.at).length>0),redCheck:Rules.inCheck(ps,'black')}):profile(ps);}
+function tacticalProfile(ps,l){return l.id==='draw-rules'?JSON.stringify(['white','black'].map(side=>Rules.gameStatus(ps,side))):profile(ps);}
 function valid(t,b,l){const ps=pieces(t,l),old=pieces(b,l);if(ps.some(p=>p.at.r<0||p.at.r>7||p.at.c<0||p.at.c>7)||new Set(ps.map(p=>p.at.r+','+p.at.c)).size!==ps.length)return false;
 if(Rules.inCheck(ps,'white')&&Rules.inCheck(ps,'black'))return false;
 if(l.type!=='quiz'&&Rules.inCheck(ps,'black'))return false;
 if(ps.some(p=>p.piece==='pawn'&&(p.side==='white'?p.at.r<3:p.at.r>4)))return false;
 if(tacticalProfile(ps,l)!==tacticalProfile(old,l))return false;
+if(l.id==='block'&&!require('./block-safety.cjs')(Rules,ps,t.start,goals(t,l)))return false;
 if(l.id==='mini'&&!Rules.legalMoves(ps,'white').some(m=>Rules.gameStatus(Rules.applyMove(ps,m.from,m.to),'black').state==='checkmate'))return false;
 if(t.start){let gs=goals(t,l),og=goals(b,l);if(!gs.length||gs.length!==og.length&&!!(b.goals||b.goal))return false;const legal=Rules.legalDestinations(ps,t.start);if(!gs.every(g=>legal.some(p=>same(p,g))))return false;
 if(b.goals||b.goal)for(let i=0;i<gs.length;i++){const n=Notation.formatMove(ps,t.start,gs[i]),o=Notation.formatMove(old,b.start,og[i]);if(n.capture!==o.capture||n.check!==o.check||n.mate!==o.mate||n.promotion!==o.promotion)return false;if(tacticalProfile(Rules.applyMove(ps,t.start,gs[i]),l)!==tacticalProfile(Rules.applyMove(old,b.start,og[i]),l))return false;}}
@@ -35,6 +36,7 @@ else if(l.routePuzzle){for(let i=0;i<count*5;i++){const start={r:Math.floor((i*1
 else if(l.id==='promotion'){for(let i=0;i<15;i++){const c=i%8,start={r:3,c},to={r:2,c:i<8?c:c+1};all.push({piece:'pawn',start,goal:to,enemies:i<8?[]:[{piece:'met',side:'black',at:to}],mission:i<8?'เดินเบี้ยไป '+label(to)+' แล้วดูเบี้ยหงาย':'กินเม็ดที่ '+label(to)+' แล้วดูเบี้ยหงาย',hint:i<8?'เบี้ยเดินตรง 1 ช่อง':'เบี้ยกินเฉียงหน้า 1 ช่อง ถึงแถว 6 แล้วหงาย'});}}
 else if(l.id==='setup'||l.id==='fair-play'){const rows=require('./practice-question-data.cjs')[l.id];rows.forEach((row,i)=>{let choices=row.slice(1).map((text,j)=>({text,correct:j===0}));choices.push(...choices.splice(0,i%3));all.push({pieces:clone(l.questions[0].pieces),mission:row[0],choices,hint:l.id==='setup'?'ลองดูตำแหน่งหมากบนกระดาน แล้วนับหรืออ่านชื่อช่อง':'เลือกวิธีที่สุภาพและช่วยให้ทั้งสองคนเล่นสนุก',explanation:row[1]});});}
 else {const bases=clone(l.challenges||l.questions||l.games);const pools=bases.map(b=>{const pool=[],local=new Set();const accept=t=>{if(valid(t,b,l)){const k=signature(t,l);if(!local.has(k)){local.add(k);pool.push(wording(t,b,l));}}};
+if(l.id==='block')accept(b);
 for(let mirror=0;mirror<2;mirror++)for(let dr=-7;dr<=7;dr++)for(let dc=-7;dc<=7;dc++)accept(transform(b,p=>({r:p.r+dr,c:(mirror?7-p.c:p.c)+dc})));
 // Keep the tactical relationships while moving a supporting piece to a new square.
 for(const seed of [b,...pool.slice(0,8)]){const ps=pieces(seed,l);for(let p=0;p<ps.length;p++){if(same(ps[p].at,seed.start)||(seed.goals||[seed.goal]).some(g=>same(g,ps[p].at)))continue;for(let r=0;r<8;r++)for(let c=0;c<8;c++){let t=clone(seed);let list=t.pieces||[null,...(t.friends||[]),...(t.enemies||[])];if(!list[p])continue;list[p].at={r,c};if(valid(t,seed,l))accept(t);}}if(pool.length>80)break;}

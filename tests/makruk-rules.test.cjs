@@ -163,8 +163,8 @@ for (const lesson of lessons.filter(lesson => lesson.type === 'challenge')) {
     challengeCount++;
   }
 }
-check(challengeCount, 23, '23 move challenges include three piece comparisons');
-check(goalCount, 25, 'all 25 explicit challenge goal alternatives tested');
+check(challengeCount, 24, '24 move challenges include four safe interpositions');
+check(goalCount, 26, 'all 26 explicit challenge goal alternatives tested');
 
 const protection = lessonById('defend');
 for (let i = 0; i < protection.challenges.length; i++) {

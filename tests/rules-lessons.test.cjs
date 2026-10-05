@@ -130,7 +130,7 @@ for (const [i, task] of notation.challenges.entries()) {
 check(Notation.formatMove([{ piece: 'knight', side: 'white', at: pos('b', 1) }], pos('b', 1), pos('f', 3)), null, 'incorrect b1-f3 example is not taught as a legal knight move');
 
 const block = byId('block');
-check(block.challenges.length, 3, 'block lesson offers three piece types');
+check(block.challenges.length, 4, 'block lesson follows four supplied situations');
 for (const [i, task] of block.challenges.entries()) {
   const board = [{ piece: task.piece, side: 'white', at: task.start }].concat(task.friends || [], task.enemies || []);
   const king = board.find(piece => piece.side === 'white' && piece.piece === 'king');
@@ -138,8 +138,8 @@ for (const [i, task] of block.challenges.entries()) {
   const replies = board.filter(piece => piece.side === 'white').flatMap(piece => Rules.legalDestinations(board, piece.at).map(at => ({ from: piece.at, to: at })));
   yes(Rules.inCheck(board, 'white'), `block ${i + 1}: white king starts in check`);
   check(Rules.legalDestinations(board, king.at).length, 0, `block ${i + 1}: king cannot escape the check`);
-  check(replies.length, 1, `block ${i + 1}: only one legal response is available`);
-  yes(same(replies[0].to, target), `block ${i + 1}: the only legal response blocks the rook`);
+  yes(replies.some(move=>same(move.from,task.start)&&same(move.to,target)), `block ${i + 1}: intended interposition is legal`);
+  yes(require('../scripts/block-safety.cjs')(Rules,board,task.start,task.goals), `block ${i + 1}: no immediate mate and blocker can be recaptured`);
   no(Rules.inCheck(Rules.applyMove(board, task.start, target), 'white'), `block ${i + 1}: blocking move makes the king safe`);
 }
 
