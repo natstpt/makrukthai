@@ -407,7 +407,7 @@
       <details class="topMenu">
         <summary>เพิ่มเติม</summary>
         <div class="topMenuPanel">
-          <button class="topBtn" id="effectsBtn" type="button" aria-pressed="true">เสียงเดิน / รุก: เปิด</button>
+          <button class="topBtn" id="effectsBtn" type="button" aria-pressed="true">เสียงเอฟเฟกต์: เปิด</button>
           <button class="topBtn" id="notationHelpBtn" type="button">วิธีบันทึกหมาก</button>
           <a class="topBtn rulesLink" id="rulesPdfLink" href="assets/rules/makruk-rules-2569.pdf" target="_blank" rel="noopener" title="เปิดกติกาหมากรุกไทย พ.ศ. 2569 ในแท็บใหม่">กติกา</a>
           <button class="topBtn" id="resetBtn" type="button" title="เริ่มบทเรียนใหม่">เริ่มใหม่</button>
@@ -1474,11 +1474,11 @@
       var button=document.createElement('button');button.type='button';button.className='quizChoice';button.textContent=choice.text;
       button.addEventListener('click',function(){
         if(state.completed||!state.pendingNotation||state.roundDone)return;
-        if(!choice.correct){button.classList.add('wrong');button.disabled=true;feedbackEl.className='feedback error';feedbackEl.textContent='ยังไม่ใช่ ลองอีกตัวเลือก';showToast('ลองอีกครั้ง','bad');return;}
+        if(!choice.correct){button.classList.add('wrong');button.disabled=true;feedbackEl.className='feedback error';feedbackEl.textContent='ยังไม่ใช่ ลองอีกตัวเลือก';showToast('ลองอีกครั้ง','bad','failure');return;}
         button.classList.add('correct');notationChoices.querySelectorAll('button').forEach(function(option){option.disabled=true;});
         state.pendingNotation=null;state.correctMoves++;state.roundDone=true;
         feedbackEl.className='feedback success';feedbackEl.textContent='จดถูกแล้ว! ⭐';
-        showToast('จดถูก '+state.correctMoves+' / '+lessons[state.lesson].requiredCorrect+' ✓','good');renderBoard();updatePracticeUI();
+        showToast('จดถูก '+state.correctMoves+' / '+lessons[state.lesson].requiredCorrect+' ✓','good','success');renderBoard();updatePracticeUI();
       });
       notationChoices.appendChild(button);
     });
@@ -1506,10 +1506,10 @@
       feedbackEl.className='feedback success';feedbackEl.textContent=(task&&task.explanation?task.explanation:'ถูกต้อง!')+(practiceReady()?' · ครบแล้ว กดผ่านบทนี้':' · กดข้อถัดไป');
       updatePracticeUI();
       if(l.coordinateLesson)renderBoard();
-      showToast('ถูกต้อง ✓','good');
+      showToast('ถูกต้อง ✓','good','success');
     }else{
       btn.classList.add('wrong');feedbackEl.className='feedback error';feedbackEl.textContent='ยังไม่ใช่ ลองอีกครั้ง หรือดูคำใบ้ได้นะ';
-      showToast('ลองอีกครั้ง','bad');
+      showToast('ลองอีกครั้ง','bad','failure');
     }
   }
 
@@ -1535,7 +1535,7 @@
     var message=status.state==='checkmate'?(status.winner==='white'?'คุณรุกจนแล้ว! ฝ่ายขาวชนะ':'ขุนขาวถูกรุกจน ฝ่ายแดงชนะ'):status.state==='stalemate'?'อับ: ฝ่ายที่ถึงตาเดินไม่ถูกรุก แต่ไม่มีตาเดิน เกมเสมอ':'เหลือขุนทั้งสองฝ่าย เกมเสมอ';
     feedbackEl.className='feedback success';feedbackEl.textContent=message+' · ลองทบทวนว่าได้เรียนรู้อะไร แล้วเล่นเกมถัดไป หรือกดผ่านบทนี้เมื่อเล่นครบแล้ว';
     boardCaption.textContent=message;
-    showToast(status.winner==='white'?'รุกจน ✓':'จบเกมฝึกแล้ว','good');
+    showToast(status.winner==='white'?'รุกจน ✓':status.winner==='black'?'แพ้เกมนี้ ลองใหม่ได้':'เกมเสมอ',status.winner==='black'?'bad':'good',status.winner==='white'?'complete':status.winner==='black'?'failure':'draw');
   }
 
   function chooseRedMove(pieces){
@@ -1668,16 +1668,18 @@
     }
     feedbackEl.className='feedback success';
     feedbackEl.textContent=isStarPractice(l)?'เก็บดาวแล้ว! ⭐ '+state.correctMoves+' / '+l.requiredCorrect:message;
-    showToast(isStarPractice(l)?'เก็บดาว '+state.correctMoves+' / '+l.requiredCorrect+' ✓':'เดินถูก '+state.correctMoves+' / '+l.requiredCorrect+' ✓','good');
+    showToast(isStarPractice(l)?'เก็บดาว '+state.correctMoves+' / '+l.requiredCorrect+' ✓':'เดินถูก '+state.correctMoves+' / '+l.requiredCorrect+' ✓','good','success');
     renderBoard();updatePracticeUI();
   }
 
   function moveError(message){
     feedbackEl.className='feedback error';feedbackEl.textContent=message;
-    showToast('ลองช่องใหม่','bad');renderBoard();
+    showToast('ลองช่องใหม่','bad','failure');renderBoard();
   }
 
   function completeLesson(message){
+    if(state.completed)return;
+    presentation.playResult('complete');
     state.completed=true;state.phase='done';
     appEl.classList.add('lessonPassed');
     feedbackEl.className='feedback success';feedbackEl.textContent=message;
@@ -1738,7 +1740,8 @@
     return [];
   }
 
-  function showToast(text,kind){
+  function showToast(text,kind,sound){
+    if(sound)presentation.playResult(sound);
     toast.textContent=text;toast.className='statusToast show '+(kind||'');
     clearTimeout(showToast.t);showToast.t=setTimeout(function(){toast.className='statusToast';},1350);
   }

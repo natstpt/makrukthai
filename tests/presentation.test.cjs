@@ -28,3 +28,12 @@ const r=harness(true);r.api.queueMove(move);r.api.flush();assert.equal(r.animati
 const d=harness();d.api.queueMove({...move,skipAnimation:true});d.api.flush();assert.equal(d.animations.length,0,'dragged pieces do not jump back to origin');
 const unsupported=harness(false,false);unsupported.listeners.pointerdown();assert(unsupported.buttons.musicBtn.disabled);unsupported.api.queueMove(move);unsupported.api.flush();
 console.log('Presentation verified: gesture-only audio, two music loops, move/check/mute cues, hidden-tab pause, 210ms motion, redraw cleanup, reduced motion and drag handling.');
+// Mission feedback is distinct, gesture-gated, throttled and uses the effects mute.
+const outcomes=harness();outcomes.api.playResult('complete');assert.equal(outcomes.oscillators.length,0);
+outcomes.listeners.pointerdown();outcomes.api.playResult('success');assert.equal(outcomes.oscillators.length,3);
+outcomes.api.playResult('failure');assert.equal(outcomes.oscillators.length,3,'rapid taps cannot stack outcome sounds');
+outcomes.clock.currentTime=1;outcomes.api.playResult('failure');assert.equal(outcomes.oscillators.length,5);assert(outcomes.oscillators.slice(-2).every(n=>n.type==='triangle'));
+outcomes.clock.currentTime=2;outcomes.api.playResult('complete');assert.equal(outcomes.oscillators.length,9);assert(outcomes.oscillators.slice(-4).every(n=>n.type==='sine'));
+outcomes.buttons.effectsBtn.handlers.click();outcomes.clock.currentTime=3;outcomes.api.playResult('failure');assert.equal(outcomes.oscillators.length,9);
+outcomes.buttons.effectsBtn.handlers.click();outcomes.doc.hidden=true;outcomes.listeners.visibilitychange();outcomes.api.playResult('complete');assert.equal(outcomes.oscillators.length,9);
+console.log('Mission audio verified: success, completion, failure, mute, hidden-tab pause and rapid-input suppression.');
