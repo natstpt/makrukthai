@@ -43,9 +43,9 @@
       game:['ลองเล่นทั้งกระดาน คุณเป็นฝ่ายขาว','เดินถูก 6 ตาก็ผ่านได้ ไม่จำเป็นต้องชนะ'],
       mini:['ลองเกมสั้นกับคู่ฝึกสีแดง','เล่นให้จบ 3 เกม แพ้หรือเสมอก็เรียนรู้ได้'],
       assessment:['ลองใช้สิ่งที่เรียนมาใน 5 ด่าน','ทำทีละด่าน ผิดแล้วลองใหม่ได้'],
-      review:['เริ่มวันที่ 2 ด้วยการทบทวน','ลองเดินม้า โคน และเบี้ยหงายอีกครั้ง'],
+      review:['ขุน โคน เม็ด หน้าตาคล้ายกัน ลองเทียบความสูงจากฐานเดียวกัน','ขุนสูงที่สุด อยู่ช่อง ง4 เดินรอบตัวได้ 8 ทาง ทีละ 1 ช่อง','โคนสูงปานกลาง อยู่ช่อง ง4 เหมือนเดิม เดินเฉียง 4 ทาง และหน้าตรง 1 ทาง','เม็ดเตี้ยที่สุด อยู่ช่อง ง4 เหมือนเดิม เดินเฉียง 4 ทางเท่านั้น','จำง่าย ๆ: ขุนรอบตัว โคนเฉียงกับหน้า เม็ดเฉียงเท่านั้น แล้วลองฝึกทีละตัว'],
       defend:['หมากช่วยดูแลกันได้','เดินหมากไปช่วยป้องกันอีกตัว ถ้าหมากแดงกินตัวนั้น เราจะกินกลับได้'],
-      finish:['เก่งมาก! เรียนครบทั้งสองวันแล้ว','ลองเล่นกับเพื่อน และถามกรรมการเมื่อสงสัย']
+      finish:['เก่งมาก! เรียนครบทุกบทแล้ว','ลองเล่นกับเพื่อน และถามกรรมการเมื่อสงสัย']
     };
     return order.map(function(id,index){
       var lesson=previous.find(function(item){return item.id===id;});
@@ -61,6 +61,7 @@
         lesson.questions=[mate,escape,Object.assign({},mate,{pieces:mate.pieces.map(function(pc){return Object.assign({},pc,{at:{r:pc.at.r,c:7-pc.at.c}});})})];
         lesson.questions.forEach(function(q,i){q.choices=[{text:'รุกจนแล้ว',correct:i!==1},{text:'ยังหนีได้',correct:i===1}];q.mission='ขุนแดงถูกรุกจน หรือยังหนีได้?';});
       }
+      if(id==='check')lesson.challenges.forEach(function(task){var king=task.enemies.find(function(pc){return pc.piece==='king';});task.goal={r:task.start.r,c:king.at.c};});
       if(id==='notation')lesson.primerPieces=[null,'king','rook','knight','khon','met','pawn','promoted'];
       ['speech','heading','description','rule','mission','caption','hint'].forEach(function(key){
         if(typeof lesson[key]==='string')lesson[key]=lesson[key].replace(/พา/g,'เดิน').replace(/ครบเกณฑ์แล้ว/g,'ครบแล้ว').replace(/ถามกรรมการให้ช่วยนับและอธิบาย/g,'ขอให้กรรมการอธิบายกติกาข้อนี้');

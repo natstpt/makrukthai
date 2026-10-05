@@ -153,6 +153,7 @@ for (const lesson of lessons.filter(lesson => lesson.type === 'challenge')) {
   for (let i = 0; i < lesson.challenges.length; i++) {
     const challenge = lesson.challenges[i];
     const board = challengeBoard(challenge);
+    no(R.inCheck(board, 'white') && R.inCheck(board, 'black'), 'both kings cannot be in check');
     for (const goal of challenge.goals) {
       yes(has(R.legalDestinations(board, challenge.start), goal.r, goal.c), `${lesson.id} challenge ${i + 1}: explicit goal ${key(goal)} is legal`);
       const after = R.applyMove(board, challenge.start, goal);
@@ -162,8 +163,8 @@ for (const lesson of lessons.filter(lesson => lesson.type === 'challenge')) {
     challengeCount++;
   }
 }
-check(challengeCount, 20, 'Day 2 contains 20 new move challenges');
-check(goalCount, 22, 'all 22 explicit challenge goal alternatives tested');
+check(challengeCount, 23, '23 move challenges include three piece comparisons');
+check(goalCount, 25, 'all 25 explicit challenge goal alternatives tested');
 
 const protection = lessonById('defend');
 for (let i = 0; i < protection.challenges.length; i++) {
@@ -186,6 +187,7 @@ for (const id of ['block', 'take-checker']) {
   for (let i = 0; i < lessonById(id).challenges.length; i++) {
     const challenge = lessonById(id).challenges[i];
     const board = challengeBoard(challenge);
+    no(R.inCheck(board, 'white') && R.inCheck(board, 'black'), 'both kings cannot be in check');
     yes(R.inCheck(board, 'white'), `${id} ${i + 1}: starts with real check`);
     const result = R.applyMove(board, challenge.start, challenge.goals[0]);
     no(R.inCheck(result, 'white'), `${id} ${i + 1}: intended response resolves check`);
@@ -270,3 +272,4 @@ coordinateLesson.questions.forEach((question, index) => {
   question.choices.forEach(choice => yes(validCoordinateLabels.has(choice.text), `coordinate question ${index + 1}: choice ${choice.text} is a valid square label`));
 });
 console.log(`Makruk rules and lesson content verified: ${assertions} assertions passed; ${challengeCount} Day 2 challenges / ${goalCount} goal alternatives / ${coordinateLesson.questions.length} coordinate questions.`);
+

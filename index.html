@@ -385,6 +385,10 @@
     @media(max-width:699px){
       .mobileCoachRow .coach{width:48px;height:56px;flex:0 0 48px;margin-top:24px;border-radius:13px}
     }
+    .reviewComparison{position:absolute;inset:4%;z-index:9;padding:clamp(10px,2vw,24px);border:1px solid #6f855c;border-radius:18px;background:#22291f;display:flex;flex-direction:column;justify-content:center;text-align:center;overflow:auto}
+    .reviewComparison h2{font-size:clamp(18px,3vw,30px);margin:0 0 8px}.reviewComparison p{font-size:clamp(13px,2vw,18px);line-height:1.5;margin:8px 0}
+    .comparePieces{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.compareFigure{height:clamp(72px,18vw,200px);display:flex;align-items:flex-end;justify-content:center;border-bottom:2px solid #8ca870;margin-bottom:10px}.compareFigure img{width:100%;height:100%;object-fit:contain;object-position:center bottom}
+    .comparePieces strong,.comparePieces span,.comparePieces small{display:block}.comparePieces strong{font-size:clamp(18px,3vw,28px)}.comparePieces span{color:#c7d6bc;font-size:clamp(12px,2vw,17px)}.comparePieces small{margin-top:6px;font-size:clamp(12px,2vw,17px);line-height:1.5}
   </style>
 </head>
 <body>
@@ -401,9 +405,8 @@
         <summary>เพิ่มเติม</summary>
         <div class="topMenuPanel">
           <button class="topBtn" id="effectsBtn" type="button" aria-pressed="true">เสียงเดิน / รุก: เปิด</button>
-          <button class="topBtn" id="notationHelpBtn" type="button">ตารางจดหมาก</button>
-          <a class="topBtn rulesLink" id="rulesPdfLink" href="assets/rules/makruk-rules-2569.pdf" target="_blank" rel="noopener" title="เปิดกติกาหมากรุกไทย พ.ศ. 2569 ในแท็บใหม่">กติกา PDF</a>
-          <button class="topBtn planText" id="planBtn" type="button">แผนสอน 2 วัน</button>
+          <button class="topBtn" id="notationHelpBtn" type="button">วิธีบันทึกหมาก</button>
+          <a class="topBtn rulesLink" id="rulesPdfLink" href="assets/rules/makruk-rules-2569.pdf" target="_blank" rel="noopener" title="เปิดกติกาหมากรุกไทย พ.ศ. 2569 ในแท็บใหม่">กติกา</a>
           <button class="topBtn" id="resetBtn" type="button" title="เริ่มบทเรียนใหม่">เริ่มใหม่</button>
           <button class="topBtn" id="authorBtn" type="button" aria-haspopup="dialog" aria-controls="authorOverlay">ผู้จัดทำ</button>
           <button class="topBtn" id="creditsBtn" type="button" aria-haspopup="dialog" aria-controls="creditsOverlay">เครดิต</button>
@@ -440,6 +443,7 @@
         </svg>
         <svg class="demoLayer" id="demoLayer" viewBox="0 0 800 800" aria-hidden="true"></svg>
         <div class="notationPrimer" id="notationPrimer" hidden></div>
+        <div id="reviewComparison" class="reviewComparison" hidden></div>
         <div class="lessonReward" id="lessonReward" role="status" hidden>
           <div class="rewardBadge" id="rewardBadge" aria-hidden="true"></div>
           <h2>เก่งมาก! 🎉</h2><p id="rewardText"></p>
@@ -461,7 +465,6 @@
       <div class="lessonHead">
         <button class="iconBtn" id="prevBtn" type="button" aria-label="บทก่อนหน้า">←</button>
         <div class="lessonTitle" id="lessonTitle">เริ่มเรียน</div>
-        <span class="dayTag" id="dayTag">DAY 1</span>
       </div>
 
       <div class="lessonProgress">
@@ -546,37 +549,6 @@
         <details class="settingsGroup"><summary>เพิ่มเติม</summary><div class="extraSettings" id="extraSettings"></div></details>
       </section>
       <h3 class="menuLessonHeading">เลือกบทเรียน</h3><div class="learningMap" id="lessonGrid"></div>
-    </div>
-  </div>
-</div>
-
-<div class="overlay" id="planOverlay">
-  <div class="modal">
-    <div class="modalHead"><h2>แผนการสอน 2 วัน · วันละ 6 ชั่วโมง</h2><button type="button" data-close="planOverlay">×</button></div>
-    <div class="modalBody">
-      <p style="margin-top:0;color:#64746c">หน้า Learn ใช้สอนทีละขั้น ส่วนตารางนี้สำหรับครูวางเวลาในห้องเรียน แนะนำให้แต่ละชั่วโมงใช้ <b>อธิบาย 10–15 นาที → ฝึก 35–40 นาที → สรุป 5–10 นาที</b></p>
-      <div class="planDays">
-        <div class="planDay">
-          <h3>DAY 1 · เดินเป็น</h3>
-          <div class="planRow"><b>09–10</b><span><b>กระดาน ขุน เรือ</b><small>บท 1–3 · รู้จัก → ดูวิธี → ฝึกเก็บดาว</small></span></div>
-          <div class="planRow"><b>10–11</b><span><b>ม้า เม็ด โคน</b><small>บท 4–6 · ลองเดินทีละตัว จาก 1 ตาไปหลายตา</small></span></div>
-          <div class="planRow"><b>11–12</b><span><b>เบี้ย หงายเบี้ย เดินเบี้ยหงาย</b><small>บท 7–9 · เดินตรง กินเฉียง และเปลี่ยนร่าง</small></span></div>
-          <div class="planRow"><b>13–14</b><span><b>จัดหมากและการกิน</b><small>บท 10–11 · เห็นกระดานเต็มหลังรู้จักหมากครบ</small></span></div>
-          <div class="planRow"><b>14–15</b><span><b>รุกและหนีรุก</b><small>บท 12–13 · รู้ว่าเมื่อไรขุนมีอันตราย</small></span></div>
-          <div class="planRow"><b>15–16</b><span><b>รุกจน</b> และทบทวนกับครู<small>บท 14 · แยกรุกจนกับยังหนีได้ แล้วฝึกกระดานจริง</small></span></div>
-        </div>
-        <div class="planDay">
-          <h3>DAY 2 · เล่นเป็น + คิดเป็น</h3>
-          <div class="planRow"><b>09–10</b><span><b>ทบทวนและป้องกันหมาก</b><small>บท 15–16 · หมากช่วยดูแลกัน</small></span></div>
-          <div class="planRow"><b>10–11</b><span><b>บังขุนและกินตัวที่รุก</b><small>บท 17–18 · เรียนวิธีแก้รุกเพิ่มอีกสองวิธี</small></span></div>
-          <div class="planRow"><b>11–12</b><span><b>จดหมากและเกมเสมอ</b><small>บท 19–20 · เลือกบันทึกจาก 3 ตัวเลือก เรียนเรื่องอับ ส่วนการนับให้กรรมการช่วย</small></span></div>
-          <div class="planRow"><b>13–14</b><span>สูตร <b>ดูเขา → ดูเรา → ค่อยเดิน</b> <small>บท 21–22 · คิดก่อนเดิน จับหมาก นาฬิกา และน้ำใจนักกีฬา</small></span></div>
-          <div class="planRow"><b>14–15</b><span>เกมเต็มแบบมีครูคอยถามนำ <small>บท 23 · คู่ฝึกแดงเดินตอบ พร้อมใบบันทึกขาว–แดง</small></span></div>
-          <div class="planRow"><b>15–16</b><span>Mini Tournament + ประเมิน 5 ด่าน <small>บท 24–25 · มินิเกม 3 รอบและด่านสรุป 5 เรื่อง</small></span></div>
-          <div class="planRow"><b>เริ่มเรียน</b><span><button class="planStartBtn" id="startDay2Btn" type="button">เปิดบทเรียนวันที่ 2 →</button><small id="day2AccessHint"></small></span></div>
-        </div>
-      </div>
-      <div style="margin-top:15px;background:#e8f3e3;border-radius:13px;padding:13px 15px"><b>เป้าหมายปลายหลักสูตร:</b> จัดกระดานได้ · เดินหมากถูก · เข้าใจเบี้ยหงาย · รู้จักรุก/หนีรุก/รุกจน · เล่นจบเกมได้ · เริ่มคิดก่อนเดิน 1–2 ตา</div>
     </div>
   </div>
 </div>
@@ -689,7 +661,6 @@
   var boardCaption = document.getElementById('boardCaption');
   var toast = document.getElementById('toast');
   var lessonTitle = document.getElementById('lessonTitle');
-  var dayTag = document.getElementById('dayTag');
   var progressText = document.getElementById('progressText');
   var progressPercent = document.getElementById('progressPercent');
   var progressFill = document.getElementById('progressFill');
@@ -983,6 +954,7 @@
     return rounds?rounds[index%rounds.length]:null;
   }
   function activePiece(){var l=lessons[state.lesson],task=challenge();
+    if(l.id==='review'&&(state.phase==='intro'||state.phase==='demo'))return ['king','king','khon','met','met'][state.teachingIndex];
     if(l.type==='game'){var pc=state.gamePieces.find(function(x){return state.current&&same(x.at,state.current);});return pc?pc.piece:'king';}
     return state.promoted?'promoted':task&&task.piece?task.piece:l.piece;
   }
@@ -1063,6 +1035,7 @@
     }
     state.lastFrom=state.lastTo=null;state.focus=state.current||{r:7,c:0};
     missionEl.textContent=l.requiredGames?'เกมที่ '+(state.roundIndex+1)+' · หาทางรุกจน':task&&task.mission?task.mission:l.type==='notation'?'เดินตามโจทย์ แล้วเลือกบันทึกที่ถูกต้อง':l.piece?'เดิน'+pieceName[activePiece()]+'ไปเก็บดาว':'ดูโจทย์แล้วเลือกคำตอบ';
+    if(!l.routePuzzle&&state.starTarget&&l.type!=='notation')missionEl.textContent+=' · เดินไปช่องดาว '+squareLabel(state.starTarget);
     if(l.routePuzzle&&state.starTarget)missionEl.textContent='เดิน'+pieceName[l.piece]+'ไป '+squareLabel(state.starTarget)+(state.roundIndex%3?' · เดินต่อได้หลายตา':' · ลองเดิน 1 ตา');
     mobileSpeechEl.textContent=l.type==='notation'?'เดินหมาก แล้วเลือกบันทึกที่ถูกต้อง':l.type==='game'?'เลือกหมากขาว แล้วทำภารกิจ':l.type==='quiz'?task&&task.mission?task.mission:l.mission:task&&task.mission?task.mission:l.piece?state.showStarHint?'เดิน'+pieceName[activePiece()]+'ไปเก็บดาว ⭐':'ลองเดิน'+pieceName[activePiece()]:'มาลองทำภารกิจนี้กัน';
     boardCaption.textContent=l.type==='game'?(l.requiredGames?'มินิเกมที่ '+(state.roundIndex+1):'เกมฝึกเต็มกระดาน')+' · คุณเล่นฝ่ายขาว':task&&task.mission?'โจทย์ที่ '+(state.roundIndex+1)+' · '+task.mission:state.current?pieceName[activePiece()]+'อยู่ที่ '+squareLabel(state.current):l.caption;
@@ -1227,7 +1200,9 @@
   }
 
   function boardPieces(){
-    var l=lessons[state.lesson], pieces=basePieces(l);
+    var l=lessons[state.lesson];
+    if(l.id==='review'&&(state.phase==='intro'||state.phase==='demo'))return [{piece:activePiece(),side:'white',at:pos('d',4)}];
+    var pieces=basePieces(l);
     if(state.current && l.piece){
       var task=challenge(),originalPiece=task&&task.piece?task.piece:l.piece,start=task?task.start:l.start;
       var found=false;
@@ -1303,6 +1278,7 @@
     if(focused&&state.focus){var focusSquare=boardEl.querySelector('[data-r="'+state.focus.r+'"][data-c="'+state.focus.c+'"]');if(focusSquare)focusSquare.focus({preventScroll:true});}
     renderDemonstration();
     renderNotationPrimer();
+    renderReviewComparison();
     presentation.flush();
   }
 
@@ -1327,7 +1303,6 @@
     lessonTitle.textContent=l.title;
     document.getElementById('mobileLessonTitle').textContent=l.title;
     document.getElementById('focusLessonTitle').textContent='บท '+(state.lesson+1)+' · '+l.title;
-    dayTag.textContent='DAY '+l.day;
     speechEl.textContent=l.type==='finish'?'เยี่ยมมาก! พร้อมใช้ความรู้บนกระดานจริง':l.type==='quiz'?'ดูโจทย์ แล้วเลือกคำตอบ':l.type==='notation'?'เดินหมาก แล้วเลือกวิธีจดที่ถูกต้อง':l.piece?'ลากหมากไปเก็บดาว':'มาลองทำภารกิจนี้กัน';
     mobileSpeechEl.textContent=l.type==='finish'?'พร้อมใช้ความรู้บนกระดานจริง':l.type==='quiz'?l.mission:l.type==='notation'?'เดินหมาก แล้วเลือกบันทึกที่ถูกต้อง':l.piece?state.showStarHint?'เดิน'+pieceName[l.piece]+'ไปเก็บดาว ⭐':'ลองเดิน'+pieceName[l.piece]:'มาลองทำภารกิจนี้กัน';
     headingEl.textContent=l.heading;
@@ -1364,6 +1339,7 @@
   function showTeachingStep(){
     var l=lessons[state.lesson];
     appEl.classList.add('teaching');
+    if(l.id==='review'){state.current=pos('d',4);state.selected=false;}
     speechEl.textContent=mobileSpeechEl.textContent=l.teachingSteps[state.teachingIndex];
     mainBtn.disabled=false;
     mainBtn.textContent=state.teachingIndex===l.teachingSteps.length-1?(l.type==='finish'?'เรียนซ้ำตั้งแต่ต้น':l.type==='quiz'?'เริ่มตอบคำถาม →':'เริ่มลองเล่น →'):'ดูต่อ →';
@@ -1375,7 +1351,7 @@
     var layer=document.getElementById('demoLayer');layer.innerHTML='';
     if(state.phase!=='demo'||!state.current||!lessons[state.lesson].piece)return;
     var l=lessons[state.lesson],moves=moveDestinations();
-    if(l.type!=='move')moves=goalDestinations().filter(function(to){return moves.some(function(at){return same(at,to);});});
+    if(l.type!=='move'&&l.id!=='review')moves=goalDestinations().filter(function(to){return moves.some(function(at){return same(at,to);});});
     if(activePiece()==='rook'&&l.type==='move')moves=moves.filter(function(to){var next={r:to.r+Math.sign(to.r-state.current.r),c:to.c+Math.sign(to.c-state.current.c)};return !moves.some(function(at){return same(at,next);});});
     if(activePiece()==='knight'){
       moves=moves.slice(0,2);
@@ -1391,6 +1367,15 @@
     }
   }
 
+
+  function renderReviewComparison(){
+    var box=document.getElementById('reviewComparison'),l=lessons[state.lesson];
+    box.hidden=l.id!=='review'||!(state.phase==='intro'||state.phase==='demo')||(state.teachingIndex!==0&&state.teachingIndex!==4);
+    if(box.hidden)return;
+    box.innerHTML='<h2>หน้าตาคล้าย แต่เป็นคนละตัว</h2><p>เทียบจากฐานที่วางเสมอกัน</p><div class="comparePieces">'+[
+      ['king','ขุน','สูงที่สุด','รอบตัว 8 ทาง'],['khon','โคน','สูงปานกลาง','เฉียง 4 ทาง + หน้าตรง'],['met','เม็ด','เตี้ยที่สุด','เฉียง 4 ทางเท่านั้น']
+    ].map(function(item){return '<div><div class="compareFigure"><img src="assets/pieces/makruk/ada/w'+pieceFile[item[0]]+'.svg" alt="'+item[1]+'"></div><strong>'+item[1]+'</strong><span>'+item[2]+'</span><small>'+item[3]+'</small></div>';}).join('')+'</div><p>ทั้งสามเดินครั้งละ 1 ช่อง<br>'+(state.teachingIndex===4?'พร้อมแล้ว กดเริ่มลองเล่น':'กดดูต่อเพื่อเทียบทางเดินจากช่อง ง4 เดียวกัน')+'</p>';
+  }
 
   function renderNotationPrimer(){
     var box=document.getElementById('notationPrimer'),l=lessons[state.lesson];
@@ -1647,6 +1632,7 @@
     if(!candidates.some(function(x){return same(x,dest);})){moveError('ช่องนี้ยังเดินไม่ได้ ลองอีกช่องนะ');return;}
     if(l.type==='game'){playGameMove(dest);return;}
     var legal=goalDestinations();
+    if(!l.routePuzzle&&state.starTarget&&!same(dest,state.starTarget)){moveError('ตานี้ให้เดินไปช่องดาวที่ '+squareLabel(state.starTarget)+' ตามโจทย์นะ');return;}
     if(!legal.some(function(x){return same(x,dest);})){moveError(l.type==='check'?'ยังไม่รุกขุน ลองอีกช่องนะ':'ยังไม่ตรงโจทย์ ลองอีกครั้งนะ');return;}
     queueMoveFeedback(state.current,dest,activePiece(),'white',Rules.applyMove(boardPieces(),state.current,dest));
     var notation=l.type==='notation'?Notation.formatMove(boardPieces(),state.current,dest):null;
@@ -1710,7 +1696,7 @@
     document.getElementById('rewardText').textContent='ผ่านบท “'+l.title+'” แล้ว';
     document.getElementById('lessonReward').hidden=false;
     nextRoundBtn.hidden=true;
-    speechEl.textContent=mobileSpeechEl.textContent=state.lesson===day2Start-1?'เยี่ยมมาก! จบวันที่ 1 แล้ว พร้อมเรียนวันที่ 2':'เก่งมาก! เข้าใจแล้ว กดบทถัดไปได้เลย';
+    speechEl.textContent=mobileSpeechEl.textContent='เก่งมาก! เข้าใจแล้ว กดบทถัดไปได้เลย';
     renderPath();
     updateBoardHelp();
   }
@@ -1738,7 +1724,7 @@
       if(state.roundDone)hint='ทำโจทย์นี้ถูกแล้ว กด “ฝึกโจทย์ถัดไป” เพื่อฝึกเพิ่ม';
       else if(task&&task.hint)hint=task.hint;
       else if(l.type==='promote')hint='เดินตรงไป '+squareLabel(task.goal)+' เมื่อถึงแถว 6 เบี้ยจะหงาย';
-      else hint=(l.type==='check'?'เรือต้องอยู่แนวเดียวกับขุนแดง':l.type==='escape'?'เดินขุนออกจากแนวเรือแดง':l.rule)+' · จาก '+squareLabel(state.current)+' ลอง '+goalDestinations().map(squareLabel).join(' · ');
+      else hint=(l.type==='check'?'เรือต้องอยู่แนวเดียวกับขุนแดง':l.type==='escape'?'เดินขุนออกจากแนวเรือแดง':l.rule)+' · จาก '+squareLabel(state.current)+' ลอง '+(state.starTarget?[state.starTarget]:goalDestinations()).map(squareLabel).join(' · ');
     }else if(task&&task.hint)hint=task.hint;
     feedbackEl.textContent='💡 '+hint;
     if(state.phase==='active')speechEl.textContent=mobileSpeechEl.textContent=hint;
@@ -1762,7 +1748,7 @@
   function buildLessonGrid(){
     var grid=document.getElementById('lessonGrid');grid.innerHTML='';
     lessons.forEach(function(l,i){
-      if(i===0||l.day!==lessons[i-1].day){var section=document.createElement('div');section.className='daySection';section.textContent=l.day===1?'วันที่ 1 · เริ่มเล่นเป็น':'วันที่ 2 · คิดเป็น เล่นกับเพื่อน';grid.appendChild(section);}
+      if(i===0||l.day!==lessons[i-1].day){var section=document.createElement('div');section.className='daySection';section.textContent=l.day===1?'เริ่มเล่นเป็น':'คิดเป็น เล่นกับเพื่อน';grid.appendChild(section);}
       var card=document.createElement('button');card.type='button';
       var locked=i>state.unlocked;
       card.className='mapNode'+(locked?' locked':i===state.lesson?' current':'');
@@ -1779,10 +1765,6 @@
       buildLessonGrid();
       hintBtn.disabled=state.phase==='done';
       document.getElementById('quickHelp').hidden=lessons[state.lesson].type==='finish';
-    }
-    if(id==='planOverlay'){
-      document.getElementById('startDay2Btn').disabled=state.unlocked<day2Start;
-      document.getElementById('day2AccessHint').textContent=state.unlocked<day2Start?'เรียนวันที่ 1 ให้ครบ '+day2Start+' บทก่อน แล้วปุ่มนี้จะเปิด':'พร้อมแล้ว! เปิดวันที่ 2 หรือเลือกบทที่ปลดล็อกจากสารบัญได้';
     }
     overlayOpener=document.activeElement;
     var overlay=document.getElementById(id),modal=overlay.querySelector('.modal');
@@ -1866,14 +1848,12 @@
   prevBtn.addEventListener('click',function(){if(state.lesson>0){state.lesson--;renderLesson();}});
   document.getElementById('menuTools').addEventListener('click',function(e){
     var control=e.target.closest('button,a');
-    if(control&&['hintBtn','retryBtn','moveToolBtn','arrowToolBtn','planBtn','notationHelpBtn','resetBtn','authorBtn','creditsBtn','rulesPdfLink'].includes(control.id))closeOverlay('menuOverlay');
+    if(control&&['hintBtn','retryBtn','moveToolBtn','arrowToolBtn','notationHelpBtn','resetBtn','authorBtn','creditsBtn','rulesPdfLink'].includes(control.id))closeOverlay('menuOverlay');
   },true);
   document.getElementById('menuBtn').addEventListener('click',function(){openOverlay('menuOverlay');});
-  document.getElementById('planBtn').addEventListener('click',function(){openOverlay('planOverlay');});
   document.getElementById('notationHelpBtn').addEventListener('click',function(){openOverlay('notationHelpOverlay');});
   document.getElementById('authorBtn').addEventListener('click',function(){openOverlay('authorOverlay');});
   document.getElementById('creditsBtn').addEventListener('click',function(){openOverlay('creditsOverlay');});
-  document.getElementById('startDay2Btn').addEventListener('click',function(){if(state.unlocked<day2Start)return;state.lesson=day2Start;closeOverlay('planOverlay');renderLesson();});
   document.querySelectorAll('[data-close]').forEach(function(b){b.addEventListener('click',function(){closeOverlay(b.dataset.close);});});
   document.querySelectorAll('.overlay').forEach(function(o){o.addEventListener('click',function(e){if(e.target===o)closeOverlay(o.id);});});
   document.getElementById('resetBtn').addEventListener('click',function(){

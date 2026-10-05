@@ -12,6 +12,8 @@ function profile(ps){return JSON.stringify({status:['white','black'].map(s=>Rule
 function goals(t,l){const ps=pieces(t,l),legal=Rules.legalDestinations(ps,t.start);return t.goals||(t.goal?[t.goal]:l.type==='check'?legal.filter(to=>Rules.inCheck(Rules.applyMove(ps,t.start,to),'black')):legal);}
 function tacticalProfile(ps,l){return l.id==='draw-rules'?JSON.stringify(['white','black'].map(side=>Rules.gameStatus(ps,side))):l.id==='block'?JSON.stringify({check:Rules.inCheck(ps,'white'),kingCanMove:ps.filter(p=>p.side==='white'&&p.piece==='king').some(p=>Rules.legalDestinations(ps,p.at).length>0),redCheck:Rules.inCheck(ps,'black')}):profile(ps);}
 function valid(t,b,l){const ps=pieces(t,l),old=pieces(b,l);if(ps.some(p=>p.at.r<0||p.at.r>7||p.at.c<0||p.at.c>7)||new Set(ps.map(p=>p.at.r+','+p.at.c)).size!==ps.length)return false;
+if(Rules.inCheck(ps,'white')&&Rules.inCheck(ps,'black'))return false;
+if(l.type!=='quiz'&&Rules.inCheck(ps,'black'))return false;
 if(ps.some(p=>p.piece==='pawn'&&(p.side==='white'?p.at.r<3:p.at.r>4)))return false;
 if(tacticalProfile(ps,l)!==tacticalProfile(old,l))return false;
 if(l.id==='mini'&&!Rules.legalMoves(ps,'white').some(m=>Rules.gameStatus(Rules.applyMove(ps,m.from,m.to),'black').state==='checkmate'))return false;
@@ -21,6 +23,7 @@ return true;}
 function transform(t,fn){function walk(v){if(!v||typeof v!=='object')return v;if(Number.isInteger(v.r)&&Number.isInteger(v.c))return fn(v);return Array.isArray(v)?v.map(walk):Object.fromEntries(Object.entries(v).map(([k,x])=>[k,walk(x)]));}return walk(t);}
 function wording(t,b,l){t=clone(t);const mapping={};pieces(b,l).forEach((p,i)=>mapping[label(p.at)]=label(pieces(t,l)[i].at));if(b.start)mapping[label(b.start)]=label(t.start);(b.goals||[b.goal]).filter(Boolean).forEach((p,i)=>mapping[label(p)]=label((t.goals||[t.goal])[i]));
 for(const key of ['mission','hint','explanation','success'])if(b[key])t[key]=b[key].replace(/[กขคงจฉชญ][1-8]/g,s=>mapping[s]||s).replace(/พา/g,'เดิน');
+if(l.type==='check'){const king=pieces(t,l).find(p=>p.side==='black'&&p.piece==='king');t.goal={r:t.start.r,c:king.at.c};t.mission='เดินเรือจาก '+label(t.start)+' ไปช่องดาว '+label(t.goal)+' เพื่อรุกขุน '+label(king.at);}
 if(t.start){const gs=goals(t,l);t.hint='เลือก'+names[t.piece||l.piece]+'ที่ '+label(t.start)+' แล้วลองเดินไป '+gs.map(label).join(' หรือ ');if(l.id==='defend')t.hint+=' เพื่อช่วยป้องกันหมากขาว';if(l.type==='notation')t.expectedNotation=Notation.formatMove(pieces(t,l),t.start,gs[0]).text;}
 if(l.id==='mini'){const ps=pieces(t,l),m=Rules.legalMoves(ps,'white').find(m=>Rules.gameStatus(Rules.applyMove(ps,m.from,m.to),'black').state==='checkmate');t.hint='ลองเดินเรือจาก '+label(m.from)+' ไป '+label(m.to)+' ขุนขาวช่วยปิดช่องหนีของขุนแดง';}
 return t;}

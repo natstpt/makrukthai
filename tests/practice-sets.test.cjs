@@ -10,6 +10,9 @@ for(const l of lessons){const sets=ctx.window.MakrukPracticeSets[l.id];if(['game
 const seen=new Set();for(const [setIndex,set]of sets.entries()){assert.equal(set.length,l.requiredGames||l.requiredCorrect||3,l.id);for(const t of set){const ps=t.pieces||[{piece:t.piece||l.piece,side:'white',at:t.start},...(t.friends||[]),...(t.enemies||[])];
 const key=JSON.stringify([ps.map(p=>[p.piece,p.side,p.at.r,p.at.c]).sort(),t.target,t.start,t.goals||t.goal,['setup','fair-play'].includes(l.id)?t.mission:null]);assert(!seen.has(key),l.id+' repeated task');seen.add(key);
 assert.equal(new Set(ps.map(p=>p.at.r+','+p.at.c)).size,ps.length,l.id+' overlap');assert(ps.every(p=>p.at.r>=0&&p.at.r<8&&p.at.c>=0&&p.at.c<8));
+assert(!(Rules.inCheck(ps,'white')&&Rules.inCheck(ps,'black')),l.id+' both kings in check');
+if(l.type!=='quiz')assert(!Rules.inCheck(ps,'black'),l.id+' non-moving king already in check');
+if(l.type==='check'){assert(t.goal);assert(t.mission.includes(Notation.squareLabel(t.goal)));assert(Rules.inCheck(Rules.applyMove(ps,t.start,t.goal),'black'));}
 if(t.choices){assert.equal(t.choices.filter(c=>c.correct).length,1);assert.equal(new Set(t.choices.map(c=>c.text)).size,t.choices.length);}
 if(l.coordinateLesson)assert.equal(t.choices.find(c=>c.correct).text,Notation.squareLabel(t.target));
 if(l.routePuzzle){assert(Learning.routeTargets(Rules,l.piece,t.start,t.routeDistance).some(x=>same(x.at,t.goal)));}
