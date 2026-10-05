@@ -24,7 +24,7 @@ function transform(t,fn){function walk(v){if(!v||typeof v!=='object')return v;if
 function wording(t,b,l){t=clone(t);const mapping={};pieces(b,l).forEach((p,i)=>mapping[label(p.at)]=label(pieces(t,l)[i].at));if(b.start)mapping[label(b.start)]=label(t.start);(b.goals||[b.goal]).filter(Boolean).forEach((p,i)=>mapping[label(p)]=label((t.goals||[t.goal])[i]));
 for(const key of ['mission','hint','explanation','success'])if(b[key])t[key]=b[key].replace(/[กขคงจฉชญ][1-8]/g,s=>mapping[s]||s).replace(/พา/g,'เดิน');
 if(l.type==='check'){const king=pieces(t,l).find(p=>p.side==='black'&&p.piece==='king');t.goal={r:t.start.r,c:king.at.c};t.mission='เดินเรือจาก '+label(t.start)+' ไปช่องดาว '+label(t.goal)+' เพื่อรุกขุน '+label(king.at);}
-if(t.start){const gs=goals(t,l);t.hint='เลือก'+names[t.piece||l.piece]+'ที่ '+label(t.start)+' แล้วลองเดินไป '+gs.map(label).join(' หรือ ');if(l.id==='defend')t.hint+=' เพื่อช่วยป้องกันหมากขาว';if(l.type==='notation')t.expectedNotation=Notation.formatMove(pieces(t,l),t.start,gs[0]).text;}
+if(t.start){const gs=goals(t,l);t.hint='เลือก'+names[t.piece||l.piece]+'ที่ '+label(t.start)+' แล้วลองเดินไป '+gs.map(label).join(' หรือ ');if(l.id==='defend')t.hint+=' เพื่อผูกหมาก ให้มีตัวกินกลับ ไม่เสียหมากฟรี';if(l.type==='notation')t.expectedNotation=Notation.formatMove(pieces(t,l),t.start,gs[0]).text;}
 if(l.id==='mini'){const ps=pieces(t,l),m=Rules.legalMoves(ps,'white').find(m=>Rules.gameStatus(Rules.applyMove(ps,m.from,m.to),'black').state==='checkmate');t.hint='ลองเดินเรือจาก '+label(m.from)+' ไป '+label(m.to)+' ขุนขาวช่วยปิดช่องหนีของขุนแดง';}
 return t;}
 const bank={};
