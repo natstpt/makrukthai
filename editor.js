@@ -72,7 +72,9 @@
     var img=$('board').querySelector('[data-r="'+to.r+'"][data-c="'+to.c+'"] img');
     if(!img||!img.animate)return;
     var size=$('board').clientWidth/8,sign=flipped?-1:1;
-    img.animate([{transform:'translate('+(from.c-to.c)*size*sign+'px,'+(from.r-to.r)*size*sign+'px)'},{transform:'translate(0,0)'}],{duration:210,easing:'ease-out'});
+    var cell=img.parentElement;cell.style.zIndex='3';
+    var animation=img.animate([{transform:'translate('+(from.c-to.c)*size*sign+'px,'+(from.r-to.r)*size*sign+'px)'},{transform:'translate(0,0)'}],{duration:210,easing:'ease-out'});
+    animation.onfinish=animation.oncancel=function(){cell.style.zIndex='';};
   }
   $('board').addEventListener('click',function(e){
     var sq=e.target.closest('.square');if(!sq)return;
