@@ -389,6 +389,9 @@
     .reviewComparison h2{font-size:clamp(18px,3vw,30px);margin:0 0 8px}.reviewComparison p{font-size:clamp(13px,2vw,18px);line-height:1.5;margin:8px 0}
     .comparePieces{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.compareFigure{height:clamp(72px,18vw,200px);display:flex;align-items:flex-end;justify-content:center;border-bottom:2px solid #8ca870;margin-bottom:10px}.compareFigure img{width:100%;height:100%;object-fit:contain;object-position:center bottom}
     .comparePieces strong,.comparePieces span,.comparePieces small{display:block}.comparePieces strong{font-size:clamp(18px,3vw,28px)}.comparePieces span{color:#c7d6bc;font-size:clamp(12px,2vw,17px)}.comparePieces small{margin-top:6px;font-size:clamp(12px,2vw,17px);line-height:1.5}
+    .authorProfile{grid-template-columns:180px minmax(0,1fr)}
+    .authorPhoto{display:block;width:100%;height:auto;aspect-ratio:4/5;object-fit:cover;object-position:65% 40%;border-radius:18px;border:1px solid #cad1c1;box-shadow:0 5px 16px #17241718}
+    @media(max-width:699px){.authorProfile{grid-template-columns:1fr}.authorPortrait{width:160px;max-width:100%}}
   </style>
 </head>
 <body>
@@ -558,12 +561,7 @@
     <div class="modalHead"><h2 id="authorDialogTitle">ผู้จัดทำ</h2><button type="button" data-close="authorOverlay" aria-label="ปิดข้อมูลผู้จัดทำ">×</button></div>
     <div class="modalBody authorProfile">
       <figure class="authorPortrait">
-        <!-- Replace this placeholder with the author's photo when supplied. -->
-        <div class="portraitPlaceholder" id="authorPhotoPlaceholder">
-          <svg viewBox="0 0 96 96" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><circle cx="48" cy="30" r="16"/><path d="M16 82v-6a32 32 0 0164 0v6z"/></svg>
-          <span>พื้นที่สำหรับรูปผู้จัดทำ</span>
-        </div>
-        <figcaption>เตรียมไว้สำหรับเพิ่มรูปภายหลัง</figcaption>
+        <img class="authorPhoto" src="assets/images/author-natkamon.png" width="400" height="400" alt="นายณัฐกมล สุนทรพิทักษ์ ขณะเล่นหมากรุกไทย" decoding="async">
       </figure>
       <div class="authorDetails">
         <h3>นายณัฐกมล สุนทรพิทักษ์</h3>
