@@ -19,7 +19,7 @@
   function snapshot(){return {state:clone(state),moves:moves.slice(),last:last};}
   function restore(item){state=item.state;moves=item.moves;last=item.last;selected=null;save();render();}
   function remember(){future=[];history.push(snapshot());if(history.length>200)history.shift();}
-  function message(text,error){$('status').textContent=text;$('status').classList.toggle('error',!!error);}
+  function message(text,error){$('status').textContent=text;$('status').classList.toggle('error',!!error);document.querySelector('.positionFeedback').classList.toggle('hasStatus',!!text);scheduleFit();}
   function changed(){selected=null;last=null;save();render();}
   function chooseTool(value){tool=value;selected=null;render();}
   function palette(id,side){
@@ -58,7 +58,7 @@
     $('panelTitle').textContent=mode==='edit'?'จัดตำแหน่งหมาก':'ทดลองเดิน';
     $('topSide').textContent=flipped?'ฝ่ายขาว':'ฝ่ายแดง';$('bottomSide').textContent=flipped?'ฝ่ายแดง':'ฝ่ายขาว';
     $('topDot').classList.toggle('white',flipped);$('bottomDot').classList.toggle('white',!flipped);
-    $('modeLabel').textContent=mode==='edit'?'โหมดตั้งหมาก':'โหมดทดลองเดิน';$('turn').value=state.turn;
+    $('modeLabel').textContent=mode==='edit'?'1 · ตั้งตำแหน่ง':'2 · ทดลองเดิน';$('turn').value=state.turn;
     $('moveTool').setAttribute('aria-pressed',String(tool==='move'));$('eraseTool').setAttribute('aria-pressed',String(tool==='erase'));
     document.querySelectorAll('[data-tool]').forEach(function(b){b.setAttribute('aria-pressed',String(tool===b.dataset.tool));});
     $('fen').value=M.fen(state);
@@ -71,9 +71,9 @@
     }else{
       $('turnHeading').textContent=sideName(state.turn)+'เดิน';
       $('instruction').textContent=status.state==='playing'?(status.check?'รุก! ต้องเดินให้ขุนพ้นจากการรุก':'ตาฝ่าย'+sideName(state.turn)+' เลือกหมากแล้วแตะช่องที่มีจุด'):'จบตำแหน่งนี้แล้ว ย้อนกลับเพื่อทดลองทางอื่นได้';
-      message(status.state==='checkmate'?'รุกจน — ฝ่าย'+sideName(status.winner)+'ชนะ':status.state==='stalemate'?'เสมอเพราะอับ — ไม่มีตาเดินและขุนไม่ถูกรุก':status.state==='draw'?'เสมอ — เหลือขุนทั้งสองฝ่าย':status.check?'ขุน'+sideName(state.turn)+'กำลังถูกรุก':'กำลังทดลองตำแหน่ง ผลัดกันเดินทั้งสองฝ่าย');
+      message(status.state==='checkmate'?'รุกจน — ฝ่าย'+sideName(status.winner)+'ชนะ':status.state==='stalemate'?'เสมอเพราะอับ — ไม่มีตาเดินและขุนไม่ถูกรุก':status.state==='draw'?'เสมอ — เหลือขุนทั้งสองฝ่าย':status.check?'ขุน'+sideName(state.turn)+'กำลังถูกรุก':'');
     }
-    renderMoves();
+    renderMoves();scheduleFit();
   }
   function renderMoves(){
     var body=$('moveList');body.replaceChildren();
@@ -101,7 +101,7 @@
       });
       body.appendChild(tr);
     });
-    var scroll=$('moveTableScroll');scroll.hidden=!moves.length;
+    var scroll=$('moveTableScroll');scroll.hidden=false;
     var key=moves.length+':'+(moves.length?moves[moves.length-1].text:'');
     if(scroll.dataset.lastMove!==key){scroll.scrollTop=scroll.scrollHeight;scroll.dataset.lastMove=key;}
   }
@@ -207,5 +207,25 @@
   $('options').onclick=function(){$('optionsDialog').showModal();};
   $('closeOptions').onclick=function(){$('optionsDialog').close();};
   $('optionsDialog').addEventListener('close',function(){$('options').focus();});
+
+  var fitFrame=0;
+  function scheduleFit(){if(fitFrame)return;fitFrame=requestAnimationFrame(function(){fitFrame=0;fitWorkspace();});}
+  function fitWorkspace(){
+    var main=document.querySelector('main'),panel=document.querySelector('.controlPanel'),dock=document.querySelector('.actionDock');
+    var style=getComputedStyle(main),gap=parseFloat(style.rowGap)||0;
+    var available=main.clientHeight-parseFloat(style.paddingTop)-parseFloat(style.paddingBottom)-dock.offsetHeight-gap;
+    var stacked=getComputedStyle(document.body).getPropertyValue('--stacked').trim()==='1';
+    var boardArea=document.querySelector('.boardArea'),size;
+    if(stacked){
+      var feedback=document.querySelector('.positionFeedback').offsetHeight,history=document.querySelector('.historyControls').offsetHeight;
+      var tools=mode==='edit'?$('editTools').offsetHeight:Math.max(130,Math.min(220,available*.27));
+      size=Math.min(main.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight),available-tools-feedback-history-gap-12);
+    }else{size=Math.min(boardArea.clientWidth,available-44);}
+    main.style.setProperty('--board-size',Math.max(80,Math.floor(size))+'px');
+  }
+  window.addEventListener('resize',scheduleFit);
+  if(window.visualViewport)window.visualViewport.addEventListener('resize',scheduleFit);
+  if(window.ResizeObserver){var fitObserver=new ResizeObserver(scheduleFit);['.pageHeader','.actionDock','#editTools','.positionFeedback'].forEach(function(selector){fitObserver.observe(document.querySelector(selector));});}
+
   render();if(notice)message(notice,notice!=='เปิดตำแหน่งจากลิงก์แชร์แล้ว');
 })();
