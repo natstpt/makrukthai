@@ -1,42 +1,37 @@
 <!doctype html>
 <html lang="th">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#1e211d"><title>ตั้งหมากเพื่อสอน | Makruk Learn</title><link rel="stylesheet" href="editor.css?v=20261005-2"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#1e211d"><title>ตั้งหมากเพื่อสอน | Makruk Learn</title><link rel="stylesheet" href="editor.css?v=20261006-1"></head>
 <body>
-<header><a href="index.html" class="back">← กลับบทเรียน</a><h1>ตั้งหมากเพื่อสอน</h1><span class="badge" id="modeLabel">โหมดตั้งหมาก</span></header>
+<header class="pageHeader"><a href="index.html" class="back">← บทเรียน</a><div class="brand"><span class="brandMark">มร</span><h1>ตั้งหมากเพื่อสอน</h1></div><span class="badge" id="modeLabel">โหมดตั้งหมาก</span></header>
 <main>
-  <section class="boardArea" aria-label="กระดานตั้งหมาก">
-    <div class="palette" id="redPalette" aria-label="เลือกหมากแดง"></div>
-    <div class="boardWrap" id="boardWrap"><div class="board" id="board" role="group" aria-label="กระดานหมากรุกไทย"></div></div>
-    <div class="palette" id="whitePalette" aria-label="เลือกหมากขาว"></div>
-    <div class="boardBar"><span id="boardCaption">แตะหมากที่ต้องการ แล้วแตะช่องเพื่อวาง</span><button id="flip" title="สลับด้านที่มองกระดาน">↻ พลิกกระดาน</button></div>
+<section class="boardArea" aria-label="กระดานตั้งหมาก">
+  <div class="playerBar"><span class="playerDot" id="topDot"></span><strong id="topSide">ฝ่ายแดง</strong><span class="playerMeta">หมากรุกไทย · 8 × 8</span></div>
+  <div class="boardWrap" id="boardWrap"><div class="board" id="board" role="group" aria-label="กระดานหมากรุกไทย"></div></div>
+  <div class="playerBar"><span class="playerDot white" id="bottomDot"></span><strong id="bottomSide">ฝ่ายขาว</strong><span id="boardCaption" class="playerMeta">เลือกหมาก แล้วแตะช่อง</span></div>
+  <div class="boardBar"><button id="flip" title="สลับด้านที่มองกระดาน">↕ พลิกกระดาน</button><div class="historyControls"><button id="undo" title="ย้อนกลับ 1 ขั้น">← ย้อนกลับ</button><button id="redo" title="ทำซ้ำขั้นที่ย้อนกลับ">เดินหน้า →</button></div></div>
+</section>
+<aside class="controlPanel" aria-label="เครื่องมือตั้งหมาก">
+  <div class="panelHeading"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg><h2 id="panelTitle">จัดตำแหน่งหมาก</h2><span class="smallTag">สำหรับสอน</span></div>
+  <section id="editTools">
+    <div class="pieceTray"><div class="trayLabel"><span class="playerDot"></span>หมากแดง</div><div class="palette" id="redPalette" aria-label="เลือกหมากแดง"></div><div class="trayLabel"><span class="playerDot white"></span>หมากขาว</div><div class="palette" id="whitePalette" aria-label="เลือกหมากขาว"></div></div>
+    <div class="toolRow selectTools"><button id="moveTool" aria-pressed="true">↗ ย้ายหมาก</button><button id="eraseTool" aria-pressed="false">⌫ ลบหมาก</button></div>
+    <label class="turnLabel" for="turn">ฝ่ายที่เดินก่อน</label><select id="turn"><option value="white">○ ขาวเดินก่อน</option><option value="black">● แดงเดินก่อน</option></select>
+    <div class="toolRow boardActions"><button id="initial">↺ ตั้งเริ่มเกม</button><button id="clear">▦ กระดานว่าง</button></div>
   </section>
-  <aside>
-    <div class="guide"><img src="assets/images/lesson-guide.webp" alt="" width="60" height="60"><p id="instruction">เลือกหมากจากแถบ แล้วแตะช่องที่ต้องการ วางซ้ำได้หลายตัว</p></div>
-    <div id="status" role="status" aria-live="polite"></div>
-    <section id="editTools">
-      <h2>1. จัดตำแหน่ง</h2>
-      <div class="toolRow"><button id="moveTool" aria-pressed="true">↗ ย้ายหมาก</button><button id="eraseTool" aria-pressed="false">⌫ ลบหมาก</button></div>
-      <div class="toolRow"><button id="initial">ตั้งเริ่มเกม</button><button id="clear">กระดานว่าง</button></div>
-      <h2>2. เลือกฝ่ายเดินก่อน</h2>
-      <label class="turnLabel" for="turn">ฝ่ายที่ถึงตาเดิน</label><select id="turn"><option value="white">ขาวเดินก่อน</option><option value="black">แดงเดินก่อน</option></select>
-      <button class="primary" id="start">▶ ทดลองเดินตำแหน่งนี้</button>
-      <p class="muted">ตั้งหมากได้อิสระ ก่อนทดลองเดินต้องมีขุนฝ่ายละ 1 ตัว และตำแหน่งขุนถูกกติกา</p>
-    </section>
-    <section id="playTools" hidden>
-      <h2 id="turnHeading">ขาวเดิน</h2><p>ผลัดกันเดินทั้งสองฝ่าย แตะหมากแล้วเลือกช่องที่มีจุด</p>
-      <div class="toolRow"><button id="restart">↺ เริ่มทดลองใหม่</button><button id="edit">✎ กลับไปตั้งหมาก</button></div>
-      <p class="muted">ตรวจทางเดิน การกิน หงายเบี้ย รุก รุกจน และอับ ยังไม่ตัดสินการเสมอด้วยการนับหรือเดินซ้ำ</p>
-      <details><summary>รายการเดิน</summary><ol id="moveList"></ol></details>
-    </section>
-    <div class="toolRow"><button id="undo">↶ ย้อนกลับ 1 ขั้น</button><button id="effectsBtn" aria-pressed="true">เสียงเอฟเฟกต์</button></div>
-    <details class="saveTools"><summary>เก็บ / เปิดตำแหน่งสำหรับสอน</summary>
-      <div class="toolRow"><span>เพลงคลอ</span><button id="musicBtn" aria-label="เปิดเพลงคลอ">♪</button></div>
-      <p class="muted" id="saveNote">เก็บตำแหน่งที่ตั้งไว้ให้อัตโนมัติในเครื่องนี้</p>
-      <label for="fen">รหัสตำแหน่ง (FEN)</label><textarea id="fen" rows="3" spellcheck="false" autocapitalize="off"></textarea>
-      <div class="toolRow"><button id="copy">คัดลอกรหัส</button><button id="load">เปิดรหัสนี้</button></div>
-      <p class="muted">ใช้เก็บตำแหน่งและฝ่ายเดิน ไม่รวมประวัติการนับ เปิดรหัสได้ในโหมดตั้งหมาก</p>
-    </details>
-  </aside>
+  <div class="guide"><span class="hintIcon" aria-hidden="true">↗</span><p id="instruction">เลือกหมาก แล้วแตะช่องที่ต้องการวาง</p></div>
+  <div id="status" role="status" aria-live="polite"></div>
+  <section id="playTools" hidden>
+    <div class="playHeading"><h2 id="turnHeading">ขาวเดิน</h2><span class="smallTag">เดินทั้งสองฝ่าย</span></div>
+    <p class="muted">แตะหมาก แล้วเลือกช่องที่มีจุดสีเขียว</p>
+    <div class="movesPanel"><h3>รายการเดิน</h3><p id="emptyMoves" class="muted">ยังไม่มีการเดิน ลองเดินตาแรกบนกระดาน</p><ol id="moveList"></ol></div>
+    <div class="toolRow"><button id="restart">↺ เริ่มทดลองใหม่</button><button id="edit">✎ กลับไปตั้งหมาก</button></div>
+  </section>
+  <div class="primaryAction" id="startArea"><button class="primary" id="start">ทดลองเดินตำแหน่งนี้ <span aria-hidden="true">→</span></button><p class="actionNote">ตั้งให้ครบขุนสองฝ่าย แล้วเริ่มทดลองได้เลย</p></div>
+  <div class="secondaryTools">
+    <details class="saveTools"><summary>เก็บ / เปิดตำแหน่ง <span>FEN</span></summary><div class="detailsBody"><p class="muted" id="saveNote"></p><label for="fen">รหัสตำแหน่งหมากรุกไทย</label><textarea id="fen" rows="3" spellcheck="false" autocapitalize="off"></textarea><div class="toolRow"><button id="copy">คัดลอกรหัส</button><button id="load">เปิดรหัสนี้</button></div><p class="muted">เก็บตำแหน่งและฝ่ายเดิน ไม่รวมประวัติการนับ</p></div></details>
+    <details><summary>เสียงและวิธีใช้</summary><div class="detailsBody"><div class="toolRow"><button id="effectsBtn" aria-pressed="true">เสียงเอฟเฟกต์</button><span class="musicSetting">เพลงคลอ <button id="musicBtn" aria-label="เปิดเพลงคลอ">♪</button></span></div><p class="muted">เลือกหมากจากแถบแล้วแตะช่องเพื่อวางซ้ำ ใช้ “ย้ายหมาก” เพื่อเลือกต้นทางและปลายทาง ใช้ “ลบหมาก” แล้วแตะตัวที่ต้องการลบ</p><p class="muted">ขณะทดลอง ระบบตรวจการเดิน การกิน หงายเบี้ย รุก รุกจน และอับ ยังไม่ตัดสินเสมอด้วยการนับหรือเดินซ้ำ</p></div></details>
+  </div>
+</aside>
 </main>
-<script src="makruk-rules.js"></script><script src="editor-model.js"></script><script src="presentation.js"></script><script src="editor.js?v=20261005-2"></script>
+<script src="makruk-rules.js"></script><script src="editor-model.js"></script><script src="presentation.js"></script><script src="editor.js?v=20261006-1"></script>
 </body></html>

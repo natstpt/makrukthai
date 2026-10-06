@@ -4,7 +4,7 @@
   var names={king:'ขุน',khon:'โคน',met:'เม็ด',knight:'ม้า',rook:'เรือ',pawn:'เบี้ย',promoted:'เบี้ยหงาย'};
   var icons={king:'K',khon:'B',met:'Q',knight:'N',rook:'R',pawn:'P',promoted:'F'};
   var files=['ก','ข','ค','ง','จ','ฉ','ช','ญ'];
-  var state=M.initial(),mode='edit',tool='move',selected=null,flipped=false,history=[],trial=null,moves=[],last=null;
+  var state=M.initial(),mode='edit',tool='move',selected=null,flipped=false,history=[],future=[],trial=null,moves=[],last=null;
   var storageKey='makrukTeachingEditorV1',notice='',storageOK=true;
   try{var saved=localStorage.getItem(storageKey);if(saved)state=M.parse(saved);}catch(e){notice='เปิดตำแหน่งที่เก็บไว้ไม่ได้ จึงแสดงตำแหน่งเริ่มเกม';}
   var sound=window.MakrukPresentation.create({board:$('board'),wrap:$('boardWrap')});
@@ -15,7 +15,9 @@
   function asset(p){return 'assets/pieces/makruk/ada/'+(p.side==='white'?'w':'r')+icons[p.piece]+'.svg';}
   function clone(s){return {pieces:R.clonePieces(s.pieces),turn:s.turn};}
   function save(){if(mode!=='edit')return;try{localStorage.setItem(storageKey,M.fen(state));storageOK=true;}catch(e){storageOK=false;}}
-  function remember(){history.push({state:clone(state),moves:moves.slice(),last:last});if(history.length>200)history.shift();}
+  function snapshot(){return {state:clone(state),moves:moves.slice(),last:last};}
+  function restore(item){state=item.state;moves=item.moves;last=item.last;selected=null;save();render();}
+  function remember(){future=[];history.push(snapshot());if(history.length>200)history.shift();}
   function message(text,error){$('status').textContent=text;$('status').classList.toggle('error',!!error);}
   function changed(){selected=null;last=null;save();render();}
   function chooseTool(value){tool=value;selected=null;render();}
@@ -49,7 +51,11 @@
       $('board').appendChild(sq);
     }
     ['redPalette','whitePalette','editTools'].forEach(function(id){$(id).hidden=mode!=='edit';});
-    $('playTools').hidden=mode!=='play';$('load').disabled=mode!=='edit';$('undo').disabled=!history.length;
+    $('playTools').hidden=mode!=='play';$('load').disabled=mode!=='edit';$('undo').disabled=!history.length;$('redo').disabled=!future.length;
+    $('startArea').hidden=mode!=='edit';$('emptyMoves').hidden=moves.length>0;
+    $('panelTitle').textContent=mode==='edit'?'จัดตำแหน่งหมาก':'ทดลองเดิน';
+    $('topSide').textContent=flipped?'ฝ่ายขาว':'ฝ่ายแดง';$('bottomSide').textContent=flipped?'ฝ่ายแดง':'ฝ่ายขาว';
+    $('topDot').classList.toggle('white',flipped);$('bottomDot').classList.toggle('white',!flipped);
     $('modeLabel').textContent=mode==='edit'?'โหมดตั้งหมาก':'โหมดทดลองเดิน';$('turn').value=state.turn;
     $('moveTool').setAttribute('aria-pressed',String(tool==='move'));$('eraseTool').setAttribute('aria-pressed',String(tool==='erase'));
     document.querySelectorAll('[data-tool]').forEach(function(b){b.setAttribute('aria-pressed',String(tool===b.dataset.tool));});
@@ -107,10 +113,11 @@
   $('clear').onclick=function(){remember();state={pieces:[],turn:'white'};changed();};
   $('turn').onchange=function(){remember();state.turn=$('turn').value;changed();};
   $('flip').onclick=function(){flipped=!flipped;render();};
-  $('undo').onclick=function(){var prev=history.pop();if(!prev)return;state=prev.state;moves=prev.moves;last=prev.last;selected=null;save();render();};
-  $('start').onclick=function(){var error=M.validate(state);if(error){message(error,true);sound.playResult('failure');return;}save();trial={state:clone(state),history:history.slice()};mode='play';history=[];moves=[];selected=null;last=null;render();};
+  $('undo').onclick=function(){var prev=history.pop();if(!prev)return;future.push(snapshot());restore(prev);};
+  $('redo').onclick=function(){var next=future.pop();if(!next)return;history.push(snapshot());restore(next);};
+  $('start').onclick=function(){var error=M.validate(state);if(error){message(error,true);sound.playResult('failure');return;}save();trial={state:clone(state),history:history.slice(),future:future.slice()};mode='play';history=[];future=[];moves=[];selected=null;last=null;render();};
   $('restart').onclick=function(){remember();state=clone(trial.state);moves=[];selected=null;last=null;render();};
-  $('edit').onclick=function(){mode='edit';state=clone(trial.state);history=trial.history;trial=null;moves=[];selected=null;last=null;render();};
+  $('edit').onclick=function(){mode='edit';state=clone(trial.state);history=trial.history;future=trial.future;trial=null;moves=[];selected=null;last=null;render();};
   $('load').onclick=function(){if(mode!=='edit')return;try{var next=M.parse($('fen').value);remember();state=next;changed();message('เปิดตำแหน่งแล้ว'+(M.validate(state)?' — '+M.validate(state):''));}catch(e){message(e.message,true);}};
   $('copy').onclick=async function(){try{await navigator.clipboard.writeText($('fen').value);message('คัดลอกรหัสแล้ว นำไปเก็บไว้หรือส่งให้นักเรียนได้');}catch(e){$('fen').focus();$('fen').select();message('เลือกข้อความให้แล้ว กรุณาคัดลอกด้วยเมนูของเครื่อง');}};
   document.addEventListener('keydown',function(e){if(e.key==='Escape'){selected=null;tool='move';render();}});
