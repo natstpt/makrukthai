@@ -35,3 +35,8 @@ main{--board-size: min(65vw,70dvh);display:grid;flex:1;min-height:0;width:100%;m
 @media(orientation:landscape) and (max-height:600px){main{grid-template-columns:minmax(0,1fr) minmax(280px,44%);gap:4px 12px}.pageHeader{min-height:36px;padding-top:0;padding-bottom:0}.pageHeader .back{min-height:32px}.palette button{min-height:44px}.palette img{height:28px}.positionFeedback{max-height:44px}.historyControls{height:40px;min-height:40px}.historyControls button{height:40px;min-height:40px}.actionDock{padding:4px 0}.actionDock>button,.actionDock .primary{min-height:44px}.playerBar{height:20px;min-height:20px}}
 /* Dialog content may scroll independently; the board and dock never do. */
 #optionsDialog,#exportDialog{max-height:calc(100dvh - 24px);overscroll-behavior:contain}.notationGuide{margin-top:0}.notationGuide summary{min-height:44px;font-size:14px}
+
+/* A shared budget for setup and play keeps the board stationary. */
+main{--tools-reserve:184px}
+.positionFeedback{height:56px;min-height:56px;max-height:56px;flex:0 0 56px}
+@media(orientation:landscape) and (max-height:600px){.positionFeedback{height:44px;min-height:44px;max-height:44px;flex-basis:44px}}

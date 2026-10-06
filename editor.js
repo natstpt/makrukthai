@@ -218,7 +218,7 @@
     var boardArea=document.querySelector('.boardArea'),size;
     if(stacked){
       var feedback=document.querySelector('.positionFeedback').offsetHeight,history=document.querySelector('.historyControls').offsetHeight;
-      var tools=mode==='edit'?$('editTools').offsetHeight:Math.max(130,Math.min(220,available*.27));
+      var tools=parseFloat(getComputedStyle(main).getPropertyValue('--tools-reserve'))||184;
       size=Math.min(main.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight),available-tools-feedback-history-gap-12);
     }else{size=Math.min(boardArea.clientWidth,available-44);}
     main.style.setProperty('--board-size',Math.max(80,Math.floor(size))+'px');

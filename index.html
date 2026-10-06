@@ -404,6 +404,16 @@
     .mobileLessonLabel{display:flex;align-items:center;gap:6px;margin-bottom:5px}
     .mobileLessonLabel .lessonLearningIcon{width:20px;height:20px;flex-basis:20px}
     .mobileLessonLabel .focusLessonTitle{margin:0;color:#d1e6de}
+
+    /* Reserve instruction and result regions before feedback arrives. */
+    @media(max-width:699px){
+      .desktop{grid-template-rows:minmax(0,1fr) clamp(200px,31dvh,280px)}
+      .lessonPanel,.app.activeQuiz .lessonPanel,.app.activeNotation .lessonPanel{height:100%;max-height:none;grid-template-rows:minmax(0,1fr) 70px}
+      .mobileCoachRow{height:clamp(100px,18dvh,144px);min-height:clamp(100px,18dvh,144px);max-height:clamp(100px,18dvh,144px);overflow:auto}
+      .boardArea{justify-content:flex-start}
+      .lessonFoot{height:70px;min-height:70px}
+      .feedback.error,.app.activeQuiz .feedback.error{min-height:46px}
+    }
   </style>
 </head>
 <body>
