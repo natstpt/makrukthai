@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="th">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#1e211d"><title>ตั้งหมากเพื่อสอน | Makruk Learn</title><link rel="stylesheet" href="editor.css?v=20261006-notation-1"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#1e211d"><title>ตั้งหมากเพื่อสอน | Makruk Learn</title><link rel="stylesheet" href="editor.css?v=20261006-export-1"></head>
 <body>
 <header class="pageHeader"><a href="index.html" class="back">← บทเรียน</a><div class="brand"><span class="brandMark">มร</span><h1>ตั้งหมากเพื่อสอน</h1></div><span class="badge" id="modeLabel">โหมดตั้งหมาก</span></header>
 <main>
@@ -8,7 +8,7 @@
   <div class="playerBar"><span class="playerDot" id="topDot"></span><strong id="topSide">ฝ่ายแดง</strong><span class="playerMeta">หมากรุกไทย · 8 × 8</span></div>
   <div class="boardWrap" id="boardWrap"><div class="board" id="board" role="group" aria-label="กระดานหมากรุกไทย"></div></div>
   <div class="playerBar"><span class="playerDot white" id="bottomDot"></span><strong id="bottomSide">ฝ่ายขาว</strong><span id="boardCaption" class="playerMeta">เลือกหมาก แล้วแตะช่อง</span></div>
-  <div class="boardBar"><button id="flip" title="สลับด้านที่มองกระดาน">↕ พลิกกระดาน</button><div class="historyControls"><button id="undo" title="ย้อนกลับ 1 ขั้น">← ย้อนกลับ</button><button id="redo" title="ทำซ้ำขั้นที่ย้อนกลับ">เดินหน้า →</button></div></div>
+  <div class="boardBar"><button id="flip" title="สลับด้านที่มองกระดาน">↕ พลิกกระดาน</button><button id="exportBoard" title="สร้างภาพเฉพาะกระดานเป็นไฟล์ PNG">▣ บันทึกรูปกระดาน</button><div class="historyControls"><button id="undo" title="ย้อนกลับ 1 ขั้น">← ย้อนกลับ</button><button id="redo" title="ทำซ้ำขั้นที่ย้อนกลับ">เดินหน้า →</button></div></div>
 </section>
 <aside class="controlPanel" aria-label="เครื่องมือตั้งหมาก">
   <div class="panelHeading"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg><h2 id="panelTitle">จัดตำแหน่งหมาก</h2><span class="smallTag">สำหรับสอน</span></div>
@@ -33,5 +33,6 @@
   </div>
 </aside>
 </main>
-<script src="makruk-rules.js"></script><script src="editor-model.js"></script><script src="makruk-notation.js"></script><script src="presentation.js"></script><script src="editor.js?v=20261006-notation-1"></script>
+<dialog id="exportDialog" aria-labelledby="exportTitle"><div class="exportHead"><h2 id="exportTitle">รูปกระดานพร้อมใช้งาน</h2><button id="closeExport" aria-label="ปิดภาพตัวอย่าง">×</button></div><img id="exportPreview" alt="ภาพตำแหน่งหมากที่ส่งออก"><p class="muted">PNG ขนาด 1600 × 1600 พิกเซล · เฉพาะกระดานและตัวหมาก</p><a id="downloadBoard" class="primary" download>↓ ดาวน์โหลด PNG</a><p class="muted">บนมือถือ หากไฟล์เปิดเป็นรูป ให้กดค้างที่รูปเพื่อบันทึก</p></dialog>
+<script src="makruk-rules.js"></script><script src="editor-model.js"></script><script src="makruk-notation.js"></script><script src="presentation.js"></script><script src="editor.js?v=20261006-export-1"></script>
 </body></html>

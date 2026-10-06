@@ -143,6 +143,42 @@
   $('clear').onclick=function(){remember();state={pieces:[],turn:'white'};changed();};
   $('turn').onchange=function(){remember();state.turn=$('turn').value;changed();};
   $('flip').onclick=function(){flipped=!flipped;render();};
+  var exportURL=null;
+  $('closeExport').onclick=function(){$('exportDialog').close();};
+  $('exportDialog').addEventListener('close',function(){if(exportURL){URL.revokeObjectURL(exportURL);exportURL=null;}$('exportPreview').removeAttribute('src');$('exportBoard').focus();});
+  $('exportBoard').onclick=async function(){
+    var button=$('exportBoard'),position=R.clonePieces(state.pieces),orientation=flipped;
+    button.disabled=true;button.setAttribute('aria-busy','true');button.textContent='กำลังสร้างรูป…';
+    try{
+      // Snapshot the position before any asynchronous image loading.
+      var sources=Array.from(new Set(position.map(asset))),images={};
+      await Promise.all(sources.map(function(src){return new Promise(function(resolve,reject){
+        var img=new Image(),timer=setTimeout(function(){img.onload=img.onerror=null;reject(Error('โหลดภาพหมากนานเกินไป'));},15000);
+        img.onload=function(){clearTimeout(timer);images[src]=img;resolve();};
+        img.onerror=function(){clearTimeout(timer);reject(Error('โหลดภาพหมากไม่สำเร็จ'));};img.src=src;
+      });}));
+      var canvas=document.createElement('canvas');canvas.width=canvas.height=1600;
+      var ctx=canvas.getContext('2d');if(!ctx)throw Error('เบราว์เซอร์นี้สร้างรูปไม่ได้');
+      var cell=200;ctx.fillStyle='#efd783';ctx.fillRect(0,0,1600,1600);
+      ctx.strokeStyle='#756332';ctx.lineWidth=2;
+      for(var i=0;i<=8;i++){var edge=Math.max(1,Math.min(1599,i*cell));ctx.beginPath();ctx.moveTo(edge,0);ctx.lineTo(edge,1600);ctx.stroke();ctx.beginPath();ctx.moveTo(0,edge);ctx.lineTo(1600,edge);ctx.stroke();}
+      position.forEach(function(p){var x=(orientation?7-p.at.c:p.at.c)*cell,y=(orientation?7-p.at.r:p.at.r)*cell;
+        ctx.save();ctx.shadowColor='#0005';ctx.shadowBlur=4;ctx.shadowOffsetY=3;
+        ctx.drawImage(images[asset(p)],x+cell*.065,y+cell*.065,cell*.87,cell*.87);ctx.restore();
+      });
+      ctx.fillStyle='#574819';ctx.font='bold 30px Tahoma, sans-serif';
+      for(var n=0;n<8;n++){
+        ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText(String(orientation?n+1:8-n),10,n*cell+9);
+        ctx.textAlign='right';ctx.textBaseline='bottom';ctx.fillText(files[orientation?7-n:n],(n+1)*cell-10,1590);
+      }
+      var blob=await new Promise(function(resolve,reject){canvas.toBlob(function(blob){if(blob)resolve(blob);else reject(Error('สร้างไฟล์ PNG ไม่สำเร็จ'));},'image/png');});
+      if(exportURL)URL.revokeObjectURL(exportURL);exportURL=URL.createObjectURL(blob);
+      $('exportPreview').src=exportURL;$('downloadBoard').href=exportURL;
+      $('downloadBoard').download='makruk-board-'+new Date().toISOString().replace(/[:.]/g,'-')+'.png';
+      $('exportDialog').showModal();
+    }catch(e){message('บันทึกรูปไม่ได้: '+e.message+' กรุณาลองอีกครั้ง',true);}
+    finally{button.disabled=false;button.removeAttribute('aria-busy');button.textContent='▣ บันทึกรูปกระดาน';}
+  };
   $('undo').onclick=function(){var prev=history.pop();if(!prev)return;future.push(snapshot());restore(prev);};
   $('redo').onclick=function(){var next=future.pop();if(!next)return;history.push(snapshot());restore(next);};
   $('start').onclick=function(){var error=M.validate(state);if(error){message(error,true);sound.playResult('failure');return;}save();trial={state:clone(state),history:history.slice(),future:future.slice()};mode='play';history=[];future=[];moves=[];selected=null;last=null;render();};
