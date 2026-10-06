@@ -1,38 +1,44 @@
 <!doctype html>
 <html lang="th">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#1e211d"><title>ตั้งหมากเพื่อสอน | Makruk Learn</title><link rel="stylesheet" href="editor.css?v=20261006-export-1"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#1e211d"><title>ตั้งหมากเพื่อสอน | Makruk Learn</title><link rel="stylesheet" href="editor.css?v=20261006-mobile-1"></head>
 <body>
-<header class="pageHeader"><a href="index.html" class="back">← บทเรียน</a><div class="brand"><span class="brandMark">มร</span><h1>ตั้งหมากเพื่อสอน</h1></div><span class="badge" id="modeLabel">โหมดตั้งหมาก</span></header>
+<header class="pageHeader"><a href="index.html" class="back">← บทเรียน</a><div class="brand"><h1>ตั้งหมาก</h1></div><span class="badge" id="modeLabel">โหมดตั้งหมาก</span></header>
 <main>
 <section class="boardArea" aria-label="กระดานตั้งหมาก">
-  <div class="playerBar"><span class="playerDot" id="topDot"></span><strong id="topSide">ฝ่ายแดง</strong><span class="playerMeta">หมากรุกไทย · 8 × 8</span></div>
+  <div class="playerBar"><span class="playerDot" id="topDot"></span><strong id="topSide">ฝ่ายแดง</strong></div>
   <div class="boardWrap" id="boardWrap"><div class="board" id="board" role="group" aria-label="กระดานหมากรุกไทย"></div></div>
-  <div class="playerBar"><span class="playerDot white" id="bottomDot"></span><strong id="bottomSide">ฝ่ายขาว</strong><span id="boardCaption" class="playerMeta">เลือกหมาก แล้วแตะช่อง</span></div>
-  <div class="boardBar"><button id="flip" title="สลับด้านที่มองกระดาน">↕ พลิกกระดาน</button><button id="exportBoard" title="สร้างภาพเฉพาะกระดานเป็นไฟล์ PNG">▣ บันทึกรูปกระดาน</button><div class="historyControls"><button id="undo" title="ย้อนกลับ 1 ขั้น">← ย้อนกลับ</button><button id="redo" title="ทำซ้ำขั้นที่ย้อนกลับ">เดินหน้า →</button></div></div>
-</section>
+  <div class="playerBar"><span class="playerDot white" id="bottomDot"></span><strong id="bottomSide">ฝ่ายขาว</strong><span id="boardCaption" hidden></span></div>
+  <div class="historyControls"><button id="undo" title="ย้อนกลับ 1 ขั้น">← ย้อนกลับ</button><button id="redo" title="ทำซ้ำขั้นที่ย้อนกลับ">เดินหน้า →</button></div></section>
 <aside class="controlPanel" aria-label="เครื่องมือตั้งหมาก">
-  <div class="panelHeading"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg><h2 id="panelTitle">จัดตำแหน่งหมาก</h2><span class="smallTag">สำหรับสอน</span></div>
+  <div class="srOnly"><svg viewbox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"></rect><path d="M3 9h18M3 15h18M9 3v18M15 3v18"></path></svg><h2 id="panelTitle">จัดตำแหน่งหมาก</h2><span class="smallTag">สำหรับสอน</span></div>
   <section id="editTools">
     <div class="pieceTray"><div class="trayLabel"><span class="playerDot"></span>หมากแดง</div><div class="palette" id="redPalette" aria-label="เลือกหมากแดง"></div><div class="trayLabel"><span class="playerDot white"></span>หมากขาว</div><div class="palette" id="whitePalette" aria-label="เลือกหมากขาว"></div></div>
     <div class="toolRow selectTools"><button id="moveTool" aria-pressed="true">↗ ย้ายหมาก</button><button id="eraseTool" aria-pressed="false">⌫ ลบหมาก</button></div>
-    <label class="turnLabel" for="turn">ฝ่ายที่เดินก่อน</label><select id="turn"><option value="white">○ ขาวเดินก่อน</option><option value="black">● แดงเดินก่อน</option></select>
-    <div class="toolRow boardActions"><button id="initial">↺ ตั้งเริ่มเกม</button><button id="clear">▦ กระดานว่าง</button></div>
-  </section>
-  <div class="guide"><span class="hintIcon" aria-hidden="true">↗</span><p id="instruction">เลือกหมาก แล้วแตะช่องที่ต้องการวาง</p></div>
+    </section>
+  <div class="guide"><p id="instruction">เลือกหมาก แล้วแตะช่องที่ต้องการวาง</p></div>
   <div id="status" role="status" aria-live="polite"></div>
   <section id="playTools" hidden>
     <div class="playHeading"><h2 id="turnHeading">ขาวเดิน</h2><span class="smallTag">เดินทั้งสองฝ่าย</span></div>
-    <p class="muted">แตะหมาก แล้วเลือกช่องที่มีจุดสีเขียว</p>
     <div class="movesPanel"><h3>รายการเดิน</h3><p id="emptyMoves" class="muted">ยังไม่มีการเดิน ลองเดินตาแรกบนกระดาน</p><div class="moveTableScroll" id="moveTableScroll" tabindex="0" aria-label="รายการเดิน เลื่อนเพื่อดูตาก่อนหน้า"><table class="moveTable"><caption class="srOnly">บันทึกการเดินหมาก แยกฝ่ายขาวและฝ่ายแดง</caption><thead><tr><th scope="col" class="moveNumber">ตา</th><th scope="col"><span class="playerDot white"></span> ขาว</th><th scope="col"><span class="playerDot"></span> แดง</th></tr></thead><tbody id="moveList"></tbody></table></div><details class="notationGuide"><summary>วิธีอ่านบันทึกหมาก</summary><p>ตัวอย่าง <strong>ม.ข1-ง2</strong> คือ ม้าเดินจาก ข1 ไป ง2</p><p><b>ข.</b> ขุน · <b>ร.</b> เรือ · <b>ม.</b> ม้า · <b>ค.</b> โคน · <b>ม็.</b> เม็ด · <b>บ.</b> เบี้ย · <b>ง.</b> เบี้ยหงาย</p><p><b>-</b> เดิน · <b>×</b> กิน · <b>+</b> รุก · <b>#</b> รุกจน</p><p>เลขตานับจากตำแหน่งที่เริ่มทดลอง หากแดงเดินก่อน ช่องขาวในแถวแรกจะแสดง —</p></details></div>
-    <div class="toolRow"><button id="restart">↺ เริ่มทดลองใหม่</button><button id="edit">✎ กลับไปตั้งหมาก</button></div>
-  </section>
-  <div class="primaryAction" id="startArea"><button class="primary" id="start">ทดลองเดินตำแหน่งนี้ <span aria-hidden="true">→</span></button><p class="actionNote">ตั้งให้ครบขุนสองฝ่าย แล้วเริ่มทดลองได้เลย</p></div>
-  <div class="secondaryTools">
+    </section>
+  </aside>
+<div class="actionDock"><button id="options" aria-haspopup="dialog">☰ ตัวเลือก</button><button id="flip" title="สลับด้านที่มองกระดาน">↕ พลิก</button><button id="exportBoard" title="แชร์ตำแหน่ง บันทึกหมาก หรือรูปกระดาน">↗ Share</button><div class="primaryAction" id="startArea"><button class="primary" id="start">✓ ทดลองเดิน</button></div>
+  <button id="edit" hidden="">✎ ตั้งหมาก</button></div>
+</main>
+<dialog id="optionsDialog" aria-labelledby="optionsTitle"><div class="exportHead"><h2 id="optionsTitle">ตัวเลือก</h2><button id="closeOptions" aria-label="ปิดตัวเลือก">×</button></div><div class="optionsBody"><section id="setupOptions"><label class="turnLabel" for="turn">ฝ่ายที่เดินก่อน</label><select id="turn"><option value="white">○ ขาวเดินก่อน</option><option value="black">● แดงเดินก่อน</option></select>
+    <div class="toolRow boardActions"><button id="initial">↺ ตั้งเริ่มเกม</button><button id="clear">▦ กระดานว่าง</button></div>
+  </section><button id="restart">↺ เริ่มทดลองใหม่</button><div class="secondaryTools">
     <details class="saveTools"><summary>เก็บ / เปิดตำแหน่ง <span>FEN</span></summary><div class="detailsBody"><p class="muted" id="saveNote"></p><label for="fen">รหัสตำแหน่งหมากรุกไทย</label><textarea id="fen" rows="3" spellcheck="false" autocapitalize="off"></textarea><div class="toolRow"><button id="copy">คัดลอกรหัส</button><button id="load">เปิดรหัสนี้</button></div><p class="muted">เก็บตำแหน่งและฝ่ายเดิน ไม่รวมประวัติการนับ</p></div></details>
     <details><summary>เสียงและวิธีใช้</summary><div class="detailsBody"><div class="toolRow"><button id="effectsBtn" aria-pressed="true">เสียงเอฟเฟกต์</button><span class="musicSetting">เพลงคลอ <button id="musicBtn" aria-label="เปิดเพลงคลอ">♪</button></span></div><p class="muted">เลือกหมากจากแถบแล้วแตะช่องเพื่อวางซ้ำ ใช้ “ย้ายหมาก” เพื่อเลือกต้นทางและปลายทาง ใช้ “ลบหมาก” แล้วแตะตัวที่ต้องการลบ</p><p class="muted">ขณะทดลอง ระบบตรวจการเดิน การกิน หงายเบี้ย รุก รุกจน และอับ ยังไม่ตัดสินเสมอด้วยการนับหรือเดินซ้ำ</p></div></details>
   </div>
-</aside>
-</main>
-<dialog id="exportDialog" aria-labelledby="exportTitle"><div class="exportHead"><h2 id="exportTitle">รูปกระดานพร้อมใช้งาน</h2><button id="closeExport" aria-label="ปิดภาพตัวอย่าง">×</button></div><img id="exportPreview" alt="ภาพตำแหน่งหมากที่ส่งออก"><p class="muted">PNG ขนาด 1600 × 1600 พิกเซล · เฉพาะกระดานและตัวหมาก</p><a id="downloadBoard" class="primary" download>↓ ดาวน์โหลด PNG</a><p class="muted">บนมือถือ หากไฟล์เปิดเป็นรูป ให้กดค้างที่รูปเพื่อบันทึก</p></dialog>
-<script src="makruk-rules.js"></script><script src="editor-model.js"></script><script src="makruk-notation.js"></script><script src="presentation.js"></script><script src="editor.js?v=20261006-export-1"></script>
+</div></dialog><dialog id="exportDialog" aria-labelledby="exportTitle">
+<div class="exportHead"><h2 id="exportTitle">แชร์ตำแหน่ง</h2><button id="closeExport" aria-label="ปิดหน้าต่างแชร์">×</button></div>
+<div class="shareLinkRow"><input id="shareLink" readonly aria-label="ลิงก์ตำแหน่งนี้"><button data-copy-share="shareLink" aria-label="คัดลอกลิงก์">⧉</button></div>
+<p class="shareNotice" id="shareNotice" role="status" aria-live="polite"></p>
+<div class="shareTabs" role="tablist" aria-label="รูปแบบการแชร์"><button id="tabNotation" role="tab" aria-controls="shareNotationPanel" aria-selected="false" tabindex="-1">บันทึกหมาก</button><button id="tabImage" role="tab" aria-controls="shareImagePanel" aria-selected="true">รูปภาพ</button><button id="tabEmbed" role="tab" aria-controls="shareEmbedPanel" aria-selected="false" tabindex="-1">ฝังบนเว็บ</button></div>
+<section id="shareImagePanel" role="tabpanel" aria-labelledby="tabImage"><p id="imageLoading" class="muted">กำลังสร้างรูปกระดาน…</p><img id="exportPreview" alt="ภาพตำแหน่งหมากที่ส่งออก" hidden><p class="muted">PNG · 1600 × 1600 พิกเซล</p><a id="downloadBoard" class="primary" download hidden>↓ ดาวน์โหลดรูป PNG</a><p class="muted">บนมือถือ หากไฟล์เปิดเป็นรูป ให้กดค้างที่รูปเพื่อบันทึก</p></section>
+<section id="shareNotationPanel" role="tabpanel" aria-labelledby="tabNotation" hidden><label for="shareFen">ตำแหน่งปัจจุบัน (FEN)</label><div class="shareLinkRow"><input id="shareFen" readonly><button data-copy-share="shareFen" aria-label="คัดลอก FEN">⧉</button></div><label for="shareMoves">บันทึกหมากภาษาไทย</label><textarea id="shareMoves" rows="9" readonly></textarea><button data-copy-share="shareMoves" class="copyRecord">⧉ คัดลอกบันทึก</button><a id="downloadNotation" class="primary" download="makruk-notation.txt">↓ ดาวน์โหลดบันทึก TXT</a><p class="muted">ลิงก์แชร์เปิดตำแหน่งปัจจุบัน ส่วนไฟล์ TXT เก็บรายการเดินที่ทดลองไว้ด้วย</p></section>
+<section id="shareEmbedPanel" role="tabpanel" aria-labelledby="tabEmbed" hidden><label for="shareEmbed">โค้ดสำหรับฝังหน้าตั้งหมาก</label><textarea id="shareEmbed" rows="6" readonly></textarea><button class="primary" data-copy-share="shareEmbed">⧉ คัดลอกโค้ด</button><p class="muted">นำไปวางในส่วน HTML ของเว็บไซต์ที่รองรับ iframe</p></section>
+</dialog>
+<script src="makruk-rules.js"></script><script src="editor-model.js"></script><script src="makruk-notation.js"></script><script src="presentation.js"></script><script src="editor.js?v=20261006-mobile-1"></script>
 </body></html>
