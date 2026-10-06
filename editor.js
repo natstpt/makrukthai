@@ -189,7 +189,7 @@
         ctx.textAlign='right';ctx.textBaseline='bottom';ctx.fillText(files[orientation?7-n:n],(n+1)*cell-10,1590);
       }
       var blob=await new Promise(function(resolve,reject){canvas.toBlob(function(blob){if(blob)resolve(blob);else reject(Error('สร้างไฟล์ PNG ไม่สำเร็จ'));},'image/png');});
-      if(!$('exportDialog').open&&!$('optionsDialog').open)return;if(exportURL)URL.revokeObjectURL(exportURL);exportURL=URL.createObjectURL(blob);
+      if(!$('exportDialog').open)return;if(exportURL)URL.revokeObjectURL(exportURL);exportURL=URL.createObjectURL(blob);
       $('exportPreview').src=exportURL;$('downloadBoard').href=exportURL;
       $('downloadBoard').download='makruk-board-'+new Date().toISOString().replace(/[:.]/g,'-')+'.png';
       $('imageLoading').hidden=true;$('exportPreview').hidden=false;$('downloadBoard').hidden=false;
@@ -202,7 +202,7 @@
   $('restart').onclick=function(){remember();state=clone(trial.state);moves=[];selected=null;last=null;render();$('optionsDialog').close();};
   $('edit').onclick=function(){mode='edit';state=clone(trial.state);history=trial.history;future=trial.future;trial=null;moves=[];selected=null;last=null;render();};
   $('load').onclick=function(){if(mode!=='edit')return;try{var next=M.parse($('fen').value);remember();state=next;changed();$('optionsDialog').close();message('เปิดตำแหน่งแล้ว'+(M.validate(state)?' — '+M.validate(state):''));}catch(e){$('saveNote').textContent=e.message;}};
-  $('copy').onclick=async function(){try{await navigator.clipboard.writeText($('fen').value);message('คัดลอกรหัสแล้ว นำไปเก็บไว้หรือส่งให้นักเรียนได้');}catch(e){$('fen').focus();$('fen').select();message('เลือกข้อความให้แล้ว กรุณาคัดลอกด้วยเมนูของเครื่อง');}};
+  $('copy').onclick=async function(){try{await navigator.clipboard.writeText($('fen').value);$('saveNote').textContent='คัดลอกรหัสแล้ว';}catch(e){$('fen').focus();$('fen').select();$('saveNote').textContent='เลือกข้อความแล้ว กรุณาคัดลอกด้วยเมนูของเครื่อง';}};
   document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('exportDialog').open&&!$('optionsDialog').open){selected=null;tool='move';render();}});
   $('options').onclick=function(){$('optionsDialog').showModal();};
   $('closeOptions').onclick=function(){$('optionsDialog').close();};
