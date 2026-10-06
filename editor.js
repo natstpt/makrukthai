@@ -1,6 +1,6 @@
 (function(){
   'use strict';
-  var M=window.MakrukEditor,R=window.MakrukRules,$=function(id){return document.getElementById(id);};
+  var M=window.MakrukEditor,R=window.MakrukRules,N=window.MakrukNotation,$=function(id){return document.getElementById(id);};
   var names={king:'ขุน',khon:'โคน',met:'เม็ด',knight:'ม้า',rook:'เรือ',pawn:'เบี้ย',promoted:'เบี้ยหงาย'};
   var icons={king:'K',khon:'B',met:'Q',knight:'N',rook:'R',pawn:'P',promoted:'F'};
   var files=['ก','ข','ค','ง','จ','ฉ','ช','ญ'];
@@ -71,7 +71,37 @@
       $('instruction').textContent=status.state==='playing'?(status.check?'รุก! ต้องเดินให้ขุนพ้นจากการรุก':'ตาฝ่าย'+sideName(state.turn)+' เลือกหมากแล้วแตะช่องที่มีจุด'):'จบตำแหน่งนี้แล้ว ย้อนกลับเพื่อทดลองทางอื่นได้';
       message(status.state==='checkmate'?'รุกจน — ฝ่าย'+sideName(status.winner)+'ชนะ':status.state==='stalemate'?'เสมอเพราะอับ — ไม่มีตาเดินและขุนไม่ถูกรุก':status.state==='draw'?'เสมอ — เหลือขุนทั้งสองฝ่าย':status.check?'ขุน'+sideName(state.turn)+'กำลังถูกรุก':'กำลังทดลองตำแหน่ง ผลัดกันเดินทั้งสองฝ่าย');
     }
-    $('moveList').replaceChildren();moves.forEach(function(move){var li=document.createElement('li');li.textContent=move;$('moveList').appendChild(li);});
+    renderMoves();
+  }
+  function renderMoves(){
+    var body=$('moveList');body.replaceChildren();
+    var rows=[];
+    moves.forEach(function(move,index){
+      if(move.side==='white'||!rows.length||rows[rows.length-1].black)rows.push({});
+      rows[rows.length-1][move.side]={record:move,index:index};
+    });
+    rows.forEach(function(row,index){
+      var tr=document.createElement('tr'),number=document.createElement('th');
+      number.scope='row';number.className='moveNumber';number.textContent=index+1;tr.appendChild(number);
+      ['white','black'].forEach(function(side){
+        var td=document.createElement('td'),entry=row[side];
+        if(entry){
+          var move=entry.record,wrap=document.createElement('div'),text=document.createElement('span');
+          wrap.className='moveEntry';text.className='moveNotation';
+          text.textContent=move.abbreviation+'.'+move.from+(move.capture?'×':'-')+move.to+move.suffix;
+          var img=document.createElement('img');img.src=asset(move);img.alt='';img.className='moveIcon';
+          wrap.appendChild(img);wrap.appendChild(text);td.appendChild(wrap);
+          td.title=sideName(side)+' '+names[move.piece]+' '+move.text+(move.promotion?' · '+move.promotionNote:'');
+          if(move.promotion){var note=document.createElement('small');note.className='promotionNote';note.textContent='หงายเบี้ย';td.appendChild(note);}
+          if(entry.index===moves.length-1){td.className='latestMove';td.setAttribute('aria-current','true');}
+        }else{td.textContent='—';td.className='noMove';td.setAttribute('aria-label','ยังไม่มีการเดินของฝ่าย'+sideName(side));}
+        tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    });
+    var scroll=$('moveTableScroll');scroll.hidden=!moves.length;
+    var key=moves.length+':'+(moves.length?moves[moves.length-1].text:'');
+    if(scroll.dataset.lastMove!==key){scroll.scrollTop=scroll.scrollHeight;scroll.dataset.lastMove=key;}
   }
   function animateMove(from,to){
     if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
@@ -101,10 +131,10 @@
     if(p&&p.side===state.turn){selected=same(selected,at)?null:at;render();return;}
     if(!selected){message('เลือกหมากฝ่าย'+sideName(state.turn)+'ก่อน แล้วเลือกช่องปลายทาง');return;}
     if(!R.legalDestinations(state.pieces,selected).some(function(to){return same(to,at);})){message('เดินช่องนี้ไม่ได้ ลองเลือกช่องที่มีจุดสีเขียว',true);sound.playResult('failure');return;}
-    remember();var from=selected,movingPiece=state.pieces.find(function(p){return same(p.at,from);});
+    remember();var from=selected,record=N.formatMove(state.pieces,selected,at),movingPiece=state.pieces.find(function(p){return same(p.at,from);});
     state.pieces=R.applyMove(state.pieces,from,at);state.turn=opponent(state.turn);last={from:from,to:at};selected=null;
     var result=R.gameStatus(state.pieces,state.turn);
-    moves.push(sideName(movingPiece.side)+' '+names[movingPiece.piece]+' '+label(from)+(p?' × ':' → ')+label(at)+(result.check?' รุก':'')+(movingPiece.piece==='pawn'&&state.pieces.find(function(p){return same(p.at,at);}).piece==='promoted'?' หงายเบี้ย':''));
+    moves.push(record);
     render();sound.queueMove({from:from,to:at,check:result.check,skipAnimation:true});sound.flush();animateMove(from,at);
     if(result.state!=='playing')sound.playResult(result.state==='checkmate'?'complete':'draw');
   });
