@@ -1,4 +1,4 @@
-/* Gentle original music and move feedback; no external audio files or services. */
+/* Playful original music and move feedback; no external audio files or services. */
 (function(root){
   'use strict';
   function create(options){
@@ -20,17 +20,23 @@
       osc.connect(gain);gain.connect(bus);if(isMusic)musicNodes.add(osc);
       osc.onended=function(){musicNodes.delete(osc);outcomeNodes.delete(osc);osc.disconnect();gain.disconnect();};osc.start(start);osc.stop(start+length+.03);return osc;
     }
-    // 32 beats, 72 BPM: C / Am / F / G, with a sparse melody.
-    var melody=[72,null,76,79,null,76,74,null,69,null,72,76,null,72,69,null,65,null,69,72,null,74,72,null,67,null,74,79,null,76,74,null];
-    var roots=[48,45,41,43];
+    // 64 eighth-note steps, 132 BPM: bright C / F / G / C with a bouncy melody, bass and soft tick.
+    var melody=[72,null,76,null,79,76,72,null,74,76,74,72,67,null,null,null,
+      72,null,77,null,81,77,72,null,74,null,77,76,74,null,null,null,
+      74,null,79,null,83,79,74,null,76,77,79,null,74,null,71,null,
+      72,76,79,84,null,79,76,null,72,null,74,null,72,null,null,null];
+    var roots=[48,41,43,48],step=60/132/2;
     function hz(note){return 440*Math.pow(2,(note-69)/12);}
     function schedule(){
       if(!context||context.state!=='running'||!music||doc.hidden)return;
       if(nextBeat<context.currentTime)nextBeat=context.currentTime+.04;
       while(nextBeat<context.currentTime+.22){
-        var i=beat%32;if(melody[i]!==null)tone(musicBus,hz(melody[i]),nextBeat,1.25,.065,'sine',true);
-        if(i%8===0){var base=roots[Math.floor(i/8)];[base,base+7,base+12].forEach(function(n){tone(musicBus,hz(n),nextBeat,5.9,.032,'sine',true);});}
-        nextBeat+=60/72;beat++;
+        var i=beat%64,base=roots[Math.floor(i/16)];
+        if(melody[i]!==null)tone(musicBus,hz(melody[i]),nextBeat,.2,.06,'triangle',true);
+        if(i%2===0)tone(musicBus,hz(base+(i%4===0?0:7)),nextBeat,.22,.07,'triangle',true);
+        else tone(musicBus,2400,nextBeat,.035,.012,'sine',true);
+        if(i%16===0)[base+12,base+16,base+19].forEach(function(n){tone(musicBus,hz(n),nextBeat,3.5,.016,'sine',true);});
+        nextBeat+=step;beat++;
       }
     }
     function stopMusic(){if(timer!==null){win.clearInterval(timer);timer=null;}musicNodes.forEach(function(n){try{n.stop();}catch(e){}});musicNodes.clear();}

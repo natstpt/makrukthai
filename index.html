@@ -341,7 +341,7 @@
     .lessonFoot{padding:10px;gap:8px;grid-template-columns:48px minmax(0,1fr)}
     .mainBtn{font-size:18px;height:auto;min-height:52px;padding:10px 12px;line-height:1.35}
     .menuBtn{min-width:44px;min-height:48px}.quizChoice{font-size:18px;line-height:1.45}
-    .menuTools{display:grid;gap:10px}.quickHelp{display:flex;gap:10px;flex-wrap:wrap}
+    .menuEditorLink{margin-top:24px;display:flex;align-items:center;gap:10px;min-height:52px;text-decoration:none;padding:12px 16px;font-size:17px;border-color:#37bca6;color:#95eadb}.menuEditorLink span{font-size:14px;margin-left:auto}.menuTools{display:grid;gap:10px}.quickHelp{display:flex;gap:10px;flex-wrap:wrap}
     .menuTools button,.menuTools a{min-height:44px;font-size:16px}
     .settingsGroup,.menuTools .boardToolsDetails{position:static;width:100%;max-width:none;border:1px solid #48523f;border-radius:12px;background:#252d22}
     .settingsGroup>summary,.menuTools .boardToolsDetails>summary{display:flex;align-items:center;justify-content:space-between;min-height:48px;width:100%;height:auto;font-size:16px;padding:12px 14px;cursor:pointer;color:#edf3e7;border:0;background:transparent;list-style:none}
@@ -567,14 +567,15 @@
   <div class="modal pathModal" role="dialog" aria-modal="true" aria-labelledby="learningMenuTitle" tabindex="-1">
     <div class="modalHead"><h2 id="learningMenuTitle">เมนูบทเรียน</h2><button type="button" data-close="menuOverlay">×</button></div>
     <div class="modalBody">
+      <div class="learningMap" id="lessonGrid"></div>
+      <a href="editor.html" class="topBtn menuEditorLink">▦ ตั้งหมากเพื่อสอน <span>วางหมาก · ทดลองเดิน →</span></a>
+      <h3 class="menuLessonHeading">เครื่องมือและการตั้งค่า</h3>
       <section class="menuTools" id="menuTools" aria-label="เครื่องมือและการตั้งค่า">
-        <a href="editor.html" class="topBtn" style="display:flex;align-items:center;gap:10px;text-decoration:none;padding:12px 16px;border-color:#37bca6;color:#95eadb">▦ ตั้งหมากเพื่อสอน <span style="font-size:14px;margin-left:auto">วางหมาก · ทดลองเดิน →</span></a>
         <div class="quickHelp" id="quickHelp"></div>
         <details class="settingsGroup"><summary>เสียงและเพลง</summary><div class="soundSettings"><label class="musicSetting" id="musicSetting">เพลงคลอ</label><div id="effectsSetting"></div></div></details>
         <div id="boardSettings"></div>
         <details class="settingsGroup"><summary>เพิ่มเติม</summary><div class="extraSettings" id="extraSettings"></div></details>
       </section>
-      <h3 class="menuLessonHeading">เลือกบทเรียน</h3><div class="learningMap" id="lessonGrid"></div>
     </div>
   </div>
 </div>
