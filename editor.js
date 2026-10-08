@@ -5,7 +5,7 @@
   var icons={king:'K',khon:'B',met:'Q',knight:'N',rook:'R',pawn:'P',promoted:'F'};
   var files=['ก','ข','ค','ง','จ','ฉ','ช','ญ'];
   var state=M.initial(),mode='edit',tool='move',selected=null,flipped=false,history=[],future=[],trial=null,moves=[],last=null;
-  var storageKey='makrukTeachingEditorV1',notice='',storageOK=true;
+  var storageKey='makrukTeachingEditorV1',notice='',storageOK=true,drag=null,suppressClick=false;
   try{var saved=localStorage.getItem(storageKey);if(saved)state=M.parse(saved);}catch(e){notice='เปิดตำแหน่งที่เก็บไว้ไม่ได้ จึงแสดงตำแหน่งเริ่มเกม';}
   try{var sharedParams=new URLSearchParams(location.hash.slice(1));if(sharedParams.has('fen')){state=M.parse(sharedParams.get('fen'));flipped=sharedParams.get('flip')==='1';notice='เปิดตำแหน่งจากลิงก์แชร์แล้ว';}}catch(e){notice='ลิงก์ตำแหน่งไม่ถูกต้อง จึงเปิดตำแหน่งที่เก็บไว้แทน';}
   var sound=window.MakrukPresentation.create({board:$('board'),wrap:$('boardWrap')});
@@ -21,14 +21,16 @@
   function remember(){future=[];history.push(snapshot());if(history.length>200)history.shift();}
   function message(text,error){$('status').textContent=text;$('status').classList.toggle('error',!!error);document.querySelector('.positionFeedback').classList.toggle('hasStatus',!!text);scheduleFit();}
   function changed(){selected=null;last=null;save();render();}
-  function chooseTool(value){tool=value;selected=null;render();}
+  function chooseTool(value){tool=tool===value?'move':value;selected=null;render();}
+  function pieceAt(at){return state.pieces.find(function(p){return same(p.at,at);});}
   function palette(id,side){
     Object.keys(names).forEach(function(piece){
       var button=document.createElement('button');button.type='button';button.dataset.tool=side+':'+piece;
       button.setAttribute('aria-label',names[piece]+sideName(side));button.setAttribute('aria-pressed','false');
       var img=document.createElement('img');img.src=asset({piece:piece,side:side});img.alt='';img.draggable=false;
       button.appendChild(img);button.appendChild(document.createTextNode(names[piece]));
-      button.addEventListener('click',function(){chooseTool(button.dataset.tool);});$(id).appendChild(button);
+      button.addEventListener('click',function(){if(suppressClick)return;chooseTool(button.dataset.tool);});
+      button.addEventListener('pointerdown',function(e){beginDrag(e,{spec:button.dataset.tool,piece:{piece:piece,side:side}});});$(id).appendChild(button);
     });
   }
   palette('redPalette','black');palette('whitePalette','white');
@@ -59,18 +61,17 @@
     $('topSide').textContent=flipped?'ฝ่ายขาว':'ฝ่ายแดง';$('bottomSide').textContent=flipped?'ฝ่ายแดง':'ฝ่ายขาว';
     $('topDot').classList.toggle('white',flipped);$('bottomDot').classList.toggle('white',!flipped);
     $('modeLabel').textContent=mode==='edit'?'1 · ตั้งตำแหน่ง':'2 · ทดลองเดิน';$('turn').value=state.turn;
-    $('moveTool').setAttribute('aria-pressed',String(tool==='move'));$('eraseTool').setAttribute('aria-pressed',String(tool==='erase'));
     document.querySelectorAll('[data-tool]').forEach(function(b){b.setAttribute('aria-pressed',String(tool===b.dataset.tool));});
     $('fen').value=M.fen(state);
     $('saveNote').textContent=storageOK?'เก็บตำแหน่งที่ตั้งไว้ให้อัตโนมัติในเครื่องนี้ (ไม่ทับด้วยตาที่ทดลองเดิน)':'เครื่องนี้เก็บอัตโนมัติไม่ได้ กรุณาคัดลอกรหัสไว้';
     $('boardCaption').textContent=mode==='edit'?'เลือก → แตะช่องเพื่อวาง':'จุดสีเขียว = ช่องที่เดินได้';
     if(mode==='edit'){
-      var parts=tool.split(':');
-      $('instruction').textContent=tool==='move'?(selected?'เลือกช่องใหม่ให้'+names[state.pieces.find(function(p){return same(p.at,selected);}).piece]:'แตะหมากบนกระดาน แล้วแตะช่องใหม่เพื่อย้าย'):tool==='erase'?'แตะหมากที่ต้องการลบออกจากกระดาน':'กำลังวาง'+names[parts[1]]+sideName(parts[0])+' แตะช่องเพื่อวางซ้ำได้หลายตัว';
-      message(M.validate(state),false);
+      var parts=tool.split(':');$('removeSelected').hidden=!selected;
+      $('instruction').textContent=tool!=='move'?'แตะช่องเพื่อวาง'+names[parts[1]]+sideName(parts[0])+' · แตะในแถบอีกครั้งเพื่อเลิก':selected?'แตะช่องใหม่เพื่อย้าย'+names[pieceAt(selected).piece]:'ลากหมากมาวาง · ลากออกนอกกระดานเพื่อลบ';
+      message(selected?'':M.validate(state),false);
     }else{
-      $('turnHeading').textContent=sideName(state.turn)+'เดิน';
-      $('instruction').textContent=status.state==='playing'?(status.check?'รุก! ต้องเดินให้ขุนพ้นจากการรุก':'ตาฝ่าย'+sideName(state.turn)+' เลือกหมากแล้วแตะช่องที่มีจุด'):'จบตำแหน่งนี้แล้ว ย้อนกลับเพื่อทดลองทางอื่นได้';
+      $('removeSelected').hidden=true;$('turnHeading').textContent=sideName(state.turn)+'เดิน';
+      $('instruction').textContent=status.state==='playing'?(status.check?'รุก! ต้องเดินให้ขุนพ้นจากการรุก':'ตาฝ่าย'+sideName(state.turn)+' ลากหรือแตะหมากไปช่องที่มีจุด'):'จบตำแหน่งนี้แล้ว ย้อนกลับเพื่อทดลองทางอื่นได้';
       message(status.state==='checkmate'?'รุกจน — ฝ่าย'+sideName(status.winner)+'ชนะ':status.state==='stalemate'?'เสมอเพราะอับ — ไม่มีตาเดินและขุนไม่ถูกรุก':status.state==='draw'?'เสมอ — เหลือขุนทั้งสองฝ่าย':status.check?'ขุน'+sideName(state.turn)+'กำลังถูกรุก':'');
     }
     renderMoves();scheduleFit();
@@ -114,37 +115,87 @@
     var animation=img.animate([{transform:'translate('+(from.c-to.c)*size*sign+'px,'+(from.r-to.r)*size*sign+'px)'},{transform:'translate(0,0)'}],{duration:210,easing:'ease-out'});
     animation.onfinish=animation.oncancel=function(){cell.style.zIndex='';};
   }
+  function editMove(from,to){
+    if(same(from,to)){selected=null;render();return;}
+    remember();var moving=pieceAt(from);state.pieces=state.pieces.filter(function(p){return !same(p.at,to);});moving.at=to;changed();
+  }
+  function editPlace(spec,at){
+    var parts=spec.split(':');remember();state.pieces=state.pieces.filter(function(p){return !same(p.at,at);});
+    state.pieces.push({piece:parts[1],side:parts[0],at:at});changed();
+  }
+  function editRemove(at){if(!pieceAt(at))return;remember();state.pieces=state.pieces.filter(function(p){return !same(p.at,at);});changed();}
+  function playMove(from,at,dragged){
+    if(!R.legalDestinations(state.pieces,from).some(function(to){return same(to,at);})){message('เดินช่องนี้ไม่ได้ ลองเลือกช่องที่มีจุดสีเขียว',true);sound.playResult('failure');return;}
+    remember();var record=N.formatMove(state.pieces,from,at);
+    state.pieces=R.applyMove(state.pieces,from,at);state.turn=opponent(state.turn);last={from:from,to:at};selected=null;
+    var result=R.gameStatus(state.pieces,state.turn);
+    moves.push(record);
+    render();sound.queueMove({from:from,to:at,check:result.check,skipAnimation:true});sound.flush();if(!dragged)animateMove(from,at);
+    if(result.state!=='playing')sound.playResult(result.state==='checkmate'?'complete':'draw');
+  }
   $('board').addEventListener('click',function(e){
+    if(suppressClick)return;
     var sq=e.target.closest('.square');if(!sq)return;
-    var at={r:Number(sq.dataset.r),c:Number(sq.dataset.c)},p=state.pieces.find(function(p){return same(p.at,at);});
+    var at={r:Number(sq.dataset.r),c:Number(sq.dataset.c)},p=pieceAt(at);
     if(mode==='edit'){
-      if(tool==='move'){
-        if(!selected){if(p){selected=at;render();}return;}
-        if(same(selected,at)){selected=null;render();return;}
-        remember();var moving=state.pieces.find(function(p){return same(p.at,selected);});
-        state.pieces=state.pieces.filter(function(p){return !same(p.at,at);});moving.at=at;changed();return;
-      }
-      if(tool==='erase'&&!p)return;
-      remember();state.pieces=state.pieces.filter(function(p){return !same(p.at,at);});
-      if(tool!=='erase'){var parts=tool.split(':');state.pieces.push({piece:parts[1],side:parts[0],at:at});}
-      changed();return;
+      if(tool!=='move'){editPlace(tool,at);return;}
+      if(!selected){if(p){selected=at;render();}return;}
+      editMove(selected,at);return;
     }
     if(R.gameStatus(state.pieces,state.turn).state!=='playing'){message('ตำแหน่งนี้จบแล้ว กดย้อนกลับ หรือกลับไปตั้งหมาก');return;}
     if(p&&p.side===state.turn){selected=same(selected,at)?null:at;render();return;}
     if(!selected){message('เลือกหมากฝ่าย'+sideName(state.turn)+'ก่อน แล้วเลือกช่องปลายทาง');return;}
-    if(!R.legalDestinations(state.pieces,selected).some(function(to){return same(to,at);})){message('เดินช่องนี้ไม่ได้ ลองเลือกช่องที่มีจุดสีเขียว',true);sound.playResult('failure');return;}
-    remember();var from=selected,record=N.formatMove(state.pieces,selected,at),movingPiece=state.pieces.find(function(p){return same(p.at,from);});
-    state.pieces=R.applyMove(state.pieces,from,at);state.turn=opponent(state.turn);last={from:from,to:at};selected=null;
-    var result=R.gameStatus(state.pieces,state.turn);
-    moves.push(record);
-    render();sound.queueMove({from:from,to:at,check:result.check,skipAnimation:true});sound.flush();animateMove(from,at);
-    if(result.state!=='playing')sound.playResult(result.state==='checkmate'?'complete':'draw');
+    playMove(selected,at);
   });
-  $('moveTool').onclick=function(){chooseTool('move');};$('eraseTool').onclick=function(){chooseTool('erase');};
+  $('removeSelected').onclick=function(){if(selected)editRemove(selected);};
+
+  // Drag and drop: from the tray to place, on the board to move, off the board to remove.
+  function squareEl(at){return $('board').querySelector('[data-r="'+at.r+'"][data-c="'+at.c+'"]');}
+  function squareAt(x,y){var el=document.elementFromPoint(x,y),sq=el&&el.closest&&el.closest('#board .square');return sq?{r:Number(sq.dataset.r),c:Number(sq.dataset.c)}:null;}
+  function beginDrag(e,source){if(drag||e.button>0||!e.isPrimary)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY,source:source,ghost:null,started:false};}
+  $('board').addEventListener('pointerdown',function(e){
+    var sq=e.target.closest('.square');if(!sq)return;
+    var at={r:Number(sq.dataset.r),c:Number(sq.dataset.c)},p=pieceAt(at);if(!p)return;
+    if(mode==='play'&&(p.side!==state.turn||R.gameStatus(state.pieces,state.turn).state!=='playing'))return;
+    beginDrag(e,{from:at,piece:p});
+  });
+  function startDrag(){
+    drag.started=true;
+    if(mode==='play')selected=drag.source.from;else if(drag.source.from)selected=null;
+    render();
+    var size=$('board').clientWidth/8,ghost=document.createElement('img');
+    ghost.className='dragGhost';ghost.src=asset(drag.source.piece);ghost.alt='';ghost.draggable=false;
+    ghost.style.width=ghost.style.height=Math.round(size*1.15)+'px';document.body.appendChild(ghost);drag.ghost=ghost;
+    if(drag.source.from)squareEl(drag.source.from).classList.add('dragSource');
+    if(mode==='edit'){message('');$('instruction').textContent=drag.source.from?'ลากไปช่องใหม่ หรือลากออกนอกกระดานเพื่อลบ':'ปล่อยบนช่องที่ต้องการวาง';$('removeSelected').hidden=true;}
+  }
+  function trackDrag(x,y){
+    drag.ghost.style.left=x+'px';drag.ghost.style.top=y+'px';
+    var at=squareAt(x,y),old=$('board').querySelector('.dropTarget');
+    if(old)old.classList.remove('dropTarget');
+    if(at)squareEl(at).classList.add('dropTarget');
+    drag.ghost.classList.toggle('removing',mode==='edit'&&!!drag.source.from&&!at);
+  }
+  function endDrag(){var d=drag;drag=null;if(d.ghost)d.ghost.remove();if(d.started){suppressClick=true;setTimeout(function(){suppressClick=false;},0);}return d;}
+  window.addEventListener('pointermove',function(e){
+    if(!drag||e.pointerId!==drag.id)return;
+    if(!drag.started){if(Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<8)return;startDrag();}
+    e.preventDefault();trackDrag(e.clientX,e.clientY);
+  },{passive:false});
+  window.addEventListener('pointerup',function(e){
+    if(!drag||e.pointerId!==drag.id)return;
+    var d=endDrag();if(!d.started)return;
+    var at=squareAt(e.clientX,e.clientY);
+    if(mode==='edit'){
+      if(d.source.from){if(at)editMove(d.source.from,at);else editRemove(d.source.from);}
+      else if(at)editPlace(d.source.spec,at);else render();
+    }else{render();if(at&&!same(at,d.source.from))playMove(d.source.from,at,true);}
+  });
+  window.addEventListener('pointercancel',function(e){if(drag&&e.pointerId===drag.id&&endDrag().started)render();});
   $('initial').onclick=function(){remember();state=M.initial();changed();$('optionsDialog').close();};
   $('clear').onclick=function(){remember();state={pieces:[],turn:'white'};changed();$('optionsDialog').close();};
   $('turn').onchange=function(){remember();state.turn=$('turn').value;changed();};
-  $('flip').onclick=function(){flipped=!flipped;render();};
+  $('flip').onclick=function(){flipped=!flipped;render();$('optionsDialog').close();};
   var exportURL=null,notationURL=null;
   var shareTabs=[['tabNotation','shareNotationPanel'],['tabImage','shareImagePanel'],['tabEmbed','shareEmbedPanel']];
   function selectShareTab(id){shareTabs.forEach(function(pair){var active=pair[0]===id;$(pair[0]).setAttribute('aria-selected',String(active));$(pair[0]).tabIndex=active?0:-1;$(pair[1]).hidden=!active;});}
@@ -162,10 +213,10 @@
     $('shareNotice').textContent='';$('imageLoading').textContent='กำลังสร้างรูปกระดาน…';$('imageLoading').hidden=false;$('exportPreview').hidden=true;$('downloadBoard').hidden=true;selectShareTab('tabImage');$('exportDialog').showModal();
   }
   $('closeExport').onclick=function(){$('exportDialog').close();};
-  $('exportDialog').addEventListener('close',function(){if(exportURL){URL.revokeObjectURL(exportURL);exportURL=null;}if(notationURL){URL.revokeObjectURL(notationURL);notationURL=null;}$('exportPreview').removeAttribute('src');$('exportBoard').focus();});
+  $('exportDialog').addEventListener('close',function(){if(exportURL){URL.revokeObjectURL(exportURL);exportURL=null;}if(notationURL){URL.revokeObjectURL(notationURL);notationURL=null;}$('exportPreview').removeAttribute('src');$('options').focus();});
   $('exportBoard').onclick=async function(){
     var button=$('exportBoard'),position=R.clonePieces(state.pieces),orientation=flipped;
-    button.disabled=true;button.setAttribute('aria-busy','true');button.textContent='กำลังสร้าง…';
+    $('optionsDialog').close();button.disabled=true;button.setAttribute('aria-busy','true');button.textContent='กำลังสร้าง…';
     try{prepareShare();
       // Snapshot the position before any asynchronous image loading.
       var sources=Array.from(new Set(position.map(asset))),images={};
@@ -194,7 +245,7 @@
       $('downloadBoard').download='makruk-board-'+new Date().toISOString().replace(/[:.]/g,'-')+'.png';
       $('imageLoading').hidden=true;$('exportPreview').hidden=false;$('downloadBoard').hidden=false;
     }catch(e){$('imageLoading').textContent='สร้างรูปไม่ได้: '+e.message+' กรุณาปิดแล้วเปิดแชร์อีกครั้ง';}
-    finally{button.disabled=false;button.removeAttribute('aria-busy');button.textContent='↗ Share';}
+    finally{button.disabled=false;button.removeAttribute('aria-busy');button.textContent='↗ แชร์ตำแหน่ง';}
   };
   $('undo').onclick=function(){var prev=history.pop();if(!prev)return;future.push(snapshot());restore(prev);};
   $('redo').onclick=function(){var next=future.pop();if(!next)return;history.push(snapshot());restore(next);};
@@ -203,7 +254,7 @@
   $('edit').onclick=function(){mode='edit';state=clone(trial.state);history=trial.history;future=trial.future;trial=null;moves=[];selected=null;last=null;render();};
   $('load').onclick=function(){if(mode!=='edit')return;try{var next=M.parse($('fen').value);remember();state=next;changed();$('optionsDialog').close();message('เปิดตำแหน่งแล้ว'+(M.validate(state)?' — '+M.validate(state):''));}catch(e){$('saveNote').textContent=e.message;}};
   $('copy').onclick=async function(){try{await navigator.clipboard.writeText($('fen').value);$('saveNote').textContent='คัดลอกรหัสแล้ว';}catch(e){$('fen').focus();$('fen').select();$('saveNote').textContent='เลือกข้อความแล้ว กรุณาคัดลอกด้วยเมนูของเครื่อง';}};
-  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('exportDialog').open&&!$('optionsDialog').open){selected=null;tool='move';render();}});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('exportDialog').open&&!$('optionsDialog').open){if(drag)return;selected=null;tool='move';render();}});
   $('options').onclick=function(){$('optionsDialog').showModal();};
   $('closeOptions').onclick=function(){$('optionsDialog').close();};
   $('optionsDialog').addEventListener('close',function(){$('options').focus();});
@@ -217,9 +268,9 @@
     var stacked=getComputedStyle(document.body).getPropertyValue('--stacked').trim()==='1';
     var boardArea=document.querySelector('.boardArea'),size;
     if(stacked){
-      var feedback=document.querySelector('.positionFeedback').offsetHeight,history=document.querySelector('.historyControls').offsetHeight;
-      var tools=parseFloat(getComputedStyle(main).getPropertyValue('--tools-reserve'))||184;
-      size=Math.min(main.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight),available-tools-feedback-history-gap-12);
+      var feedback=document.querySelector('.positionFeedback').offsetHeight;
+      var tools=parseFloat(getComputedStyle(main).getPropertyValue('--tools-reserve'))||136;
+      size=Math.min(main.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight),available-tools-feedback-gap-8);
     }else{size=Math.min(boardArea.clientWidth,available-44);}
     main.style.setProperty('--board-size',Math.max(80,Math.floor(size))+'px');
   }

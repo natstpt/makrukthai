@@ -40,3 +40,14 @@ main{--board-size: min(65vw,70dvh);display:grid;flex:1;min-height:0;width:100%;m
 main{--tools-reserve:184px}
 .positionFeedback{height:56px;min-height:56px;max-height:56px;flex:0 0 56px}
 @media(orientation:landscape) and (max-height:600px){.positionFeedback{height:44px;min-height:44px;max-height:44px;flex-basis:44px}}
+
+/* Drag-and-drop setup: one dock, larger tray pieces, no tool modes to switch. */
+.board,.palette{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}.palette button{cursor:grab}
+.dragGhost{position:fixed;left:0;top:0;z-index:50;pointer-events:none;object-fit:contain;transform:translate(-50%,-70%);filter:drop-shadow(0 8px 10px #0008)}
+.dragGhost.removing{opacity:.45;filter:grayscale(1) drop-shadow(0 8px 10px #0008)}
+.square.dragSource .piece{opacity:.25}.square.dropTarget{box-shadow:inset 0 0 0 4px #157e69;background:#e2d374!important}
+.guide{align-items:center;justify-content:center;flex-wrap:wrap;gap:4px 10px}.guide p{flex:0 1 auto}
+.inlineRemove{min-height:34px;padding:2px 12px;font-size:13px;border-color:#a3564b;color:#ffd3ca;background:#43261f}
+.actionDock>button.iconBtn{flex:0 0 56px;font-size:22px;padding:0}.actionDock .primaryAction,.actionDock #edit{flex:1;max-width:420px;margin-left:auto}
+.optionsBody .quickOptions{margin:0 0 14px}.quickOptions button{min-height:48px;font-size:15px}
+@media(max-width:900px) and (orientation:portrait), (max-width:599px){main{--tools-reserve:132px}.pieceTray{padding:4px}.palette button{min-height:60px;font-size:11px}.palette img{height:40px}.actionDock>button.iconBtn{flex-basis:50px}.actionDock .primary{font-size:15px}}
