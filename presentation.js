@@ -1,4 +1,4 @@
-/* Playful original music and move feedback; no external audio files or services. */
+/* Playful Thai-flavoured original music and move feedback; no external audio files or services. */
 (function(root){
   'use strict';
   function create(options){
@@ -20,22 +20,26 @@
       osc.connect(gain);gain.connect(bus);if(isMusic)musicNodes.add(osc);
       osc.onended=function(){musicNodes.delete(osc);outcomeNodes.delete(osc);osc.disconnect();gain.disconnect();};osc.start(start);osc.stop(start+length+.03);return osc;
     }
-    // 64 eighth-note steps, 132 BPM: bright C / F / G / C with a bouncy melody, bass and soft tick.
-    var melody=[72,null,76,null,79,76,72,null,74,76,74,72,67,null,null,null,
-      72,null,77,null,81,77,72,null,74,null,77,76,74,null,null,null,
-      74,null,79,null,83,79,74,null,76,77,79,null,74,null,71,null,
-      72,76,79,84,null,79,76,null,72,null,74,null,72,null,null,null];
-    var roots=[48,41,43,48],step=60/132/2;
+    // 64 eighth-note steps, 138 BPM, Thai-flavoured: a ranat-like running melody on the
+    // C D E G A scale, ching-chap cymbal pattern on every beat and a klong drum.
+    var melody=[72,74,76,79,76,74,72,74,76,79,81,79,76,null,76,null,
+      79,81,84,81,79,76,79,81,79,76,74,76,72,null,72,null,
+      69,72,74,72,69,67,69,72,74,76,74,72,69,null,67,null,
+      67,69,72,74,76,79,81,84,81,79,76,74,72,null,null,null];
+    var step=60/138/2;
     function hz(note){return 440*Math.pow(2,(note-69)/12);}
+    function ranat(note,at){tone(musicBus,hz(note),at,.2,.05,'sine',true);tone(musicBus,hz(note+12),at,.07,.016,'sine',true);}
+    function ching(at,open){tone(musicBus,3150,at,open?.34:.05,.011,'sine',true);tone(musicBus,4730,at,open?.28:.04,.007,'sine',true);}
+    function klong(at){tone(musicBus,150,at,.24,.12,'sine',true).frequency.exponentialRampToValueAtTime(55,at+.18);}
     function schedule(){
       if(!context||context.state!=='running'||!music||doc.hidden)return;
       if(nextBeat<context.currentTime)nextBeat=context.currentTime+.04;
       while(nextBeat<context.currentTime+.22){
-        var i=beat%64,base=roots[Math.floor(i/16)];
-        if(melody[i]!==null)tone(musicBus,hz(melody[i]),nextBeat,.2,.06,'triangle',true);
-        if(i%2===0)tone(musicBus,hz(base+(i%4===0?0:7)),nextBeat,.22,.07,'triangle',true);
-        else tone(musicBus,2400,nextBeat,.035,.012,'sine',true);
-        if(i%16===0)[base+12,base+16,base+19].forEach(function(n){tone(musicBus,hz(n),nextBeat,3.5,.016,'sine',true);});
+        var i=beat%64;
+        if(melody[i]!==null)ranat(melody[i],nextBeat);
+        if(i%2===0)ching(nextBeat,i%4===2);
+        if(i%8===0||i%16===6)klong(nextBeat);
+        if(i%16===0)[48,55].forEach(function(n){tone(musicBus,hz(n),nextBeat,3.4,.014,'sine',true);});
         nextBeat+=step;beat++;
       }
     }

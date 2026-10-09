@@ -51,3 +51,24 @@ main{--tools-reserve:184px}
 .actionDock>button.iconBtn{flex:0 0 56px;font-size:22px;padding:0}.actionDock .primaryAction,.actionDock #edit{flex:1;max-width:420px;margin-left:auto}
 .optionsBody .quickOptions{margin:0 0 14px}.quickOptions button{min-height:48px;font-size:15px}
 @media(max-width:900px) and (orientation:portrait), (max-width:599px){main{--tools-reserve:132px}.pieceTray{padding:4px}.palette button{min-height:60px;font-size:11px}.palette img{height:40px}.actionDock>button.iconBtn{flex-basis:50px}.actionDock .primary{font-size:15px}}
+
+/* Phone setup modelled on a mobile chess editor: full-width board, two-row tray with tools, labelled icon dock. */
+.pieceTray{display:grid;gap:2px;padding:4px 0;background:transparent;border:0}
+.palette{grid-template-columns:repeat(8,minmax(0,1fr));gap:0;margin:0}
+.palette button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-height:54px;padding:2px 0;border:0;border-radius:10px;background:transparent;color:#cfd8c9;font-size:10px;line-height:1.2}
+.palette button[aria-pressed="true"]{background:#2f6656;box-shadow:inset 0 0 0 2px var(--accent);color:#fff}
+.palette img{width:100%;height:36px;margin:0}.trayToolIcon{display:block;height:36px;font-size:24px;line-height:36px}.palette .trayTool{cursor:pointer}
+.actionDock{display:flex;justify-content:space-around;gap:2px;border-top:0;background:transparent}
+.actionDock>.dockBtn{flex:1 1 0;max-width:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:58px;padding:4px 2px;border:0;border-radius:12px;background:transparent;color:#b9c4b4;font-size:12px;white-space:nowrap}
+.actionDock>.dockBtn:hover{background:#2c3329}.dockIcon{font-size:23px;line-height:1}
+.actionDock>.dockPrimary{background:linear-gradient(#41d1ba,#27b6a1);color:#073e32;font-weight:bold;box-shadow:0 3px 0 #126c5c}.actionDock>.dockPrimary:hover{background:#63dcc6}
+.actionDock>#edit.dockBtn{flex:1 1 0;max-width:120px;margin:0;background:#28574a;color:#baffed}
+.quickOptions button{width:100%}
+@media(max-width:900px) and (orientation:portrait), (max-width:599px){
+ main{padding:0;--tools-reserve:118px}.board{border-width:0;border-radius:0;box-shadow:none}
+ .controlPanel{padding:0 4px}.palette button{min-height:54px;font-size:10px}.palette img{height:36px}
+ .actionDock{padding:4px 4px max(8px,env(safe-area-inset-bottom))}.actionDock>.dockBtn{font-size:11px}
+}
+#editTools{order:-1}
+/* No page zoom or scroll on phones; dialogs still scroll inside themselves. */
+html,body{overscroll-behavior:none;touch-action:pan-x pan-y;-webkit-text-size-adjust:100%;text-size-adjust:100%}

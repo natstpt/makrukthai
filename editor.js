@@ -21,7 +21,7 @@
   function remember(){future=[];history.push(snapshot());if(history.length>200)history.shift();}
   function message(text,error){$('status').textContent=text;$('status').classList.toggle('error',!!error);document.querySelector('.positionFeedback').classList.toggle('hasStatus',!!text);scheduleFit();}
   function changed(){selected=null;last=null;save();render();}
-  function chooseTool(value){tool=tool===value?'move':value;selected=null;render();}
+  function chooseTool(value){tool=value;selected=null;render();}
   function pieceAt(at){return state.pieces.find(function(p){return same(p.at,at);});}
   function palette(id,side){
     Object.keys(names).forEach(function(piece){
@@ -33,10 +33,18 @@
       button.addEventListener('pointerdown',function(e){beginDrag(e,{spec:button.dataset.tool,piece:{piece:piece,side:side}});});$(id).appendChild(button);
     });
   }
-  palette('redPalette','black');palette('whitePalette','white');
+  function trayTool(id,value,icon,text){
+    var button=document.createElement('button');button.type='button';button.dataset.tool=value;button.className='trayTool';
+    button.setAttribute('aria-label',text);button.setAttribute('aria-pressed','false');
+    var mark=document.createElement('span');mark.className='trayToolIcon';mark.setAttribute('aria-hidden','true');mark.textContent=icon;
+    button.appendChild(mark);button.appendChild(document.createTextNode(text));
+    button.addEventListener('click',function(){chooseTool(value);});$(id).appendChild(button);
+  }
+  palette('whitePalette','white');trayTool('whitePalette','move','✋','ย้าย');
+  palette('redPalette','black');trayTool('redPalette','erase','🗑','ลบ');
   function render(){
     sound.clearMotion();
-    document.body.dataset.mode=mode;$('setupOptions').hidden=mode!=='edit';$('restart').hidden=mode!=='play';$('edit').hidden=mode!=='play';
+    document.body.dataset.mode=mode;$('setupOptions').hidden=mode!=='edit';$('clear').hidden=mode!=='edit';$('redo').hidden=mode==='edit';$('start').hidden=mode!=='edit';$('restart').hidden=mode!=='play';$('edit').hidden=mode!=='play';
     $('board').replaceChildren();
     var destinations=mode==='play'&&selected?R.legalDestinations(state.pieces,selected):[];
     var status=mode==='play'?R.gameStatus(state.pieces,state.turn):null;
@@ -56,7 +64,7 @@
     }
     ['redPalette','whitePalette','editTools'].forEach(function(id){$(id).hidden=mode!=='edit';});
     $('playTools').hidden=mode!=='play';$('load').disabled=mode!=='edit';$('undo').disabled=!history.length;$('redo').disabled=!future.length;
-    $('startArea').hidden=mode!=='edit';$('emptyMoves').hidden=moves.length>0;
+    $('emptyMoves').hidden=moves.length>0;
     $('panelTitle').textContent=mode==='edit'?'จัดตำแหน่งหมาก':'ทดลองเดิน';
     $('topSide').textContent=flipped?'ฝ่ายขาว':'ฝ่ายแดง';$('bottomSide').textContent=flipped?'ฝ่ายแดง':'ฝ่ายขาว';
     $('topDot').classList.toggle('white',flipped);$('bottomDot').classList.toggle('white',!flipped);
@@ -66,11 +74,11 @@
     $('saveNote').textContent=storageOK?'เก็บตำแหน่งที่ตั้งไว้ให้อัตโนมัติในเครื่องนี้ (ไม่ทับด้วยตาที่ทดลองเดิน)':'เครื่องนี้เก็บอัตโนมัติไม่ได้ กรุณาคัดลอกรหัสไว้';
     $('boardCaption').textContent=mode==='edit'?'เลือก → แตะช่องเพื่อวาง':'จุดสีเขียว = ช่องที่เดินได้';
     if(mode==='edit'){
-      var parts=tool.split(':');$('removeSelected').hidden=!selected;
-      $('instruction').textContent=tool!=='move'?'แตะช่องเพื่อวาง'+names[parts[1]]+sideName(parts[0])+' · แตะในแถบอีกครั้งเพื่อเลิก':selected?'แตะช่องใหม่เพื่อย้าย'+names[pieceAt(selected).piece]:'ลากหมากมาวาง · ลากออกนอกกระดานเพื่อลบ';
-      message(selected?'':M.validate(state),false);
+      var parts=tool.split(':');
+      $('instruction').textContent=tool==='erase'?'แตะหมากบนกระดานเพื่อลบ':tool!=='move'?'แตะช่องเพื่อวาง'+names[parts[1]]+sideName(parts[0])+' · แตะซ้ำเพื่อเอาออก':selected?'แตะช่องใหม่เพื่อย้าย'+names[pieceAt(selected).piece]:'เลือกหมากด้านล่าง แล้วแตะช่องบนกระดาน';
+      message('');
     }else{
-      $('removeSelected').hidden=true;$('turnHeading').textContent=sideName(state.turn)+'เดิน';
+      $('turnHeading').textContent=sideName(state.turn)+'เดิน';
       $('instruction').textContent=status.state==='playing'?(status.check?'รุก! ต้องเดินให้ขุนพ้นจากการรุก':'ตาฝ่าย'+sideName(state.turn)+' ลากหรือแตะหมากไปช่องที่มีจุด'):'จบตำแหน่งนี้แล้ว ย้อนกลับเพื่อทดลองทางอื่นได้';
       message(status.state==='checkmate'?'รุกจน — ฝ่าย'+sideName(status.winner)+'ชนะ':status.state==='stalemate'?'เสมอเพราะอับ — ไม่มีตาเดินและขุนไม่ถูกรุก':status.state==='draw'?'เสมอ — เหลือขุนทั้งสองฝ่าย':status.check?'ขุน'+sideName(state.turn)+'กำลังถูกรุก':'');
     }
@@ -138,7 +146,8 @@
     var sq=e.target.closest('.square');if(!sq)return;
     var at={r:Number(sq.dataset.r),c:Number(sq.dataset.c)},p=pieceAt(at);
     if(mode==='edit'){
-      if(tool!=='move'){editPlace(tool,at);return;}
+      if(tool==='erase'){editRemove(at);return;}
+      if(tool!=='move'){var spec=tool.split(':');if(p&&p.side===spec[0]&&p.piece===spec[1])editRemove(at);else editPlace(tool,at);return;}
       if(!selected){if(p){selected=at;render();}return;}
       editMove(selected,at);return;
     }
@@ -147,7 +156,6 @@
     if(!selected){message('เลือกหมากฝ่าย'+sideName(state.turn)+'ก่อน แล้วเลือกช่องปลายทาง');return;}
     playMove(selected,at);
   });
-  $('removeSelected').onclick=function(){if(selected)editRemove(selected);};
 
   // Drag and drop: from the tray to place, on the board to move, off the board to remove.
   function squareEl(at){return $('board').querySelector('[data-r="'+at.r+'"][data-c="'+at.c+'"]');}
@@ -167,7 +175,7 @@
     ghost.className='dragGhost';ghost.src=asset(drag.source.piece);ghost.alt='';ghost.draggable=false;
     ghost.style.width=ghost.style.height=Math.round(size*1.15)+'px';document.body.appendChild(ghost);drag.ghost=ghost;
     if(drag.source.from)squareEl(drag.source.from).classList.add('dragSource');
-    if(mode==='edit'){message('');$('instruction').textContent=drag.source.from?'ลากไปช่องใหม่ หรือลากออกนอกกระดานเพื่อลบ':'ปล่อยบนช่องที่ต้องการวาง';$('removeSelected').hidden=true;}
+    if(mode==='edit'){message('');$('instruction').textContent=drag.source.from?'ลากไปช่องใหม่ หรือลากออกนอกกระดานเพื่อลบ':'ปล่อยบนช่องที่ต้องการวาง';}
   }
   function trackDrag(x,y){
     drag.ghost.style.left=x+'px';drag.ghost.style.top=y+'px';
@@ -193,9 +201,9 @@
   });
   window.addEventListener('pointercancel',function(e){if(drag&&e.pointerId===drag.id&&endDrag().started)render();});
   $('initial').onclick=function(){remember();state=M.initial();changed();$('optionsDialog').close();};
-  $('clear').onclick=function(){remember();state={pieces:[],turn:'white'};changed();$('optionsDialog').close();};
+  $('clear').onclick=function(){if(!state.pieces.length)return;remember();state={pieces:[],turn:state.turn};changed();message('ล้างกระดานแล้ว · กด ย้อนกลับ เพื่อเรียกคืน');};
   $('turn').onchange=function(){remember();state.turn=$('turn').value;changed();};
-  $('flip').onclick=function(){flipped=!flipped;render();$('optionsDialog').close();};
+  $('flip').onclick=function(){flipped=!flipped;render();};
   var exportURL=null,notationURL=null;
   var shareTabs=[['tabNotation','shareNotationPanel'],['tabImage','shareImagePanel'],['tabEmbed','shareEmbedPanel']];
   function selectShareTab(id){shareTabs.forEach(function(pair){var active=pair[0]===id;$(pair[0]).setAttribute('aria-selected',String(active));$(pair[0]).tabIndex=active?0:-1;$(pair[1]).hidden=!active;});}
@@ -269,11 +277,14 @@
     var boardArea=document.querySelector('.boardArea'),size;
     if(stacked){
       var feedback=document.querySelector('.positionFeedback').offsetHeight;
-      var tools=parseFloat(getComputedStyle(main).getPropertyValue('--tools-reserve'))||136;
+      var tools=parseFloat(getComputedStyle(main).getPropertyValue('--tools-reserve'))||112;
       size=Math.min(main.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight),available-tools-feedback-gap-8);
     }else{size=Math.min(boardArea.clientWidth,available-44);}
     main.style.setProperty('--board-size',Math.max(80,Math.floor(size))+'px');
   }
+  // Fixed scale on phones: block pinch and gesture zoom (iOS ignores user-scalable).
+  ['gesturestart','gesturechange'].forEach(function(type){document.addEventListener(type,function(e){e.preventDefault();});});
+  document.addEventListener('touchmove',function(e){if(e.touches.length>1)e.preventDefault();},{passive:false});
   window.addEventListener('resize',scheduleFit);
   if(window.visualViewport)window.visualViewport.addEventListener('resize',scheduleFit);
   if(window.ResizeObserver){var fitObserver=new ResizeObserver(scheduleFit);['.pageHeader','.actionDock','#editTools','.positionFeedback'].forEach(function(selector){fitObserver.observe(document.querySelector(selector));});}
