@@ -1,4 +1,5 @@
-// Original beginner prompts; each row is [question, correct answer, distractor, distractor].
+// Original beginner prompts; each row is [question, correct answer, distractor, spare distractor].
+// Only the correct answer and the first distractor are shown.
 module.exports={
 setup:[
 ['ฝ่ายไหนเริ่มเดินก่อน?','ฝ่ายขาว','ฝ่ายแดง','เดินพร้อมกัน'],
