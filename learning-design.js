@@ -3,7 +3,8 @@
   function build(previous){
     var order=['board','king','rook','knight','met','khon','pawn','promotion','promoted','setup','capture','check','escape','mate',
       'review','defend','block','take-checker','notation','draw-rules','think','fair-play','game','mini','assessment',
-      'endgame-rook-khon','endgame-khon-promoted','endgame-knight','endgame-promoted','finish'];
+      'endgame-rook-khon','endgame-khon-promoted','endgame-knight','endgame-promoted',
+      'endgame-stalemate','endgame-count','endgame-corner','endgame-tempo','puzzle-khon','puzzle-khon-met','puzzle-knight','finish'];
     var introductions={
       board:['ทุกช่องมีชื่อ ลองดูชื่อบนกระดานกัน','อ่านตัวอักษรก่อน แล้วตามด้วยเลข เช่น ฉ8'],
       king:['นี่คือขุน เราต้องดูแลให้ปลอดภัย','ขุนเดินได้รอบตัว ทีละ 1 ช่อง'],
