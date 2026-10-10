@@ -584,7 +584,7 @@
             <small id="practiceSetLabel" hidden></small>
             <strong id="practiceCounter" role="status" aria-live="polite"></strong>
             <p id="practiceRequirement"></p>
-            <div class="challengeTrack"><div class="challengeFill" id="challengeFill"></div></div>
+            <div class="challengeTrack" id="challengeTrack"><div class="challengeFill" id="challengeFill"></div></div>
           </div>
 
           <div class="quizBox" id="quizBox" hidden></div>
@@ -1048,7 +1048,7 @@
     var l=lessons[state.lesson],ready=practiceReady();
     practiceCard.hidden=state.phase!=='active'&&state.phase!=='done'||!isBoardPractice()&&l.type!=='quiz';
     // One segment per required answer; long counts stay one continuous bar.
-    document.getElementById('challengeFill').parentElement.style.setProperty('--steps',(l.requiredCorrect||1)<=10?(l.requiredCorrect||1):1);
+    document.getElementById('challengeTrack').style.cssText='--steps:'+((l.requiredCorrect||1)<=10?(l.requiredCorrect||1):1);
     document.getElementById('challengeFill').style.width=Math.min(100,state.correctMoves/(l.requiredCorrect||1)*100)+'%';
     practiceCard.classList.toggle('ready',ready);
     if(l.type==='game'){
