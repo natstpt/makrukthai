@@ -1552,9 +1552,9 @@
     var separator=record.capture?' × '+abbreviations[record.capture]+'.':' - ';
     var correct=record.text;
     var distractors=[abbreviations[wrongPiece]+'.'+record.from+separator+record.to+record.suffix,record.abbreviation+'.'+record.from+separator+shifted+record.suffix];
-    var options=[{text:correct,correct:true}].concat(distractors.map(function(text){return {text:text,correct:false};}));
-    var correctAt=state.roundIndex%3;
-    return options.map(function(_,index){return options[(index+correctAt)%options.length];});
+    // Two choices: the right record and one mistake (wrong piece or wrong square), taking turns on which comes first.
+    var wrong={text:distractors[Math.floor(state.roundIndex/2)%2],correct:false},right={text:correct,correct:true};
+    return state.roundIndex%2?[wrong,right]:[right,wrong];
   }
 
   function renderNotationChoices(record){

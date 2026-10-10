@@ -13,7 +13,7 @@ assert.equal(new Set(ps.map(p=>p.at.r+','+p.at.c)).size,ps.length,l.id+' overlap
 assert(!(Rules.inCheck(ps,'white')&&Rules.inCheck(ps,'black')),l.id+' both kings in check');
 if(l.type!=='quiz')assert(!Rules.inCheck(ps,'black'),l.id+' non-moving king already in check');
 if(l.type==='check'){assert(t.goal);assert(t.mission.includes(Notation.squareLabel(t.goal)));assert(Rules.inCheck(Rules.applyMove(ps,t.start,t.goal),'black'));}
-if(t.choices){assert.equal(t.choices.filter(c=>c.correct).length,1);assert.equal(new Set(t.choices.map(c=>c.text)).size,t.choices.length);}
+if(t.choices){assert.equal(t.choices.length,2,'beginners choose between two answers');assert.equal(t.choices.filter(c=>c.correct).length,1);assert.equal(new Set(t.choices.map(c=>c.text)).size,t.choices.length);}
 if(l.coordinateLesson)assert.equal(t.choices.find(c=>c.correct).text,Notation.squareLabel(t.target));
 if(l.id==='review'){assert(t.start.r>=2&&t.start.r<=5&&t.start.c>=2&&t.start.c<=5,'review starts in central 4x4');assert((t.goals||[t.goal]).every(g=>g.r>=1&&g.r<=6&&g.c>=1&&g.c<=6),'review target stays away from edge');if(setIndex===0)assert([3,4].includes(t.start.r)&&[3,4].includes(t.start.c),'first review set uses central four squares');}
 if(l.routePuzzle){assert(Learning.routeTargets(Rules,l.piece,t.start,t.routeDistance).some(x=>same(x.at,t.goal)));}
