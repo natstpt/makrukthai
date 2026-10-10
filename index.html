@@ -269,9 +269,11 @@
     .square.inCheck{box-shadow:inset 0 0 0 4px #b63b37;background:rgba(199,48,43,.2)}
     .dangerPath{fill:none;stroke:#bf3c37;stroke-width:8;stroke-dasharray:14 10;opacity:.85}
     .lessonReward{position:absolute;inset:0;background:rgba(23,19,13,.82);z-index:12;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;color:white}
-    .rewardBadge{position:relative;width:150px;height:150px;display:grid;place-items:center;margin-bottom:12px}
-    .rewardBadge:before{content:'★';font-size:160px;color:#f2cc4d;line-height:1;text-shadow:0 7px #ad7d22}
-    .rewardBadge img{position:absolute;width:76px;height:100px;object-fit:contain;filter:drop-shadow(0 3px 2px #57431d)}
+    /* Same tile as the lesson menu badge, enlarged, with a done tick and a sparkle. */
+    .rewardBadge{position:relative;width:136px;height:136px;display:grid;place-items:center;margin:14px 0 22px;background:#bb9024;border-radius:32px;transform:rotate(-8deg);box-shadow:0 9px #755a15,0 0 0 8px rgba(242,204,77,.16),0 0 48px rgba(242,204,77,.45)}
+    .rewardBadge img{width:108px;height:108px;object-fit:contain;transform:rotate(8deg)}
+    .rewardBadge:before{content:'★';position:absolute;top:-24px;left:-22px;font-size:40px;line-height:1;color:#f6d66a;text-shadow:0 3px #ad7d22;transform:rotate(-12deg)}
+    .rewardBadge:after{content:'✓';position:absolute;right:-14px;bottom:-14px;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:#2f7d3a;border:3px solid #a9d5a4;color:#fff;font-size:24px;font-weight:900;transform:rotate(8deg)}
     .lessonReward h2{font-size:clamp(24px,3vw,38px);margin:0 0 10px}.lessonReward p{font-size:20px;margin:0 0 18px}
     .lessonReward button{color:white;background:#4c402d;border:1px solid #ae9d70;border-radius:12px;padding:10px 18px;font-size:18px;min-height:44px;cursor:pointer}
     .square.starCollected:before{content:'+1 ★';position:absolute;inset:0;display:grid;place-items:center;background:rgba(96,78,51,.72);color:white;font-size:clamp(19px,3vw,42px);font-weight:900;z-index:8;pointer-events:none;animation:rewardPop 1s forwards}
@@ -311,7 +313,7 @@
       .quizChoice,.notationChoices .quizChoice{font-size:18px;min-height:44px;padding:8px}.quizBox{gap:6px;grid-template-columns:repeat(3,minmax(0,1fr))}
       .notationChoices{grid-template-columns:1fr}.notationPrompt{font-size:17px}.app.activeQuiz .lessonActions{display:none}
       .app.teaching .lessonBody:after{content:'ดูบนกระดาน แล้วกดปุ่มเพื่อเรียนทีละขั้น';display:block;color:#cdc7b5;font-size:19px;line-height:1.5;text-align:center;padding:20px 10px}
-      .rewardBadge{width:105px;height:105px}.rewardBadge:before{font-size:120px}.rewardBadge img{width:60px;height:80px}.lessonReward p{font-size:18px}
+      .rewardBadge{width:104px;height:104px;border-radius:26px;margin:10px 0 18px}.rewardBadge img{width:84px;height:84px}.rewardBadge:before{font-size:32px;top:-20px;left:-18px}.rewardBadge:after{width:36px;height:36px;font-size:20px;right:-11px;bottom:-11px}.lessonReward p{font-size:18px}
       .lessonReward h2{font-size:25px}.mapNode strong{font-size:20px}
     }
     @media(max-width:699px) and (max-height:680px){
@@ -1780,7 +1782,7 @@
     var repeat=document.getElementById('keepPracticingBtn');
     repeat.disabled=!!l.practiceSets&&state.practiceSet>=4;
     repeat.textContent=repeat.disabled?'ฝึกครบทั้ง 5 ชุดแล้ว ✓':l.practiceSets?'ลองฝึกเพิ่ม · ชุดที่ '+(state.practiceSet+2):'เล่นเกมใหม่';
-    document.getElementById('rewardBadge').innerHTML='<img src="assets/pieces/makruk/ada/w'+pieceFile[l.piece||'king']+'.svg" alt="">';
+    document.getElementById('rewardBadge').innerHTML='<img src="'+lessonIcon(l)+'" alt="">';
     document.getElementById('rewardText').textContent='ผ่านบท “'+l.title+'” แล้ว';
     document.getElementById('lessonReward').hidden=false;
     nextRoundBtn.hidden=true;
