@@ -2,7 +2,7 @@
 const fs=require('fs'),vm=require('vm'),path=require('path');
 const root=path.join(__dirname,'..'),Rules=require('../makruk-rules.js'),Learning=require('../learning-design.js'),Notation=require('../makruk-notation.js');
 const html=fs.readFileSync(path.join(root,'index.html'),'utf8');const ctx={window:{},pos:(f,n)=>({r:8-n,c:'abcdefgh'.indexOf(f)})};vm.createContext(ctx);
-for(const file of ['day2-lessons.js','rules-lessons.js','learning-design.js'])vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),ctx);
+for(const file of ['day2-lessons.js','rules-lessons.js','endgame-lessons.js','learning-design.js'])vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),ctx);
 const lessons=vm.runInContext(html.slice(html.indexOf('var lessons = ['),html.indexOf('// Keep internal coordinates stable'))+';lessons',ctx);
 const clone=x=>JSON.parse(JSON.stringify(x)),same=(a,b)=>a&&b&&a.r===b.r&&a.c===b.c,label=Notation.squareLabel;
 const names={king:'ขุน',rook:'เรือ',knight:'ม้า',khon:'โคน',met:'เม็ด',pawn:'เบี้ย',promoted:'เบี้ยหงาย'};
@@ -18,13 +18,21 @@ if(l.type!=='quiz'&&Rules.inCheck(ps,'black'))return false;
 if(ps.some(p=>p.piece==='pawn'&&(p.side==='white'?p.at.r<3:p.at.r>4)))return false;
 if(tacticalProfile(ps,l)!==tacticalProfile(old,l))return false;
 if((l.id==='block'||b.block)&&!require('./block-safety.cjs')(Rules,ps,t.start,goals(t,l)))return false;
+if(l.endgame&&Rules.legalMoves(ps,'white').filter(m=>Rules.gameStatus(Rules.applyMove(ps,m.from,m.to),'black').state==='checkmate').length!==1)return false;
 if(l.id==='mini'&&!Rules.legalMoves(ps,'white').some(m=>Rules.gameStatus(Rules.applyMove(ps,m.from,m.to),'black').state==='checkmate'))return false;
 if(t.start){let gs=goals(t,l),og=goals(b,l);if(!gs.length||gs.length!==og.length&&!!(b.goals||b.goal))return false;const legal=Rules.legalDestinations(ps,t.start);if(!gs.every(g=>legal.some(p=>same(p,g))))return false;
 if(b.goals||b.goal)for(let i=0;i<gs.length;i++){const n=Notation.formatMove(ps,t.start,gs[i]),o=Notation.formatMove(old,b.start,og[i]);if(n.capture!==o.capture||n.check!==o.check||n.mate!==o.mate||n.promotion!==o.promotion)return false;if(tacticalProfile(Rules.applyMove(ps,t.start,gs[i]),l)!==tacticalProfile(Rules.applyMove(old,b.start,og[i]),l))return false;}}
 return true;}
 function transform(t,fn){function walk(v){if(!v||typeof v!=='object')return v;if(Number.isInteger(v.r)&&Number.isInteger(v.c))return fn(v);return Array.isArray(v)?v.map(walk):Object.fromEntries(Object.entries(v).map(([k,x])=>[k,walk(x)]));}return walk(t);}
+const FILES='กขคงจฉชญ';function parseLabel(s){return {r:8-Number(s.charAt(1)),c:FILES.indexOf(s.charAt(0))};}
+// Find the shift (and optional left-right mirror) that maps most base pieces onto the variant's pieces.
+function boardShift(from,to){let best=null,score=-1;for(const mirror of [false,true]){const p=from[0],q=to[0];const dr=q.at.r-p.at.r,dc=q.at.c-(mirror?7-p.at.c:p.at.c);
+ const f=a=>({r:a.r+dr,c:(mirror?7-a.c:a.c)+dc});const hits=from.filter((x,i)=>{const y=f(x.at);return to[i]&&y.r===to[i].at.r&&y.c===to[i].at.c;}).length;if(hits>score){score=hits;best=f;}}
+ return score>=Math.min(2,from.length)?a=>{const y=best(a);return y.r>=0&&y.r<8&&y.c>=0&&y.c<8?y:a;}:null;}
 function wording(t,b,l){t=clone(t);const mapping={};pieces(b,l).forEach((p,i)=>mapping[label(p.at)]=label(pieces(t,l)[i].at));if(b.start)mapping[label(b.start)]=label(t.start);(b.goals||[b.goal]).filter(Boolean).forEach((p,i)=>mapping[label(p)]=label((t.goals||[t.goal])[i]));
-for(const key of ['mission','hint','explanation','success'])if(b[key])t[key]=b[key].replace(/[กขคงจฉชญ][1-8]/g,s=>mapping[s]||s).replace(/พา/g,'เดิน');
+// Squares that no piece stands on (an escape square, say) follow the same shift or mirror as the pieces.
+const shift=boardShift(pieces(b,l),pieces(t,l));
+for(const key of ['mission','hint','explanation','success'])if(b[key])t[key]=b[key].replace(/[กขคงจฉชญ][1-8]/g,s=>mapping[s]||(shift?label(shift(parseLabel(s))):s)).replace(/พา/g,'เดิน');
 if(l.type==='check'){const king=pieces(t,l).find(p=>p.side==='black'&&p.piece==='king');t.goal={r:t.start.r,c:king.at.c};t.mission='เดินเรือจาก '+label(t.start)+' ไปช่องดาว '+label(t.goal)+' เพื่อรุกขุน '+label(king.at);}
 if(t.start){const gs=goals(t,l);t.hint='เลือก'+names[t.piece||l.piece]+'ที่ '+label(t.start)+' แล้วลองเดินไป '+gs.map(label).join(' หรือ ');if(l.id==='defend')t.hint+=' เพื่อผูกหมาก ให้มีตัวกินกลับ ไม่เสียหมากฟรี';if(l.type==='notation')t.expectedNotation=Notation.formatMove(pieces(t,l),t.start,gs[0]).text;}
 if(l.id==='mini'){const ps=pieces(t,l),m=Rules.legalMoves(ps,'white').find(m=>Rules.gameStatus(Rules.applyMove(ps,m.from,m.to),'black').state==='checkmate');t.hint='ลองเดินเรือจาก '+label(m.from)+' ไป '+label(m.to)+' ขุนขาวช่วยปิดช่องหนีของขุนแดง';}
@@ -45,7 +53,7 @@ for(let mirror=0;mirror<2;mirror++)for(let dr=-7;dr<=7;dr++)for(let dc=-7;dc<=7;
 for(const seed of [b,...pool.slice(0,8)]){const ps=pieces(seed,l);for(let p=0;p<ps.length;p++){if(same(ps[p].at,seed.start)||(seed.goals||[seed.goal]).some(g=>same(g,ps[p].at)))continue;for(let r=0;r<8;r++)for(let c=0;c<8;c++){let t=clone(seed);let list=t.pieces||[null,...(t.friends||[]),...(t.enemies||[])];if(!list[p])continue;list[p].at={r,c};if(valid(t,seed,l))accept(t);}}if(pool.length>80)break;}
 if(l.id==='review'){const centerDistance=p=>Math.abs(p.r-3.5)+Math.abs(p.c-3.5);pool.sort((a,b)=>centerDistance(a.start)-centerDistance(b.start)||centerDistance(goals(a,l)[0])-centerDistance(goals(b,l)[0]));}
 return pool;});
-for(let set=0;set<5;set++)for(let i=0;i<count;i++){const pool=pools[i%bases.length];const chosen=pool.find(t=>!seen.has(signature(t,l)));if(!chosen)throw Error(l.id+' insufficient variants for set '+set+' task '+i+' pools '+pools.map(p=>p.length));add(twoChoices(chosen,set+i));}}
+for(let set=0;set<5;set++)for(let i=0;i<count;i++){const pool=pools[i%bases.length];const fresh=pool.find(t=>!seen.has(signature(t,l))),chosen=fresh||(l.endgame&&pool.length?pool[set%pool.length]:null);if(!chosen)throw Error(l.id+' insufficient variants for set '+set+' task '+i+' pools '+pools.map(p=>p.length));if(fresh)add(twoChoices(chosen,set+i));else all.push(chosen);}}
 if(all.length!==count*5)throw Error(l.id+' count '+all.length+' expected '+count*5);bank[l.id]=Array.from({length:5},(_,i)=>all.slice(i*count,(i+1)*count));console.log(l.id,all.length);
 }
 fs.writeFileSync(path.join(root,'practice-sets.js'),'// Five prepared sets per exercise. Generated and checked against MakrukRules.\n(function(root){root.MakrukPracticeSets='+JSON.stringify(bank,null,2)+';})(window);\n');

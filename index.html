@@ -718,6 +718,7 @@
 <script src="makruk-notation.js?v=20261004-practice5"></script>
 <script src="day2-lessons.js?v=20261005-feedback"></script>
 <script src="rules-lessons.js?v=20261005-feedback"></script>
+<script src="endgame-lessons.js?v=20261011-endgame"></script>
 <script src="learning-design.js?v=20261005-feedback"></script>
 <script src="practice-sets.js?v=20261005-feedback"></script>
 <script src="lesson-examples.js?v=20261011-examples"></script>
@@ -1009,6 +1010,7 @@
   lessons=window.buildDay2Lessons(lessons,pos);
   var previousCurriculumIds=lessons.map(function(l){return l.id;});
   lessons=window.buildRulesLessons(lessons,pos);
+  if(window.buildEndgameLessons)lessons=lessons.concat(window.buildEndgameLessons());
   lessons=window.MakrukLearning.build(lessons);
   var day2Start=lessons.findIndex(function(l){return l.day===2;});
   // Keep internal coordinates stable while displaying Thai notation throughout lessons.
@@ -1110,7 +1112,7 @@
       var score=state.matchResults.reduce(function(sum,result){return sum+(result==='white'?1:result===null ? 0.5 : 0);},0);
       practiceRequirement.textContent='ผ่านเมื่อครบจำนวนเกม · แพ้หรือเสมอก็ผ่านได้';
     }else if(l.piece){
-      practiceCounter.textContent=l.type==='notation'?'ดูวิธีจด '+state.correctMoves+' / '+l.requiredCorrect+' ตา'+(ready?' · ครบแล้ว ✓':''):l.id==='assessment'?'ผ่าน '+state.correctMoves+' / 5 ด่าน'+(ready?' · ครบทั้ง 5 ด่านแล้ว ✓':''):isStarPractice(l)?'เก็บดาว '+state.correctMoves+' / '+l.requiredCorrect+' ดวง'+(ready?' · ผ่านด่านแล้ว ✓':''):'เดินถูก '+state.correctMoves+' / '+l.requiredCorrect+' ครั้ง'+(ready?' · ครบแล้ว ✓':'');
+      practiceCounter.textContent=l.type==='notation'?'ดูวิธีจด '+state.correctMoves+' / '+l.requiredCorrect+' ตา'+(ready?' · ครบแล้ว ✓':''):l.endgame?'รุกจน '+state.correctMoves+' / '+l.requiredCorrect+' แบบ'+(ready?' · ครบแล้ว ✓':''):l.id==='assessment'?'ผ่าน '+state.correctMoves+' / 5 ด่าน'+(ready?' · ครบทั้ง 5 ด่านแล้ว ✓':''):isStarPractice(l)?'เก็บดาว '+state.correctMoves+' / '+l.requiredCorrect+' ดวง'+(ready?' · ผ่านด่านแล้ว ✓':''):'เดินถูก '+state.correctMoves+' / '+l.requiredCorrect+' ครั้ง'+(ready?' · ครบแล้ว ✓':'');
       practiceRequirement.textContent=isStarPractice(l)?'ทำภารกิจสำเร็จเพื่อเก็บดาว · เก็บครบแล้วกดผ่านบทนี้เพื่อไปต่อ':'ลองใหม่ได้เสมอ · ครบแล้วกดผ่านบทนี้เพื่อไปต่อ';
     }else if(l.type==='quiz'){
       practiceCounter.textContent=l.exampleLesson?'ตัวอย่าง '+Math.min(state.roundIndex+1,l.requiredCorrect)+' / '+l.requiredCorrect:'ตอบถูก '+state.correctMoves+' / '+(l.requiredCorrect||1)+' ข้อ'+(ready?' · ครบแล้ว ✓':'');
@@ -1121,11 +1123,11 @@
     var setLabel=document.getElementById('practiceSetLabel');
     setLabel.hidden=!l.practiceSets||state.phase!=='active'&&state.phase!=='done';
     setLabel.textContent='ชุดที่ '+((state.practiceSet||0)+1)+' / '+(l.practiceSets?l.practiceSets.length:5);if(l.practiceSets&&l.practiceSets.length<2)setLabel.hidden=true;
-    nextRoundBtn.textContent=l.exampleLesson?'ตัวอย่างถัดไป →':l.type==='quiz'?'ข้อถัดไป →':l.type==='game'?'เกมถัดไป →':l.type==='notation'?'โจทย์จดตาถัดไป →':isStarPractice(l)?'ไปเก็บดาวดวงถัดไป ⭐':'ภารกิจถัดไป →';
+    nextRoundBtn.textContent=l.exampleLesson?'ตัวอย่างถัดไป →':l.type==='quiz'?'ข้อถัดไป →':l.type==='game'?'เกมถัดไป →':l.type==='notation'?'โจทย์จดตาถัดไป →':l.endgame?'แบบถัดไป →':isStarPractice(l)?'ไปเก็บดาวดวงถัดไป ⭐':'ภารกิจถัดไป →';
     if(state.phase==='active'&&(isBoardPractice()||l.type==='quiz')){
       var nextRoundAvailable=state.roundDone&&!ready;
       mainBtn.disabled=!ready&&!nextRoundAvailable;
-      mainBtn.textContent=nextRoundAvailable?(l.type==='quiz'&&!l.exampleLesson?'ข้อถัดไป →':nextRoundBtn.textContent):ready?'ผ่านบทนี้ →':l.requiredGames?'จบเกมอีก '+Math.max(0,l.requiredGames-state.matchResults.length)+' เกมเพื่อผ่าน':l.type==='quiz'?'ตอบถูกอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ข้อเพื่อผ่าน':l.id==='assessment'?'ทำอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ด่านเพื่อผ่าน':isStarPractice(l)?'เก็บดาวอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ดวงเพื่อผ่าน':'เดินถูกอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ครั้งเพื่อผ่าน';
+      mainBtn.textContent=nextRoundAvailable?(l.type==='quiz'&&!l.exampleLesson?'ข้อถัดไป →':nextRoundBtn.textContent):ready?'ผ่านบทนี้ →':l.requiredGames?'จบเกมอีก '+Math.max(0,l.requiredGames-state.matchResults.length)+' เกมเพื่อผ่าน':l.type==='quiz'?'ตอบถูกอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ข้อเพื่อผ่าน':l.endgame?'รุกจนอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' แบบเพื่อผ่าน':l.id==='assessment'?'ทำอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ด่านเพื่อผ่าน':isStarPractice(l)?'เก็บดาวอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ดวงเพื่อผ่าน':'เดินถูกอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ครั้งเพื่อผ่าน';
       if(l.type==='notation'&&!ready&&!nextRoundAvailable)mainBtn.textContent='เดินอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ตาเพื่อผ่าน';
     }
     if(state.replyPending){mainBtn.disabled=true;mainBtn.textContent='รอฝ่ายแดงเดิน…';nextRoundBtn.hidden=true;}
@@ -1319,6 +1321,8 @@
 
   function basePieces(l){
     if(state.phase==='demo'&&state.teachingIndex>=2&&l.demoPieces)return Rules.clonePieces(l.demoPieces);
+    // Endgame lessons show a different book position for each teaching step.
+    if((state.phase==='intro'||state.phase==='demo')&&l.teachingBoards&&l.teachingBoards[state.teachingIndex])return Rules.clonePieces(l.teachingBoards[state.teachingIndex].pieces);
     if(l.type==='game')return Rules.clonePieces(state.gamePieces);
     if(l.questions)return Rules.clonePieces(challenge().pieces);
     if(l.challenges||(l.practiceSets&&(state.phase==='active'||state.phase==='done')&&l.routePuzzle)){
@@ -1368,6 +1372,7 @@
     var focused=boardEl.contains(document.activeElement),l=lessons[state.lesson],pieces=boardPieces();
     var coordinateTask=l.coordinateLesson?challenge():null;
     var exampleTask=l.exampleLesson?challenge():null;
+    if(l.teachingBoards&&(state.phase==='intro'||state.phase==='demo'))exampleTask=l.teachingBoards[state.teachingIndex]||null;
     var canMove=state.phase==='active'&&state.tool==='move'&&isBoardPractice()&&!state.completed&&!state.roundDone&&!state.pendingNotation&&!state.replyPending;
     var destinations=canMove&&state.selected||state.phase==='demo'?moveDestinations():[];
     var answers=l.routePuzzle&&state.hint&&state.starTarget?routeHintSteps():goalDestinations();
@@ -1386,7 +1391,7 @@
           if(state.phase==='intro'||state.phase==='demo'||questionSquare&&(state.hint||state.quizCorrect))s.innerHTML+='<span class="squareCoordinate" aria-hidden="true">'+squareLabel(p)+'</span>';
           if(questionSquare)s.classList.add('coordinateTarget');
         }
-        if(state.phase==='active'&&exampleTask&&exampleTask.marks&&exampleTask.marks.some(function(m){return same(m,p);}))s.classList.add('exampleMark');
+        if((state.phase==='active'||l.teachingBoards)&&exampleTask&&exampleTask.marks&&exampleTask.marks.some(function(m){return same(m,p);}))s.classList.add('exampleMark');
         if(state.phase==='active'&&state.showStarHint&&state.starTarget&&!state.roundDone&&!state.pendingNotation&&same(p,state.starTarget))s.innerHTML+='<span class="goalStar" aria-hidden="true">'+GOAL_STAR+'</span>';
         var pc=pieces.find(function(x){return same(x.at,p);});
         var source=canMove&&state.current&&same(p,state.current);
@@ -1486,7 +1491,7 @@
 
   function renderDemonstration(){
     var layer=document.getElementById('demoLayer');layer.innerHTML='';
-    if(state.phase!=='demo'||!state.current||!lessons[state.lesson].piece)return;
+    if(state.phase!=='demo'||!state.current||!lessons[state.lesson].piece||lessons[state.lesson].teachingBoards)return;
     var l=lessons[state.lesson],moves=moveDestinations();
     if(l.type!=='move'&&l.id!=='review')moves=goalDestinations().filter(function(to){return moves.some(function(at){return same(at,to);});});
     if(activePiece()==='rook'&&l.type==='move')moves=moves.filter(function(to){var next={r:to.r+Math.sign(to.r-state.current.r),c:to.c+Math.sign(to.c-state.current.c)};return !moves.some(function(at){return same(at,next);});});
@@ -1823,6 +1828,7 @@
       message='ขุนปลอดภัยแล้ว!';
     }else{
       message=task&&task.success?task.success:'ถูกต้อง!';
+      if(l.endgame)state.roundMessage=message;
     }
     if(l.type==='notation'){
       // Show how this move is written, in the speech bubble, instead of asking the learner to pick the record.

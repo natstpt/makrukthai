@@ -3,12 +3,13 @@ const assert=require('node:assert/strict'),fs=require('fs'),path=require('path')
 const Rules=require('../makruk-rules.js'),Notation=require('../makruk-notation.js'),Learning=require('../learning-design.js');
 const root=path.join(__dirname,'..'),html=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const ctx={window:{},pos:(f,n)=>({r:8-n,c:'abcdefgh'.indexOf(f)})};vm.createContext(ctx);
-for(const file of ['day2-lessons.js','rules-lessons.js','learning-design.js','practice-sets.js'])vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),ctx);
+for(const file of ['day2-lessons.js','rules-lessons.js','endgame-lessons.js','learning-design.js','practice-sets.js'])vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),ctx);
 const lessons=vm.runInContext(html.slice(html.indexOf('var lessons = ['),html.indexOf('// Keep internal coordinates stable'))+';lessons',ctx);
 const same=(a,b)=>a&&b&&a.r===b.r&&a.c===b.c;let checked=0;
 for(const l of lessons){const sets=ctx.window.MakrukPracticeSets[l.id];if(['game','finish'].includes(l.id))continue;assert.equal(sets.length,5,l.id);
 const seen=new Set();for(const [setIndex,set]of sets.entries()){assert.equal(set.length,l.requiredGames||l.requiredCorrect||3,l.id);for(const t of set){const ps=t.pieces||[{piece:t.piece||l.piece,side:'white',at:t.start},...(t.friends||[]),...(t.enemies||[])];
-const key=JSON.stringify([ps.map(p=>[p.piece,p.side,p.at.r,p.at.c]).sort(),t.target,t.start,t.goals||t.goal,['setup','fair-play'].includes(l.id)?t.mission:null]);assert(!seen.has(key),l.id+' repeated task');seen.add(key);
+const key=JSON.stringify([ps.map(p=>[p.piece,p.side,p.at.r,p.at.c]).sort(),t.target,t.start,t.goals||t.goal,['setup','fair-play'].includes(l.id)?t.mission:null]);// Corner mates have only a few mirror variants, so endgame sets may reuse a position.
+if(!l.endgame)assert(!seen.has(key),l.id+' repeated task');seen.add(key);
 assert.equal(new Set(ps.map(p=>p.at.r+','+p.at.c)).size,ps.length,l.id+' overlap');assert(ps.every(p=>p.at.r>=0&&p.at.r<8&&p.at.c>=0&&p.at.c<8));
 assert(!(Rules.inCheck(ps,'white')&&Rules.inCheck(ps,'black')),l.id+' both kings in check');
 if(l.type!=='quiz')assert(!Rules.inCheck(ps,'black'),l.id+' non-moving king already in check');
