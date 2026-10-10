@@ -39,6 +39,9 @@ jobs:
       - name: Verify multi-move star awards
         run: node tests/puzzle-flow.test.cjs
 
+      - name: Verify endgame mates
+        run: node tests/endgame-lessons.test.cjs
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
         with:

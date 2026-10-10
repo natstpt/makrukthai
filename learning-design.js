@@ -2,7 +2,8 @@
   'use strict';
   function build(previous){
     var order=['board','king','rook','knight','met','khon','pawn','promotion','promoted','setup','capture','check','escape','mate',
-      'review','defend','block','take-checker','notation','draw-rules','think','fair-play','game','mini','assessment','finish'];
+      'review','defend','block','take-checker','notation','draw-rules','think','fair-play','game','mini','assessment',
+      'endgame-rook-khon','endgame-khon-promoted','endgame-knight','endgame-promoted','finish'];
     var introductions={
       board:['ทุกช่องมีชื่อ ลองดูชื่อบนกระดานกัน','อ่านตัวอักษรก่อน แล้วตามด้วยเลข เช่น ฉ8'],
       king:['นี่คือขุน เราต้องดูแลให้ปลอดภัย','ขุนเดินได้รอบตัว ทีละ 1 ช่อง'],
@@ -47,10 +48,11 @@
       defend:['การผูกหมาก คือวิธีวางหมากให้คอยป้องกันดูแลฝั่งเดียวกัน','เมื่อโดนกินจะมีตัวหมากสามารถกินกลับได้ทันที','ดูทางเดินให้ถึงช่องของหมากที่เราจะป้องกัน ไม่ใช่แค่วางอยู่ใกล้กัน'],
       finish:['เก่งมาก! เรียนครบทุกบทแล้ว','ลองเล่นกับเพื่อน และถามกรรมการเมื่อสงสัย']
     };
-    return order.map(function(id,index){
+    // Lessons from an optional file (such as the endgame chapter) are skipped when that file is not loaded.
+    return order.filter(function(id){return previous.some(function(item){return item.id===id;});}).map(function(id,index){
       var lesson=previous.find(function(item){return item.id===id;});
       lesson.day=index<14?1:2;
-      lesson.teachingSteps=introductions[id]||[lesson.description,lesson.rule];
+      lesson.teachingSteps=introductions[id]||lesson.teachingSteps||[lesson.description,lesson.rule];
       lesson.routePuzzle=lesson.type==='move'&&!lesson.challenges;
       if(id==='rook')lesson.demoPieces=[{piece:'rook',side:'white',at:lesson.start},{piece:'pawn',side:'white',at:{r:2,c:3}},{piece:'pawn',side:'black',at:{r:4,c:5}}];
       if(id==='knight')lesson.demoPieces=[{piece:'knight',side:'white',at:lesson.start},{piece:'pawn',side:'white',at:{r:3,c:3}}];
