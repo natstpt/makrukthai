@@ -1797,11 +1797,7 @@
     clearTimeout(showToast.t);showToast.t=setTimeout(function(){toast.className='statusToast';},1350);
   }
 
-  // Lessons about a single piece show that piece; the others have their own picture.
-  var pieceIconLessons=['king','rook','knight','met','khon','pawn','promoted'];
-  function lessonIcon(l){
-    return pieceIconLessons.indexOf(l.id)>=0?'assets/pieces/makruk/ada/w'+pieceFile[l.piece]+'.svg':'assets/images/lessons/'+l.id+'.svg';
-  }
+  function lessonIcon(l){return 'assets/images/lessons/'+l.id+'.svg';}
   function buildLessonGrid(){
     var grid=document.getElementById('lessonGrid');grid.innerHTML='';
     lessons.forEach(function(l,i){
