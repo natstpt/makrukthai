@@ -72,3 +72,4 @@ main{--tools-reserve:184px}
 #editTools{order:-1}
 /* No page zoom or scroll on phones; dialogs still scroll inside themselves. */
 html,body{overscroll-behavior:none;touch-action:pan-x pan-y;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+@media(max-width:400px){.actionDock>.dockBtn{white-space:normal;line-height:1.15;text-align:center;font-size:11px}}

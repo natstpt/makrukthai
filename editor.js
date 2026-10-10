@@ -44,7 +44,7 @@
   palette('redPalette','black');trayTool('redPalette','erase','🗑','ลบ');
   function render(){
     sound.clearMotion();
-    document.body.dataset.mode=mode;$('setupOptions').hidden=mode!=='edit';$('clear').hidden=mode!=='edit';$('redo').hidden=mode==='edit';$('start').hidden=mode!=='edit';$('restart').hidden=mode!=='play';$('edit').hidden=mode!=='play';
+    document.body.dataset.mode=mode;$('setupOptions').hidden=mode!=='edit';$('clear').hidden=mode!=='edit';$('initial').hidden=mode!=='edit';$('redo').hidden=mode==='edit';$('start').hidden=mode!=='edit';$('restart').hidden=mode!=='play';$('edit').hidden=mode!=='play';
     $('board').replaceChildren();
     var destinations=mode==='play'&&selected?R.legalDestinations(state.pieces,selected):[];
     var status=mode==='play'?R.gameStatus(state.pieces,state.turn):null;
@@ -200,7 +200,7 @@
     }else{render();if(at&&!same(at,d.source.from))playMove(d.source.from,at,true);}
   });
   window.addEventListener('pointercancel',function(e){if(drag&&e.pointerId===drag.id&&endDrag().started)render();});
-  $('initial').onclick=function(){remember();state=M.initial();changed();$('optionsDialog').close();};
+  $('initial').onclick=function(){remember();state=M.initial();changed();message('ตั้งหมากตำแหน่งเริ่มเกมแล้ว · กด ย้อนกลับ เพื่อเรียกคืน');};
   $('clear').onclick=function(){if(!state.pieces.length)return;remember();state={pieces:[],turn:state.turn};changed();message('ล้างกระดานแล้ว · กด ย้อนกลับ เพื่อเรียกคืน');};
   $('turn').onchange=function(){remember();state.turn=$('turn').value;changed();};
   $('flip').onclick=function(){flipped=!flipped;render();};
