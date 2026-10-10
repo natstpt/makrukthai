@@ -6,7 +6,7 @@
     var musicButton=doc.getElementById('musicBtn'),effectsButton=doc.getElementById('effectsBtn');
     function read(key,fallback){try{var value=win.localStorage.getItem(key);return value===null?fallback:value==='true';}catch(e){return fallback;}}
     function save(key,value){try{win.localStorage.setItem(key,String(value));}catch(e){}}
-    var music=read('makrukMusic',false),effects=read('makrukEffects',true),context=null,musicBus,effectBus;
+    var music=read('makrukMusic',true),effects=read('makrukEffects',true),context=null,musicBus,effectBus;
     var timer=null,nextBeat=0,beat=0,unlocked=false,musicNodes=new Set(),pending=null,active=null,outcomeNodes=new Set(),lastOutcome=-Infinity;
     var AudioContext=win.AudioContext||win.webkitAudioContext;
     var reduced=win.matchMedia&&win.matchMedia('(prefers-reduced-motion: reduce)');

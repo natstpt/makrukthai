@@ -286,7 +286,8 @@
     .mapNode.locked{color:#c8c3b4;background:#2e281e;border-color:#443d33;cursor:default}
     .mapBadge{width:58px;height:58px;flex:none;display:grid;place-items:center;background:#bb9024;border-radius:14px;transform:rotate(-8deg);box-shadow:0 5px #755a15;color:#392c0a;font-weight:900;font-size:25px}
     .mapBadge img{width:48px;height:48px;object-fit:contain;transform:rotate(8deg)}
-    .mapNode.locked .mapBadge{background:#494136;box-shadow:0 5px #322b20;color:#b8b19e}
+    .mapBadge{position:relative}.mapNode.locked .mapBadge{background:#494136;box-shadow:0 5px #322b20;color:#b8b19e}.mapNode.locked .mapBadge img{opacity:.45;filter:grayscale(1)}
+    .mapMark{position:absolute;right:-7px;bottom:-7px;width:24px;height:24px;display:grid;place-items:center;border-radius:50%;background:#2c261d;border:2px solid #706451;font-size:12px;font-style:normal;transform:rotate(8deg)}.mapMark.done{background:#2f7d3a;border-color:#a9d5a4;color:#fff;font-size:14px}
     .mapNode strong{display:block;font-size:22px}.mapNode small{display:block;font-size:15px;margin-top:5px;color:#cecabf}
     @media(min-width:700px) and (max-width:1100px){
       .desktop{grid-template-columns:minmax(0,1fr) 310px}.lessonBody{padding:18px 14px}.coachRow{gap:8px}
@@ -451,7 +452,7 @@
     </div>
     <div class="mobileLessonTitle" id="mobileLessonTitle"></div>
     <div class="topActions">
-      <button class="topBtn musicBtn" id="musicBtn" type="button" aria-pressed="false" aria-label="เปิดเพลงคลอ">♪</button>
+      <button class="topBtn musicBtn" id="musicBtn" type="button" aria-pressed="true" aria-label="ปิดเพลงคลอ">♪</button>
       <details class="topMenu">
         <summary>เพิ่มเติม</summary>
         <div class="topMenuPanel">
@@ -1796,6 +1797,11 @@
     clearTimeout(showToast.t);showToast.t=setTimeout(function(){toast.className='statusToast';},1350);
   }
 
+  // Lessons about a single piece show that piece; the others have their own picture.
+  var pieceIconLessons=['king','rook','knight','met','khon','pawn','promoted'];
+  function lessonIcon(l){
+    return pieceIconLessons.indexOf(l.id)>=0?'assets/pieces/makruk/ada/w'+pieceFile[l.piece]+'.svg':'assets/images/lessons/'+l.id+'.svg';
+  }
   function buildLessonGrid(){
     var grid=document.getElementById('lessonGrid');grid.innerHTML='';
     lessons.forEach(function(l,i){
@@ -1804,7 +1810,7 @@
       var locked=i>state.unlocked;
       card.className='mapNode'+(locked?' locked':i===state.lesson?' current':'');
       card.disabled=locked;
-      card.innerHTML='<span class="mapBadge">'+(l.piece?'<img src="assets/pieces/makruk/ada/w'+pieceFile[l.piece]+'.svg" alt="">':locked?'🔒':i<state.lesson?'✓':i+1)+'</span><span><strong>'+l.title+'</strong><small>บท '+(i+1)+(locked?' · เรียนบทก่อนหน้าเพื่อเปิด':i===state.lesson?' · กำลังเรียน':i<state.lesson?' · ผ่านแล้ว':' · พร้อมเรียน')+'</small></span>';
+      card.innerHTML='<span class="mapBadge"><img src="'+lessonIcon(l)+'" alt="">'+(locked?'<i class="mapMark">🔒</i>':i<state.lesson?'<i class="mapMark done">✓</i>':'')+'</span><span><strong>'+l.title+'</strong><small>บท '+(i+1)+(locked?' · เรียนบทก่อนหน้าเพื่อเปิด':i===state.lesson?' · กำลังเรียน':i<state.lesson?' · ผ่านแล้ว':' · พร้อมเรียน')+'</small></span>';
       if(!locked)card.addEventListener('click',function(){state.lesson=i;closeOverlay('menuOverlay');renderLesson();});
       grid.appendChild(card);
     });
