@@ -707,6 +707,7 @@
         <article class="creditCard"><h3>ภาพหมาก SVG · Makruk Ada</h3><p>นำภาพหมาก 21 ไฟล์จากโครงการ PyChess Variants ของ gbtami มาเก็บโดยไม่แก้ไข ใช้ชุดขาว–แดงบนกระดาน ใบอนุญาตของโครงการต้นทาง: GNU AGPL v3</p><div class="creditLinks"><a href="https://github.com/gbtami/pychess-variants/tree/master/static/images/pieces/makruk/ada" target="_blank" rel="noopener">ชุดภาพต้นทาง ↗</a><a href="assets/pieces/makruk/ada/UPSTREAM-LICENSE.txt" target="_blank" rel="noopener">อ่านใบอนุญาต</a><a href="https://github.com/natstpt/makrukthai/blob/main/assets/pieces/makruk/ada/SOURCE.md" target="_blank" rel="noopener">ที่มาและรายการไฟล์ ↗</a></div></article>
         <article class="creditCard"><h3>แหล่งอ้างอิงวิธีเดินหมาก</h3><p>ใช้คำอธิบาย Makruk ของ PyChess และ GNU XBoard ประกอบการตรวจวิธีเดิน เป็นข้อมูลอ้างอิง ไม่ใช่โค้ดที่คัดลอกมารันในเว็บนี้</p><div class="creditLinks"><a href="https://www.pychess.org/variants/makruk" target="_blank" rel="noopener">PyChess · Makruk ↗</a><a href="https://www.gnu.org/software/xboard/whats_new/rules/Makruk.html" target="_blank" rel="noopener">GNU XBoard · Makruk ↗</a></div></article>
         <article class="creditCard"><h3>กติกาการแข่งขันหมากรุกไทย พ.ศ. 2569</h3><p>เอกสารของสมาคมกีฬากีฬาไทยแห่งประเทศไทย ในพระบรมราชูปถัมภ์ ใช้ไฟล์ต้นฉบับที่ผู้จัดทำส่งมาโดยไม่แก้ไข ลิขสิทธิ์เอกสารยังเป็นของเจ้าของสิทธิ์ตามต้นฉบับ แยกจากโค้ดเว็บไซต์และภาพหมาก</p><div class="creditLinks"><a href="assets/rules/makruk-rules-2569.pdf" target="_blank" rel="noopener">เปิดกติกา PDF</a><a href="https://github.com/natstpt/makrukthai/blob/main/assets/rules/SOURCE.md" target="_blank" rel="noopener">รายละเอียดที่มา ↗</a></div></article>
+        <article class="creditCard"><h3>ตำรากลหมากรุกไทย · นายแพทย์ประกอบ บุญไทย</h3><p>ตำราวิธีไล่หมากรุกปลายกระดานด้วยเบี้ย โคน ม้า และเรือ บท 26–29 “ไล่ปลายกระดาน” ใช้ตำแหน่งหมากจากแผนภาพหลักการไล่ (เตรียมการ–ตาจน) หน้า 153–159 คำอธิบายและโจทย์ฝึกเขียนใหม่ในเว็บนี้ ลิขสิทธิ์ตำรายังเป็นของผู้เขียน</p><div class="creditLinks"><a href="assets/references/makruk-endgames-prakob-boonthai.pdf" target="_blank" rel="noopener">เปิดตำรา PDF</a><a href="assets/references/makruk-endgames-prakob-boonthai.pdf#page=153" target="_blank" rel="noopener">หลักการไล่ หน้า 153</a><a href="https://github.com/natstpt/makrukthai/blob/main/assets/references/SOURCE.md" target="_blank" rel="noopener">รายละเอียดที่มา ↗</a></div></article>
       </div>
       <p class="creditNotice">เครดิตนี้ไม่ใช่การรับรองเว็บไซต์จากเจ้าของแหล่งข้อมูล และไม่ได้กำหนดว่าไฟล์ทุกประเภทในโครงการใช้ใบอนุญาตเดียวกัน โปรดอ่านเงื่อนไขของแต่ละแหล่งก่อนนำไปใช้ต่อ</p>
     </div>
@@ -1615,6 +1616,16 @@
       var a=document.createElement('a');a.href='assets/rules/makruk-rules-2569.pdf#page='+note.page;a.target='_blank';a.rel='noopener';
       a.textContent='หน้า '+note.page+' · ข้อ '+note.clause;p.appendChild(a);sourceNotesBody.appendChild(p);
     });
+    // Endgame lessons also credit the book their positions come from, opened at the matching pages.
+    if(l.bookPages&&l.bookPages.length){
+      var book=document.createElement('p');book.className='bookReference';
+      book.appendChild(document.createTextNode('ตำแหน่งหมากในบทนี้มาจาก ตำรากลหมากรุกไทย ของนายแพทย์ประกอบ บุญไทย '));
+      l.bookPages.forEach(function(page,i){
+        var link=document.createElement('a');link.href='assets/references/makruk-endgames-prakob-boonthai.pdf#page='+page;link.target='_blank';link.rel='noopener';
+        link.textContent='เปิดตำรา หน้า '+page;if(i)book.appendChild(document.createTextNode(' · '));book.appendChild(link);
+      });
+      sourceNotesBody.appendChild(book);
+    }
   }
 
   function notationChoicesFor(record){

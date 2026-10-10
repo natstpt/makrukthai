@@ -1,5 +1,6 @@
 /* Endgame chapter: how to drive the red king to the edge and mate it (ไล่ปลายกระดาน).
    Positions come from the mating-pattern diagrams in "ตำรากลหมากรุกไทย" by นายแพทย์ประกอบ บุญไทย
+   (assets/references/makruk-endgames-prakob-boonthai.pdf, pages 153–159)
    (each "เตรียมการ" and "ตาจน" pair). Every "ตาจน" is checked by tests/endgame-lessons.test.cjs, and each
    practice task is the position one move before mate, where the star move is the only mate.
    Board strings: K king, R rook, B khon, N knight, M promoted pawn, P pawn (white); k red king. */
@@ -29,8 +30,9 @@
   // Rule references in the 2569 rules PDF, shown under "กติกาสำคัญที่ใช้ในบทนี้".
   var MATE_NOTE={text:'รุกจนคือขุนถูกรุกและแก้ไม่ได้ ถ้าไล่จนขุนแดงไม่ถูกรุกแต่ไม่มีตาเดิน จะเป็นอับ คือเสมอ ไม่ใช่ชนะ',page:9,clause:'ก 4.1, ก 4.3'};
   function countNote(text){return {text:'ไล่ปลายกระดานต้องรุกจนให้ได้ภายในจำนวนตาที่นับ (ศักดิ์หมาก): '+text+' ถ้าไม่แน่ใจให้กรรมการช่วยนับ',page:10,clause:'ก 5.3'};}
-  function lesson(id,title,heading,speech,description,rule,steps,tasks,count){
-    return {id:id,title:title,day:2,type:'challenge',endgame:true,piece:tasks[0].piece,sourceNotes:[MATE_NOTE,countNote(count)],
+  // bookPages: pages of the book PDF (assets/references) that hold this lesson's diagrams.
+  function lesson(id,title,heading,speech,description,rule,steps,tasks,count,bookPages){
+    return {id:id,title:title,day:2,type:'challenge',endgame:true,piece:tasks[0].piece,sourceNotes:[MATE_NOTE,countNote(count)],bookPages:bookPages,
       heading:heading,speech:speech,description:description,rule:rule,
       teachingSteps:steps.map(function(s){return s.text;}),teachingBoards:steps,
       challenges:tasks,mission:tasks[0].mission,caption:title,
@@ -54,7 +56,7 @@
         mateTask('เรือเดี่ยว','k:e8 R:b6 K:e6','b6','b8','เดินเรือ ข6 ขึ้นไปรุกจน','รุกจน! เรือคุมแถวของขุนแดงทั้งแถว และขุนขาวคุมแถวข้างหน้า'),
         mateTask('เรือคู่','k:e5 R:b6 R:c7 K:e3','c7','c5','เดินเรือ ค7 ลงมารุกจน','รุกจน! เรือสองลำกั้นสองแถวติดกัน และขุนขาวคุมแถวที่เหลือ'),
         mateTask('โคนเดี่ยว','k:g8 B:f6 K:g6','f6','g7','เดินโคน ฉ6 ขึ้นไปรุกจน','รุกจน! โคนรุกตรงหน้า และขุนขาวคุมโคนไว้')
-      ],'เรือ 2 ลำ 8 ตา · เรือ 1 ลำ 16 ตา · โคน 2 ตัว 22 ตา · โคน 1 ตัว 44 ตา'),
+      ],'เรือ 2 ลำ 8 ตา · เรือ 1 ลำ 16 ตา · โคน 2 ตัว 22 ตา · โคน 1 ตัว 44 ตา',[159,154]),
       lesson('endgame-khon-promoted','โคนกับเบี้ยหงาย','โคนกับเบี้ยหงายช่วยกัน',
         'โคนกับเบี้ยหงาย<strong>ช่วยกันปิดช่อง</strong> โดยมีขุนขาวคอยคุม',
         'หลังโคน: ขุนแดงอยู่หลังโคน · หน้าโคน: ขุนแดงอยู่หน้าโคน',
@@ -70,7 +72,7 @@
         mateTask('หลังโคน ที่มุมล่าง','k:h3 B:g3 M:f1 K:f2','f1','g2','เดินเบี้ยหงาย ฉ1 ไปรุกจน','รุกจน! เบี้ยหงายรุก โคนปิดทางหนี และขุนขาวคุมทั้งสองตัว'),
         mateTask('หน้าโคน แบบที่ 1','k:a7 B:b7 M:c5 K:c6','c5','b6','เดินเบี้ยหงาย ค5 ไปรุกจน','รุกจน! เบี้ยหงายรุก โคนปิด ก8 กับ ก6'),
         mateTask('หน้าโคน แบบที่ 2','k:b8 B:c6 K:b6 M:e7','c6','b7','เดินโคน ค6 ขึ้นไปรุกจน','รุกจน! โคนรุกตรงหน้า และขุนขาว ข6 คุมโคนกับช่องข้าง')
-      ],'ใช้เพดานของตัวที่นับน้อยที่สุด เช่น โคน 1 ตัวกับเบี้ยหงาย นับ 44 ตา'),
+      ],'ใช้เพดานของตัวที่นับน้อยที่สุด เช่น โคน 1 ตัวกับเบี้ยหงาย นับ 44 ตา',[155,156,157]),
       lesson('endgame-knight','ม้ากับเบี้ยหงาย','ม้ากับเบี้ยหงายไล่เข้ามุม',
         'ม้า<strong>รุกจากระยะตัว L</strong> เบี้ยหงายกับขุนขาวปิดช่องหนี',
         'ไล่ขุนแดงเข้ามุม แล้วให้ม้ารุกในตาสุดท้าย',
@@ -84,7 +86,7 @@
         mateTask('ม้าคู่ แบบที่ 1','k:a8 M:c7 K:a6 N:c8 N:d6','c8','b6','เดินม้า ค8 ไปรุกจน','รุกจน! ม้ารุก เบี้ยหงาย ค7 ปิด ข8 และขุนขาวคุม ก7 ข7'),
         mateTask('ม้าคู่ แบบที่ 2','k:b8 K:a6 N:b6 N:e7 M:d6','e7','c6','เดินม้า จ7 ไปรุกจน','รุกจน! ม้า ค6 รุก ม้า ข6 ปิด ก8 ค8 และเบี้ยหงายปิด ค7'),
         mateTask('ม้าคู่ แบบที่ 3','k:a8 M:a7 N:e6 N:e7 K:a6','e6','c7','เดินม้า จ6 ไปรุกจน','รุกจน! ม้ารุก เบี้ยหงาย ก7 ปิด ข8 และขุนขาวคุม ข7')
-      ],'ใช้เพดานของตัวที่นับน้อยที่สุด เช่น ม้า 2 ตัว 32 ตา · ม้า 1 ตัวกับเบี้ยหงาย 64 ตา'),
+      ],'ใช้เพดานของตัวที่นับน้อยที่สุด เช่น ม้า 2 ตัว 32 ตา · ม้า 1 ตัวกับเบี้ยหงาย 64 ตา',[157,158]),
       lesson('endgame-promoted','ไล่ด้วยเบี้ยหงาย','เบี้ยหงายหลายตัวช่วยกัน',
         'เบี้ยหงาย<strong>เดินเฉียงทีละช่อง</strong> ต้องใช้หลายตัวช่วยกันและมีขุนขาวคุม',
         'วางเบี้ยหงายเป็นคู่ผูกกัน ให้ตัวหนึ่งคุมอีกตัว',
@@ -97,7 +99,7 @@
         mateTask('เบี้ยสองตัว','k:h7 K:f7 M:g7 P:g5','g5','g6','เดินเบี้ย ช5 ขึ้นไปหงายแล้วรุกจน','รุกจน! เบี้ยหงายที่ ช6 รุก และขุนขาว ฉ7 คุมไว้'),
         mateTask('เบี้ยหงายสามตัว เบี้ยคู่ผูก','k:h7 K:f7 M:g7 M:f5 M:g5','f5','g6','เดินเบี้ยหงาย ฉ5 ไปรุกจน','รุกจน! เบี้ยหงายสามตัวผูกกันเป็นแนว และขุนขาวคุม ช8'),
         mateTask('เบี้ยหงายสามตัว เบี้ยคู่ไม่ผูก','k:h7 M:f7 M:g7 M:f5 K:f6','f5','g6','เดินเบี้ยหงาย ฉ5 ไปรุกจน','รุกจน! ตัวที่ ฉ7 ปิด ช8 ตัวที่ ช7 ปิด ญ8 และขุนขาวคุมตัวรุก')
-      ],'เม็ดหรือเบี้ยหงาย 64 ตา')
+      ],'เม็ดหรือเบี้ยหงาย 64 ตา',[153,154])
     ];
   };
 })(typeof window==='object'?window:globalThis);
