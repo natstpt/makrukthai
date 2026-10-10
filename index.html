@@ -503,6 +503,14 @@
     #mobileSpeech{transition:background .2s,color .2s}
     #mobileSpeech.sayError{background:#fde7e5;color:#8a2420}#mobileSpeech.sayError:before{border-right-color:#fde7e5}
     #mobileSpeech.saySuccess{background:#e4f4dc;color:#245a1c}#mobileSpeech.saySuccess:before{border-right-color:#e4f4dc}
+    /* Example cards: the squares the explanation talks about get an orange frame, matching the arrows. */
+    .square.exampleMark:after{content:"";position:absolute;inset:5%;border:4px solid var(--moveArrow);border-radius:12%;box-shadow:0 0 0 2px rgba(255,255,255,.35);z-index:6;pointer-events:none}
+    /* Phones: leave a 16px gutter beside the board and some breathing room above and below it. */
+    @media(max-width:699px){
+      .app,.app:not(.roomyPanel){--boardSize:min(calc(100vw - 32px),calc(100vh - var(--coach) - 74px - var(--panelNeed) - 32px - env(safe-area-inset-bottom)))}
+      @supports(height:100svh){.app,.app:not(.roomyPanel){--boardSize:min(calc(100vw - 32px),calc(100svh - var(--coach) - 74px - var(--panelNeed) - 32px - env(safe-area-inset-bottom)))}}
+      .mobileCoachRow{padding-bottom:10px}
+    }
   </style>
 </head>
 <body>
@@ -712,6 +720,7 @@
 <script src="rules-lessons.js?v=20261005-feedback"></script>
 <script src="learning-design.js?v=20261005-feedback"></script>
 <script src="practice-sets.js?v=20261005-feedback"></script>
+<script src="lesson-examples.js?v=20261011-examples"></script>
 <script src="presentation.js?v=20261005-feedback"></script>
 <script>
 (function(){
@@ -1005,6 +1014,16 @@
   // Keep internal coordinates stable while displaying Thai notation throughout lessons.
   lessons.forEach(function(lesson){
     lesson.practiceSets=window.MakrukPracticeSets[lesson.id];
+    // Question lessons become explain-and-show cards: one sentence in the speech bubble, one board example each.
+    var examples=window.MakrukLessonExamples&&window.MakrukLessonExamples[lesson.id];
+    if(examples&&lesson.practiceSets){
+      lesson.practiceSets=[examples.map(function(ex,i){
+        var base=lesson.practiceSets[0][i]||lesson.practiceSets[0][0];
+        return Object.assign({},base,{mission:ex.text,explanation:ex.text,choices:[],example:true,
+          marks:(ex.marks||[]).map(function(sq){return {r:8-Number(sq.charAt(1)),c:'abcdefgh'.indexOf(sq.charAt(0))};})});
+      })];
+      lesson.exampleLesson=true;lesson.requiredCorrect=examples.length;lesson.mainText='ดูตัวอย่าง →';
+    }
     if(lesson.piece&&!lesson.requiredCorrect)lesson.requiredCorrect=3;
     ['speech','description','mission','caption','hint','rule'].forEach(function(field){
       if(typeof lesson[field]!=='string')return;
@@ -1091,30 +1110,30 @@
       var score=state.matchResults.reduce(function(sum,result){return sum+(result==='white'?1:result===null ? 0.5 : 0);},0);
       practiceRequirement.textContent='ผ่านเมื่อครบจำนวนเกม · แพ้หรือเสมอก็ผ่านได้';
     }else if(l.piece){
-      practiceCounter.textContent=l.type==='notation'?'จดถูก '+state.correctMoves+' / '+l.requiredCorrect+' ตา'+(ready?' · ครบแล้ว ✓':''):l.id==='assessment'?'ผ่าน '+state.correctMoves+' / 5 ด่าน'+(ready?' · ครบทั้ง 5 ด่านแล้ว ✓':''):isStarPractice(l)?'เก็บดาว '+state.correctMoves+' / '+l.requiredCorrect+' ดวง'+(ready?' · ผ่านด่านแล้ว ✓':''):'เดินถูก '+state.correctMoves+' / '+l.requiredCorrect+' ครั้ง'+(ready?' · ครบแล้ว ✓':'');
+      practiceCounter.textContent=l.type==='notation'?'ดูวิธีจด '+state.correctMoves+' / '+l.requiredCorrect+' ตา'+(ready?' · ครบแล้ว ✓':''):l.id==='assessment'?'ผ่าน '+state.correctMoves+' / 5 ด่าน'+(ready?' · ครบทั้ง 5 ด่านแล้ว ✓':''):isStarPractice(l)?'เก็บดาว '+state.correctMoves+' / '+l.requiredCorrect+' ดวง'+(ready?' · ผ่านด่านแล้ว ✓':''):'เดินถูก '+state.correctMoves+' / '+l.requiredCorrect+' ครั้ง'+(ready?' · ครบแล้ว ✓':'');
       practiceRequirement.textContent=isStarPractice(l)?'ทำภารกิจสำเร็จเพื่อเก็บดาว · เก็บครบแล้วกดผ่านบทนี้เพื่อไปต่อ':'ลองใหม่ได้เสมอ · ครบแล้วกดผ่านบทนี้เพื่อไปต่อ';
     }else if(l.type==='quiz'){
-      practiceCounter.textContent='ตอบถูก '+state.correctMoves+' / '+(l.requiredCorrect||1)+' ข้อ'+(ready?' · ครบแล้ว ✓':'');
+      practiceCounter.textContent=l.exampleLesson?'ตัวอย่าง '+Math.min(state.roundIndex+1,l.requiredCorrect)+' / '+l.requiredCorrect:'ตอบถูก '+state.correctMoves+' / '+(l.requiredCorrect||1)+' ข้อ'+(ready?' · ครบแล้ว ✓':'');
       practiceRequirement.textContent='ตอบผิดลองใหม่ได้ · ครบแล้วกดผ่านบทนี้เพื่อไปต่อ';
     }
     nextRoundBtn.hidden=!(state.phase==='active'&&state.roundDone&&(l.challenges||l.questions||l.type==='game'||l.piece));
     if(l.practiceSets&&state.roundIndex>=l.practiceSets[state.practiceSet||0].length-1)nextRoundBtn.hidden=true;
     var setLabel=document.getElementById('practiceSetLabel');
     setLabel.hidden=!l.practiceSets||state.phase!=='active'&&state.phase!=='done';
-    setLabel.textContent='ชุดที่ '+((state.practiceSet||0)+1)+' / 5';
-    nextRoundBtn.textContent=l.type==='quiz'?'ข้อถัดไป →':l.type==='game'?'เกมถัดไป →':l.type==='notation'?'โจทย์จดตาถัดไป →':isStarPractice(l)?'ไปเก็บดาวดวงถัดไป ⭐':'ภารกิจถัดไป →';
+    setLabel.textContent='ชุดที่ '+((state.practiceSet||0)+1)+' / '+(l.practiceSets?l.practiceSets.length:5);if(l.practiceSets&&l.practiceSets.length<2)setLabel.hidden=true;
+    nextRoundBtn.textContent=l.exampleLesson?'ตัวอย่างถัดไป →':l.type==='quiz'?'ข้อถัดไป →':l.type==='game'?'เกมถัดไป →':l.type==='notation'?'โจทย์จดตาถัดไป →':isStarPractice(l)?'ไปเก็บดาวดวงถัดไป ⭐':'ภารกิจถัดไป →';
     if(state.phase==='active'&&(isBoardPractice()||l.type==='quiz')){
       var nextRoundAvailable=state.roundDone&&!ready;
       mainBtn.disabled=!ready&&!nextRoundAvailable;
-      mainBtn.textContent=nextRoundAvailable?(l.type==='quiz'?'ข้อถัดไป →':nextRoundBtn.textContent):ready?'ผ่านบทนี้ →':l.requiredGames?'จบเกมอีก '+Math.max(0,l.requiredGames-state.matchResults.length)+' เกมเพื่อผ่าน':l.type==='quiz'?'ตอบถูกอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ข้อเพื่อผ่าน':l.id==='assessment'?'ทำอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ด่านเพื่อผ่าน':isStarPractice(l)?'เก็บดาวอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ดวงเพื่อผ่าน':'เดินถูกอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ครั้งเพื่อผ่าน';
-      if(l.type==='notation'&&!ready&&!nextRoundAvailable)mainBtn.textContent='จดถูกอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ตาเพื่อผ่าน';
+      mainBtn.textContent=nextRoundAvailable?(l.type==='quiz'&&!l.exampleLesson?'ข้อถัดไป →':nextRoundBtn.textContent):ready?'ผ่านบทนี้ →':l.requiredGames?'จบเกมอีก '+Math.max(0,l.requiredGames-state.matchResults.length)+' เกมเพื่อผ่าน':l.type==='quiz'?'ตอบถูกอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ข้อเพื่อผ่าน':l.id==='assessment'?'ทำอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ด่านเพื่อผ่าน':isStarPractice(l)?'เก็บดาวอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ดวงเพื่อผ่าน':'เดินถูกอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ครั้งเพื่อผ่าน';
+      if(l.type==='notation'&&!ready&&!nextRoundAvailable)mainBtn.textContent='เดินอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ตาเพื่อผ่าน';
     }
     if(state.replyPending){mainBtn.disabled=true;mainBtn.textContent='รอฝ่ายแดงเดิน…';nextRoundBtn.hidden=true;}
     updateBoardHelp();
     if(state.phase==='active'){
       var task=challenge()||l;
-      var text=state.roundDone?(l.type==='quiz'&&task.explanation?((task.choices||[]).some(function(c){return c.correct&&c.text===task.explanation;})?'ถูกต้อง! คำตอบคือ “'+task.explanation+'”':task.explanation):ready?'ครบแล้ว! กดผ่านบทนี้ได้เลย':'ถูกต้องแล้ว! ไปโจทย์ถัดไปกัน'):l.type==='quiz'?task.mission:missionEl.textContent;
-      speechEl.textContent=text;mobileSpeechEl.textContent=text;mobileSpeechEl.classList.toggle('sayError',false);mobileSpeechEl.classList.toggle('saySuccess',!!state.roundDone);
+      var text=task&&task.example?task.explanation:state.roundDone&&state.roundMessage?state.roundMessage:state.roundDone?(l.type==='quiz'&&task.explanation?((task.choices||[]).some(function(c){return c.correct&&c.text===task.explanation;})?'ถูกต้อง! คำตอบคือ “'+task.explanation+'”':task.explanation):ready?'ครบแล้ว! กดผ่านบทนี้ได้เลย':'ถูกต้องแล้ว! ไปโจทย์ถัดไปกัน'):l.type==='quiz'?task.mission:missionEl.textContent;
+      speechEl.textContent=text;mobileSpeechEl.textContent=text;mobileSpeechEl.classList.toggle('sayError',false);mobileSpeechEl.classList.toggle('saySuccess',!!state.roundDone&&!(task&&task.example));
     }
   }
 
@@ -1133,7 +1152,7 @@
     state.current=start?{r:start.r,c:start.c}:null;
     if(start&&l.type==='move')state.lastPracticeStart={r:start.r,c:start.c};
     state.starTarget=null;state.routeMoves=0;
-    state.promoted=false;state.captured=null;state.selected=false;state.roundDone=false;state.hint=false;
+    state.promoted=false;state.captured=null;state.selected=false;state.roundDone=false;state.roundMessage='';state.hint=false;
     state.quizCorrect=false;state.gameOver=false;state.gameResult=null;state.gameHistory=[];
     state.pendingNotation=null;state.scoreMoves=[];notationForm.hidden=true;notationChoices.innerHTML='';
     if(state.current&&l.piece&&l.type!=='game'){
@@ -1147,10 +1166,10 @@
       }
     }
     state.lastFrom=state.lastTo=null;state.focus=state.current||{r:7,c:0};
-    missionEl.textContent=l.requiredGames?'เกมที่ '+(state.roundIndex+1)+' · หาทางรุกจน':task&&task.mission?task.mission:l.type==='notation'?'เดินตามโจทย์ แล้วเลือกบันทึกที่ถูกต้อง':l.piece?'เดิน'+pieceName[activePiece()]+'ไปเก็บดาว':'ดูโจทย์แล้วเลือกคำตอบ';
+    missionEl.textContent=l.requiredGames?'เกมที่ '+(state.roundIndex+1)+' · หาทางรุกจน':task&&task.mission?task.mission:l.type==='notation'?'เดินตามโจทย์ แล้วดูวิธีจดตานั้น':l.piece?'เดิน'+pieceName[activePiece()]+'ไปเก็บดาว':'ดูโจทย์แล้วเลือกคำตอบ';
     if(!l.routePuzzle&&state.starTarget&&l.type!=='notation')missionEl.textContent+=' · เดินไปช่องดาว '+squareLabel(state.starTarget);
     if(l.routePuzzle&&state.starTarget)missionEl.textContent='เดิน'+pieceName[l.piece]+'ไป '+squareLabel(state.starTarget)+(state.roundIndex%3?' · เดินต่อได้หลายตา':' · ลองเดิน 1 ตา');
-    mobileSpeechEl.textContent=l.type==='notation'?'เดินหมาก แล้วเลือกบันทึกที่ถูกต้อง':l.type==='game'?'เลือกหมากขาว แล้วทำภารกิจ':l.type==='quiz'?task&&task.mission?task.mission:l.mission:task&&task.mission?task.mission:l.piece?state.showStarHint?'เดิน'+pieceName[activePiece()]+'ไปเก็บดาว ⭐':'ลองเดิน'+pieceName[activePiece()]:'มาลองทำภารกิจนี้กัน'; mobileSpeechEl.classList.remove('sayError','saySuccess');
+    mobileSpeechEl.textContent=l.type==='notation'?'เดินหมาก แล้วดูวิธีจดตานั้น':l.type==='game'?'เลือกหมากขาว แล้วทำภารกิจ':l.type==='quiz'?task&&task.mission?task.mission:l.mission:task&&task.mission?task.mission:l.piece?state.showStarHint?'เดิน'+pieceName[activePiece()]+'ไปเก็บดาว ⭐':'ลองเดิน'+pieceName[activePiece()]:'มาลองทำภารกิจนี้กัน'; mobileSpeechEl.classList.remove('sayError','saySuccess');
     boardCaption.textContent=l.type==='game'?(l.requiredGames?'มินิเกมที่ '+(state.roundIndex+1):'เกมฝึกเต็มกระดาน')+' · คุณเล่นฝ่ายขาว':task&&task.mission?'โจทย์ที่ '+(state.roundIndex+1)+' · '+task.mission:state.current?pieceName[activePiece()]+'อยู่ที่ '+squareLabel(state.current):l.caption;
     feedbackEl.className='feedback';feedbackEl.textContent=l.type==='game'?'เลือกหมาก แล้วเดินให้ปลอดภัย':l.type==='quiz'?'เลือกคำตอบด้านล่าง':isStarPractice(l)?'เดินไปเก็บดาวให้ครบ '+l.requiredCorrect+' ดวง':'เดินให้ถูกตามภารกิจ';
     if(l.coordinateLesson){
@@ -1229,7 +1248,7 @@
   function updateBoardHelp(){
     if(state.tool==='arrow')boardHelp.textContent=state.arrowStart?'เลือกช่องปลายทาง · แตะช่องเดิมหรือกด Esc เพื่อยกเลิก':'แตะช่องต้นทาง → แตะปลายทาง · ลากซ้ำเส้นเดิมเพื่อลบ';
     else if(state.completed)boardHelp.textContent='เข้าใจแล้ว · กดบทถัดไปเพื่อเรียนต่อ';
-    else if(lessons[state.lesson].coordinateLesson)boardHelp.textContent=state.phase==='intro'?'ดูชื่อครบ 64 ช่อง · พร้อมแล้วกด “เริ่มตอบชื่อช่อง”':state.roundDone?'ตอบถูกแล้ว · ดูสถานการณ์ถัดไปเพื่อฝึกต่อ':'อ่านช่องที่มีกรอบ · เลือกคำตอบใต้ภารกิจ';
+    else if(lessons[state.lesson].coordinateLesson)boardHelp.textContent=state.phase==='intro'?'ดูชื่อครบ 64 ช่อง · พร้อมแล้วกด “ดูตัวอย่าง”':state.roundDone?'ดูชื่อช่องที่มีกรอบ แล้วไปตัวอย่างถัดไป':'อ่านช่องที่มีกรอบ · เลือกคำตอบใต้ภารกิจ';
     else if(state.pendingNotation)boardHelp.textContent='เดินแล้ว → ลองจดตาเดินในช่องบันทึกก่อนฝึกโจทย์ถัดไป';
     else if(isBoardPractice()){
       var progress='เดินถูก '+state.correctMoves+'/'+lessons[state.lesson].requiredCorrect+' · ';
@@ -1348,6 +1367,7 @@
   function renderBoard(){
     var focused=boardEl.contains(document.activeElement),l=lessons[state.lesson],pieces=boardPieces();
     var coordinateTask=l.coordinateLesson?challenge():null;
+    var exampleTask=l.exampleLesson?challenge():null;
     var canMove=state.phase==='active'&&state.tool==='move'&&isBoardPractice()&&!state.completed&&!state.roundDone&&!state.pendingNotation&&!state.replyPending;
     var destinations=canMove&&state.selected||state.phase==='demo'?moveDestinations():[];
     var answers=l.routePuzzle&&state.hint&&state.starTarget?routeHintSteps():goalDestinations();
@@ -1366,6 +1386,7 @@
           if(state.phase==='intro'||state.phase==='demo'||questionSquare&&(state.hint||state.quizCorrect))s.innerHTML+='<span class="squareCoordinate" aria-hidden="true">'+squareLabel(p)+'</span>';
           if(questionSquare)s.classList.add('coordinateTarget');
         }
+        if(state.phase==='active'&&exampleTask&&exampleTask.marks&&exampleTask.marks.some(function(m){return same(m,p);}))s.classList.add('exampleMark');
         if(state.phase==='active'&&state.showStarHint&&state.starTarget&&!state.roundDone&&!state.pendingNotation&&same(p,state.starTarget))s.innerHTML+='<span class="goalStar" aria-hidden="true">'+GOAL_STAR+'</span>';
         var pc=pieces.find(function(x){return same(x.at,p);});
         var source=canMove&&state.current&&same(p,state.current);
@@ -1399,16 +1420,16 @@
   function renderLesson(){
     cancelGameReply();
     var l=lessons[state.lesson];
-    state.practiceSet=Math.max(0,Math.min(4,parseInt(localStorage.getItem('makrukPracticeSet:'+l.id)||'0',10)||0));
+    state.practiceSet=Math.max(0,Math.min(l.practiceSets?l.practiceSets.length-1:4,parseInt(localStorage.getItem('makrukPracticeSet:'+l.id)||'0',10)||0));
     missionEl.parentElement.hidden=false;
     appEl.classList.remove('coordinateQuiz','activeQuiz','activeNotation','lessonPassed');nextRoundHome.appendChild(nextRoundBtn);nextRoundBtn.style.marginTop='';
     // Answer-heavy lessons keep a taller panel for the whole lesson, so the board never jumps between phases.
-    appEl.classList.toggle('roomyPanel',l.type==='quiz'||l.type==='notation'||l.type==='game');
+    appEl.classList.toggle('roomyPanel',l.type==='game');
     clearArrows();
     state.phase='intro';state.teachingIndex=0;state.current=l.start?{r:l.start.r,c:l.start.c}:null;state.completed=false;state.hint=false;
     document.getElementById('lessonReward').hidden=true;
     state.selected=false;state.promoted=false;state.captured=null;state.focus=state.current||{r:7,c:0};
-    state.correctMoves=0;state.roundIndex=0;state.roundDone=false;state.quizCorrect=false;state.lastFrom=state.lastTo=null;state.lastPracticeStart=null;
+    state.correctMoves=0;state.roundIndex=0;state.roundDone=false;state.roundMessage='';state.quizCorrect=false;state.lastFrom=state.lastTo=null;state.lastPracticeStart=null;
     state.matchResults=[];state.savedScores=[];state.pendingNotation=null;state.starTarget=null;state.lastStarTarget=null;state.scoreMoves=[];notationForm.hidden=true;notationChoices.innerHTML='';
     if(l.type==='notation'){
       if(window.matchMedia('(max-width:700px)').matches)nextRoundHome.appendChild(nextRoundBtn);
@@ -1420,7 +1441,7 @@
     document.getElementById('mobileLessonTitle').textContent=l.title;
     document.getElementById('focusLessonTitle').textContent='บท '+(state.lesson+1)+' · '+l.title;
     speechEl.textContent=l.type==='finish'?'เยี่ยมมาก! พร้อมใช้ความรู้บนกระดานจริง':l.type==='quiz'?'ดูโจทย์ แล้วเลือกคำตอบ':l.type==='notation'?'เดินหมาก แล้วเลือกวิธีจดที่ถูกต้อง':l.piece?'ลากหมากไปเก็บดาว':'มาลองทำภารกิจนี้กัน';
-    mobileSpeechEl.textContent=l.type==='finish'?'พร้อมใช้ความรู้บนกระดานจริง':l.type==='quiz'?l.mission:l.type==='notation'?'เดินหมาก แล้วเลือกบันทึกที่ถูกต้อง':l.piece?state.showStarHint?'เดิน'+pieceName[l.piece]+'ไปเก็บดาว ⭐':'ลองเดิน'+pieceName[l.piece]:'มาลองทำภารกิจนี้กัน'; mobileSpeechEl.classList.remove('sayError','saySuccess');
+    mobileSpeechEl.textContent=l.type==='finish'?'พร้อมใช้ความรู้บนกระดานจริง':l.type==='quiz'?l.mission:l.type==='notation'?'เดินหมาก แล้วดูวิธีจดตานั้น':l.piece?state.showStarHint?'เดิน'+pieceName[l.piece]+'ไปเก็บดาว ⭐':'ลองเดิน'+pieceName[l.piece]:'มาลองทำภารกิจนี้กัน'; mobileSpeechEl.classList.remove('sayError','saySuccess');
     headingEl.textContent=l.heading;
     descEl.textContent='';descEl.hidden=true;
     descMoreEl.textContent=l.description;
@@ -1458,7 +1479,7 @@
     if(l.id==='review'){state.current=pos('d',4);state.selected=false;}
     speechEl.textContent=mobileSpeechEl.textContent=l.teachingSteps[state.teachingIndex]; mobileSpeechEl.classList.remove('sayError','saySuccess');
     mainBtn.disabled=false;
-    mainBtn.textContent=state.teachingIndex===l.teachingSteps.length-1?(l.type==='finish'?'เรียนซ้ำตั้งแต่ต้น':l.type==='quiz'?'เริ่มตอบคำถาม →':'เริ่มลองเล่น →'):'ดูต่อ →';
+    mainBtn.textContent=state.teachingIndex===l.teachingSteps.length-1?(l.type==='finish'?'เรียนซ้ำตั้งแต่ต้น':l.exampleLesson?'ดูตัวอย่าง →':l.type==='quiz'?'เริ่มตอบคำถาม →':'เริ่มลองเล่น →'):'ดูต่อ →';
     document.querySelectorAll('#stepTrail span').forEach(function(el,i){el.classList.toggle('current',i===(state.teachingIndex===0?0:1));});
     renderBoard();
   }
@@ -1540,7 +1561,7 @@
       state.phase='active';appEl.classList.add('activeQuiz');
       if(l.coordinateLesson){startRound();return;}
       startRound();renderQuiz();
-      feedbackEl.textContent='เลือกคำตอบที่คิดว่าถูก';
+      if(!l.exampleLesson)feedbackEl.textContent='เลือกคำตอบที่คิดว่าถูก';
       renderBoard();updatePracticeUI();return;
     }
     state.phase='active';
@@ -1555,6 +1576,13 @@
   function coachSay(text,kind){mobileSpeechEl.textContent=text;mobileSpeechEl.classList.toggle('sayError',kind==='error');mobileSpeechEl.classList.toggle('saySuccess',kind==='success');}
   function renderQuiz(){
     var l=lessons[state.lesson],task=challenge();
+    if(task&&task.example){
+      // Nothing to answer: the card counts as seen, and the speech bubble carries the explanation.
+      quizBox.hidden=true;quizBox.innerHTML='';missionEl.parentElement.hidden=true;
+      state.roundDone=true;state.quizCorrect=true;state.correctMoves=Math.max(state.correctMoves,state.roundIndex+1);
+      feedbackEl.className='feedback';feedbackEl.textContent=task.explanation;
+      return;
+    }
     quizBox.hidden=false;quizBox.innerHTML='';
     var prompt=document.createElement('p');prompt.className='quizPrompt';prompt.textContent=task&&task.mission?task.mission:l.mission;quizBox.appendChild(prompt);
     missionEl.parentElement.hidden=true;
@@ -1596,6 +1624,12 @@
     return state.roundIndex%2?[wrong,right]:[right,wrong];
   }
 
+  function notationParts(record){
+    var abbr=Notation.abbreviations,parts=[abbr[record.piece]+'. = '+pieceName[record.piece],'จาก '+record.from+' ไป '+record.to];
+    if(record.capture)parts.push('× = กิน'+pieceName[record.capture]);
+    if(record.suffix==='+')parts.push('+ = รุก');else if(record.suffix==='#')parts.push('# = รุกจน');
+    return parts.join(' · ');
+  }
   function renderNotationChoices(record){
     notationChoices.innerHTML='';
     notationChoicesFor(record).forEach(function(choice){
@@ -1791,8 +1825,10 @@
       message=task&&task.success?task.success:'ถูกต้อง!';
     }
     if(l.type==='notation'){
-      state.pendingNotation=notation;notationForm.hidden=false;appEl.classList.add('activeNotation');renderNotationChoices(notation);
-      feedbackEl.className='feedback';feedbackEl.textContent='เลือกบันทึกที่ตรงกับตานี้';
+      // Show how this move is written, in the speech bubble, instead of asking the learner to pick the record.
+      state.correctMoves++;state.roundDone=true;state.roundMessage='ตานี้จดว่า “'+notation.text+'” · '+notationParts(notation);
+      feedbackEl.className='feedback success';feedbackEl.textContent=state.roundMessage;
+      showToast('จดได้ '+state.correctMoves+' / '+l.requiredCorrect+' ✓','good','success');
       renderBoard();updatePracticeUI();return;
     }
     feedbackEl.className='feedback success';
@@ -1819,7 +1855,7 @@
     mainBtn.textContent=state.lesson===lessons.length-1?'เรียนซ้ำตั้งแต่ต้น':'บทถัดไป →';
     var l=lessons[state.lesson];
     var repeat=document.getElementById('keepPracticingBtn');
-    repeat.disabled=!!l.practiceSets&&state.practiceSet>=4;
+    repeat.disabled=!!l.practiceSets&&state.practiceSet>=l.practiceSets.length-1;repeat.hidden=!!l.exampleLesson;
     repeat.textContent=repeat.disabled?'ฝึกครบทั้ง 5 ชุดแล้ว ✓':l.practiceSets?'ลองฝึกเพิ่ม · ชุดที่ '+(state.practiceSet+2):'เล่นเกมใหม่';
     document.getElementById('rewardBadge').innerHTML='<img src="'+lessonIcon(l)+'" alt="">';
     document.getElementById('rewardText').textContent='ผ่านบท “'+l.title+'” แล้ว';
@@ -1921,7 +1957,7 @@
   nextRoundBtn.addEventListener('click',nextPracticeRound);
   function practiceAnotherSet(){
     var l=lessons[state.lesson];
-    if(l.practiceSets&&state.practiceSet>=4)return;
+    if(l.practiceSets&&state.practiceSet>=l.practiceSets.length-1)return;
     if(l.practiceSets){state.practiceSet++;localStorage.setItem('makrukPracticeSet:'+l.id,String(state.practiceSet));}
     appEl.classList.remove('lessonPassed');
     document.getElementById('lessonReward').hidden=true;
