@@ -17,7 +17,7 @@ function harness(reduce=false,support=true){
  return {api,doc,buttons,listeners,timers,oscillators,animations,media,get clock(){return clock},get piece(){return piece},rerender(){piece=target()}};
 }
 const move={from:{r:4,c:3},to:{r:2,c:4},check:false,src:'wN.svg'};
-const h=harness();assert.equal(h.clock,undefined,'no audio context before user gesture');h.listeners.pointerdown();assert(h.clock);assert.equal(h.timers.size,0,'music is opt-in');
+const h=harness();assert.equal(h.clock,undefined,'no audio context before user gesture');h.listeners.pointerdown();assert(h.clock);assert.equal(h.timers.size,1,'music is on by default once a gesture unlocks audio');assert(h.oscillators.length>0);h.buttons.musicBtn.handlers.click();assert.equal(h.timers.size,0,'music can be turned off');assert.equal(h.buttons.musicBtn['aria-pressed'],'false');h.oscillators.length=0;
 h.api.queueMove(move);assert.equal(h.oscillators.length,1);h.api.flush();assert.equal(h.animations.length,1);assert.equal(h.piece.style.visibility,'hidden');assert.equal(h.animations[0].options.duration,210);assert.equal(h.animations[0].frames[0].transform,'translate(-50px,100px)');
 h.rerender();h.api.flush();assert.equal(h.piece.style.visibility,'hidden');h.animations[0].onfinish();assert.equal(h.piece.style.visibility,'');assert.equal(h.oscillators.length,1,'render does not replay sound');
 h.api.queueMove({...move,check:true});assert.equal(h.oscillators.length,4,'check adds two distinct chimes');h.api.flush();h.api.clearMotion();assert(h.animations[1].cancelled);assert.equal(h.piece.style.visibility,'');
@@ -27,10 +27,10 @@ h.doc.hidden=true;h.listeners.visibilitychange();assert.equal(h.timers.size,0);a
 const r=harness(true);r.api.queueMove(move);r.api.flush();assert.equal(r.animations.length,0,'respects reduced motion');assert.equal(r.api.replyDelay(),100);
 const d=harness();d.api.queueMove({...move,skipAnimation:true});d.api.flush();assert.equal(d.animations.length,0,'dragged pieces do not jump back to origin');
 const unsupported=harness(false,false);unsupported.listeners.pointerdown();assert(unsupported.buttons.musicBtn.disabled);unsupported.api.queueMove(move);unsupported.api.flush();
-console.log('Presentation verified: gesture-only audio, two music loops, move/check/mute cues, hidden-tab pause, 210ms motion, redraw cleanup, reduced motion and drag handling.');
+console.log('Presentation verified: gesture-only audio, music on by default, two music loops, move/check/mute cues, hidden-tab pause, 210ms motion, redraw cleanup, reduced motion and drag handling.');
 // Mission feedback is distinct, gesture-gated, throttled and uses the effects mute.
 const outcomes=harness();outcomes.api.playResult('complete');assert.equal(outcomes.oscillators.length,0);
-outcomes.listeners.pointerdown();outcomes.api.playResult('success');assert.equal(outcomes.oscillators.length,3);
+outcomes.listeners.pointerdown();outcomes.buttons.musicBtn.handlers.click();outcomes.oscillators.length=0;outcomes.api.playResult('success');assert.equal(outcomes.oscillators.length,3);
 outcomes.api.playResult('failure');assert.equal(outcomes.oscillators.length,3,'rapid taps cannot stack outcome sounds');
 outcomes.clock.currentTime=1;outcomes.api.playResult('failure');assert.equal(outcomes.oscillators.length,5);assert(outcomes.oscillators.slice(-2).every(n=>n.type==='triangle'));
 outcomes.clock.currentTime=2;outcomes.api.playResult('complete');assert.equal(outcomes.oscillators.length,9);assert(outcomes.oscillators.slice(-4).every(n=>n.type==='sine'));
