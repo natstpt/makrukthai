@@ -470,6 +470,32 @@
       .quizBox.compact .quizChoice{min-height:46px;font-size:16px}
       .app.activeQuiz #practiceCard{position:sticky;top:0;z-index:2;padding-bottom:6px;background:#262119;box-shadow:0 6px 8px -6px #262119}
     }
+    /* Board marks that read clearly on the yellow board: orange arrows, dark move dots and rings, a green tint for the
+       selected piece and the last move, and an outlined star. */
+    :root{--moveArrow:#f08a00;--moveTint:rgba(126,176,32,.5);--moveTintStrong:rgba(126,176,32,.7)}
+    .arrowShape{fill:var(--moveArrow);fill-opacity:.85}.arrowStroke{stroke:var(--moveArrow);stroke-opacity:.85}
+    .arrowPreview{fill-opacity:.6}
+    .square.target:after{width:30%;background:rgba(58,44,11,.3)}
+    .square.capture:after{inset:5%;border:6px solid rgba(58,44,11,.32)}
+    .square.last{background:var(--moveTint)}
+    .square.selected{background:var(--moveTintStrong);box-shadow:inset 0 0 0 3px #5f8a12}
+    .square.selected .piece{opacity:1}
+    .square.arrowOrigin{background:var(--moveTint);box-shadow:inset 0 0 0 3px var(--moveArrow)}
+    .goalStar{font-size:0;text-shadow:none}
+    .goalStar svg{width:64%;height:64%;filter:drop-shadow(0 2px 1.5px rgba(70,40,0,.45));animation:goalPulse 1.6s ease-in-out infinite}
+    @keyframes goalPulse{50%{transform:scale(1.08)}}
+    @media(prefers-reduced-motion:reduce){.goalStar svg{animation:none}}
+    /* Phones: the space the lesson panel does not need goes above the coach, so the board sits near the middle of the screen. */
+    @media(max-width:699px){
+      .app{--panelNeed:112px}.app.roomyPanel{--panelNeed:170px}
+      .desktop{padding-top:max(0px,min(calc(50vh - var(--boardSize) / 2 - var(--coach)),calc(100vh - var(--coach) - var(--boardSize) - 74px - var(--panelNeed))))}
+      @supports(height:100svh){.desktop{padding-top:max(0px,min(calc(50svh - var(--boardSize) / 2 - var(--coach)),calc(100svh - var(--coach) - var(--boardSize) - 74px - var(--panelNeed))))}}
+    }
+    /* Short phones: move lessons need less panel space than quizzes, so their board can be larger. */
+    @media(max-width:699px) and (max-height:740px){
+      .app:not(.roomyPanel){--boardSize:min(100vw,calc(100vh - 100px - 60px - 140px - env(safe-area-inset-bottom)))}
+      @supports(height:100svh){.app:not(.roomyPanel){--boardSize:min(100vw,calc(100svh - 100px - 60px - 140px - env(safe-area-inset-bottom)))}}
+    }
   </style>
 </head>
 <body>
@@ -1159,7 +1185,7 @@
     if(demonstration){x1+=ux*34;y1+=uy*34;}
     var nx=-uy,ny=ux,bx=x2-ux*42,by=y2-uy*42;
     // A single filled path keeps the head under half a square at every screen size.
-    var points=[[x1+nx*7,y1+ny*7],[bx+nx*7,by+ny*7],[bx+nx*24,by+ny*24],[x2,y2],[bx-nx*24,by-ny*24],[bx-nx*7,by-ny*7],[x1-nx*7,y1-ny*7]];
+    var points=[[x1+nx*8,y1+ny*8],[bx+nx*8,by+ny*8],[bx+nx*25,by+ny*25],[x2,y2],[bx-nx*25,by-ny*25],[bx-nx*8,by-ny*8],[x1-nx*8,y1-ny*8]];
     return '<path class="arrowShape'+(preview?' arrowPreview':'')+'" d="M'+points.map(function(p){return p.join(',');}).join(' L')+' Z"></path>';
   }
 
@@ -1311,6 +1337,7 @@
     return [];
   }
 
+  var GOAL_STAR='<svg viewBox="0 0 100 100"><path d="M50 7l12.6 27.3 29.9 3.4-22.3 20.3 6.2 29.4L50 72.6 23.6 87.4l6.2-29.4L7.5 37.7l29.9-3.4z" fill="#ffc83a" stroke="#7a4a05" stroke-width="5" stroke-linejoin="round"/><path d="M50 18l8.8 19 20.7 2.4" fill="none" stroke="#fff3b8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity=".8"/></svg>';
   function renderBoard(){
     var focused=boardEl.contains(document.activeElement),l=lessons[state.lesson],pieces=boardPieces();
     var coordinateTask=l.coordinateLesson?challenge():null;
@@ -1332,7 +1359,7 @@
           if(state.phase==='intro'||state.phase==='demo'||questionSquare&&(state.hint||state.quizCorrect))s.innerHTML+='<span class="squareCoordinate" aria-hidden="true">'+squareLabel(p)+'</span>';
           if(questionSquare)s.classList.add('coordinateTarget');
         }
-        if(state.phase==='active'&&state.showStarHint&&state.starTarget&&!state.roundDone&&!state.pendingNotation&&same(p,state.starTarget))s.innerHTML+='<span class="goalStar" aria-hidden="true">★</span>';
+        if(state.phase==='active'&&state.showStarHint&&state.starTarget&&!state.roundDone&&!state.pendingNotation&&same(p,state.starTarget))s.innerHTML+='<span class="goalStar" aria-hidden="true">'+GOAL_STAR+'</span>';
         var pc=pieces.find(function(x){return same(x.at,p);});
         var source=canMove&&state.current&&same(p,state.current);
         if(canMove&&pc&&pc.side==='white'&&(source||l.type==='game'))s.classList.add('selectable');
@@ -1368,6 +1395,8 @@
     state.practiceSet=Math.max(0,Math.min(4,parseInt(localStorage.getItem('makrukPracticeSet:'+l.id)||'0',10)||0));
     missionEl.parentElement.hidden=false;
     appEl.classList.remove('coordinateQuiz','activeQuiz','activeNotation','lessonPassed');nextRoundHome.appendChild(nextRoundBtn);nextRoundBtn.style.marginTop='';
+    // Answer-heavy lessons keep a taller panel for the whole lesson, so the board never jumps between phases.
+    appEl.classList.toggle('roomyPanel',l.type==='quiz'||l.type==='notation'||l.type==='game');
     clearArrows();
     state.phase='intro';state.teachingIndex=0;state.current=l.start?{r:l.start.r,c:l.start.c}:null;state.completed=false;state.hint=false;
     document.getElementById('lessonReward').hidden=true;
@@ -1436,8 +1465,10 @@
     if(activePiece()==='knight'){
       moves=moves.slice(0,2);
       layer.innerHTML=moves.map(function(to){var from=state.current,bend=Math.abs(to.r-from.r)===2?{r:to.r,c:from.c}:{r:from.r,c:to.c};
-        var points=[from,bend,to].map(function(at){return (at.c+.5)*100+','+(at.r+.5)*100;}).join(' ');
-        return '<polyline points="'+points+'" fill="none" stroke="var(--arrow)" stroke-width="10" stroke-linejoin="round"/>'+arrowSvg(bend,to,false);
+        // Start the L at the edge of the knight's square so the arrow does not cover the piece.
+        var start={c:from.c+.5+Math.sign(bend.c-from.c)*.34,r:from.r+.5+Math.sign(bend.r-from.r)*.34};
+        var points=[start,{c:bend.c+.5,r:bend.r+.5},{c:to.c+.5,r:to.r+.5}].map(function(at){return at.c*100+','+at.r*100;}).join(' ');
+        return '<polyline class="arrowStroke" points="'+points+'" fill="none" stroke-width="16" stroke-linejoin="round"/>'+arrowSvg(bend,to,false);
       }).join('');
     }else layer.innerHTML=moves.map(function(to){return arrowSvg(state.current,to,false,true);}).join('');
     if(l.id==='escape'||l.id==='block'){
