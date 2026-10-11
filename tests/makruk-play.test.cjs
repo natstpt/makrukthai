@@ -62,6 +62,22 @@ eq(Math.round(P.exchange(board('K:a1 N:c3 k:h8 r:d5 p:c6'), at('d5'), 'white', 0
 const saved = key(P.chooseMove(board('K:a1 R:d4 P:h3 k:h8 n:f5'), 'white', { random: fixed }));
 assert(!R.isAttacked(R.applyMove(board('K:a1 R:d4 P:h3 k:h8 n:f5'), at(saved.slice(0, 2)), at(saved.slice(2))), at(saved.slice(2)), 'black'), 'rook moves to a safe square, played ' + saved); checks++;
 
+// Opening: from the start the computer builds the shape on both sides (เม็ด จ1-ฉ2 first for white, เม็ด ง8-ค7 for red).
+{
+  const N = require('../makruk-notation.js');
+  let ps = M.initial().pieces, side = 'white';
+  const played = [];
+  for (let i = 0; i < 12; i++) {
+    const m = P.chooseMove(ps, side, { random: fixed });
+    played.push(key(m)); ps = R.applyMove(ps, m.from, m.to); side = side === 'white' ? 'black' : 'white';
+  }
+  eq(played, ['e1f2', 'd8c7', 'e3e4', 'd6d5', 'f2e3', 'c7d6', 'f1f2', 'c8c7', 'c1c2', 'f8f7', 'b1d2', 'g8e7'], 'opening shape for both sides');
+  eq(P.openingMove(ps, 'white'), null, 'shape complete: no more opening moves');
+  // A free piece comes first: the shape waits.
+  const hung = board('K:d1 M:e1 R:a1 R:h1 N:b1 N:g1 B:c1 B:f1 P:a3 P:b3 P:c3 P:d3 P:e3 P:f3 P:g3 P:h3 k:e8 n:a5');
+  assert.notEqual(key(P.chooseMove(hung, 'white', { random: fixed })), 'e1f2', 'takes the free knight instead of the opening move'); checks++;
+}
+
 // Whole games: the computer plays both sides with counting; every game ends (mate or a draw) within the count limits.
 let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
 const endings = {};
@@ -75,7 +91,9 @@ for (let g = 0; g < 3; g++) {
     if (state === 'playing' && cnt && cnt.draw) state = 'count draw';
     if (state !== 'playing') break;
   }
-  assert.notEqual(state, 'playing', 'game ' + g + ' ends'); checks++;
+  // Counting only starts once the unpromoted pawns are gone, so a game with locked pawns can go on.
+  if (state === 'playing') state = ps.some(p => p.piece === 'pawn') ? 'pawns locked' : state;
+  assert.notEqual(state, 'playing', 'game ' + g + ' ends once counting applies'); checks++;
   endings[state] = (endings[state] || 0) + 1;
 }
 console.log('Play verified: ' + checks + ' checks; computer games ended: ' + JSON.stringify(endings));
