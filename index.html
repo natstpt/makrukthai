@@ -719,8 +719,9 @@
 <script src="makruk-notation.js?v=20261004-practice5"></script>
 <script src="day2-lessons.js?v=20261005-feedback"></script>
 <script src="rules-lessons.js?v=20261005-feedback"></script>
-<script src="endgame-lessons.js?v=20261012-puzzles"></script>
+<script src="endgame-lessons.js?v=20261013-chase"></script>
 <script src="puzzle-trees.js?v=20261012-puzzles"></script>
+<script src="chase-trees.js?v=20261013-chase"></script>
 <script src="learning-design.js?v=20261005-feedback"></script>
 <script src="practice-sets.js?v=20261005-feedback"></script>
 <script src="lesson-examples.js?v=20261011-examples"></script>
@@ -1019,7 +1020,7 @@
   lessons.forEach(function(lesson){
     lesson.practiceSets=window.MakrukPracticeSets[lesson.id];
     // Short puzzles: attach the precomputed red replies (puzzle-trees.js).
-    if(lesson.puzzle)lesson.games.forEach(function(task){task.tree=(window.MakrukPuzzleTrees||{})[task.key];});
+    if(lesson.puzzle)lesson.games.forEach(function(task){task.tree=((task.chase?window.MakrukChaseTrees:window.MakrukPuzzleTrees)||{})[task.key];});
     // Question lessons become explain-and-show cards: one sentence in the speech bubble, one board example each.
     var examples=window.MakrukLessonExamples&&window.MakrukLessonExamples[lesson.id];
     if(examples&&lesson.practiceSets){
@@ -1158,7 +1159,7 @@
       do{start={r:Math.floor(Math.random()*8),c:Math.floor(Math.random()*8)};}while(state.lastPracticeStart&&same(start,state.lastPracticeStart));
     }
     if(l.type==='game')state.gamePieces=Rules.clonePieces(task?task.pieces:fullSetup());
-    state.puzzleNode=l.puzzle&&task?task.tree:null;state.puzzleSay='';state.puzzleLeft=l.puzzle&&task?task.moves:0;
+    state.puzzleNode=l.puzzle&&task?puzzleNodeAt(task.tree,0):null;state.puzzleSay='';state.puzzleLeft=l.puzzle&&task?task.moves:0;state.puzzleCount=l.puzzle&&task&&task.count?task.count.start:0;
     state.current=start?{r:start.r,c:start.c}:null;
     if(start&&l.type==='move')state.lastPracticeStart={r:start.r,c:start.c};
     state.starTarget=null;state.routeMoves=0;
@@ -1784,6 +1785,15 @@
   }
 
   function puzzleSquare(key,i){return {r:8-Number(key.charAt(i+1)),c:'abcdefgh'.indexOf(key.charAt(i))};}
+  // Short puzzles keep nested nodes; long chases (chase-trees.js) keep a flat list of encoded nodes.
+  function puzzleNodeAt(tree,ref){
+    if(!tree||!tree.nodes)return ref===0?tree:ref;
+    var node={};
+    (tree.nodes[ref]||'').split(',').forEach(function(entry){
+      if(entry)node[entry.slice(0,4)]=entry.charAt(4)==='#'?'#':{r:entry.slice(4,8),n:parseInt(entry.slice(8),36)};
+    });
+    return node;
+  }
   function puzzleKey(from,to){return 'abcdefgh'[from.c]+(8-from.r)+'abcdefgh'[to.c]+(8-to.r);}
   // Short puzzles: only moves that still mate in time are accepted; the red king answers from the solution tree.
   function playPuzzleMove(dest){
@@ -1803,8 +1813,9 @@
     state.selected=false;state.current=null;state.focus=dest;state.lastFrom=from;state.lastTo=dest;
     if(child==='#'){
       state.correctMoves++;state.roundDone=true;state.gameOver=true;state.puzzleNode=null;
-      state.roundMessage=task.success;
-      feedbackEl.className='feedback success';feedbackEl.textContent=task.success;boardCaption.textContent='รุกจน!';
+      var used=task.moves-state.puzzleLeft+1;
+      state.roundMessage=task.success||'รุกจน! จนได้ใน '+used+' ตา'+(task.count?' ก่อนนับครบ '+task.count.ceiling:'');
+      feedbackEl.className='feedback success';feedbackEl.textContent=state.roundMessage;boardCaption.textContent='รุกจน!';
       showToast('รุกจน ✓','good','complete');
       renderBoard();updatePracticeUI();return;
     }
@@ -1818,8 +1829,8 @@
       state.gamePieces=Rules.applyMove(state.gamePieces,reply.from,reply.to);
       queueMoveFeedback(reply.from,reply.to,redPiece.piece,'black',state.gamePieces);
       state.gameHistory.push('แดง '+pieceName[redPiece.piece]+' '+squareLabel(reply.from)+'→'+squareLabel(reply.to));
-      state.lastFrom=reply.from;state.lastTo=reply.to;state.puzzleNode=child.n;
-      var say=state.puzzleSay=(victim?pieceName[redPiece.piece]+'แดงกิน'+pieceName[victim.piece]+'ที่ '+squareLabel(reply.to):redPiece.piece==='king'?'ขุนแดงหนีไป '+squareLabel(reply.to):'แดงเดิน'+pieceName[redPiece.piece]+' '+squareLabel(reply.from)+' → '+squareLabel(reply.to))+' · เหลืออีก '+state.puzzleLeft+' ตา'+(state.puzzleLeft===1?' ต้องจนตานี้':'');
+      state.lastFrom=reply.from;state.lastTo=reply.to;state.puzzleNode=puzzleNodeAt(task.tree,child.n);
+      var say=state.puzzleSay=(victim?pieceName[redPiece.piece]+'แดงกิน'+pieceName[victim.piece]+'ที่ '+squareLabel(reply.to):redPiece.piece==='king'?'ขุนแดงหนีไป '+squareLabel(reply.to):'แดงเดิน'+pieceName[redPiece.piece]+' '+squareLabel(reply.from)+' → '+squareLabel(reply.to))+(task.count?' · นับ '+(state.puzzleCount++)+' จาก '+task.count.ceiling:'')+' · เหลืออีก '+state.puzzleLeft+' ตา'+(state.puzzleLeft===1?' ต้องจนตานี้':'');
       feedbackEl.className='feedback';feedbackEl.textContent=say;boardCaption.textContent='ถึงตาฝ่ายขาว · '+say;
       renderBoard();updatePracticeUI();
     },presentation.replyDelay());

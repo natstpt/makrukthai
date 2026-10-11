@@ -45,6 +45,9 @@ jobs:
       - name: Verify endgame puzzles
         run: node tests/endgame-puzzles.test.cjs
 
+      - name: Verify endgame chases
+        run: node tests/endgame-chases.test.cjs
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
         with:

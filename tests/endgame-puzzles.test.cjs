@@ -9,7 +9,7 @@ for(const file of ['endgame-lessons.js','puzzle-trees.js'])vm.runInContext(fs.re
 const plain=v=>JSON.parse(JSON.stringify(v));
 const lessons=plain(ctx.window.buildEndgameLessons().filter(l=>l.puzzle)),trees=plain(ctx.window.MakrukPuzzleTrees);
 const solver=createSolver();
-assert.deepEqual(lessons.map(l=>l.id),['endgame-stalemate','endgame-count','endgame-corner','endgame-tempo','puzzle-khon','puzzle-khon-met','puzzle-knight','puzzle-twist-rook','puzzle-twist-sacrifice']);
+assert.deepEqual(lessons.map(l=>l.id),['endgame-stalemate','endgame-count','endgame-corner','endgame-tempo','puzzle-khon','puzzle-khon-met','puzzle-knight','puzzle-twist-rook','puzzle-twist-sacrifice','chase-rook','chase-knight-met','chase-khon-pair','chase-knight-khon']);
 let boards=0,puzzles=0,nodes=0;const keys=new Set();
 function walk(pieces,node,left,label){
   nodes++;
@@ -41,6 +41,7 @@ for(const l of lessons){
     const pieces=plain(t.pieces),label=l.id+' '+t.key;
     assert(!keys.has(t.key),label+': unique key');keys.add(t.key);
     assert(!Rules.inCheck(pieces,'black')&&!Rules.inCheck(pieces,'white'),label+': starts quiet');
+    if(t.chase)continue; // long chases: tests/endgame-chases.test.cjs
     assert.equal(solver.depth(pieces,t.moves),t.moves,label+': mate in exactly '+t.moves);
     assert(t.mission.includes('รุกจนใน '+t.moves+' ตา'),label+': mission states the move count');
     // The book line is legal from the start position and its first move is accepted.
