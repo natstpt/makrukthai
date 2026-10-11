@@ -38,11 +38,9 @@ const expectedIds = [
   'board', 'king', 'rook', 'knight', 'met', 'khon', 'pawn', 'promotion', 'promoted', 'setup',
   'capture', 'check', 'escape', 'mate', 'review', 'defend', 'block', 'take-checker', 'notation', 'draw-rules',
   'think', 'fair-play', 'game', 'mini', 'assessment',
-  'endgame-rook-khon', 'endgame-khon-promoted', 'endgame-knight', 'endgame-promoted',
-  'endgame-stalemate', 'endgame-count', 'endgame-corner', 'endgame-tempo', 'puzzle-khon', 'puzzle-khon-met', 'puzzle-knight',
-  'puzzle-twist-rook', 'puzzle-twist-sacrifice',
-  'chase-rook', 'chase-knight-met', 'chase-khon-pair', 'chase-knight-khon',
-  'escape-count', 'escape-corner', 'finish'
+  'endgame-rook-khon', 'endgame-promoted', 'endgame-khon-promoted', 'endgame-knight', 'endgame-stalemate', 'endgame-count',
+  'endgame-corner', 'puzzle-khon', 'endgame-tempo', 'puzzle-khon-met', 'puzzle-knight', 'puzzle-twist-rook', 'puzzle-twist-sacrifice',
+  'chase-knight-khon', 'chase-knight-met', 'chase-rook', 'chase-khon-pair', 'escape-corner', 'escape-count', 'finish'
 ];
 check(Array.from(lessons, lesson => lesson.id), expectedIds, 'final 45 stable IDs appear in intended teaching order');
 check(lessons.length, 45, 'final curriculum has 45 lessons');
