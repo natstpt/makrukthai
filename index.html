@@ -2021,7 +2021,8 @@
   // Does the count reach its end on this task's last move? Then missing the mate means a draw.
   function countRunsOut(task){
     if(!task.count)return false;
-    if(task.count.kind==='board')return !state.pieceCount&&task.count.start+task.moves-2>=64;
+    if(state.pieceCount)return state.pieceCount.next-1>=state.pieceCount.ceiling;
+    if(task.count.kind==='board')return task.count.start+task.moves-2>=64;
     return task.moves===task.count.ceiling-task.count.start+2;
   }
   // Counting puzzles that start mid-count: show red's last move first and the number it says, then white moves.
@@ -2038,7 +2039,7 @@
       state.lastFrom=from;state.lastTo=to;
       var said=task.count.start-1;
       state.puzzleSay=(mover.piece==='king'?'ขุนแดง':pieceName[mover.piece]+'แดง')+' '+squareLabel(from)+' → '+squareLabel(to)+' · แดงนับ '+said+
-        (said>=task.count.ceiling?' ครบแล้ว · ขาวต้องจนตานี้':' · ถึงตาขาว');
+        (task.leadNote?' · '+task.leadNote:said>=task.count.ceiling?' ครบแล้ว · ขาวต้องจนตานี้':' · ถึงตาขาว');
       feedbackEl.className='feedback';feedbackEl.textContent=state.puzzleSay;boardCaption.textContent='ถึงตาฝ่ายขาว · '+state.puzzleSay;
       renderBoard();updatePracticeUI();
     },presentation.replyDelay()+400);
@@ -2055,7 +2056,7 @@
       wrongMove(from,dest,defend?(task.defend==='count'?'ตานี้ฝ่ายขาวจะจนได้ก่อนแดงนับเกินเพดาน ลองช่องอื่นนะ':'ตานี้ฝ่ายขาวจะไล่จนได้ ลองหนีไปทางมุมที่ปลอดภัย'):
         after.state==='stalemate'?'อับ! ขุนแดงไม่ถูกรุกแต่ไม่มีที่เดิน = เสมอ · ลองตาอื่นที่รุกได้':
         after.state==='checkmate'?'รุกจนได้ แต่โจทย์นี้ให้จนใน '+task.moves+' ตา ลองอีกครั้งนะ':
-        state.puzzleLeft===1&&countRunsOut(task)?'ตานี้ยังไม่รุกจน แดงจะนับ '+((task.count.kind==='board'?64:task.count.ceiling)+1)+' เกินกำหนด แล้วเกมเสมอ ลองใหม่นะ':
+        state.puzzleLeft===1&&countRunsOut(task)?'ตานี้ยังไม่รุกจน แดงจะนับ '+((state.pieceCount?state.pieceCount.ceiling:task.count.kind==='board'?64:task.count.ceiling)+1)+' เกินกำหนด แล้วเกมเสมอ ลองใหม่นะ':
         state.puzzleLeft===1?'ตานี้ยังไม่รุกจน ต้องจนในตานี้เลย ลองใหม่นะ':'ตานี้ขุนแดงจะหนีได้นานเกิน '+state.puzzleLeft+' ตา ลองคิดใหม่นะ');
       return;
     }
