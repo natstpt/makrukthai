@@ -1909,6 +1909,12 @@
     }
     return ' · นับ '+(state.puzzleCount++)+' จาก '+task.count.ceiling;
   }
+  // Does the count reach its end on this task's last move? Then missing the mate means a draw.
+  function countRunsOut(task){
+    if(!task.count)return false;
+    if(task.count.kind==='board')return !state.pieceCount&&task.count.start+task.moves-2>=63;
+    return task.moves===task.count.ceiling-task.count.start+2;
+  }
   function puzzleKey(from,to){return 'abcdefgh'[from.c]+(8-from.r)+'abcdefgh'[to.c]+(8-to.r);}
   // Short puzzles: only moves that still mate in time are accepted; the red king answers from the solution tree.
   // Defend lessons (เป็นฝ่ายหนี): the learner plays the red king and white answers from the tablebase.
@@ -1921,6 +1927,7 @@
       wrongMove(from,dest,defend?(task.defend==='count'?'ตานี้ฝ่ายขาวจะจนได้ก่อนนับครบ ลองช่องอื่นนะ':'ตานี้ฝ่ายขาวจะไล่จนได้ ลองหนีไปทางมุมที่ปลอดภัย'):
         after.state==='stalemate'?'อับ! ขุนแดงไม่ถูกรุกแต่ไม่มีที่เดิน = เสมอ · ลองตาอื่นที่รุกได้':
         after.state==='checkmate'?'รุกจนได้ แต่โจทย์นี้ให้จนใน '+task.moves+' ตา ลองอีกครั้งนะ':
+        state.puzzleLeft===1&&countRunsOut(task)?'ตานี้ยังไม่รุกจน แดงจะนับครบ '+(task.count.kind==='board'?64:task.count.ceiling)+' แล้วเกมเสมอ ลองใหม่นะ':
         state.puzzleLeft===1?'ตานี้ยังไม่รุกจน ต้องจนในตานี้เลย ลองใหม่นะ':'ตานี้ขุนแดงจะหนีได้นานเกิน '+state.puzzleLeft+' ตา ลองคิดใหม่นะ');
       return;
     }
