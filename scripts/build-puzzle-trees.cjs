@@ -15,6 +15,7 @@ const trees = {};
 for (const lesson of context.window.buildEndgameLessons()) {
   if (!lesson.puzzle) continue;
   for (const task of lesson.games) {
+    if (task.chase) continue; // long chases: scripts/build-chase-trees.cjs
     const pieces = JSON.parse(JSON.stringify(task.pieces));
     const found = solver.depth(pieces, task.moves);
     if (found !== task.moves) throw new Error(`${task.key}: mate in ${found}, expected ${task.moves}`);

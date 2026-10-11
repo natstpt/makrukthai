@@ -40,13 +40,14 @@ const expectedIds = [
   'think', 'fair-play', 'game', 'mini', 'assessment',
   'endgame-rook-khon', 'endgame-khon-promoted', 'endgame-knight', 'endgame-promoted',
   'endgame-stalemate', 'endgame-count', 'endgame-corner', 'endgame-tempo', 'puzzle-khon', 'puzzle-khon-met', 'puzzle-knight',
-  'puzzle-twist-rook', 'puzzle-twist-sacrifice', 'finish'
+  'puzzle-twist-rook', 'puzzle-twist-sacrifice',
+  'chase-rook', 'chase-knight-met', 'chase-khon-pair', 'chase-knight-khon', 'finish'
 ];
-check(Array.from(lessons, lesson => lesson.id), expectedIds, 'final 39 stable IDs appear in intended teaching order');
-check(lessons.length, 39, 'final curriculum has 39 lessons');
-check(new Set(lessons.map(lesson => lesson.id)).size, 39, 'all stable IDs are unique');
+check(Array.from(lessons, lesson => lesson.id), expectedIds, 'final 43 stable IDs appear in intended teaching order');
+check(lessons.length, 43, 'final curriculum has 43 lessons');
+check(new Set(lessons.map(lesson => lesson.id)).size, 43, 'all stable IDs are unique');
 check(lessons.filter(lesson => lesson.day === 1).length, 14, 'Day 1 has 14 foundational lessons');
-check(lessons.filter(lesson => lesson.day === 2).length, 25, 'Day 2 has 25 extension lessons, including the endgame chapter');
+check(lessons.filter(lesson => lesson.day === 2).length, 29, 'Day 2 has 29 extension lessons, including the endgame chapter');
 check(lessons.findIndex(lesson => lesson.day === 2), 14, 'Day 2 begins after all fundamentals');
 yes(lessons.slice(0, 14).every(lesson => lesson.day === 1), 'Day 1 lessons form one contiguous section');
 yes(lessons.slice(14).every(lesson => lesson.day === 2), 'Day 2 lessons form one contiguous section');
@@ -178,5 +179,5 @@ for (const [i, question] of byId('mate').questions.entries()) {
   const status = Rules.gameStatus(question.pieces, 'black');
   check(status.state, i === 1 ? 'playing' : 'checkmate', `Day 1 mate ${i + 1}: diagram matches the answer`);
 }
-console.log(`Rules curriculum verified: ${assertions} assertions passed; 39 lessons / Day 1: 14 / Day 2: 25.`);
+console.log(`Rules curriculum verified: ${assertions} assertions passed; 43 lessons / Day 1: 14 / Day 2: 29.`);
 
