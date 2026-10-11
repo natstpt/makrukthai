@@ -14,6 +14,8 @@ for(const l of lessons){
   l.teachingBoards.forEach((b,i)=>{
     assert(!Rules.inCheck(b.pieces,'white'),l.id+' step '+(i+1)+': white king is safe');
     if(/^ตาจน/.test(b.text))assert.equal(Rules.gameStatus(b.pieces,'black').state,'checkmate',l.id+' step '+(i+1)+' is a real mate');
+    // "รุก ·" steps show a check on the way to mate: a real check that red can still answer.
+    else if(/^รุก ·/.test(b.text))assert.equal(Rules.gameStatus(b.pieces,'black').state==='playing'&&Rules.inCheck(b.pieces,'black'),true,l.id+' step '+(i+1)+' is a check, not mate');
     else assert(!Rules.inCheck(b.pieces,'black'),l.id+' step '+(i+1)+': setup is not already check');
     boards++;
   });

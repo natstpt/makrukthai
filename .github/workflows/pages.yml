@@ -48,6 +48,9 @@ jobs:
       - name: Verify endgame chases
         run: node tests/endgame-chases.test.cjs
 
+      - name: Verify step-by-step teaching boards
+        run: node tests/teaching-steps.test.cjs
+
       - name: Verify counting and the computer player
         run: node tests/makruk-play.test.cjs
 
