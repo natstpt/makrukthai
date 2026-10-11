@@ -2306,7 +2306,8 @@
     clearTimeout(showToast.t);showToast.t=setTimeout(function(){toast.className='statusToast';},1350);
   }
 
-  function lessonIcon(l){return 'assets/images/lessons/'+l.id+'.svg';}
+  // White–black pieces use the icon set drawn with black pieces (scripts/build-black-icons.cjs).
+  function lessonIcon(l){return 'assets/images/lessons/'+(typeof MakrukPieceColors==='object'&&MakrukPieceColors.mode()==='black'?'black/':'')+l.id+'.svg';}
   // "การไล่ด้วยเรือ · ระวังอับ": the pieces on the first line, the lesson's focus on a smaller line below.
   function lessonTitleHtml(title){var parts=title.split(' · ');return parts.length===2?parts[0]+'<em class="mapFocus">'+parts[1]+'</em>':title;}
   // Teacher switch: open every lesson without touching the learner's saved progress, or lock back to it.
