@@ -1210,7 +1210,7 @@
   }
   function queueMoveFeedback(from,to,piece,side,after){
     presentation.queueMove({from:{r:from.r,c:from.c},to:{r:to.r,c:to.c},
-      src:'assets/pieces/makruk/ada/'+MakrukPieceColors.prefix(side)+pieceFile[piece]+'.svg',
+      src:'assets/pieces/makruk/ada/'+(typeof MakrukPieceColors==='object'?MakrukPieceColors.prefix(side):side==='white'?'w':'r')+pieceFile[piece]+'.svg',
       skipAnimation:!!state.moveWasDragged,check:Rules.inCheck(after,side==='white'?'black':'white')});
   }
 
@@ -1374,7 +1374,7 @@
     state.roundIndex++;setTool('move');startRound();
   }
   function pieceHtml(type,side){
-    var color=MakrukPieceColors.prefix(side);
+    var color=(typeof MakrukPieceColors==='object'?MakrukPieceColors.prefix(side):side==='white'?'w':'r');
     var src='assets/pieces/makruk/ada/'+color+pieceFile[type]+'.svg';
     return '<div class="piece '+side+' '+(type==='king'?'big':'')+'" data-piece="'+type+'"><img src="'+src+'" alt="'+pieceName[type]+'ฝ่าย'+(side==='white'?'ขาว':'แดง')+'" draggable="false"></div>';
   }
@@ -1467,7 +1467,7 @@
       state.current=gesture.from;state.focus=gesture.from;
       state.selected=true;gesture.dragging=true;
       boardWrap.setPointerCapture(e.pointerId);renderBoard();updateBoardHelp();
-      dragPiece.innerHTML='<img src="assets/pieces/makruk/ada/'+MakrukPieceColors.prefix(userSide())+pieceFile[activePiece()]+'.svg" alt="" draggable="false">';
+      dragPiece.innerHTML='<img src="assets/pieces/makruk/ada/'+(typeof MakrukPieceColors==='object'?MakrukPieceColors.prefix(userSide()):userSide()==='white'?'w':'r')+pieceFile[activePiece()]+'.svg" alt="" draggable="false">';
       dragPiece.hidden=false;boardWrap.classList.add('dragging');
       var sourceEl=boardEl.querySelector('.square[data-r="'+gesture.from.r+'"][data-c="'+gesture.from.c+'"]');if(sourceEl)sourceEl.classList.add('dragSource');
     }
