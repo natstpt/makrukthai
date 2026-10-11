@@ -545,6 +545,14 @@
       .navBtn{font-size:13px}.navBtn svg{width:28px;height:28px}
       .progressRow .challengeTrack{height:16px!important}.progressBadge{width:38px;height:38px}.progressBadge b{font-size:16px}
     }
+
+    /* Teacher switch in the lesson menu: unlock every lesson, or lock back to the learner's own progress. */
+    .teacherLockDock{position:sticky;bottom:0;height:0;display:flex;justify-content:flex-end;align-items:flex-end;padding-right:14px;pointer-events:none;z-index:3}
+    .teacherLockBtn{pointer-events:auto;transform:translateY(-14px);display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:6px 12px;border:1px solid #6a5a3e;border-radius:99px;background:#3a3125;color:#eadcbc;font:inherit;font-size:13px;font-weight:800;box-shadow:0 6px 16px rgba(0,0,0,.4);cursor:pointer}
+    .teacherLockBtn[aria-pressed="true"]{background:#d2a638;border-color:#e8c25a;color:#382b0a}
+    .teacherLockBtn:focus-visible{outline:3px solid #f2c14e;outline-offset:2px}
+    .teacherLockBtn .lockIcon{font-size:15px}
+    .pathModal .modalBody{padding-bottom:64px}
   </style>
 </head>
 <body>
@@ -711,6 +719,7 @@
         <details class="settingsGroup"><summary>เพิ่มเติม</summary><div class="extraSettings" id="extraSettings"></div></details>
       </section>
     </div>
+    <div class="teacherLockDock"><button type="button" class="teacherLockBtn" id="teacherLockBtn" aria-pressed="false"><span class="lockIcon" aria-hidden="true">🔒</span><span id="teacherLockLabel">ปลดล็อกทุกบท</span></button></div>
   </div>
 </div>
 
@@ -1602,7 +1611,7 @@
     pathEl.innerHTML='';
     lessons.forEach(function(l,i){
       var n=document.createElement('div');
-      n.className='pathNode '+(i<state.lesson?'done':i===state.lesson?'current':i<=state.unlocked?'':'locked');
+      n.className='pathNode '+(i<state.lesson?'done':i===state.lesson?'current':lessonOpen(i)?'':'locked');
       n.textContent=i+1;
       n.title=l.title;
       pathEl.appendChild(n);
@@ -2061,12 +2070,22 @@
   }
 
   function lessonIcon(l){return 'assets/images/lessons/'+l.id+'.svg';}
+  // Teacher switch: open every lesson without touching the learner's saved progress, or lock back to it.
+  function teacherUnlocked(){try{return localStorage.getItem('makrukTeacherUnlock')==='true';}catch(e){return false;}}
+  function lessonOpen(i){return teacherUnlocked()||i<=state.unlocked;}
+  function syncTeacherLock(){
+    var on=teacherUnlocked(),btn=document.getElementById('teacherLockBtn');
+    btn.setAttribute('aria-pressed',String(on));
+    btn.querySelector('.lockIcon').textContent=on?'🔓':'🔒';
+    document.getElementById('teacherLockLabel').textContent=on?'ล็อกบทเรียน':'ปลดล็อกทุกบท';
+    btn.title=on?'กลับไปล็อกตามความคืบหน้าของผู้เรียน':'เปิดทุกบทให้ผู้สอนเลือกได้';
+  }
   function buildLessonGrid(){
     var grid=document.getElementById('lessonGrid');grid.innerHTML='';
     lessons.forEach(function(l,i){
       if(i===0||l.day!==lessons[i-1].day){var section=document.createElement('div');section.className='daySection';section.textContent=l.day===1?'เริ่มเล่นเป็น':'คิดเป็น เล่นกับเพื่อน';grid.appendChild(section);}
       var card=document.createElement('button');card.type='button';
-      var locked=i>state.unlocked;
+      var locked=!lessonOpen(i);
       card.className='mapNode'+(locked?' locked':i===state.lesson?' current':'');
       card.disabled=locked;
       card.innerHTML='<span class="mapBadge"><img src="'+lessonIcon(l)+'" alt="">'+(locked?'<i class="mapMark">🔒</i>':i<state.lesson?'<i class="mapMark done">✓</i>':'')+'</span><span><strong>'+l.title+'</strong><small>บท '+(i+1)+(locked?' · เรียนบทก่อนหน้าเพื่อเปิด':i===state.lesson?' · กำลังเรียน':i<state.lesson?' · ผ่านแล้ว':' · พร้อมเรียน')+'</small></span>';
@@ -2214,6 +2233,22 @@
   document.getElementById('creditsBtn').addEventListener('click',function(){openOverlay('creditsOverlay');});
   document.querySelectorAll('[data-close]').forEach(function(b){b.addEventListener('click',function(){closeOverlay(b.dataset.close);});});
   document.querySelectorAll('.overlay').forEach(function(o){o.addEventListener('click',function(e){if(e.target===o)closeOverlay(o.id);});});
+  document.getElementById('teacherLockBtn').addEventListener('click',function(){
+    var on=!teacherUnlocked();
+    try{
+      // Remember the learner's own progress, so locking again returns to it even after the teacher opened later lessons.
+      if(on)localStorage.setItem('makrukTeacherSavedUnlockId',lessons[state.unlocked].id);
+      else{
+        var savedId=localStorage.getItem('makrukTeacherSavedUnlockId'),saved=lessons.findIndex(function(l){return l.id===savedId;});
+        if(saved>=0){state.unlocked=saved;if(state.lesson>saved){state.lesson=saved;renderLesson();}saveProgress();}
+        localStorage.removeItem('makrukTeacherSavedUnlockId');
+      }
+      localStorage.setItem('makrukTeacherUnlock',String(on));
+    }catch(e){}
+    syncTeacherLock();buildLessonGrid();renderPath();
+    showToast(on?'ปลดล็อกทุกบทแล้ว':'ล็อกบทเรียนตามความคืบหน้าแล้ว','good');
+  });
+  syncTeacherLock();
   document.getElementById('resetBtn').addEventListener('click',function(){
     if(confirm('ต้องการเริ่มบทเรียนใหม่ตั้งแต่บทแรกใช่ไหม?')){
       localStorage.removeItem('makrukLesson');localStorage.removeItem('makrukUnlocked');localStorage.removeItem('makrukLessonId');localStorage.removeItem('makrukUnlockedId');
