@@ -572,6 +572,8 @@
     .wrongBadge{background:none!important;border:0!important;box-shadow:none!important;filter:drop-shadow(0 2px 4px rgba(0,0,0,.35))}
     .wrongBadge svg{width:100%;height:100%;display:block}
     .arrowShape.refuteArrowShape{fill:#e0362a!important;fill-opacity:.82!important}
+    /* No double-tap zoom on controls and text either (the board keeps touch-action:none for dragging). */
+    button,a,summary,label,.square,.lessonPanel,.lessonFoot,.mobileCoachRow,.overlay{touch-action:manipulation}
   </style>
 </head>
 <body>
@@ -791,7 +793,8 @@
 <script src="learning-design.js?v=20261005-feedback"></script>
 <script src="practice-sets.js?v=20261005-feedback"></script>
 <script src="lesson-examples.js?v=20261011-examples"></script>
-<script src="presentation.js?v=20261005-feedback"></script>
+<script src="presentation.js?v=20261014-ios-audio"></script>
+<script src="touch-guard.js?v=20261014-ios-zoom"></script>
 <script>
 (function(){
   'use strict';
