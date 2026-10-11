@@ -48,6 +48,9 @@ jobs:
       - name: Verify endgame chases
         run: node tests/endgame-chases.test.cjs
 
+      - name: Verify counting and the computer player
+        run: node tests/makruk-play.test.cjs
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
         with:

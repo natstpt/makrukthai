@@ -77,7 +77,7 @@ html,body{overscroll-behavior:none;touch-action:pan-x pan-y;-webkit-text-size-ad
 body[data-mode="play"] .positionFeedback{display:none!important}
 body[data-mode="play"] main{--tools-reserve:236px}
 @media(max-height:700px){body[data-mode="play"] main{--tools-reserve:196px}}
-.movesHead{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:none;padding:0 12px}.movesHead h3{margin:0;font-size:14px}
+.movesHead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:2px 8px;flex:none;padding:0 12px}.movesHead h3{margin:0;font-size:14px}
 #turnHeading{font-size:15px;color:#ead295;white-space:nowrap}#turnHeading.alert{color:#ff8a7a}
 .moveTable td{padding:6px 5px}
 .actionDock>.dockBtn{color:#d7d3c8;font-size:13px;font-weight:800;line-height:1.1}
@@ -90,3 +90,4 @@ body[data-mode="play"] main{--tools-reserve:236px}
 /* Bottom bar: same background and top border as the lesson page's bar. */
 .actionDock{background:#2b2924!important;border-top:1px solid #3f3629!important;margin-left:0;margin-right:0}
 @media(max-width:900px) and (orientation:portrait), (max-width:599px){.actionDock{width:100vw;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw)}}
+#countLine{flex-basis:100%;font-size:12.5px;color:#cbb994;text-align:right}#countLine.alert{color:#ffb35c;font-weight:700}
