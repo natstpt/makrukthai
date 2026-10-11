@@ -351,11 +351,14 @@
     .menuBtn{min-width:44px;min-height:48px}.quizChoice{font-size:18px;line-height:1.45}
     .menuEditorLink{margin-top:24px;display:flex;align-items:center;gap:10px;min-height:52px;text-decoration:none;padding:12px 16px;font-size:17px;border-color:#c29931;color:#ead295}.menuEditorLink span{font-size:14px;margin-left:auto}@media(max-width:439px){.menuEditorLink span{display:none}}.menuTools{display:grid;gap:10px}.quickHelp{display:flex;gap:10px;flex-wrap:wrap}
     .menuTools button,.menuTools a{min-height:44px;font-size:16px}
+    .aiChoice{margin-top:8px;padding:10px 12px;border:1px solid #524a3f;border-radius:12px;background:#2d2922}.aiChoice p{margin:0 0 8px;font-size:14px;color:#dcc6a4}.aiChoice>div{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .aiSide{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 6px;border:1px solid #6a5a3e;border-radius:12px;background:#3a3226;color:#f2ebd7;font-weight:800;text-decoration:none}.aiSide small{font-weight:400;font-size:12px;color:#cbb994}.aiSide:hover{border-color:#c29931}
+    .sideDot{width:18px;height:18px;border-radius:50%;background:#f4ecd8;border:2px solid #8b7a5a}.aiSide.black .sideDot{background:#d8342c;border-color:#7d1712}
     .menuTools{margin:0}.settingsModal{width:min(520px,100%)}.pathModal.settingsModal .modalBody{padding-bottom:16px}.menuTools .boardToolsDetails:not([open]){display:none}
     @media(min-width:700px){.settingsGear{top:14px;right:18px}}
     .settingsGear{position:fixed;top:10px;right:12px;z-index:90;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:transparent;color:#9a9286;cursor:pointer}
     .settingsGear svg{width:30px;height:30px}.settingsGear:hover,.settingsGear:focus-visible{color:#ead295;background:rgba(255,255,255,.06)}
-    .menuIconBar{display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:6px}
+    .menuIconBar{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px}
     .menuIcon{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:64px;padding:8px 4px;border:1px solid #524a3f;border-radius:12px;background:#2d2922;color:#ead295;font:inherit;font-size:12px;line-height:1.1;white-space:nowrap;text-decoration:none;cursor:pointer}
     .menuIcon svg{width:24px;height:24px}.menuIcon:hover,.menuIcon:focus-visible{border-color:#c29931;background:#3a3226}
     .menuIcon[aria-pressed="false"]{color:#8d8170}.menuIcon[aria-pressed="false"] svg{opacity:.55}.menuIcon[aria-expanded="true"]{border-color:#c29931;background:#3a3226}
@@ -755,6 +758,7 @@
     <div class="modalBody">
       <section class="menuTools" id="menuTools" aria-label="เครื่องมือและการตั้งค่า">
         <nav class="menuIconBar" id="menuIconBar" aria-label="เครื่องมือ"></nav>
+        <div class="aiChoice" id="aiChoice" hidden><p>เลือกฝ่ายที่จะเล่นกับ AI</p><div><a class="aiSide white" href="editor.html?play=ai&amp;side=white"><span class="sideDot"></span>ฝ่ายขาว<small>เดินก่อน</small></a><a class="aiSide black" href="editor.html?play=ai&amp;side=black"><span class="sideDot"></span>ฝ่ายแดง<small>AI เดินก่อน</small></a></div></div>
         <div id="boardSettings"></div>
         <div id="menuHidden" hidden></div>
       </section>
@@ -840,6 +844,8 @@
   Array.from(document.querySelector('.topMenuPanel').children).forEach(function(el){menuHidden.appendChild(el);});
   (function(){
     var ICONS={
+      two:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0113 0"/><circle cx="17" cy="9" r="3"/><path d="M15.8 14.2A5.5 5.5 0 0121.5 20"/>',
+      ai:'<rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 8V5M9.5 13v.5M14.5 13v.5M9.5 16.5h5"/><circle cx="12" cy="3.6" r="1.2"/>',
       editor:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>',
       music:'<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>',
       effects:'<path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 9a4 4 0 010 6M19 6.5a7.5 7.5 0 010 11"/>',
@@ -851,6 +857,8 @@
       credits:'<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>'
     };
     var items=[
+      {icon:'two',label:'เล่น 2 คน',title:'เล่น 2 คนในเครื่องเดียวกัน · เริ่มจากตำแหน่งเริ่มเกม',href:'editor.html?play=2'},
+      {icon:'ai',label:'เล่นกับ AI',title:'เล่นกับ AI · เลือกฝ่ายขาวหรือฝ่ายแดง',aiChoice:true},
       {icon:'editor',label:'ตั้งหมาก',title:'ตั้งหมากเพื่อสอน · วางหมากและทดลองเดิน',href:'editor.html'},
       {icon:'music',label:'เพลง',title:'เปิดหรือปิดเพลงคลอ',target:'musicBtn',toggle:true},
       {icon:'effects',label:'เสียง',title:'เปิดหรือปิดเสียงเอฟเฟกต์',target:'effectsBtn',toggle:true},
@@ -861,7 +869,7 @@
       {icon:'author',label:'ผู้จัดทำ',title:'ผู้จัดทำ',target:'authorBtn',close:true},
       {icon:'credits',label:'เครดิต',title:'เครดิตและแหล่งที่มา',target:'creditsBtn',close:true}
     ];
-    var bar=document.getElementById('menuIconBar'),boardDetails=document.querySelector('#boardSettings .boardToolsDetails');
+    var bar=document.getElementById('menuIconBar'),boardDetails=document.querySelector('#boardSettings .boardToolsDetails'),aiChoice=document.getElementById('aiChoice');
     items.forEach(function(item){
       var el=document.createElement(item.href?'a':'button');
       el.className='menuIcon';el.title=item.title;el.setAttribute('aria-label',item.title);
@@ -871,6 +879,10 @@
         var original=document.getElementById(item.target);
         el.addEventListener('click',function(){if(item.close)closeOverlay('settingsOverlay');original.click();});
         if(item.toggle){var sync=function(){el.setAttribute('aria-pressed',original.getAttribute('aria-pressed')||'false');};sync();new MutationObserver(sync).observe(original,{attributes:true,attributeFilter:['aria-pressed']});}
+      }
+      if(item.aiChoice){
+        el.setAttribute('aria-expanded','false');el.setAttribute('aria-controls','aiChoice');
+        el.addEventListener('click',function(){aiChoice.hidden=!aiChoice.hidden;el.setAttribute('aria-expanded',String(!aiChoice.hidden));});
       }
       if(item.board){
         el.setAttribute('aria-expanded','false');
