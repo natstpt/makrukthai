@@ -73,3 +73,17 @@ main{--tools-reserve:184px}
 /* No page zoom or scroll on phones; dialogs still scroll inside themselves. */
 html,body{overscroll-behavior:none;touch-action:pan-x pan-y;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 @media(max-width:400px){.actionDock>.dockBtn{white-space:normal;line-height:1.15;text-align:center;font-size:11px}}
+/* Play mode: no help text under the board, a taller move record (3–4 moves), and icon buttons like the lesson page. */
+body[data-mode="play"] .positionFeedback{display:none!important}
+body[data-mode="play"] main{--tools-reserve:236px}
+@media(max-height:700px){body[data-mode="play"] main{--tools-reserve:196px}}
+.movesHead{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:none;padding:0 12px}.movesHead h3{margin:0;font-size:14px}
+#turnHeading{font-size:15px;color:#ead295;white-space:nowrap}#turnHeading.alert{color:#ff8a7a}
+.moveTable td{padding:6px 5px}
+.actionDock>.dockBtn{color:#d7d3c8;font-size:13px;font-weight:800;line-height:1.1}
+.actionDock>.dockBtn svg.dockIcon{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.actionDock>.dockBtn span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.actionDock>.dockBtn:disabled{color:#6f6a60;opacity:1}
+.actionDock>.dockPrimary{background:#2f9e55;color:#fff;box-shadow:0 3px 0 #1d6b38}.actionDock>.dockPrimary:hover{background:#38b062}
+.actionDock>#edit.dockBtn{background:#5f4d20;color:#ffebba}
+@media(max-width:400px){.actionDock>.dockBtn{font-size:11.5px}.actionDock>.dockBtn svg.dockIcon{width:26px;height:26px}}
