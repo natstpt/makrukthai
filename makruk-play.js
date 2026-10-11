@@ -83,12 +83,40 @@
     return Math.max(0, VALUES[victim.piece] - exchange(after, square, opponent(side), depth + 1));
   }
 
-  // Small positional terms: pieces near the centre, pawns and khon moving forward, the king kept safe.
+  // A strong, common opening shape (ทรงหมาก). White: เม็ด จ1-ฉ2, เบี้ย จ3-จ4, เม็ด ฉ2-จ3, โคน ฉ1-ฉ2, โคน ค1-ค2,
+  // ม้า ข1-ง2. Red mirrors it: เม็ด ง8-ค7, เบี้ย ง6-ง5, เม็ด ค7-ง6, โคน ค8-ค7, โคน ฉ8-ฉ7, ม้า ช8-จ7.
+  // Each step is [piece, from, to]; a step is done once that piece stands on its square.
+  var OPENING = {
+    white: [['met', 'e1', 'f2'], ['pawn', 'e3', 'e4'], ['met', 'f2', 'e3'], ['khon', 'f1', 'f2'], ['khon', 'c1', 'c2'], ['knight', 'b1', 'd2']],
+    black: [['met', 'd8', 'c7'], ['pawn', 'd6', 'd5'], ['met', 'c7', 'd6'], ['khon', 'c8', 'c7'], ['khon', 'f8', 'f7'], ['knight', 'g8', 'e7']]
+  };
+  function square(name) { return { r: 8 - Number(name[1]), c: 'abcdefgh'.indexOf(name[0]) }; }
+  // The next opening step for `side` that can be played now, or null once the shape is built or broken.
+  function openingMove(pieces, side) {
+    var steps = OPENING[side], legal = R.legalMoves(pieces, side);
+    for (var i = 0; i < steps.length; i++) {
+      var piece = steps[i][0], from = square(steps[i][1]);
+      // Step done: the piece stands on its square. The met's first stop (ฉ2 / ค7) also counts once it reached จ3 / ง6.
+      var targets = i === 0 ? [steps[0][2], steps[2][2]] : [steps[i][2]];
+      if (pieces.some(function (p) { return p.side === side && p.piece === piece && targets.some(function (t) { return same(p.at, square(t)); }); })) continue;
+      var moving = pieces.find(function (p) { return same(p.at, from); });
+      if (!moving || moving.side !== side || moving.piece !== piece) return null; // the shape was broken: play normally
+      var to = square(steps[i][2]);
+      return legal.find(function (m) { return same(m.from, from) && same(m.to, to); }) || null;
+    }
+    return null;
+  }
+
+  // Positional terms: pieces toward the centre (ง4 จ4 ง5 จ5 most of all), pawns and khon moving forward,
+  // the king kept at home.
+  var CENTRE = ['d4', 'e4', 'd5', 'e5'].map(square);
   function positional(moving, from, to, side) {
     var centre = function (at) { return 3.5 - Math.max(Math.abs(at.r - 3.5), Math.abs(at.c - 3.5)); };
+    var inCentre = function (at) { return CENTRE.some(function (c) { return same(c, at); }); };
     var forward = side === 'white' ? from.r - to.r : to.r - from.r;
     var score = 0;
-    if (moving.piece === 'knight' || moving.piece === 'met' || moving.piece === 'khon') score += (centre(to) - centre(from)) * 0.12;
+    if (moving.piece === 'knight' || moving.piece === 'met' || moving.piece === 'khon') score += (centre(to) - centre(from)) * 0.15;
+    if (moving.piece !== 'king' && moving.piece !== 'rook') score += (inCentre(to) ? 0.3 : 0) - (inCentre(from) ? 0.3 : 0);
     if (moving.piece === 'pawn' || moving.piece === 'khon') score += forward * 0.08;
     if (moving.piece === 'king' && to.r > 1 && to.r < 6) score -= 0.15;
     return score;
@@ -102,7 +130,7 @@
     var mine = pieces.filter(function (p) { return p.side === side; }).reduce(function (s, p) { return s + VALUES[p.piece]; }, 0);
     var theirs = pieces.filter(function (p) { return p.side === enemy; }).reduce(function (s, p) { return s + VALUES[p.piece]; }, 0);
     var ahead = mine - theirs;
-    var best = null, bestScore = -Infinity;
+    var scored = [];
     R.legalMoves(pieces, side).forEach(function (move) {
       var moving = pieces.find(function (p) { return same(p.at, move.from); });
       var taken = pieces.find(function (p) { return same(p.at, move.to); });
@@ -135,11 +163,30 @@
           score -= edge * 0.4 + gap * 0.15 + R.legalMoves(after, enemy).length * 0.1;
         }
       }
-      score += random() * 0.35;
-      if (score > bestScore) { bestScore = score; best = move; }
+      scored.push({ move: move, score: score, capture: !!taken });
     });
+    if (!scored.length) return null;
+    var top = Math.max.apply(null, scored.map(function (x) { return x.score; }));
+    // Opening: build the shape while nothing is being exchanged and the king is not attacked.
+    var book = options.opening === false ? null : openingMove(pieces, side);
+    if (book && !R.inCheck(pieces, side) && !underAttack(pieces, side) && !scored.some(function (x) { return x.capture && x.score > 0.5; })) {
+      var entry = scored.find(function (x) { return same(x.move.from, book.from) && same(x.move.to, book.to); });
+      if (entry && entry.score >= top - 0.6) return book;
+    }
+    var best = null, bestScore = -Infinity;
+    scored.forEach(function (x) { var s = x.score + random() * 0.35; if (s > bestScore) { bestScore = s; best = x.move; } });
     return best;
   }
+  // Can the opponent win material right now (a capture whose exchange pays)?
+  function underAttack(pieces, side) {
+    var enemy = opponent(side), seen = [];
+    return R.legalMoves(pieces, enemy).some(function (m) {
+      var target = pieces.find(function (p) { return same(p.at, m.to) && p.side === side; });
+      if (!target || seen.some(function (t) { return same(t, m.to); })) return false;
+      seen.push(m.to);
+      return exchange(pieces, m.to, enemy, 0) > 0;
+    });
+  }
 
-  return { VALUES: VALUES, ceilingFor: ceilingFor, nextCount: nextCount, countText: countText, exchange: exchange, chooseMove: chooseMove };
+  return { VALUES: VALUES, OPENING: OPENING, openingMove: openingMove, ceilingFor: ceilingFor, nextCount: nextCount, countText: countText, exchange: exchange, chooseMove: chooseMove };
 });
