@@ -1363,6 +1363,7 @@
       }
     }
     if(l.type==='quiz'&&state.phase==='active')renderQuiz();
+    if(l.puzzle&&task&&task.lead&&state.phase==='active')playLead(task);
     updateGameUI();
     renderBoard();updatePracticeUI();
   }
@@ -2022,6 +2023,25 @@
     if(!task.count)return false;
     if(task.count.kind==='board')return !state.pieceCount&&task.count.start+task.moves-2>=64;
     return task.moves===task.count.ceiling-task.count.start+2;
+  }
+  // Counting puzzles that start mid-count: show red's last move first and the number it says, then white moves.
+  function playLead(task){
+    var from=puzzleSquare(task.lead,0),to=puzzleSquare(task.lead,2);
+    var mover=state.gamePieces.find(function(x){return same(x.at,to);});
+    if(!mover)return;
+    state.gamePieces=state.gamePieces.map(function(x){return x===mover?Object.assign({},x,{at:{r:from.r,c:from.c}}):x;});
+    state.replyPending=true;state.puzzleSay='ดูฝ่ายแดงเดินก่อน แล้วฟังว่าแดงนับถึงเท่าไร';
+    gameReplyTimer=setTimeout(function(){
+      gameReplyTimer=null;state.replyPending=false;
+      state.gamePieces=Rules.applyMove(state.gamePieces,from,to);
+      queueMoveFeedback(from,to,mover.piece,'black',state.gamePieces);
+      state.lastFrom=from;state.lastTo=to;
+      var said=task.count.start-1;
+      state.puzzleSay=(mover.piece==='king'?'ขุนแดง':pieceName[mover.piece]+'แดง')+' '+squareLabel(from)+' → '+squareLabel(to)+' · แดงนับ '+said+
+        (said>=task.count.ceiling?' ครบแล้ว · ขาวต้องจนตานี้':' · ถึงตาขาว');
+      feedbackEl.className='feedback';feedbackEl.textContent=state.puzzleSay;boardCaption.textContent='ถึงตาฝ่ายขาว · '+state.puzzleSay;
+      renderBoard();updatePracticeUI();
+    },presentation.replyDelay()+400);
   }
   function puzzleKey(from,to){return 'abcdefgh'[from.c]+(8-from.r)+'abcdefgh'[to.c]+(8-to.r);}
   // Short puzzles: only moves that still mate in time are accepted; the red king answers from the solution tree.
