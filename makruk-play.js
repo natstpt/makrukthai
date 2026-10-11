@@ -26,11 +26,14 @@
     return caps.length ? Math.min.apply(null, caps) : 64;
   }
 
-  // The count after `mover` has moved and `pieces` is the new position. null = not counting (unpromoted pawns left).
-  // Board count (ศักดิ์กระดาน): the side to move when counting begins says 1 on its next move, then one more each
-  // move it makes; when it says 64 the game is drawn. Piece count (ศักดิ์หมาก): the lone king says the number of
-  // pieces + 1 on its first move, then one more each move; once it reaches the ceiling, the chasing side has one
-  // more move to mate, otherwise the game is drawn. A capture never restarts a piece count.
+  // The count after `mover` has moved and `pieces` is the new position. null = not counting.
+  // Only the weaker side counts, one more each time it moves (both sides have moved once).
+  // Board count (ศักดิ์กระดาน): no unpromoted pawns and both sides still have pieces; it starts only when the weaker
+  // side asks for it (requestBoardCount), counting 1 on its next move up to 64.
+  // Piece count (ศักดิ์หมาก): starts by itself when one side has only its king; the lone king says the number of
+  // pieces + 1 on its first move, up to the ceiling of the chasing side's pieces. A capture never restarts it.
+  // In both, once the counting side has said the last number (64 or the ceiling) the other side has one more move;
+  // if it does not mate, the counting side would say one more (65, or ceiling + 1) and the game is drawn.
   function nextCount(current, pieces, mover) {
     if (pieces.some(function (p) { return p.piece === 'pawn'; })) return null;
     var white = pieces.filter(function (p) { return p.side === 'white'; }).length;
@@ -38,32 +41,33 @@
     if (white === 1 && black === 1) return current; // bare kings: MakrukRules reports the draw
     var c = current ? Object.assign({}, current) : null;
     var lone = white === 1 ? 'white' : black === 1 ? 'black' : null;
-    if (lone) {
-      if (!c || c.kind !== 'piece') {
-        c = { kind: 'piece', counter: lone, value: null, start: pieces.length + 1, ceiling: ceilingFor(pieces, opponent(lone)), extra: false, draw: false };
-        return c;
-      }
-      if (mover === c.counter) return advance(c);
-      if (c.extra) c.draw = true; // the chasing side used its last move
-      return c;
-    }
-    if (!c) return { kind: 'board', counter: opponent(mover), value: null, ceiling: 64, draw: false };
-    if (mover === c.counter) {
-      c.value = c.value === null ? 1 : c.value + 1;
-      if (c.value >= 64) c.draw = true;
-    }
+    if (lone && (!c || c.kind !== 'piece'))
+      return { kind: 'piece', counter: lone, value: null, start: pieces.length + 1, ceiling: ceilingFor(pieces, opponent(lone)), extra: false, draw: false };
+    if (!c) return null; // board count: only on request
+    if (mover === c.counter) return advance(c);
+    if (c.extra) c.draw = true; // the other side used its last move without mate
     return c;
   }
+  // Can a board count be asked for now (no pawns left, both sides still have more than a king, not counting yet)?
+  function canRequestBoardCount(pieces, current) {
+    if (current || pieces.some(function (p) { return p.piece === 'pawn'; })) return false;
+    var white = pieces.filter(function (p) { return p.side === 'white'; }).length;
+    return white > 1 && pieces.length - white > 1;
+  }
+  // `side` (the weaker side) asks for the board count; it says 1 on its next move.
+  function requestBoardCount(side) { return { kind: 'board', counter: side, value: null, start: 1, ceiling: 64, extra: false, draw: false }; }
   function advance(c) {
     c.value = c.value === null ? c.start : c.value + 1;
     if (c.value >= c.ceiling) c.extra = true;
     return c;
   }
-  // Short text for the turn line, e.g. "นับศักดิ์หมาก 7/16".
-  function countText(c) {
+  function material(pieces, side) { return pieces.filter(function (p) { return p.side === side; }).reduce(function (s, p) { return s + VALUES[p.piece]; }, 0); }
+  // Short text for the turn line, e.g. "แดงนับศักดิ์หมาก 7/16".
+  function countText(c, sideName) {
     if (!c) return '';
-    var name = c.kind === 'board' ? 'นับศักดิ์กระดาน' : 'นับศักดิ์หมาก';
-    return c.value === null ? (c.kind === 'board' ? 'เริ่มนับศักดิ์กระดาน' : 'เริ่มนับศักดิ์หมาก ถึง ' + c.ceiling) : name + ' ' + c.value + '/' + c.ceiling;
+    var who = sideName ? sideName(c.counter) : '', name = c.kind === 'board' ? 'นับศักดิ์กระดาน' : 'นับศักดิ์หมาก';
+    if (c.draw) return who + 'นับ ' + (c.ceiling + 1) + ' เกิน ' + c.ceiling + ' · เสมอ';
+    return c.value === null ? who + 'เริ่ม' + name + (c.kind === 'piece' ? ' ' + c.start + ' ถึง ' + c.ceiling : ' 1 ถึง 64') : who + name + ' ' + c.value + '/' + c.ceiling;
   }
 
   // Static exchange on `square`: what `side` can win there by capturing first with its cheapest piece,
@@ -199,5 +203,5 @@
     });
   }
 
-  return { VALUES: VALUES, OPENING: OPENING, openingMove: openingMove, openingMoves: openingMoves, ceilingFor: ceilingFor, nextCount: nextCount, countText: countText, exchange: exchange, chooseMove: chooseMove };
+  return { canRequestBoardCount: canRequestBoardCount, requestBoardCount: requestBoardCount, material: material, VALUES: VALUES, OPENING: OPENING, openingMove: openingMove, openingMoves: openingMoves, ceilingFor: ceilingFor, nextCount: nextCount, countText: countText, exchange: exchange, chooseMove: chooseMove };
 });

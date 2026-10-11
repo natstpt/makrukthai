@@ -23,10 +23,14 @@
   function startCount(){count=P.nextCount(null,state.pieces,opponent(state.turn));}
   function playStatus(){var s=R.gameStatus(state.pieces,state.turn);return s.state==='playing'&&count&&count.draw?{state:'countdraw',check:s.check}:s;}
   var aiTimer=0;
+  $('requestCount').addEventListener('click',function(){
+    if(!P.canRequestBoardCount(state.pieces,count))return;
+    remember();count=P.requestBoardCount(state.turn);render();
+  });
   function scheduleAi(){
     clearTimeout(aiTimer);
     if(!aiTurn()||playStatus().state!=='playing')return;
-    aiTimer=setTimeout(function(){aiTimer=0;if(!aiTurn())return;var move=P.chooseMove(state.pieces,state.turn,{count:count});if(move)playMove(move.from,move.to);},700);
+    aiTimer=setTimeout(function(){aiTimer=0;if(!aiTurn())return;if(P.canRequestBoardCount(state.pieces,count)&&P.material(state.pieces,state.turn)<P.material(state.pieces,opponent(state.turn)))count=P.requestBoardCount(state.turn);var move=P.chooseMove(state.pieces,state.turn,{count:count});if(move)playMove(move.from,move.to);},700);
   }
   function label(at){return files[at.c]+(8-at.r);}
   function asset(p){return 'assets/pieces/makruk/ada/'+window.MakrukPieceColors.prefix(p.side)+icons[p.piece]+'.svg';}
@@ -96,7 +100,10 @@
     }else{
       // Play mode shows no help text under the board: the turn line beside the move record says whose move it is.
       $('turnHeading').textContent=status.state==='checkmate'?'รุกจน · '+sideName(status.winner)+'ชนะ':status.state==='playing'?(aiTurn()?'AI ('+sideName(state.turn)+') กำลังคิด':sideName(state.turn)+'เดิน')+(status.check?' · รุก!':''):status.state==='stalemate'?'อับ · เสมอ':status.state==='countdraw'?'นับครบ · เสมอ':'เสมอ';
-      $('countLine').textContent=P.countText(count)+(count&&count.extra&&!count.draw&&status.state==='playing'?' · ฝ่ายไล่เหลือตาสุดท้าย':'');$('countLine').hidden=!count;$('countLine').classList.toggle('alert',!!count&&(count.extra||count.value>=count.ceiling-3));
+      $('countLine').textContent=P.countText(count,sideName)+(count&&count.extra&&!count.draw&&status.state==='playing'?' · ฝ่าย'+sideName(opponent(count.counter))+'เหลือตาสุดท้าย':'');$('countLine').hidden=!count;$('countLine').classList.toggle('alert',!!count&&(count.extra||count.value>=count.ceiling-3));
+      // Board count: only the weaker side (or an even side) may ask for it, on its own turn.
+      var mayAsk=status.state==='playing'&&!aiTurn()&&P.canRequestBoardCount(state.pieces,count)&&P.material(state.pieces,state.turn)<=P.material(state.pieces,opponent(state.turn));
+      $('requestCount').hidden=!mayAsk;$('requestCount').textContent='ฝ่าย'+sideName(state.turn)+'ขอนับศักดิ์กระดาน';
       $('turnHeading').classList.toggle('alert',status.state!=='playing'||!!status.check);
       $('instruction').textContent=status.state==='playing'?(status.check?'รุก! ต้องเดินให้ขุนพ้นจากการรุก':'ตาฝ่าย'+sideName(state.turn)+' ลากหรือแตะหมากไปช่องที่มีจุด'):'จบตำแหน่งนี้แล้ว ย้อนกลับเพื่อทดลองทางอื่นได้';
       message(status.state==='checkmate'?'รุกจน — ฝ่าย'+sideName(status.winner)+'ชนะ':status.state==='stalemate'?'เสมอเพราะอับ — ไม่มีตาเดินและขุนไม่ถูกรุก':status.state==='draw'?'เสมอ — เหลือขุนทั้งสองฝ่าย':status.state==='countdraw'?'เสมอ — นับครบตามกติกาแล้วยังไม่รุกจน':status.check?'ขุน'+sideName(state.turn)+'กำลังถูกรุก':'');
