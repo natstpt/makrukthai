@@ -40,7 +40,7 @@ return t;}
 // Beginners answer from two choices: the correct one and the first distractor, alternating which comes first.
 function twoChoices(t,flip){if(!t.choices||t.choices.length<=2)return t;t=clone(t);const right=t.choices.find(c=>c.correct),wrong=t.choices.find(c=>!c.correct);t.choices=flip%2?[wrong,right]:[right,wrong];return t;}
 const bank={};
-for(const l of lessons){if(l.type==='finish'||l.id==='game')continue;const count=l.requiredGames||l.requiredCorrect||3,all=[],seen=new Set();
+for(const l of lessons){if(l.type==='finish'||l.id==='game'||l.puzzle)continue;const count=l.requiredGames||l.requiredCorrect||3,all=[],seen=new Set();
 const add=t=>{const k=signature(t,l);if(seen.has(k))return false;seen.add(k);all.push(t);return true;};
 if(l.coordinateLesson){for(let i=0;i<25;i++){let target={r:Math.floor((i*19+5)%64/8),c:(i*19+5)%8},answer=label(target);let choices=[{text:answer,correct:true},{text:label(i%2?{...target,r:(target.r+1)%8}:{...target,c:(target.c+1)%8}),correct:false}];choices.push(...choices.splice(0,Math.floor(i/2)%2));all.push({target,pieces:[],mission:'ช่องที่มีกรอบชื่ออะไร?',choices,hint:'อ่านตัวอักษรด้านล่างก่อน แล้วตามด้วยเลขด้านข้าง',explanation:'ถูกแล้ว! ช่องนี้ชื่อ '+answer});}}
 else if(l.routePuzzle){for(let i=0;i<count*5;i++){const start={r:Math.floor((i*13+27)%64/8),c:(i*13+27)%8},distance=1+i%count,opts=Learning.routeTargets(Rules,l.piece,start,distance),goal=opts[(i*7)%opts.length].at;all.push({piece:l.piece,start,goal,routeDistance:distance,mission:'เดิน'+names[l.piece]+'ไปเก็บดาวที่ '+label(goal),hint:l.rule});}}

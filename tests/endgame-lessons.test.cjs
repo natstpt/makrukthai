@@ -4,7 +4,8 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
 const Rules=require('../makruk-rules.js');
 const root=path.join(__dirname,'..'),ctx={window:{}};vm.createContext(ctx);
 for(const file of ['endgame-lessons.js','practice-sets.js'])vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),ctx);
-const lessons=ctx.window.buildEndgameLessons(),sets=ctx.window.MakrukPracticeSets;
+// Short-puzzle lessons (red replies) are verified by tests/endgame-puzzles.test.cjs.
+const lessons=ctx.window.buildEndgameLessons().filter(l=>!l.puzzle),sets=ctx.window.MakrukPracticeSets;
 const mates=ps=>Rules.legalMoves(ps,'white').filter(m=>Rules.gameStatus(Rules.applyMove(ps,m.from,m.to),'black').state==='checkmate');
 let boards=0,tasks=0;
 assert.equal(lessons.length,4);
