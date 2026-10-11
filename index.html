@@ -553,6 +553,18 @@
     .teacherLockBtn:focus-visible{outline:3px solid #f2c14e;outline-offset:2px}
     .teacherLockBtn .lockIcon{font-size:15px}
     .pathModal .modalBody{padding-bottom:64px}
+
+    /* Wrong move: the piece stays where it was played, both squares turn red, and "ลองใหม่" puts it back. */
+    .square.wrongFrom,.square.wrongTo{background:#f4ab98!important}
+    .wrongBadge{position:absolute;top:4%;right:4%;width:34%;height:34%;display:grid;place-items:center;border-radius:50%;background:#e8473b;color:#fff;font-size:min(4.2vw,22px);font-weight:900;border:2px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.35);z-index:8;pointer-events:none}
+    #speech.sayError{background:#fde7e5;color:#8a2420}#speech.sayError:before{border-right-color:#fde7e5}
+    .navRetryBtn{grid-column:3 / span 2;border:0;border-radius:14px;background:linear-gradient(180deg,#f0493b,#d22f22);color:#fff;font:inherit;font-size:22px;font-weight:950;box-shadow:inset 0 -4px rgba(0,0,0,.18),0 6px 14px rgba(0,0,0,.3);cursor:pointer;margin:4px 0}
+    .navRetryBtn:focus-visible{outline:3px solid #f2c14e;outline-offset:2px}
+    .app.wrongMoveShown .feedback{display:none!important}
+    .lessonFoot.wrongState #navBackBtn,.lessonFoot.wrongState #navNextBtn{display:none}
+    .lessonFoot.doneState #navBackBtn{display:none}
+    .lessonFoot.doneState #navNextBtn{grid-column:3 / span 2;flex-direction:row;gap:6px;margin:4px 0;border-radius:14px!important;background:linear-gradient(180deg,#6dbb4f,#4e9a37)!important;color:#fff;font-size:21px;box-shadow:inset 0 -4px rgba(0,0,0,.18),0 6px 14px rgba(0,0,0,.3)}
+    .lessonFoot.doneState #navNextBtn svg{order:2;width:24px;height:24px}
   </style>
 </head>
 <body>
@@ -699,6 +711,7 @@
         <button class="navBtn" id="navHintBtn" type="button" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="bulb" d="M9 17h6M10 20.5h4M12 6.5a5 5 0 0 0-3 9c.6.5 1 1 1 1.5h4c0-.5.4-1 1-1.5a5 5 0 0 0-3-9z"/><path class="rays" d="M12 2v1.2M4.6 5l.9.9M19.4 5l-.9.9M2.5 11.5h1.3M20.2 11.5h1.3"/></svg><span>คำใบ้</span></button>
         <button class="navBtn" id="navBackBtn" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>ย้อนกลับ</span></button>
         <button class="navBtn" id="navNextBtn" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg><span id="navNextLabel">ถัดไป</span></button>
+        <button class="navRetryBtn" id="navRetryBtn" type="button" hidden>ลองใหม่</button>
         <button class="mainBtn" id="mainBtn" type="button">เริ่มฝึก</button>
       </div>
     </aside>
@@ -1211,7 +1224,7 @@
       do{start={r:Math.floor(Math.random()*8),c:Math.floor(Math.random()*8)};}while(state.lastPracticeStart&&same(start,state.lastPracticeStart));
     }
     if(l.type==='game')state.gamePieces=Rules.clonePieces(task?task.pieces:fullSetup());
-    state.creditBase=state.correctMoves;
+    state.creditBase=state.correctMoves;state.wrongMove=null;speechEl.classList.remove('sayError');
     state.puzzleNode=l.puzzle&&task?puzzleNodeAt(task.tree,0):null;state.puzzleHintOn=false;state.puzzleSay='';state.puzzleLeft=l.puzzle&&task?task.moves:0;state.puzzleCount=l.puzzle&&task&&task.count?task.count.start:0;
     state.current=start?{r:start.r,c:start.c}:null;
     if(start&&l.type==='move')state.lastPracticeStart={r:start.r,c:start.c};
@@ -1322,7 +1335,7 @@
   }
 
   function beginPointer(e){
-    if(state.replyPending)return;
+    if(state.replyPending||state.wrongMove)return;
     var at=squareFromPointer(e);if(!at||state.gesture)return;
     if(e.button===2){
       e.preventDefault();state.arrowStart=at;
@@ -1403,6 +1416,7 @@
   }
 
   function boardPieces(){
+    if(state.wrongMove){var wrong=state.wrongMove;state.wrongMove=null;var shown=boardPieces();state.wrongMove=wrong;return Rules.applyMove(shown,wrong.from,wrong.to);}
     var l=lessons[state.lesson];
     if(l.id==='review'&&(state.phase==='intro'||state.phase==='demo'))return [{piece:activePiece(),side:'white',at:pos('d',4)}];
     var pieces=basePieces(l);
@@ -1440,11 +1454,11 @@
     var coordinateTask=l.coordinateLesson?challenge():null;
     var exampleTask=l.exampleLesson?challenge():null;
     if(l.teachingBoards&&(state.phase==='intro'||state.phase==='demo'))exampleTask=l.teachingBoards[state.teachingIndex]||null;
-    var canMove=state.phase==='active'&&state.tool==='move'&&isBoardPractice()&&!state.completed&&!state.roundDone&&!state.pendingNotation&&!state.replyPending;
+    var canMove=state.phase==='active'&&state.tool==='move'&&isBoardPractice()&&!state.completed&&!state.roundDone&&!state.pendingNotation&&!state.replyPending&&!state.wrongMove;
     var destinations=canMove&&state.selected||state.phase==='demo'?moveDestinations():[];
     var answers=l.routePuzzle&&state.hint&&state.starTarget?routeHintSteps():goalDestinations();
     // Puzzle lessons have no fixed star: when the learner asks, the hint star shows the best move from the solution tree.
-    var hintKey=l.puzzle&&state.puzzleHintOn&&state.phase==='active'&&!state.roundDone&&!state.replyPending&&state.puzzleNode?Object.keys(state.puzzleNode)[0]:null;
+    var hintKey=l.puzzle&&state.puzzleHintOn&&state.phase==='active'&&!state.roundDone&&!state.replyPending&&!state.wrongMove&&state.puzzleNode?Object.keys(state.puzzleNode)[0]:null;
     var puzzleHint=hintKey?{from:puzzleSquare(hintKey,0),to:puzzleSquare(hintKey,2)}:null;
     boardEl.innerHTML='';
     for(var r=0;r<8;r++){
@@ -1463,6 +1477,8 @@
         }
         if((state.phase==='active'||l.teachingBoards)&&exampleTask&&exampleTask.marks&&exampleTask.marks.some(function(m){return same(m,p);}))s.classList.add('exampleMark');
         if(puzzleHint&&same(p,puzzleHint.from))s.classList.add('hintSource');
+        if(state.wrongMove&&same(p,state.wrongMove.from))s.classList.add('wrongFrom');
+        if(state.wrongMove&&same(p,state.wrongMove.to)){s.classList.add('wrongTo');s.insertAdjacentHTML('beforeend','<span class="wrongBadge" aria-hidden="true">✕</span>');}
         if(state.phase==='active'&&state.showStarHint&&(state.starTarget||puzzleHint&&puzzleHint.to)&&!state.roundDone&&!state.pendingNotation&&same(p,state.starTarget||puzzleHint.to))s.innerHTML+='<span class="goalStar" aria-hidden="true">'+GOAL_STAR+'</span>';
         var pc=pieces.find(function(x){return same(x.at,p);});
         var source=canMove&&state.current&&same(p,state.current);
@@ -1866,8 +1882,7 @@
     var from={r:state.current.r,c:state.current.c},task=challenge(),child=state.puzzleNode&&state.puzzleNode[puzzleKey(from,dest)];
     if(!child){
       var after=Rules.gameStatus(Rules.applyMove(state.gamePieces,from,dest),theirs);
-      state.selected=false;
-      moveError(defend?(task.defend==='count'?'ตานี้ฝ่ายขาวจะจนได้ก่อนนับครบ ลองช่องอื่นนะ':'ตานี้ฝ่ายขาวจะไล่จนได้ ลองหนีไปทางมุมที่ปลอดภัย'):
+      wrongMove(from,dest,defend?(task.defend==='count'?'ตานี้ฝ่ายขาวจะจนได้ก่อนนับครบ ลองช่องอื่นนะ':'ตานี้ฝ่ายขาวจะไล่จนได้ ลองหนีไปทางมุมที่ปลอดภัย'):
         after.state==='stalemate'?'อับ! ขุนแดงไม่ถูกรุกแต่ไม่มีที่เดิน = เสมอ · ลองตาอื่นที่รุกได้':
         after.state==='checkmate'?'รุกจนได้ แต่โจทย์นี้ให้จนใน '+task.moves+' ตา ลองอีกครั้งนะ':
         state.puzzleLeft===1?'ตานี้ยังไม่รุกจน ต้องจนในตานี้เลย ลองใหม่นะ':'ตานี้ขุนแดงจะหนีได้นานเกิน '+state.puzzleLeft+' ตา ลองคิดใหม่นะ');
@@ -1914,6 +1929,7 @@
 
   function handleBoardClick(e){
     if(state.replyPending)return;
+    if(state.wrongMove){coachSay('กด “ลองใหม่” เพื่อเดินอีกครั้ง','error');return;}
     if(state.suppressClick){state.suppressClick=false;return;}
     var sq=e.target.closest('.square');if(!sq)return;
     var dest={r:+sq.dataset.r,c:+sq.dataset.c};state.focus=dest;
@@ -1946,8 +1962,8 @@
     if(l.puzzle){playPuzzleMove(dest);return;}
     if(l.type==='game'){playGameMove(dest);return;}
     var legal=goalDestinations();
-    if(!l.routePuzzle&&state.starTarget&&!same(dest,state.starTarget)){moveError('ตานี้ให้เดินไปช่องดาวที่ '+squareLabel(state.starTarget)+' ตามโจทย์นะ');return;}
-    if(!legal.some(function(x){return same(x,dest);})){moveError(l.type==='check'?'ยังไม่รุกขุน ลองอีกช่องนะ':'ยังไม่ตรงโจทย์ ลองอีกครั้งนะ');return;}
+    if(!l.routePuzzle&&state.starTarget&&!same(dest,state.starTarget)){wrongMove(state.current,dest,'ตานี้ให้เดินไปช่องดาวที่ '+squareLabel(state.starTarget)+' ตามโจทย์นะ');return;}
+    if(!legal.some(function(x){return same(x,dest);})){wrongMove(state.current,dest,l.type==='check'?'ยังไม่รุกขุน ลองอีกช่องนะ':'ยังไม่ตรงโจทย์ ลองอีกครั้งนะ');return;}
     queueMoveFeedback(state.current,dest,activePiece(),'white',Rules.applyMove(boardPieces(),state.current,dest));
     var notation=l.type==='notation'?Notation.formatMove(boardPieces(),state.current,dest):null;
     var isCap=boardPieces().some(function(x){return x.side==='black'&&same(x.at,dest);});
@@ -1991,6 +2007,21 @@
     renderBoard();updatePracticeUI();
   }
 
+  // A legal but wrong move is played on the board first, then marked wrong; "ลองใหม่" puts the piece back.
+  function wrongMove(from,to,message){
+    var moving=boardPieces().find(function(x){return same(x.at,from);});
+    state.wrongMove={from:{r:from.r,c:from.c},to:{r:to.r,c:to.c}};state.selected=false;state.focus=to;
+    if(moving)queueMoveFeedback(from,to,moving.piece,moving.side,boardPieces());
+    var text='ไม่ถูกต้อง · '+message;
+    feedbackEl.className='feedback error';feedbackEl.textContent=text;
+    speechEl.textContent=text;speechEl.classList.add('sayError');coachSay(text,'error');
+    presentation.playResult('failure');renderBoard();updateBoardHelp();
+  }
+  function retryWrongMove(){
+    if(!state.wrongMove)return;
+    state.wrongMove=null;speechEl.classList.remove('sayError');
+    renderBoard();updatePracticeUI();
+  }
   function moveError(message){
     feedbackEl.className='feedback error';feedbackEl.textContent=message;coachSay(message,'error');
     showToast('ลองช่องใหม่','bad','failure');renderBoard();
@@ -2182,6 +2213,8 @@
   hintBtn.addEventListener('click',showHint);
   // Bottom navigation. "ถัดไป" runs the lesson's main action (next step, next task, pass the lesson);
   // "ย้อนกลับ" goes to the previous teaching step or task; "คำใบ้" shows or hides the hint star.
+  var lessonFootEl=document.querySelector('.lessonFoot'),navRetryBtn=document.getElementById('navRetryBtn');
+  navRetryBtn.addEventListener('click',function(){retryWrongMove();syncNav();});
   var navHintBtn=document.getElementById('navHintBtn'),navBackBtn=document.getElementById('navBackBtn'),navNextBtn=document.getElementById('navNextBtn'),navNextLabel=document.getElementById('navNextLabel');
   function canGoBack(){
     if(state.replyPending||state.completed)return false;
@@ -2198,6 +2231,9 @@
     navNextBtn.setAttribute('aria-label',text);navNextBtn.title=text;
     navNextBtn.classList.toggle('go',!navNextBtn.disabled);
     navBackBtn.disabled=!canGoBack();
+    var wrong=!!state.wrongMove,done=!wrong&&state.phase==='active'&&!navNextBtn.disabled&&(state.roundDone||practiceReady());
+    lessonFootEl.classList.toggle('wrongState',wrong);appEl.classList.toggle('wrongMoveShown',wrong);lessonFootEl.classList.toggle('doneState',done);
+    navRetryBtn.hidden=!wrong;
     var hintOn=hintIsOn();
     navHintBtn.setAttribute('aria-pressed',String(hintOn));
     navHintBtn.setAttribute('aria-label',hintOn?'ซ่อนดาวคำใบ้':'แสดงดาวคำใบ้');
@@ -2218,6 +2254,7 @@
   // Star lessons share the "ดาวคำใบ้" setting (on by default). Puzzles start without a star, since it shows the answer.
   function hintIsOn(){return lessons[state.lesson].puzzle?!!state.puzzleHintOn:!!state.showStarHint;}
   navHintBtn.addEventListener('click',function(){
+    if(state.wrongMove){retryWrongMove();if(!hintIsOn()){if(lessons[state.lesson].puzzle){state.puzzleHintOn=true;renderBoard();}else{starHintToggle.checked=true;starHintToggle.dispatchEvent(new Event('change'));}}syncNav();return;}
     if(lessons[state.lesson].puzzle){state.puzzleHintOn=!state.puzzleHintOn;renderBoard();}
     else{starHintToggle.checked=!state.showStarHint;starHintToggle.dispatchEvent(new Event('change'));}
     showToast(hintIsOn()?'แสดงดาวคำใบ้':'ซ่อนดาวคำใบ้','good');syncNav();

@@ -22,7 +22,7 @@ for(const piece of ['king','rook','knight','met','khon','promoted']){
     const state={lesson:0,phase:'active',current:start,selected:true,completed:false,roundDone:false,showStarHint,starTarget:route.at,correctMoves:0,routeMoves:0};
     const context={Rules,lessons:[lesson],state,pieceName:{[piece]:piece},displayFiles:'กขคงจฉชญ',
       boardCaption:{},feedbackEl:{},queueMoveFeedback(){},showToast(){},renderBoard(){},updatePracticeUI(){},isStarPractice(){return true;},
-      moveError(){context.errors++;},errors:0};
+      moveError(){context.errors++;},wrongMove(from,to){context.errors++;context.wrong={from,to};},errors:0};
     vm.createContext(context);vm.runInContext(functions,context);
     context.attemptMove(start);assert.equal(context.errors,1);assert.equal(state.correctMoves,0);
     context.attemptMove(route.path[0]);
@@ -44,10 +44,12 @@ for(const showStarHint of [true,false]){
   const task={piece:'rook',start,enemies:[{piece:'king',side:'black',at:{r:0,c:7}}]};
   const lesson={id:'check',type:'check',piece:'rook',challenges:[task],requiredCorrect:3};
   const state={lesson:0,phase:'active',roundIndex:0,current:start,selected:true,completed:false,roundDone:false,showStarHint,starTarget:goal,correctMoves:0,routeMoves:0};
-  const context={Rules,lessons:[lesson],state,pieceName:{rook:'เรือ'},displayFiles:'กขคงจฉชญ',boardCaption:{},feedbackEl:{},queueMoveFeedback(){},showToast(){},renderBoard(){},updatePracticeUI(){},isStarPractice(){return true;},moveError(){context.errors++;},errors:0};
+  const context={Rules,lessons:[lesson],state,pieceName:{rook:'เรือ'},displayFiles:'กขคงจฉชญ',boardCaption:{},feedbackEl:{},queueMoveFeedback(){},showToast(){},renderBoard(){},updatePracticeUI(){},isStarPractice(){return true;},moveError(){context.errors++;},wrongMove(from,to){context.errors++;context.wrong={from,to};},errors:0};
   vm.createContext(context);vm.runInContext(functions,context);
   assert(Rules.inCheck(Rules.applyMove(context.boardPieces(),start,other),'black'));
   context.attemptMove(other);assert.equal(state.correctMoves,0);assert.equal(context.errors,1);assert.deepEqual(state.current,start);
+  // A legal but wrong move is shown on the board as a wrong move (the learner then presses ลองใหม่), not silently refused.
+  assert.deepEqual(JSON.parse(JSON.stringify(context.wrong)),{from:start,to:other});
   context.attemptMove(goal);assert.equal(state.correctMoves,1);assert(state.roundDone);
 }
 console.log('Check lesson: alternative check rejected, only the star scores, including with hints hidden.');
