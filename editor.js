@@ -78,7 +78,9 @@
       $('instruction').textContent=tool==='erase'?'แตะหมากบนกระดานเพื่อลบ':tool!=='move'?'แตะช่องเพื่อวาง'+names[parts[1]]+sideName(parts[0])+' · แตะซ้ำเพื่อเอาออก':selected?'แตะช่องใหม่เพื่อย้าย'+names[pieceAt(selected).piece]:'เลือกหมากด้านล่าง แล้วแตะช่องบนกระดาน';
       message('');
     }else{
-      $('turnHeading').textContent=sideName(state.turn)+'เดิน';
+      // Play mode shows no help text under the board: the turn line beside the move record says whose move it is.
+      $('turnHeading').textContent=status.state==='checkmate'?'รุกจน · '+sideName(status.winner)+'ชนะ':status.state==='playing'?sideName(state.turn)+'เดิน'+(status.check?' · รุก!':''):status.state==='stalemate'?'อับ · เสมอ':'เสมอ';
+      $('turnHeading').classList.toggle('alert',status.state!=='playing'||!!status.check);
       $('instruction').textContent=status.state==='playing'?(status.check?'รุก! ต้องเดินให้ขุนพ้นจากการรุก':'ตาฝ่าย'+sideName(state.turn)+' ลากหรือแตะหมากไปช่องที่มีจุด'):'จบตำแหน่งนี้แล้ว ย้อนกลับเพื่อทดลองทางอื่นได้';
       message(status.state==='checkmate'?'รุกจน — ฝ่าย'+sideName(status.winner)+'ชนะ':status.state==='stalemate'?'เสมอเพราะอับ — ไม่มีตาเดินและขุนไม่ถูกรุก':status.state==='draw'?'เสมอ — เหลือขุนทั้งสองฝ่าย':status.check?'ขุน'+sideName(state.turn)+'กำลังถูกรุก':'');
     }
