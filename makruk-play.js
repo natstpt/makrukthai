@@ -83,29 +83,36 @@
     return Math.max(0, VALUES[victim.piece] - exchange(after, square, opponent(side), depth + 1));
   }
 
-  // A strong, common opening shape (ทรงหมาก). White: เม็ด จ1-ฉ2, เบี้ย จ3-จ4, เม็ด ฉ2-จ3, โคน ฉ1-ฉ2, โคน ค1-ค2,
-  // ม้า ข1-ง2. Red mirrors it: เม็ด ง8-ค7, เบี้ย ง6-ง5, เม็ด ค7-ง6, โคน ค8-ค7, โคน ฉ8-ฉ7, ม้า ช8-จ7.
-  // Each step is [piece, from, to]; a step is done once that piece stands on its square.
+  // Opening shape (ทรงหมาก): take the centre with two pawns first, then bring the pieces up behind them, with the
+  // met always ending on จ3 (ง6 for red).
+  // White: บ.จ3-จ4, บ.ง3-ง4, ม.ช1-จ2, ม็.จ1-ฉ2-จ3, ค.ฉ1-ฉ2, ค.ค1-ง2-ง3, ม.ข1-ง2.
+  // Red:   บ.ง6-ง5, บ.จ6-จ5, ม.ข8-ง7, ม็.ง8-ค7-ง6, ค.ค8-ค7, ค.ฉ8-จ7-จ6, ม.ช8-จ7.
+  // Each step is [piece, from, to, final square of that piece's route]; a step is done once the piece stands on
+  // `to` or has already gone on to its final square.
   var OPENING = {
-    white: [['met', 'e1', 'f2'], ['pawn', 'e3', 'e4'], ['met', 'f2', 'e3'], ['khon', 'f1', 'f2'], ['khon', 'c1', 'c2'], ['knight', 'b1', 'd2']],
-    black: [['met', 'd8', 'c7'], ['pawn', 'd6', 'd5'], ['met', 'c7', 'd6'], ['khon', 'c8', 'c7'], ['khon', 'f8', 'f7'], ['knight', 'g8', 'e7']]
+    white: [['pawn', 'e3', 'e4'], ['pawn', 'd3', 'd4'], ['knight', 'g1', 'e2'], ['met', 'e1', 'f2', 'e3'], ['met', 'f2', 'e3'],
+      ['khon', 'f1', 'f2'], ['khon', 'c1', 'd2', 'd3'], ['khon', 'd2', 'd3'], ['knight', 'b1', 'd2']],
+    black: [['pawn', 'd6', 'd5'], ['pawn', 'e6', 'e5'], ['knight', 'b8', 'd7'], ['met', 'd8', 'c7', 'd6'], ['met', 'c7', 'd6'],
+      ['khon', 'c8', 'c7'], ['khon', 'f8', 'e7', 'e6'], ['khon', 'e7', 'e6'], ['knight', 'g8', 'e7']]
   };
   function square(name) { return { r: 8 - Number(name[1]), c: 'abcdefgh'.indexOf(name[0]) }; }
-  // The next opening step for `side` that can be played now, or null once the shape is built or broken.
-  function openingMove(pieces, side) {
-    var steps = OPENING[side], legal = R.legalMoves(pieces, side);
-    for (var i = 0; i < steps.length; i++) {
-      var piece = steps[i][0], from = square(steps[i][1]);
-      // Step done: the piece stands on its square. The met's first stop (ฉ2 / ค7) also counts once it reached จ3 / ง6.
-      var targets = i === 0 ? [steps[0][2], steps[2][2]] : [steps[i][2]];
-      if (pieces.some(function (p) { return p.side === side && p.piece === piece && targets.some(function (t) { return same(p.at, square(t)); }); })) continue;
-      var moving = pieces.find(function (p) { return same(p.at, from); });
-      if (!moving || moving.side !== side || moving.piece !== piece) return null; // the shape was broken: play normally
-      var to = square(steps[i][2]);
-      return legal.find(function (m) { return same(m.from, from) && same(m.to, to); }) || null;
-    }
-    return null;
+  // The opening moves that can be played now, in order. Steps already done or no longer possible are skipped.
+  function openingMoves(pieces, side) {
+    var legal = R.legalMoves(pieces, side), out = [];
+    OPENING[side].forEach(function (step) {
+      var piece = step[0], from = square(step[1]), to = square(step[2]);
+      var targets = [to].concat(step[3] ? [square(step[3])] : []);
+      if (pieces.some(function (p) { return p.side === side && p.piece === piece && targets.some(function (t) { return same(p.at, t); }); })) return;
+      var move = legal.find(function (m) {
+        if (!same(m.from, from) || !same(m.to, to)) return false;
+        var moving = pieces.find(function (p) { return same(p.at, from); });
+        return moving.piece === piece;
+      });
+      if (move) out.push(move);
+    });
+    return out;
   }
+  function openingMove(pieces, side) { return openingMoves(pieces, side)[0] || null; }
 
   // Positional terms: pieces toward the centre (ง4 จ4 ง5 จ5 most of all), pawns and khon moving forward,
   // the king kept at home.
@@ -168,10 +175,14 @@
     if (!scored.length) return null;
     var top = Math.max.apply(null, scored.map(function (x) { return x.score; }));
     // Opening: build the shape while nothing is being exchanged and the king is not attacked.
-    var book = options.opening === false ? null : openingMove(pieces, side);
-    if (book && !R.inCheck(pieces, side) && !underAttack(pieces, side) && !scored.some(function (x) { return x.capture && x.score > 0.5; })) {
-      var entry = scored.find(function (x) { return same(x.move.from, book.from) && same(x.move.to, book.to); });
-      if (entry && entry.score >= top - 0.6) return book;
+    // Opening: follow the shape while nothing is being exchanged and the king is not attacked. Take the first step
+    // that is safe (the pawn or piece is not lost to an exchange); a step that is not safe yet waits.
+    if (options.opening !== false && !R.inCheck(pieces, side) && !underAttack(pieces, side) && !scored.some(function (x) { return x.capture && x.score > 0.5; })) {
+      var steps = openingMoves(pieces, side);
+      for (var i = 0; i < steps.length; i++) {
+        var entry = scored.find(function (x) { return same(x.move.from, steps[i].from) && same(x.move.to, steps[i].to); });
+        if (entry && entry.score > -0.5 && entry.score >= top - 0.6) return steps[i];
+      }
     }
     var best = null, bestScore = -Infinity;
     scored.forEach(function (x) { var s = x.score + random() * 0.35; if (s > bestScore) { bestScore = s; best = x.move; } });
@@ -188,5 +199,5 @@
     });
   }
 
-  return { VALUES: VALUES, OPENING: OPENING, openingMove: openingMove, ceilingFor: ceilingFor, nextCount: nextCount, countText: countText, exchange: exchange, chooseMove: chooseMove };
+  return { VALUES: VALUES, OPENING: OPENING, openingMove: openingMove, openingMoves: openingMoves, ceilingFor: ceilingFor, nextCount: nextCount, countText: countText, exchange: exchange, chooseMove: chooseMove };
 });
