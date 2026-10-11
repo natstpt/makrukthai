@@ -34,6 +34,7 @@ for(const l of lessons){
     assert(!Rules.inCheck(b.pieces,'white'),label+': white king is safe');
     if(/^(ตาจน|จน) ·/.test(b.text))assert.equal(Rules.gameStatus(b.pieces,'black').state,'checkmate',label+' is mate');
     else if(/^อับ/.test(b.text))assert.equal(Rules.gameStatus(b.pieces,'black').state,'stalemate',label+' is stalemate');
+    else if(/^รุก ·/.test(b.text))assert(Rules.inCheck(b.pieces,'black')&&Rules.gameStatus(b.pieces,'black').state==='playing',label+': a check red can answer');
     else assert(!Rules.inCheck(b.pieces,'black'),label+': not already check');
     boards++;
   });
