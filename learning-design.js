@@ -3,11 +3,9 @@
   function build(previous){
     var order=['board','king','rook','knight','met','khon','pawn','promotion','promoted','setup','capture','check','escape','mate',
       'review','defend','block','take-checker','notation','draw-rules','think','fair-play','game','mini','assessment',
-      'endgame-rook-khon','endgame-khon-promoted','endgame-knight','endgame-promoted',
-      'endgame-stalemate','endgame-count','endgame-corner','endgame-tempo','puzzle-khon','puzzle-khon-met','puzzle-knight',
-      'puzzle-twist-rook','puzzle-twist-sacrifice',
-      'chase-rook','chase-knight-met','chase-khon-pair','chase-knight-khon',
-      'escape-count','escape-corner','finish'];
+      'endgame-rook-khon','endgame-promoted','endgame-khon-promoted','endgame-knight','endgame-stalemate','endgame-count',
+      'endgame-corner','puzzle-khon','endgame-tempo','puzzle-khon-met','puzzle-knight','puzzle-twist-rook','puzzle-twist-sacrifice',
+      'chase-knight-khon','chase-knight-met','chase-rook','chase-khon-pair','escape-corner','escape-count','finish'];
     var introductions={
       board:['ทุกช่องมีชื่อ ลองดูชื่อบนกระดานกัน','อ่านตัวอักษรก่อน แล้วตามด้วยเลข เช่น ฉ8'],
       king:['นี่คือขุน เราต้องดูแลให้ปลอดภัย','ขุนเดินได้รอบตัว ทีละ 1 ช่อง'],

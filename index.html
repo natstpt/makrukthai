@@ -565,6 +565,9 @@
     .lessonFoot.doneState #navBackBtn{display:none}
     .lessonFoot.doneState #navNextBtn{grid-column:3 / span 2;flex-direction:row;gap:6px;margin:4px 0;border-radius:14px!important;background:linear-gradient(180deg,#6dbb4f,#4e9a37)!important;color:#fff;font-size:21px;box-shadow:inset 0 -4px rgba(0,0,0,.18),0 6px 14px rgba(0,0,0,.3)}
     .lessonFoot.doneState #navNextBtn svg{order:2;width:24px;height:24px}
+
+    .mapNode .mapFocus{display:block;margin-top:2px;font-style:normal;font-size:.78em;font-weight:800;color:#f2c14e}
+    .mapNode.locked .mapFocus{color:inherit}
   </style>
 </head>
 <body>
@@ -2101,6 +2104,8 @@
   }
 
   function lessonIcon(l){return 'assets/images/lessons/'+l.id+'.svg';}
+  // "การไล่ด้วยเรือ · ระวังอับ": the pieces on the first line, the lesson's focus on a smaller line below.
+  function lessonTitleHtml(title){var parts=title.split(' · ');return parts.length===2?parts[0]+'<em class="mapFocus">'+parts[1]+'</em>':title;}
   // Teacher switch: open every lesson without touching the learner's saved progress, or lock back to it.
   function teacherUnlocked(){try{return localStorage.getItem('makrukTeacherUnlock')==='true';}catch(e){return false;}}
   function lessonOpen(i){return teacherUnlocked()||i<=state.unlocked;}
@@ -2119,7 +2124,7 @@
       var locked=!lessonOpen(i);
       card.className='mapNode'+(locked?' locked':i===state.lesson?' current':'');
       card.disabled=locked;
-      card.innerHTML='<span class="mapBadge"><img src="'+lessonIcon(l)+'" alt="">'+(locked?'<i class="mapMark">🔒</i>':i<state.lesson?'<i class="mapMark done">✓</i>':'')+'</span><span><strong>'+l.title+'</strong><small>บท '+(i+1)+(locked?' · เรียนบทก่อนหน้าเพื่อเปิด':i===state.lesson?' · กำลังเรียน':i<state.lesson?' · ผ่านแล้ว':' · พร้อมเรียน')+'</small></span>';
+      card.innerHTML='<span class="mapBadge"><img src="'+lessonIcon(l)+'" alt="">'+(locked?'<i class="mapMark">🔒</i>':i<state.lesson?'<i class="mapMark done">✓</i>':'')+'</span><span><strong>'+lessonTitleHtml(l.title)+'</strong><small>บท '+(i+1)+(locked?' · เรียนบทก่อนหน้าเพื่อเปิด':i===state.lesson?' · กำลังเรียน':i<state.lesson?' · ผ่านแล้ว':' · พร้อมเรียน')+'</small></span>';
       if(!locked)card.addEventListener('click',function(){state.lesson=i;closeOverlay('menuOverlay');renderLesson();});
       grid.appendChild(card);
     });
