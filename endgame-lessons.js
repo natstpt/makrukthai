@@ -70,7 +70,7 @@
   // start: the board count red says after its next move (the count already reached + 1).
   // lead: red's move just before the task (from-to), played on the board first so the learner sees red move and
   // say its count (start - 1) before white moves.
-  function boardCount(task,start,lead){task.count={start:start||1,ceiling:64,kind:'board'};if(lead)task.lead=lead;return task;}
+  function boardCount(task,start,lead,leadNote){task.count={start:start||1,ceiling:64,kind:'board'};if(lead)task.lead=lead;if(leadNote)task.leadNote=leadNote;return task;}
   var STALEMATE_NOTE={text:'อับคือขุนไม่ถูกรุกแต่ไม่มีตาเดินที่ปลอดภัย เกมจบเสมอ ฝ่ายไล่จึงต้องรุกในตาสุดท้ายเสมอ',page:9,clause:'ก 4.3'};
   function puzzleLesson(id,title,heading,speech,description,rule,steps,puzzles,count,bookPages,extraNote){
     var notes=[extraNote||MATE_NOTE,countNote(count)];
@@ -378,7 +378,7 @@
       ],[
         boardCount(puzzle('count-board-1','แดงนับ 64 · ตาสุดท้ายก่อนเสมอ','k:h8 K:g6 R:a1 b:c3',1,['a1a8'],'รุกจน! แดงนับถึง 64 แล้ว ขาวเหลือตาสุดท้ายพอดี ถ้าไม่จน แดงนับ 65 เกมเสมอ'),65,'g8h8'),
         boardCount(puzzle('count-board-2','แดงนับ 63 · ต้องจนใน 2 ตา','k:h8 K:f6 R:c1 B:e7 b:a6',2,['f6f7'],'รุกจน! แดงนับ 64 แล้วขาวจนได้ในตาสุดท้าย ถ้าช้าไปตาเดียว แดงนับ 65 เกมเสมอ'),64,'g8h8'),
-        boardCount(puzzle('count-board-3','แดงนับ 40 · กินแล้วเปลี่ยนนับ','k:h8 K:g6 R:a1 M:d4 r:a7',2,['a1a7'],'รุกจน! พอกินเรือแดง แดงเหลือขุนตัวเดียว จึงเลิกนับศักดิ์กระดาน แล้วเปลี่ยนเป็นนับศักดิ์หมาก เริ่ม 5 ถึง 16'),41,'a8a7')
+        boardCount(puzzle('count-board-3','แดงนับ 64 · กินเรือแล้วเปลี่ยนเป็นนับเรือคู่','k:h8 K:a3 R:d2 R:a4 r:h2',5,['d2h2'],'รุกจน! กินเรือแดงแล้วเปลี่ยนจากศักดิ์กระดานเป็นศักดิ์หมาก เรือคู่นับ 5 ถึง 8 จนได้ก่อนแดงนับ 9'),65,'h7h2','ถ้าขาวกินจนแดงเหลือขุนตัวเดียว ต้องเปลี่ยนไปนับศักดิ์หมาก')
       ],'ศักดิ์กระดาน · ฝ่ายเป็นรองขอนับ · นับเกิน 64 (นับ 65) เสมอ · ถ้าฝ่ายหนึ่งเหลือขุนตัวเดียว เปลี่ยนเป็นนับศักดิ์หมาก',[12],
       {text:'เบี้ยคว่ำหมดกระดาน และทั้งสองฝ่ายยังมีหมากมากกว่าขุน ฝ่ายที่เป็นรองนับศักดิ์กระดานได้ เริ่มนับ 1 ทั้งสองฝ่ายเดินคนละ 1 ทีจึงนับเพิ่ม นับครบ 64 แล้วยังไม่มีผลแพ้ชนะ (ฝ่ายเป็นรองนับ 65) ให้เสมอ',page:10,clause:'ก 5.1, ก 5.2'}),
       puzzleLesson('count-pieces','การนับศักดิ์หมาก','เหลือขุนตัวเดียว ต้องจนก่อนนับเกินเพดาน',
