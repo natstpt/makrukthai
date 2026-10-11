@@ -351,7 +351,10 @@
     .menuBtn{min-width:44px;min-height:48px}.quizChoice{font-size:18px;line-height:1.45}
     .menuEditorLink{margin-top:24px;display:flex;align-items:center;gap:10px;min-height:52px;text-decoration:none;padding:12px 16px;font-size:17px;border-color:#c29931;color:#ead295}.menuEditorLink span{font-size:14px;margin-left:auto}@media(max-width:439px){.menuEditorLink span{display:none}}.menuTools{display:grid;gap:10px}.quickHelp{display:flex;gap:10px;flex-wrap:wrap}
     .menuTools button,.menuTools a{min-height:44px;font-size:16px}
-    .menuTools{margin:0 0 18px}
+    .menuTools{margin:0}.settingsModal{width:min(520px,100%)}.pathModal.settingsModal .modalBody{padding-bottom:16px}.menuTools .boardToolsDetails:not([open]){display:none}
+    @media(min-width:700px){.settingsGear{top:14px;right:18px}}
+    .settingsGear{position:fixed;top:10px;right:12px;z-index:90;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:transparent;color:#9a9286;cursor:pointer}
+    .settingsGear svg{width:30px;height:30px}.settingsGear:hover,.settingsGear:focus-visible{color:#ead295;background:rgba(255,255,255,.06)}
     .menuIconBar{display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:6px}
     .menuIcon{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:64px;padding:8px 4px;border:1px solid #524a3f;border-radius:12px;background:#2d2922;color:#ead295;font:inherit;font-size:12px;line-height:1.1;white-space:nowrap;text-decoration:none;cursor:pointer}
     .menuIcon svg{width:24px;height:24px}.menuIcon:hover,.menuIcon:focus-visible{border-color:#c29931;background:#3a3226}
@@ -739,14 +742,23 @@
   <div class="modal pathModal" role="dialog" aria-modal="true" aria-labelledby="learningMenuTitle" tabindex="-1">
     <div class="modalHead"><h2 id="learningMenuTitle">เมนูบทเรียน</h2><button type="button" data-close="menuOverlay">×</button></div>
     <div class="modalBody">
+      <div class="learningMap" id="lessonGrid"></div>
+    </div>
+    <div class="teacherLockDock"><button type="button" class="teacherLockBtn" id="teacherLockBtn" aria-pressed="false"><span class="lockIcon" aria-hidden="true">🔒</span><span id="teacherLockLabel">ปลดล็อกทุกบท</span></button></div>
+  </div>
+</div>
+
+<button type="button" class="settingsGear" id="settingsBtn" aria-label="ตั้งค่าและเครื่องมือ" title="ตั้งค่าและเครื่องมือ" aria-haspopup="dialog" aria-controls="settingsOverlay"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M10.3 2h3.4l.5 2.6a7.8 7.8 0 011.9 1.1l2.5-.9 1.7 2.9-2 1.7a7.9 7.9 0 010 2.2l2 1.7-1.7 2.9-2.5-.9a7.8 7.8 0 01-1.9 1.1l-.5 2.6h-3.4l-.5-2.6a7.8 7.8 0 01-1.9-1.1l-2.5.9-1.7-2.9 2-1.7a7.9 7.9 0 010-2.2l-2-1.7 1.7-2.9 2.5.9a7.8 7.8 0 011.9-1.1zM12 8.6a3.4 3.4 0 100 6.8 3.4 3.4 0 000-6.8z"/></svg></button>
+<div class="overlay" id="settingsOverlay">
+  <div class="modal pathModal settingsModal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" tabindex="-1">
+    <div class="modalHead"><h2 id="settingsTitle">ตั้งค่าและเครื่องมือ</h2><button type="button" data-close="settingsOverlay" aria-label="ปิด">×</button></div>
+    <div class="modalBody">
       <section class="menuTools" id="menuTools" aria-label="เครื่องมือและการตั้งค่า">
         <nav class="menuIconBar" id="menuIconBar" aria-label="เครื่องมือ"></nav>
         <div id="boardSettings"></div>
         <div id="menuHidden" hidden></div>
       </section>
-      <div class="learningMap" id="lessonGrid"></div>
     </div>
-    <div class="teacherLockDock"><button type="button" class="teacherLockBtn" id="teacherLockBtn" aria-pressed="false"><span class="lockIcon" aria-hidden="true">🔒</span><span id="teacherLockLabel">ปลดล็อกทุกบท</span></button></div>
   </div>
 </div>
 
@@ -857,7 +869,7 @@
       el.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ICONS[item.icon]+'</svg><span>'+item.label+'</span>';
       if(item.target){
         var original=document.getElementById(item.target);
-        el.addEventListener('click',function(){if(item.close)closeOverlay('menuOverlay');original.click();});
+        el.addEventListener('click',function(){if(item.close)closeOverlay('settingsOverlay');original.click();});
         if(item.toggle){var sync=function(){el.setAttribute('aria-pressed',original.getAttribute('aria-pressed')||'false');};sync();new MutationObserver(sync).observe(original,{attributes:true,attributeFilter:['aria-pressed']});}
       }
       if(item.board){
@@ -2436,9 +2448,10 @@
   prevBtn.addEventListener('click',function(){if(state.lesson>0){state.lesson--;renderLesson();}});
   document.getElementById('menuTools').addEventListener('click',function(e){
     var control=e.target.closest('button,a');
-    if(control&&['hintBtn','retryBtn','moveToolBtn','arrowToolBtn','notationHelpBtn','resetBtn','authorBtn','creditsBtn','rulesPdfLink'].includes(control.id))closeOverlay('menuOverlay');
+    if(control&&['hintBtn','retryBtn','moveToolBtn','arrowToolBtn','notationHelpBtn','resetBtn','authorBtn','creditsBtn','rulesPdfLink'].includes(control.id))closeOverlay('settingsOverlay');
   },true);
   document.getElementById('menuBtn').addEventListener('click',function(){openOverlay('menuOverlay');});
+  document.getElementById('settingsBtn').addEventListener('click',function(){openOverlay('settingsOverlay');});
   document.getElementById('notationHelpBtn').addEventListener('click',function(){openOverlay('notationHelpOverlay');});
   document.getElementById('authorBtn').addEventListener('click',function(){openOverlay('authorOverlay');});
   document.getElementById('creditsBtn').addEventListener('click',function(){openOverlay('creditsOverlay');});
