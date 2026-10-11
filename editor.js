@@ -29,7 +29,7 @@
     aiTimer=setTimeout(function(){aiTimer=0;if(!aiTurn())return;var move=P.chooseMove(state.pieces,state.turn,{count:count});if(move)playMove(move.from,move.to);},700);
   }
   function label(at){return files[at.c]+(8-at.r);}
-  function asset(p){return 'assets/pieces/makruk/ada/'+(p.side==='white'?'w':'r')+icons[p.piece]+'.svg';}
+  function asset(p){return 'assets/pieces/makruk/ada/'+window.MakrukPieceColors.prefix(p.side)+icons[p.piece]+'.svg';}
   function clone(s){return {pieces:R.clonePieces(s.pieces),turn:s.turn};}
   function save(){if(mode!=='edit')return;try{localStorage.setItem(storageKey,M.fen(state));storageOK=true;}catch(e){storageOK=false;}}
   function snapshot(){return {state:clone(state),moves:moves.slice(),last:last,count:count};}

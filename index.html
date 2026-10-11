@@ -354,6 +354,12 @@
     .aiChoice{margin-top:8px;padding:10px 12px;border:1px solid #524a3f;border-radius:12px;background:#2d2922}.aiChoice p{margin:0 0 8px;font-size:14px;color:#dcc6a4}.aiChoice>div{display:grid;grid-template-columns:1fr 1fr;gap:8px}
     .aiSide{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 6px;border:1px solid #6a5a3e;border-radius:12px;background:#3a3226;color:#f2ebd7;font-weight:800;text-decoration:none}.aiSide small{font-weight:400;font-size:12px;color:#cbb994}.aiSide:hover{border-color:#c29931}
     .sideDot{width:18px;height:18px;border-radius:50%;background:#f4ecd8;border:2px solid #8b7a5a}.aiSide.black .sideDot{background:#d8342c;border-color:#7d1712}
+    .colorChoice{display:grid;grid-template-columns:auto 1fr 1fr;align-items:center;gap:6px;margin-top:10px;padding:8px 10px;border:1px solid #524a3f;border-radius:12px;background:#2d2922}
+    .colorChoiceLabel{font-size:14px;color:#dcc6a4;padding-right:2px}
+    .colorOption{display:flex;align-items:center;justify-content:center;gap:5px;min-height:46px;padding:6px 4px;white-space:nowrap;border:1px solid #524a3f;border-radius:10px;background:#352e24;color:#ead295;font:inherit;font-size:14px;font-weight:800;cursor:pointer}
+    .colorOption .pair{display:flex}.colorOption img{width:24px;height:24px}.colorOption .pair img+img{margin-left:-6px}
+    .colorOption[aria-checked="true"]{border-color:#c29931;background:#4a3d22;box-shadow:inset 0 0 0 1px #c29931}
+    html.blackPieces .aiSide.black .sideDot{background:#262626;border-color:#9a9a9a}
     .menuTools{margin:0}.settingsModal{width:min(520px,100%)}.pathModal.settingsModal .modalBody{padding-bottom:16px}.menuTools .boardToolsDetails:not([open]){display:none}
     @media(min-width:700px){.settingsGear{top:14px;right:18px}}
     .settingsGear{position:fixed;top:10px;right:12px;z-index:90;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:transparent;color:#9a9286;cursor:pointer}
@@ -758,6 +764,10 @@
     <div class="modalBody">
       <section class="menuTools" id="menuTools" aria-label="เครื่องมือและการตั้งค่า">
         <nav class="menuIconBar" id="menuIconBar" aria-label="เครื่องมือ"></nav>
+        <div class="colorChoice" data-keep-colors role="radiogroup" aria-label="สีตัวหมาก"><span class="colorChoiceLabel">สีหมาก</span>
+          <button type="button" class="colorOption" data-colors="red" role="radio"><span class="pair"><img src="assets/pieces/makruk/ada/wK.svg" alt=""><img src="assets/pieces/makruk/ada/rK.svg" alt=""></span>ขาว–แดง</button>
+          <button type="button" class="colorOption" data-colors="black" role="radio"><span class="pair"><img src="assets/pieces/makruk/ada/wK.svg" alt=""><img src="assets/pieces/makruk/ada/bK.svg" alt=""></span>ขาว–ดำ</button>
+        </div>
         <div class="aiChoice" id="aiChoice" hidden><p>เลือกฝ่ายที่จะเล่นกับ AI</p><div><a class="aiSide white" href="editor.html?play=ai&amp;side=white"><span class="sideDot"></span>ฝ่ายขาว<small>เดินก่อน</small></a><a class="aiSide black" href="editor.html?play=ai&amp;side=black"><span class="sideDot"></span>ฝ่ายแดง<small>AI เดินก่อน</small></a></div></div>
         <div id="boardSettings"></div>
         <div id="menuHidden" hidden></div>
@@ -804,6 +814,7 @@
 </div>
 
 <div class="overlay" id="notationHelpOverlay"><div class="modal infoModal" role="dialog" aria-modal="true" aria-labelledby="notationHelpTitle" tabindex="-1"><div class="modalHead"><h2 id="notationHelpTitle">ตารางช่วยจำการจดหมาก</h2><button type="button" data-close="notationHelpOverlay" aria-label="ปิด">×</button></div><div class="modalBody"><p>อ่านทีละส่วน: ชื่อหมาก → ช่องเริ่ม → เดินหรือกิน → ช่องที่ไป</p><table class="notationTable"><thead><tr><th>ชื่อย่อ</th><th>ตัวหมาก</th></tr></thead><tbody><tr><td><img src="assets/pieces/makruk/ada/wK.svg" alt="">ข.</td><td>ขุน</td></tr><tr><td><img src="assets/pieces/makruk/ada/wR.svg" alt="">ร.</td><td>เรือ</td></tr><tr><td><img src="assets/pieces/makruk/ada/wN.svg" alt="">ม.</td><td>ม้า</td></tr><tr><td><img src="assets/pieces/makruk/ada/wB.svg" alt="">ค.</td><td>โคน</td></tr><tr><td><img src="assets/pieces/makruk/ada/wQ.svg" alt="">ม็.</td><td>เม็ด</td></tr><tr><td><img src="assets/pieces/makruk/ada/wP.svg" alt="">บ.</td><td>เบี้ย</td></tr><tr><td><img src="assets/pieces/makruk/ada/wF.svg" alt="">ง.</td><td>เบี้ยหงาย</td></tr></tbody></table><p><b>-</b> เดิน · <b>×</b> กิน · <b>+</b> รุก · <b>#</b> รุกจน</p><p><b>ม.ข1 - ง2</b><br>ม้าเดินจาก ข1 ไป ง2</p><p><b>ร.ก4 × บ.ง4</b><br>เรือจาก ก4 กินเบี้ยที่ ง4</p><p>เติม + ท้ายบันทึกเมื่อรุก หรือ # เมื่อรุกจน<br>รุกจน หมายถึงขุนถูกรุกและไม่มีวิธีแก้ให้ปลอดภัย</p><p>เบี้ยถึงแถวหงาย: จดตาที่เดินด้วย บ. แล้วตาถัดไปใช้ ง. ไม่มีการเลือกเปลี่ยนเป็นตัวอื่น</p><p>ผลเกม: <b>1-0</b> ขาวชนะ · <b>0-1</b> แดงชนะ · <b>½-½</b> เสมอ (เขียน 0.5-0.5 ได้)</p><p>จุดหลังชื่อย่อช่วยแยกชื่อหมากจากชื่อช่อง หนังสือบางเล่มใช้ X หรือ x แทน × ซึ่งหมายถึงกินเหมือนกัน</p></div></div></div>
+<script src="piece-colors.js?v=20261011-colors"></script>
 <script src="makruk-rules.js?v=20261004-learn"></script>
 <script src="makruk-notation.js?v=20261004-practice5"></script>
 <script src="day2-lessons.js?v=20261005-feedback"></script>
@@ -869,6 +880,10 @@
       {icon:'author',label:'ผู้จัดทำ',title:'ผู้จัดทำ',target:'authorBtn',close:true},
       {icon:'credits',label:'เครดิต',title:'เครดิตและแหล่งที่มา',target:'creditsBtn',close:true}
     ];
+    document.querySelectorAll('.colorOption').forEach(function(b){
+      var on=b.dataset.colors===MakrukPieceColors.mode();b.setAttribute('aria-checked',String(on));
+      b.addEventListener('click',function(){MakrukPieceColors.choose(b.dataset.colors);});
+    });
     var bar=document.getElementById('menuIconBar'),boardDetails=document.querySelector('#boardSettings .boardToolsDetails'),aiChoice=document.getElementById('aiChoice');
     items.forEach(function(item){
       var el=document.createElement(item.href?'a':'button');
@@ -1195,7 +1210,7 @@
   }
   function queueMoveFeedback(from,to,piece,side,after){
     presentation.queueMove({from:{r:from.r,c:from.c},to:{r:to.r,c:to.c},
-      src:'assets/pieces/makruk/ada/'+(side==='white'?'w':'r')+pieceFile[piece]+'.svg',
+      src:'assets/pieces/makruk/ada/'+MakrukPieceColors.prefix(side)+pieceFile[piece]+'.svg',
       skipAnimation:!!state.moveWasDragged,check:Rules.inCheck(after,side==='white'?'black':'white')});
   }
 
@@ -1359,7 +1374,7 @@
     state.roundIndex++;setTool('move');startRound();
   }
   function pieceHtml(type,side){
-    var color=side==='white'?'w':'r';
+    var color=MakrukPieceColors.prefix(side);
     var src='assets/pieces/makruk/ada/'+color+pieceFile[type]+'.svg';
     return '<div class="piece '+side+' '+(type==='king'?'big':'')+'" data-piece="'+type+'"><img src="'+src+'" alt="'+pieceName[type]+'ฝ่าย'+(side==='white'?'ขาว':'แดง')+'" draggable="false"></div>';
   }
@@ -1452,7 +1467,7 @@
       state.current=gesture.from;state.focus=gesture.from;
       state.selected=true;gesture.dragging=true;
       boardWrap.setPointerCapture(e.pointerId);renderBoard();updateBoardHelp();
-      dragPiece.innerHTML='<img src="assets/pieces/makruk/ada/'+(userSide()==='white'?'w':'r')+pieceFile[activePiece()]+'.svg" alt="" draggable="false">';
+      dragPiece.innerHTML='<img src="assets/pieces/makruk/ada/'+MakrukPieceColors.prefix(userSide())+pieceFile[activePiece()]+'.svg" alt="" draggable="false">';
       dragPiece.hidden=false;boardWrap.classList.add('dragging');
       var sourceEl=boardEl.querySelector('.square[data-r="'+gesture.from.r+'"][data-c="'+gesture.from.c+'"]');if(sourceEl)sourceEl.classList.add('dragSource');
     }
