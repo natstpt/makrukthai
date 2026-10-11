@@ -42,6 +42,14 @@ for(const l of lessons){
     const pieces=plain(t.pieces),label=l.id+' '+t.key;
     assert(!keys.has(t.key),label+': unique key');keys.add(t.key);
     assert(!Rules.inCheck(pieces,'black')&&!Rules.inCheck(pieces,'white'),label+': starts quiet');
+    // A lead move is red's move shown before the task: legal from the position before it, and it gives that position.
+    if(t.lead){
+      const {from,to}=fromKey(t.lead);
+      const before=pieces.map(p=>p.at.r===to.r&&p.at.c===to.c?{...p,at:from}:p);
+      assert(Rules.legalMoves(before,'black').some(m=>moveKey(m)===t.lead),label+': lead '+t.lead+' is a legal red move');
+      assert.deepEqual(plain(Rules.applyMove(before,from,to)).map(p=>p.piece+p.side+p.at.r+p.at.c).sort(),pieces.map(p=>p.piece+p.side+p.at.r+p.at.c).sort(),label+': lead reaches the task position');
+      assert(t.count&&t.count.start>1,label+': lead says the count before the task');
+    }
     if(t.chase)continue; // long chases: tests/endgame-chases.test.cjs
     assert.equal(solver.depth(pieces,t.moves),t.moves,label+': mate in exactly '+t.moves);
     assert(t.mission.includes('รุกจนใน '+t.moves+' ตา'),label+': mission states the move count');
