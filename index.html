@@ -77,6 +77,8 @@
     .square.coordinateTarget:before{content:"";position:absolute;inset:8%;border:4px solid #52432c;z-index:6;pointer-events:none}
     .square.coordinateTarget{background:rgba(158,140,68,.15)}
     .square.coordinateTarget .squareCoordinate{color:#443825}
+    .square.coordinateTarget{background:rgba(96,170,80,.35)}.square.coordinateMissed{background:rgba(232,71,59,.22)}.squareCoordinate.wrongName{color:#b3261e}
+    .square.coordinateHint{background:rgba(255,200,58,.38)}
     .piece{position:absolute;width:88%;height:88%;display:block;z-index:4;pointer-events:none}
     .piece.big{width:88%;height:88%}
     .piece img{display:block;width:100%;height:100%;object-fit:contain}
@@ -202,7 +204,7 @@
       body{overflow:auto;background:#272119}.app{height:auto;min-height:100dvh}.desktop{grid-template-columns:1fr;grid-template-rows:auto auto;padding:10px;gap:10px}
       .boardArea{min-height:auto;overflow:visible;padding:14px}.boardWrap{width:min(100%,min(90dvh,820px))}.lessonPanel{min-height:520px}.lessonBody{overflow:visible}
       .topBtn.planText span{display:none}.topBtn.planText:after{content:"แผนสอน"}
-      .app.coordinateQuiz .coachRow,.app.coordinateQuiz .lessonDetails,.app.coordinateQuiz .pathDetails,.app.coordinateQuiz .lessonExplain>h1,.app.coordinateQuiz .lessonExplain>p,.app.coordinateQuiz #ruleCard,.app.coordinateQuiz .path,.app.coordinateQuiz .mission{display:none}
+      .app.coordinateQuiz .lessonDetails,.app.coordinateQuiz .pathDetails,.app.coordinateQuiz .lessonExplain>h1,.app.coordinateQuiz .lessonExplain>p,.app.coordinateQuiz #ruleCard,.app.coordinateQuiz .path,.app.coordinateQuiz .mission{display:none}
       .app.coordinateQuiz .lessonExplain,.app.coordinateQuiz .mission{margin-top:0}
       .app.coordinateQuiz .lessonBody{padding-top:12px}
     }
@@ -560,7 +562,7 @@
     #speech.sayError{background:#fde7e5;color:#8a2420}#speech.sayError:before{border-right-color:#fde7e5}
     .navRetryBtn{grid-column:3 / span 2;border:0;border-radius:14px;background:linear-gradient(180deg,#f0493b,#d22f22);color:#fff;font:inherit;font-size:22px;font-weight:950;box-shadow:inset 0 -4px rgba(0,0,0,.18),0 6px 14px rgba(0,0,0,.3);cursor:pointer;margin:4px 0}
     .navRetryBtn:focus-visible{outline:3px solid #f2c14e;outline-offset:2px}
-    .app.wrongMoveShown .feedback{display:none!important}
+    .app.wrongMoveShown .feedback,.app.coordinateQuiz .feedback{display:none!important}
     .lessonFoot.wrongState #navBackBtn,.lessonFoot.wrongState #navNextBtn{display:none}
     .lessonFoot.doneState #navBackBtn{display:none}
     .lessonFoot.doneState #navNextBtn{grid-column:3 / span 2;flex-direction:row;gap:6px;margin:4px 0;border-radius:14px!important;background:linear-gradient(180deg,#6dbb4f,#4e9a37)!important;color:#fff;font-size:21px;box-shadow:inset 0 -4px rgba(0,0,0,.18),0 6px 14px rgba(0,0,0,.3)}
@@ -790,9 +792,9 @@
 <script src="endgame-lessons.js?v=20261013-chase"></script>
 <script src="puzzle-trees.js?v=20261012-puzzles"></script>
 <script src="chase-trees.js?v=20261013-chase"></script>
-<script src="learning-design.js?v=20261005-feedback"></script>
-<script src="practice-sets.js?v=20261005-feedback"></script>
-<script src="lesson-examples.js?v=20261011-examples"></script>
+<script src="learning-design.js?v=20261011-tap"></script>
+<script src="practice-sets.js?v=20261011-tap"></script>
+<script src="lesson-examples.js?v=20261011-tap"></script>
 <script src="presentation.js?v=20261014-ios-audio"></script>
 <script src="touch-guard.js?v=20261014-ios-zoom"></script>
 <script>
@@ -875,21 +877,31 @@
 
   var lessons = [
     {
-      title:'รู้จักกระดาน',day:1,type:'quiz',coordinateLesson:true,requiredCorrect:5,
-      speech:'กระดานมี <strong>64 ช่อง</strong> ทุกช่องมีชื่อ เช่น ก1 หรือ ฉ8 ลองหาชื่อช่องไปด้วยกัน',
+      title:'รู้จักกระดาน',day:1,type:'quiz',coordinateLesson:true,requiredCorrect:6,
+      speech:'กระดานมี <strong>64 ช่อง</strong> ทุกช่องมีชื่อ เริ่มจาก<strong>กลางกระดาน</strong> ง4 จ4 ง5 จ5',
       heading:'รู้จักช่องบนกระดาน',
       description:'ดูตัวอักษร ก–ญ ที่ด้านล่าง และเลข 1–8 ที่ด้านข้าง',
-      rule:'ตัวอักษรก่อน แล้วตามด้วยเลข · ฉ + 8 = ฉ8',
-      mission:'มองชื่อช่อง แล้วเลือกชื่อของช่องที่มีกรอบ',
+      rule:'ตัวอักษรก่อน แล้วตามด้วยเลข · ง + 4 = ง4',
+      mission:'แตะช่องตามชื่อที่ถาม',
       caption:'ชื่อครบ 64 ช่อง · ก1 ถึง ญ8',
-      hint:'ดูก่อนว่าช่องอยู่ตรงตัวอักษรใด แล้วดูเลขด้านข้าง',
+      hint:'หาตัวอักษรด้านล่างก่อน แล้วนับเลขขึ้นไปตามด้านข้าง',
       pieces:[],
+      // Teaching steps start from an empty board and add the names a little at a time.
+      coordinateSteps:[
+        {edges:false},
+        {edges:true,marks:['a1','b1','c1','d1','e1','f1','g1','h1']},
+        {edges:true,marks:['a1','a2','a3','a4','a5','a6','a7','a8']},
+        {edges:true,labels:['d4'],marks:['d4']},
+        {edges:true,labels:['d4','e4','d5','e5'],marks:['d4','e4','d5','e5']},
+        {edges:true,labels:'all'}
+      ],
       questions:[
-        {target:pos('f',8),pieces:[],mission:'ช่องที่มีกรอบชื่ออะไร?',choices:[{text:'ฉ7',correct:false},{text:'จ8',correct:false},{text:'ฉ8',correct:true}],hint:'ดูตัวอักษรด้านล่าง แล้วดูเลขด้านข้าง',explanation:'ใช่แล้ว! ช่องนี้คือ ฉ8'},
-        {target:pos('a',1),pieces:[],mission:'ช่องที่มีกรอบชื่ออะไร?',choices:[{text:'ก1',correct:true},{text:'ก2',correct:false},{text:'ข1',correct:false}],hint:'มุมล่างซ้ายอยู่ตรง ก และเลข 1',explanation:'ใช่แล้ว! ช่องนี้คือ ก1'},
-        {target:pos('h',5),pieces:[],mission:'ช่องที่มีกรอบชื่ออะไร?',choices:[{text:'ช5',correct:false},{text:'ญ5',correct:true},{text:'ญ4',correct:false}],hint:'ขอบขวาสุดอยู่ตรง ญ',explanation:'ใช่แล้ว! ช่องนี้คือ ญ5'},
-        {target:pos('c',3),pieces:[],mission:'ช่องที่มีกรอบชื่ออะไร?',choices:[{text:'ค4',correct:false},{text:'ข3',correct:false},{text:'ค3',correct:true}],hint:'ดูตัวอักษร ค และเลข 3',explanation:'ใช่แล้ว! ช่องนี้คือ ค3'},
-        {target:pos('e',6),pieces:[],mission:'ช่องที่มีกรอบชื่ออะไร?',choices:[{text:'จ6',correct:true},{text:'จ5',correct:false},{text:'ฉ6',correct:false}],hint:'ดูตัวอักษร จ และเลข 6',explanation:'ใช่แล้ว! ช่องนี้คือ จ6'}
+        {target:pos('d',4),pieces:[],mission:'แตะช่อง ง4',hint:'หาตัวอักษร ง ด้านล่าง แล้วนับขึ้นไปถึงแถว 4',explanation:'ใช่แล้ว! ง4 เป็นช่องกลางกระดาน'},
+        {target:pos('e',5),pieces:[],mission:'แตะช่อง จ5',hint:'หาตัวอักษร จ ด้านล่าง แล้วนับขึ้นไปถึงแถว 5',explanation:'ใช่แล้ว! จ5 ก็เป็นช่องกลางกระดาน'},
+        {target:pos('e',4),pieces:[],mission:'แตะช่อง จ4',hint:'หาตัวอักษร จ ด้านล่าง แล้วนับขึ้นไปถึงแถว 4',explanation:'ใช่แล้ว! จ4 อยู่ข้าง ง4 ตรงกลางกระดาน'},
+        {target:pos('d',5),pieces:[],mission:'แตะช่อง ง5',hint:'หาตัวอักษร ง ด้านล่าง แล้วนับขึ้นไปถึงแถว 5',explanation:'ใช่แล้ว! ง5 ครบ 4 ช่องกลางกระดานแล้ว'},
+        {target:pos('a',1),pieces:[],mission:'แตะช่อง ก1',hint:'หาตัวอักษร ก ด้านล่าง แล้วนับขึ้นไปถึงแถว 1',explanation:'ใช่แล้ว! ก1 อยู่มุมล่างซ้าย'},
+        {target:pos('f',8),pieces:[],mission:'แตะช่อง ฉ8',hint:'หาตัวอักษร ฉ ด้านล่าง แล้วนับขึ้นไปถึงแถว 8',explanation:'ใช่แล้ว! ฉ8 อยู่แถวบนสุด'}
       ],
       mainText:'เริ่มตอบชื่อช่อง →'
     },
@@ -1234,7 +1246,7 @@
       do{start={r:Math.floor(Math.random()*8),c:Math.floor(Math.random()*8)};}while(state.lastPracticeStart&&same(start,state.lastPracticeStart));
     }
     if(l.type==='game')state.gamePieces=Rules.clonePieces(task?task.pieces:fullSetup());
-    state.creditBase=state.correctMoves;state.wrongMove=null;state.wrongReply=null;clearTimeout(wrongReplyTimer);speechEl.classList.remove('sayError');
+    state.creditBase=state.correctMoves;state.wrongMove=null;state.coordWrong=null;state.wrongReply=null;clearTimeout(wrongReplyTimer);speechEl.classList.remove('sayError');
     state.puzzleNode=l.puzzle&&task?puzzleNodeAt(task.tree,0):null;state.puzzleHintOn=false;state.puzzleSay='';state.puzzleLeft=l.puzzle&&task?task.moves:0;state.puzzleCount=l.puzzle&&task&&task.count?task.count.start:0;state.pieceCount=null;
     state.current=start?{r:start.r,c:start.c}:null;
     if(start&&l.type==='move')state.lastPracticeStart={r:start.r,c:start.c};
@@ -1264,8 +1276,7 @@
         missionEl.textContent=l.mission;boardCaption.textContent=l.caption;
         feedbackEl.textContent='ดูชื่อช่อง แล้วเริ่มตอบคำถาม';
       }else{
-        state.focus={r:task.target.r,c:task.target.c};
-        feedbackEl.textContent='ช่องที่ตีกรอบคือช่องไหน?';
+        feedbackEl.textContent=task.mission;
       }
     }
     if(l.type==='quiz'&&state.phase==='active')renderQuiz();
@@ -1335,7 +1346,7 @@
   function updateBoardHelp(){
     if(state.tool==='arrow')boardHelp.textContent=state.arrowStart?'เลือกช่องปลายทาง · แตะช่องเดิมหรือกด Esc เพื่อยกเลิก':'แตะช่องต้นทาง → แตะปลายทาง · ลากซ้ำเส้นเดิมเพื่อลบ';
     else if(state.completed)boardHelp.textContent='เข้าใจแล้ว · กดบทถัดไปเพื่อเรียนต่อ';
-    else if(lessons[state.lesson].coordinateLesson)boardHelp.textContent=state.phase==='intro'?'ดูชื่อครบ 64 ช่อง · พร้อมแล้วกด “ดูตัวอย่าง”':state.roundDone?'ดูชื่อช่องที่มีกรอบ แล้วไปตัวอย่างถัดไป':'อ่านช่องที่มีกรอบ · เลือกคำตอบใต้ภารกิจ';
+    else if(lessons[state.lesson].coordinateLesson)boardHelp.textContent=state.phase==='intro'?'ดูกระดาน แล้วกดถัดไปเพื่อเรียนทีละขั้น':state.roundDone?'ถูกต้อง · กดถัดไปเพื่อหาช่องต่อไป':'หาตัวอักษรด้านล่าง แล้วนับเลขขึ้นไป · แตะช่องที่ถาม';
     else if(state.pendingNotation)boardHelp.textContent='เดินแล้ว → ลองจดตาเดินในช่องบันทึกก่อนฝึกโจทย์ถัดไป';
     else if(isBoardPractice()){
       var progress='เดินถูก '+state.correctMoves+'/'+lessons[state.lesson].requiredCorrect+' · ';
@@ -1482,12 +1493,25 @@
         var p={r:r,c:c};
         s.dataset.r=r;s.dataset.c=c;
         s.tabIndex=state.focus&&same(state.focus,p)?0:-1;
-        if(c===0)s.innerHTML+='<span class="coord rank">'+(8-r)+'</span>';
-        if(r===7)s.innerHTML+='<span class="coord file">'+displayFiles[c]+'</span>';
+        var coordStep=coordinateTask&&state.phase!=='active'&&l.coordinateSteps?l.coordinateSteps[state.teachingIndex]||{}:null;
+        if(!coordStep||coordStep.edges!==false){
+          if(c===0)s.innerHTML+='<span class="coord rank">'+(8-r)+'</span>';
+          if(r===7)s.innerHTML+='<span class="coord file">'+displayFiles[c]+'</span>';
+        }
         if(coordinateTask){
-          var questionSquare=state.phase==='active'&&same(p,coordinateTask.target);
-          if(state.phase==='intro'||state.phase==='demo'||questionSquare&&(state.hint||state.quizCorrect))s.innerHTML+='<span class="squareCoordinate" aria-hidden="true">'+squareLabel(p)+'</span>';
-          if(questionSquare)s.classList.add('coordinateTarget');
+          var name='abcdefgh'[c]+(8-r);
+          if(coordStep){
+            // Teaching: only the names this step talks about.
+            if(coordStep.labels==='all'||(coordStep.labels||[]).indexOf(name)>=0)s.innerHTML+='<span class="squareCoordinate" aria-hidden="true">'+squareLabel(p)+'</span>';
+            if((coordStep.marks||[]).indexOf(name)>=0)s.classList.add('exampleMark');
+          }else{
+            // Questions: the learner taps the named square; a wrong tap shows that square's name.
+            var found=state.quizCorrect&&same(p,coordinateTask.target),missed=state.coordWrong&&same(p,state.coordWrong);
+            if(found||missed)s.innerHTML+='<span class="squareCoordinate'+(missed?' wrongName':'')+'" aria-hidden="true">'+squareLabel(p)+'</span>';
+            if(found)s.classList.add('coordinateTarget');
+            if(missed)s.classList.add('coordinateMissed');
+            if(state.hint&&!state.quizCorrect&&(p.c===coordinateTask.target.c||p.r===coordinateTask.target.r))s.classList.add('coordinateHint');
+          }
         }
         if((state.phase==='active'||l.teachingBoards)&&exampleTask&&exampleTask.marks&&exampleTask.marks.some(function(m){return same(m,p);}))s.classList.add('exampleMark');
         if(puzzleHint&&same(p,puzzleHint.from))s.classList.add('hintSource');
@@ -1691,6 +1715,7 @@
       feedbackEl.className='feedback';feedbackEl.textContent=task.explanation;
       return;
     }
+    if(l.coordinateLesson){quizBox.hidden=true;quizBox.innerHTML='';missionEl.parentElement.hidden=true;return;}
     quizBox.hidden=false;quizBox.innerHTML='';
     var prompt=document.createElement('p');prompt.className='quizPrompt';prompt.textContent=task&&task.mission?task.mission:l.mission;quizBox.appendChild(prompt);
     missionEl.parentElement.hidden=true;
@@ -1981,7 +2006,9 @@
       else{var from=state.arrowStart;cancelGesture();toggleArrow(from,dest);}
       renderBoard();updateBoardHelp();return;
     }
-    var l=lessons[state.lesson];if(state.phase!=='active'||!isBoardPractice()||state.completed||state.roundDone||state.pendingNotation)return;
+    var l=lessons[state.lesson];
+    if(l.coordinateLesson&&state.phase==='active'){if(!state.roundDone)answerSquare(dest);return;}
+    if(state.phase!=='active'||!isBoardPractice()||state.completed||state.roundDone||state.pendingNotation)return;
     var clickedPiece=boardPieces().find(function(x){return same(x.at,dest);});
     if((l.type==='game'&&clickedPiece&&clickedPiece.side===userSide())||(state.current&&same(state.current,dest))){
       if(state.phase==='intro')activateLesson();
@@ -1996,6 +2023,20 @@
       return;
     }
     attemptMove(dest);
+  }
+
+  function answerSquare(dest){
+    var task=challenge(),text,kind;
+    if(same(dest,task.target)){
+      state.coordWrong=null;state.quizCorrect=true;state.correctMoves++;state.roundDone=true;
+      text=task.explanation+(practiceReady()?' · ครบแล้ว กดผ่านบทนี้':' · กดถัดไป');kind='success';
+      showToast('ถูกต้อง ✓','good','success');
+    }else{
+      state.coordWrong=dest;text='นี่คือช่อง '+squareLabel(dest)+' · ลองหา '+squareLabel(task.target)+' อีกครั้ง';kind='error';
+      showToast('ลองอีกครั้ง','bad','failure');
+    }
+    renderBoard();updatePracticeUI();
+    feedbackEl.className='feedback '+kind;feedbackEl.textContent=text;speechEl.textContent=text;coachSay(text,kind);
   }
 
   function attemptMove(dest){
@@ -2336,9 +2377,15 @@
     syncNav();
   });
   // Star lessons share the "ดาวคำใบ้" setting (on by default). Puzzles start without a star, since it shows the answer.
-  function hintIsOn(){return lessons[state.lesson].puzzle?!!state.puzzleHintOn:!!state.showStarHint;}
+  // Lesson 1: the hint lights the letter's column and the number's row of the asked square.
+  function hintIsOn(){return lessons[state.lesson].coordinateLesson&&state.phase==='active'?!!state.hint:lessons[state.lesson].puzzle?!!state.puzzleHintOn:!!state.showStarHint;}
   navHintBtn.addEventListener('click',function(){
     if(state.wrongMove){retryWrongMove();if(!hintIsOn()){if(lessons[state.lesson].puzzle){state.puzzleHintOn=true;renderBoard();}else{starHintToggle.checked=true;starHintToggle.dispatchEvent(new Event('change'));}}syncNav();return;}
+    if(lessons[state.lesson].coordinateLesson&&state.phase==='active'){
+      if(state.roundDone)return;
+      if(state.hint){state.hint=false;renderBoard();updatePracticeUI();}else showHint();
+      syncNav();return;
+    }
     if(lessons[state.lesson].puzzle){state.puzzleHintOn=!state.puzzleHintOn;renderBoard();}
     else{starHintToggle.checked=!state.showStarHint;starHintToggle.dispatchEvent(new Event('change'));}
     showToast(hintIsOn()?'แสดงดาวคำใบ้':'ซ่อนดาวคำใบ้','good');syncNav();

@@ -1,16 +1,10 @@
 /* Explain-and-show cards that replace multiple-choice questions.
    Each card is one sentence for the coach's speech bubble, the board example from the first practice set
    (same order), and the squares to mark on that board. Squares use a–h / 1–8 like the rest of the data. */
+/* Lesson 1 (board) is not here: the learner taps each named square instead. */
 (function(root){
   'use strict';
   root.MakrukLessonExamples={
-    board:[
-      {text:'ช่องที่มีกรอบชื่อ ฉ8 · อ่านตัวอักษร ฉ ด้านล่างก่อน แล้วอ่านเลข 8 ด้านข้าง'},
-      {text:'ช่องนี้ชื่อ ก5 · ตัวอักษร ก คือแนวซ้ายสุด และเลข 5 คือแถวที่ 5'},
-      {text:'ช่องนี้ชื่อ ง3 · ไล่ ก ข ค ง จากซ้าย แล้วนับขึ้นไป 3 แถว'},
-      {text:'ช่องนี้ชื่อ ช1 · แถวล่างสุดคือแถว 1 และ ช อยู่ถัดจากขวาสุดหนึ่งช่อง'},
-      {text:'ช่องนี้ชื่อ ข6 · ทุกช่องอ่านตัวอักษรก่อน แล้วตามด้วยเลขเสมอ'}
-    ],
     setup:[
       {text:'ฝ่ายขาวเริ่มเดินก่อนเสมอ แล้วผลัดกันเดินทีละตา',marks:['a1','b1','c1','d1','e1','f1','g1','h1']},
       {text:'ขุนขาวเริ่มที่ ง1 ส่วนขุนแดงเริ่มที่ จ8 · ขุนทั้งสองไม่อยู่แนวเดียวกัน',marks:['d1','e8']},

@@ -234,12 +234,12 @@ no(Object.hasOwn(inlineContext, 'document'), 'lesson data evaluates without a DO
 no(Object.hasOwn(inlineContext, 'window'), 'lesson data evaluates without browser side effects');
 const coordinateLesson = inlineLessons[0];
 check(coordinateLesson.coordinateLesson, true, 'first lesson is the coordinate lesson');
-check(coordinateLesson.type, 'quiz', 'coordinate lesson uses answer choices');
-check(coordinateLesson.requiredCorrect, 5, 'coordinate lesson requires five correct answers');
-check(coordinateLesson.questions.length, 5, 'coordinate lesson contains five questions');
-check(new Set(coordinateLesson.questions.map(question => key(question.target))).size, 5, 'coordinate questions target five distinct squares');
-check(key(coordinateLesson.questions[0].target), key(algebraic('f', 8)), 'first target is f8 / ฉ8');
-
+check(coordinateLesson.type, 'quiz', 'coordinate lesson is a question lesson');
+check(coordinateLesson.requiredCorrect, 6, 'coordinate lesson requires six correct taps');
+check(coordinateLesson.questions.length, 6, 'coordinate lesson contains six questions');
+check(new Set(coordinateLesson.questions.map(question => key(question.target))).size, 6, 'coordinate questions target six distinct squares');
+check(Array.from(coordinateLesson.questions.slice(0, 4), question => key(question.target)).sort(), ['d4', 'd5', 'e4', 'e5'].map(sq => key(algebraic(sq[0], Number(sq[1])))).sort(), 'the first four questions are the centre squares');
+check(coordinateLesson.coordinateSteps[0].edges, false, 'the first teaching step shows an empty board');
 const displayDeclaration = indexSource.match(/var displayFiles = (\[[^\]]+\]);/);
 const formatterDeclaration = indexSource.match(/function squareLabel\(p\)\{[^}]+\}/);
 yes(displayDeclaration && formatterDeclaration, 'actual Thai file mapping and square formatter can be extracted');
@@ -264,12 +264,10 @@ coordinateLesson.questions.forEach((question, index) => {
   const target = question.target;
   yes(Number.isInteger(target.r) && Number.isInteger(target.c) && target.r >= 0 && target.r < 8 && target.c >= 0 && target.c < 8, `coordinate question ${index + 1}: target is on board`);
   check(question.pieces.length, 0, `coordinate question ${index + 1}: labels are taught without distracting pieces`);
-  check(question.choices.length, 3, `coordinate question ${index + 1}: has three choices`);
-  check(new Set(question.choices.map(choice => choice.text)).size, 3, `coordinate question ${index + 1}: choices have unique labels`);
-  const correctChoices = question.choices.filter(choice => choice.correct);
-  check(correctChoices.length, 1, `coordinate question ${index + 1}: exactly one answer is marked correct`);
-  check(correctChoices[0].text, expectedThaiFiles[target.c] + (8 - target.r), `coordinate question ${index + 1}: correct answer matches Thai file and rank`);
-  question.choices.forEach(choice => yes(validCoordinateLabels.has(choice.text), `coordinate question ${index + 1}: choice ${choice.text} is a valid square label`));
+  no(Object.hasOwn(question, 'choices'), `coordinate question ${index + 1}: the learner taps the square, no answer choices`);
+  const label = expectedThaiFiles[target.c] + (8 - target.r);
+  yes(validCoordinateLabels.has(label), `coordinate question ${index + 1}: ${label} is a valid square label`);
+  check(question.mission, 'แตะช่อง ' + label, `coordinate question ${index + 1}: asks for the square by name`);
 });
 console.log(`Makruk rules and lesson content verified: ${assertions} assertions passed; ${challengeCount} Day 2 challenges / ${goalCount} goal alternatives / ${coordinateLesson.questions.length} coordinate questions.`);
 
