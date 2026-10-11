@@ -30,19 +30,33 @@ c = P.nextCount(c, pieces, 'black'); eq(c.value, 4, 'first count is pieces + 1')
 for (let n = 5; n <= 16; n++) { c = P.nextCount(c, pieces, 'white'); c = P.nextCount(c, pieces, 'black'); }
 eq([c.value, c.extra, c.draw], [16, true, false], 'count reaches the ceiling: white has one move left');
 c = P.nextCount(c, pieces, 'white'); eq(c.draw, true, 'white used its last move without mate: draw');
+// Two rooks: red counts 5, 6, 7, 8; white's next move is the last, then red would say 9 = draw.
+{ const two = board('K:e1 R:a1 R:h1 k:e8'); let t = P.nextCount(null, two, 'white');
+  for (let n = 5; n <= 8; n++) { t = P.nextCount(t, two, 'black'); if (n < 8) t = P.nextCount(t, two, 'white'); }
+  eq([t.value, t.extra, t.draw], [8, true, false], 'red says 8: white has one move left');
+  t = P.nextCount(t, two, 'white'); eq(t.draw, true, 'red would say 9: draw');
+  eq(P.countText(t, s => s === 'white' ? 'ขาว' : 'แดง'), 'แดงนับ 9 เกิน 8 · เสมอ', 'draw text'); }
 // A capture never restarts the piece count.
 c = P.nextCount(null, board('K:e1 R:a1 R:h1 k:e8'), 'white'); c = P.nextCount(c, board('K:e1 R:a1 R:h1 k:e8'), 'black');
 c = P.nextCount(c, board('K:e1 R:a1 k:h1'), 'black');
 eq([c.value, c.ceiling], [6, 8], 'after the king takes a rook the count and ceiling carry on');
 
-// Board count: both sides still have pieces. The side to move says 1 on its next move; at 64 the game is drawn.
-pieces = board('K:e1 R:a1 k:e8 r:h8'); c = P.nextCount(null, pieces, 'black');
-eq([c.kind, c.counter, c.value], ['board', 'white', null], 'board count starts with the side to move');
-for (let n = 1; n <= 63; n++) { c = P.nextCount(c, pieces, 'white'); c = P.nextCount(c, pieces, 'black'); }
-eq([c.value, c.draw], [63, false], 'still playing at 63');
-c = P.nextCount(c, pieces, 'white'); eq([c.value, c.draw], [64, true], 'count 64: draw');
+// Board count: no pawns and both sides still have pieces. It only starts when the weaker side asks; that side
+// says 1 on its next move and counts alone. After it says 64 the other side has one more move; then 65 = draw.
+pieces = board('K:e1 R:a1 M:c4 k:e8 r:h8');
+eq(P.nextCount(null, pieces, 'black'), null, 'no board count unless asked');
+eq(P.canRequestBoardCount(pieces, null), true, 'the weaker side may ask');
+eq(P.canRequestBoardCount(board('K:e1 R:a1 P:c3 k:e8 r:h8'), null), false, 'not while pawns are left');
+c = P.requestBoardCount('black');
+eq([c.kind, c.counter, c.value], ['board', 'black', null], 'red asked for the board count');
+c = P.nextCount(c, pieces, 'white'); eq(c.value, null, 'only the counting side counts');
+c = P.nextCount(c, pieces, 'black'); eq(c.value, 1, 'red says 1 on its move');
+for (let n = 2; n <= 64; n++) { c = P.nextCount(c, pieces, 'white'); c = P.nextCount(c, pieces, 'black'); }
+eq([c.value, c.extra, c.draw], [64, true, false], 'red says 64: white has one more move');
+c = P.nextCount(c, pieces, 'white'); eq(c.draw, true, 'no mate: red would say 65, a draw');
+pieces = board('K:e1 R:a1 k:e8 r:h8');
 // A capture that leaves a lone king switches to the piece count.
-c = P.nextCount(null, pieces, 'black'); c = P.nextCount(c, pieces, 'white');
+c = P.requestBoardCount('black'); c = P.nextCount(c, pieces, 'black');
 c = P.nextCount(c, board('K:e1 R:h8 k:e8'), 'white');
 eq([c.kind, c.counter, c.value, c.ceiling], ['piece', 'black', null, 16], 'lone king: switch to the piece count');
 // No counting while unpromoted pawns are on the board.
@@ -89,6 +103,8 @@ const endings = {};
 for (let g = 0; g < 3; g++) {
   let ps = M.initial().pieces, side = 'white', cnt = P.nextCount(null, ps, 'black'), state = 'playing', plies = 0;
   while (plies < 1200) {
+    // The weaker side asks for the board count, as the editor's computer player does.
+    if (P.canRequestBoardCount(ps, cnt) && P.material(ps, side) < P.material(ps, side === 'white' ? 'black' : 'white')) cnt = P.requestBoardCount(side);
     const move = P.chooseMove(ps, side, { random: rnd, count: cnt });
     assert(R.legalMoves(ps, side).some(m => key(m) === key(move)), 'legal computer move');
     ps = R.applyMove(ps, move.from, move.to); cnt = P.nextCount(cnt, ps, side); side = side === 'white' ? 'black' : 'white'; plies++;

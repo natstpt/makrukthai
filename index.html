@@ -2020,7 +2020,7 @@
   // Does the count reach its end on this task's last move? Then missing the mate means a draw.
   function countRunsOut(task){
     if(!task.count)return false;
-    if(task.count.kind==='board')return !state.pieceCount&&task.count.start+task.moves-2>=63;
+    if(task.count.kind==='board')return !state.pieceCount&&task.count.start+task.moves-2>=64;
     return task.moves===task.count.ceiling-task.count.start+2;
   }
   function puzzleKey(from,to){return 'abcdefgh'[from.c]+(8-from.r)+'abcdefgh'[to.c]+(8-to.r);}
@@ -2032,10 +2032,10 @@
     var from={r:state.current.r,c:state.current.c},task=challenge(),child=state.puzzleNode&&state.puzzleNode[puzzleKey(from,dest)];
     if(!child){
       var after=Rules.gameStatus(Rules.applyMove(state.gamePieces,from,dest),theirs);
-      wrongMove(from,dest,defend?(task.defend==='count'?'ตานี้ฝ่ายขาวจะจนได้ก่อนนับครบ ลองช่องอื่นนะ':'ตานี้ฝ่ายขาวจะไล่จนได้ ลองหนีไปทางมุมที่ปลอดภัย'):
+      wrongMove(from,dest,defend?(task.defend==='count'?'ตานี้ฝ่ายขาวจะจนได้ก่อนแดงนับเกินเพดาน ลองช่องอื่นนะ':'ตานี้ฝ่ายขาวจะไล่จนได้ ลองหนีไปทางมุมที่ปลอดภัย'):
         after.state==='stalemate'?'อับ! ขุนแดงไม่ถูกรุกแต่ไม่มีที่เดิน = เสมอ · ลองตาอื่นที่รุกได้':
         after.state==='checkmate'?'รุกจนได้ แต่โจทย์นี้ให้จนใน '+task.moves+' ตา ลองอีกครั้งนะ':
-        state.puzzleLeft===1&&countRunsOut(task)?'ตานี้ยังไม่รุกจน แดงจะนับครบ '+(task.count.kind==='board'?64:task.count.ceiling)+' แล้วเกมเสมอ ลองใหม่นะ':
+        state.puzzleLeft===1&&countRunsOut(task)?'ตานี้ยังไม่รุกจน แดงจะนับ '+((task.count.kind==='board'?64:task.count.ceiling)+1)+' เกินกำหนด แล้วเกมเสมอ ลองใหม่นะ':
         state.puzzleLeft===1?'ตานี้ยังไม่รุกจน ต้องจนในตานี้เลย ลองใหม่นะ':'ตานี้ขุนแดงจะหนีได้นานเกิน '+state.puzzleLeft+' ตา ลองคิดใหม่นะ');
       return;
     }
@@ -2049,7 +2049,7 @@
       state.correctMoves++;state.roundDone=true;state.gameOver=true;state.puzzleNode=null;
       var used=task.moves-state.puzzleLeft+1;
       state.roundMessage=task.success||(defend?(task.defend==='count'?'รอดแล้ว! แดงนับ '+redCount+' เกินเพดาน '+task.count.ceiling+' ฝ่ายขาวไล่ไม่ทัน เกมเสมอ':'รอดแล้ว! ขุนแดงหนีอยู่ทางมุมที่เบี้ยหงายไม่ถูกมุม ฝ่ายขาวไล่ไม่จน เกมเสมอ'):
-        'รุกจน! จนได้ใน '+used+' ตา'+(task.count?' ก่อนนับครบ '+task.count.ceiling:''));
+        'รุกจน! จนได้ใน '+used+' ตา'+(task.count?' ก่อนแดงนับเกิน '+task.count.ceiling:''));
       feedbackEl.className='feedback success';feedbackEl.textContent=state.roundMessage;boardCaption.textContent=defend?'หนีรอด!':'รุกจน!';
       showToast(defend?'หนีรอด ✓':'รุกจน ✓','good','complete');
       renderBoard();updatePracticeUI();return;
