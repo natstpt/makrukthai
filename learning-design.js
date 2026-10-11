@@ -3,7 +3,7 @@
   function build(previous){
     var order=['board','king','rook','knight','met','khon','pawn','promotion','promoted','setup','capture','check','escape','mate',
       'review','defend','block','take-checker','notation','draw-rules','think','fair-play','game','mini','assessment',
-      'endgame-rook-khon','endgame-promoted','endgame-khon-promoted','endgame-knight','endgame-stalemate','endgame-count',
+      'count-board','count-pieces','endgame-rook-khon','endgame-promoted','endgame-khon-promoted','endgame-knight','endgame-stalemate','endgame-count',
       'endgame-corner','puzzle-khon','endgame-tempo','puzzle-khon-met','puzzle-knight','puzzle-twist-rook','puzzle-twist-sacrifice',
       'chase-knight-khon','chase-knight-met','chase-rook','chase-khon-pair','escape-corner','escape-count','finish'];
     var introductions={

@@ -12,7 +12,7 @@ const plain=v=>JSON.parse(JSON.stringify(v));
 const lessons=plain(ctx.window.buildEndgameLessons().filter(l=>l.games&&l.games.some(t=>t.chase))),trees=plain(ctx.window.MakrukChaseTrees);
 const solver=createSolver();
 const decode=s=>Object.fromEntries((s||'').split(',').filter(Boolean).map(e=>[e.slice(0,4),(e[4]==='#'||e[4]==='!')?e[4]:{r:e.slice(4,8),n:parseInt(e.slice(8),36)}]));
-assert.deepEqual(lessons.map(l=>l.id),['chase-rook','chase-knight-met','chase-khon-pair','chase-knight-khon','escape-count','escape-corner']);
+assert.deepEqual(lessons.map(l=>l.id),['chase-rook','chase-knight-met','chase-khon-pair','chase-knight-khon','escape-count','escape-corner','count-pieces']);
 let defends=0;
 let chases=0,visited=0,exact=0;
 // Defend tasks: the learner moves the red king. Every accepted red move is legal and keeps red alive (white cannot

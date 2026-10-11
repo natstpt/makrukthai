@@ -1235,7 +1235,7 @@
     }
     if(l.type==='game')state.gamePieces=Rules.clonePieces(task?task.pieces:fullSetup());
     state.creditBase=state.correctMoves;state.wrongMove=null;state.wrongReply=null;clearTimeout(wrongReplyTimer);speechEl.classList.remove('sayError');
-    state.puzzleNode=l.puzzle&&task?puzzleNodeAt(task.tree,0):null;state.puzzleHintOn=false;state.puzzleSay='';state.puzzleLeft=l.puzzle&&task?task.moves:0;state.puzzleCount=l.puzzle&&task&&task.count?task.count.start:0;
+    state.puzzleNode=l.puzzle&&task?puzzleNodeAt(task.tree,0):null;state.puzzleHintOn=false;state.puzzleSay='';state.puzzleLeft=l.puzzle&&task?task.moves:0;state.puzzleCount=l.puzzle&&task&&task.count?task.count.start:0;state.pieceCount=null;
     state.current=start?{r:start.r,c:start.c}:null;
     if(start&&l.type==='move')state.lastPracticeStart={r:start.r,c:start.c};
     state.starTarget=null;state.routeMoves=0;
@@ -1888,6 +1888,27 @@
     });
     return node;
   }
+  // Counting shown after red's move. Board counting (ศักดิ์กระดาน) switches to piece counting (ศักดิ์หมาก) when red is
+  // left with a lone king: the count restarts from the number of pieces + 1, up to the lowest ceiling of white's pieces.
+  function pieceCeiling(pieces){
+    var n=function(type){return pieces.filter(function(p){return p.side==='white'&&p.piece===type;}).length;},caps=[];
+    if(n('rook'))caps.push(n('rook')>1?8:16);if(n('khon'))caps.push(n('khon')>1?22:44);if(n('knight'))caps.push(n('knight')>1?32:64);
+    if(n('promoted')||n('met'))caps.push(64);
+    return caps.length?Math.min.apply(null,caps):64;
+  }
+  function countSay(task){
+    if(!task.count)return '';
+    if(task.count.kind==='board'){
+      var red=state.gamePieces.filter(function(p){return p.side==='black';});
+      if(red.length===1&&!state.pieceCount){
+        state.pieceCount={next:state.gamePieces.length+1,ceiling:pieceCeiling(state.gamePieces)};
+        return ' · แดงเหลือขุนตัวเดียว เปลี่ยนเป็นนับศักดิ์หมาก เริ่มนับ '+(state.pieceCount.next++)+' จาก '+state.pieceCount.ceiling;
+      }
+      if(state.pieceCount)return ' · นับศักดิ์หมาก '+(state.pieceCount.next++)+' จาก '+state.pieceCount.ceiling;
+      return ' · นับศักดิ์กระดาน '+(state.puzzleCount++)+' จาก 64';
+    }
+    return ' · นับ '+(state.puzzleCount++)+' จาก '+task.count.ceiling;
+  }
   function puzzleKey(from,to){return 'abcdefgh'[from.c]+(8-from.r)+'abcdefgh'[to.c]+(8-to.r);}
   // Short puzzles: only moves that still mate in time are accepted; the red king answers from the solution tree.
   // Defend lessons (เป็นฝ่ายหนี): the learner plays the red king and white answers from the tablebase.
@@ -1934,7 +1955,7 @@
         state.puzzleLeft--;
         say='ขาวเดิน'+pieceName[replyPiece.piece]+' '+squareLabel(reply.from)+' → '+squareLabel(reply.to)+(task.count?' · แดงนับ '+redCount+' จาก '+task.count.ceiling:'')+
           (task.defend==='count'?' · ขาวเหลืออีก '+state.puzzleLeft+' ตา':' · หนีต่ออีก '+(state.puzzleLeft+1)+' ตา');
-      }else say=(victim?pieceName[replyPiece.piece]+'แดงกิน'+pieceName[victim.piece]+'ที่ '+squareLabel(reply.to):replyPiece.piece==='king'?'ขุนแดงหนีไป '+squareLabel(reply.to):'แดงเดิน'+pieceName[replyPiece.piece]+' '+squareLabel(reply.from)+' → '+squareLabel(reply.to))+(task.count?' · นับ '+(state.puzzleCount++)+' จาก '+task.count.ceiling:'')+' · เหลืออีก '+state.puzzleLeft+' ตา'+(state.puzzleLeft===1?' ต้องจนตานี้':'');
+      }else say=(victim?pieceName[replyPiece.piece]+'แดงกิน'+pieceName[victim.piece]+'ที่ '+squareLabel(reply.to):replyPiece.piece==='king'?'ขุนแดงหนีไป '+squareLabel(reply.to):'แดงเดิน'+pieceName[replyPiece.piece]+' '+squareLabel(reply.from)+' → '+squareLabel(reply.to))+countSay(task)+' · เหลืออีก '+state.puzzleLeft+' ตา'+(state.puzzleLeft===1?' ต้องจนตานี้':'');
       state.puzzleSay=say;
       feedbackEl.className='feedback';feedbackEl.textContent=say;boardCaption.textContent=(defend?'ถึงตาฝ่ายแดง · ':'ถึงตาฝ่ายขาว · ')+say;
       renderBoard();updatePracticeUI();

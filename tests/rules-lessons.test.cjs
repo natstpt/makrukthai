@@ -38,15 +38,15 @@ const expectedIds = [
   'board', 'king', 'rook', 'knight', 'met', 'khon', 'pawn', 'promotion', 'promoted', 'setup',
   'capture', 'check', 'escape', 'mate', 'review', 'defend', 'block', 'take-checker', 'notation', 'draw-rules',
   'think', 'fair-play', 'game', 'mini', 'assessment',
-  'endgame-rook-khon', 'endgame-promoted', 'endgame-khon-promoted', 'endgame-knight', 'endgame-stalemate', 'endgame-count',
+  'count-board', 'count-pieces', 'endgame-rook-khon', 'endgame-promoted', 'endgame-khon-promoted', 'endgame-knight', 'endgame-stalemate', 'endgame-count',
   'endgame-corner', 'puzzle-khon', 'endgame-tempo', 'puzzle-khon-met', 'puzzle-knight', 'puzzle-twist-rook', 'puzzle-twist-sacrifice',
   'chase-knight-khon', 'chase-knight-met', 'chase-rook', 'chase-khon-pair', 'escape-corner', 'escape-count', 'finish'
 ];
-check(Array.from(lessons, lesson => lesson.id), expectedIds, 'final 45 stable IDs appear in intended teaching order');
-check(lessons.length, 45, 'final curriculum has 45 lessons');
-check(new Set(lessons.map(lesson => lesson.id)).size, 45, 'all stable IDs are unique');
+check(Array.from(lessons, lesson => lesson.id), expectedIds, 'final 47 stable IDs appear in intended teaching order');
+check(lessons.length, 47, 'final curriculum has 47 lessons');
+check(new Set(lessons.map(lesson => lesson.id)).size, 47, 'all stable IDs are unique');
 check(lessons.filter(lesson => lesson.day === 1).length, 14, 'Day 1 has 14 foundational lessons');
-check(lessons.filter(lesson => lesson.day === 2).length, 31, 'Day 2 has 31 extension lessons, including the endgame chapter');
+check(lessons.filter(lesson => lesson.day === 2).length, 33, 'Day 2 has 33 extension lessons, including the endgame chapter');
 check(lessons.findIndex(lesson => lesson.day === 2), 14, 'Day 2 begins after all fundamentals');
 yes(lessons.slice(0, 14).every(lesson => lesson.day === 1), 'Day 1 lessons form one contiguous section');
 yes(lessons.slice(14).every(lesson => lesson.day === 2), 'Day 2 lessons form one contiguous section');
@@ -178,5 +178,5 @@ for (const [i, question] of byId('mate').questions.entries()) {
   const status = Rules.gameStatus(question.pieces, 'black');
   check(status.state, i === 1 ? 'playing' : 'checkmate', `Day 1 mate ${i + 1}: diagram matches the answer`);
 }
-console.log(`Rules curriculum verified: ${assertions} assertions passed; 45 lessons / Day 1: 14 / Day 2: 31.`);
+console.log(`Rules curriculum verified: ${assertions} assertions passed; 47 lessons / Day 1: 14 / Day 2: 33.`);
 
