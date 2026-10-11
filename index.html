@@ -1809,17 +1809,17 @@
       renderBoard();updatePracticeUI();return;
     }
     state.replyPending=true;state.puzzleLeft--;
-    feedbackEl.className='feedback success';feedbackEl.textContent='ถูกทาง! รอดูขุนแดงหนี';boardCaption.textContent='ถึงตาฝ่ายแดง';
-    state.puzzleSay='ถูกทาง! รอดูขุนแดงหนี';
+    feedbackEl.className='feedback success';feedbackEl.textContent='ถูกทาง! รอดูฝ่ายแดงเดินตอบ';boardCaption.textContent='ถึงตาฝ่ายแดง';
+    state.puzzleSay='ถูกทาง! รอดูฝ่ายแดงเดินตอบ';
     gameReplyTimer=setTimeout(function(){
       gameReplyTimer=null;state.replyPending=false;
       var reply={from:puzzleSquare(child.r,0),to:puzzleSquare(child.r,2)};
-      var redPiece=state.gamePieces.find(function(x){return same(x.at,reply.from);});
+      var redPiece=state.gamePieces.find(function(x){return same(x.at,reply.from);}),victim=state.gamePieces.find(function(x){return same(x.at,reply.to);});
       state.gamePieces=Rules.applyMove(state.gamePieces,reply.from,reply.to);
       queueMoveFeedback(reply.from,reply.to,redPiece.piece,'black',state.gamePieces);
       state.gameHistory.push('แดง '+pieceName[redPiece.piece]+' '+squareLabel(reply.from)+'→'+squareLabel(reply.to));
       state.lastFrom=reply.from;state.lastTo=reply.to;state.puzzleNode=child.n;
-      var say=state.puzzleSay='ขุนแดงหนีไป '+squareLabel(reply.to)+' · เหลืออีก '+state.puzzleLeft+' ตา'+(state.puzzleLeft===1?' ต้องจนตานี้':'');
+      var say=state.puzzleSay=(victim?pieceName[redPiece.piece]+'แดงกิน'+pieceName[victim.piece]+'ที่ '+squareLabel(reply.to):redPiece.piece==='king'?'ขุนแดงหนีไป '+squareLabel(reply.to):'แดงเดิน'+pieceName[redPiece.piece]+' '+squareLabel(reply.from)+' → '+squareLabel(reply.to))+' · เหลืออีก '+state.puzzleLeft+' ตา'+(state.puzzleLeft===1?' ต้องจนตานี้':'');
       feedbackEl.className='feedback';feedbackEl.textContent=say;boardCaption.textContent='ถึงตาฝ่ายขาว · '+say;
       renderBoard();updatePracticeUI();
     },presentation.replyDelay());

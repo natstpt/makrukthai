@@ -3,15 +3,16 @@
    (assets/references/makruk-endgames-prakob-boonthai.pdf, pages 153–159)
    (each "เตรียมการ" and "ตาจน" pair). Every "ตาจน" is checked by tests/endgame-lessons.test.cjs, and each
    practice task is the position one move before mate, where the star move is the only mate.
-   Board strings: K king, R rook, B khon, N knight, M promoted pawn, P pawn (white); k red king. */
+   Board strings: K king, R rook, B khon, N knight, M promoted pawn, P pawn (white); lower case for red (k red king). */
 (function(root){
   'use strict';
-  var KIND={K:'king',R:'rook',B:'khon',N:'knight',M:'promoted',P:'pawn',k:'king'};
+  var KIND={K:'king',R:'rook',B:'khon',N:'knight',M:'promoted',P:'pawn'};
   function at(sq){return {r:8-Number(sq.charAt(1)),c:'abcdefgh'.indexOf(sq.charAt(0))};}
   function board(text){
     return text.split(' ').map(function(token){
       var parts=token.split(':');
-      return {piece:KIND[parts[0]],side:parts[0]==='k'?'black':'white',at:at(parts[1])};
+      var red=parts[0]!==parts[0].toUpperCase();
+      return {piece:KIND[parts[0].toUpperCase()],side:red?'black':'white',at:at(parts[1])};
     });
   }
   // One practice task: the position before mate, the moving piece's square and the mating square.
@@ -212,7 +213,32 @@
         puzzle('book-186','กลที่ 186','k:b1 K:b3 B:d2 N:e2',3,['d2c3','b1a1','c3b2','a1b1','e2c3']),
         puzzle('book-180','กลที่ 180','k:b8 M:d7 N:e7 K:b6 M:d6',3,['d7c6','b8a8']),
         puzzle('book-188','กลที่ 188','k:h6 B:e7 K:e5 N:g3',5,['e5f6','h6h7','g3f5'])
-      ],'ม้า 2 ตัว 32 ตา · ม้า 1 ตัว 64 ตา · ใช้เพดานต่ำสุดเมื่อมีหมากหลายชนิด',[115,118,119])
+      ],'ม้า 2 ตัว 32 ตา · ม้า 1 ตัว 64 ตา · ใช้เพดานต่ำสุดเมื่อมีหมากหลายชนิด',[115,118,119]),
+      puzzleLesson('puzzle-twist-rook','กลพลิกแพลง · เรือ','กลพลิกแพลง · แดงยังมีเรือ',
+        'ฝ่ายแดงยังมี<strong>เรือคอยป้องกัน</strong> ต้องรุกให้ต่อเนื่อง ไม่ให้เรือแดงได้ช่วย',
+        'หมากได้เปรียบกันไม่มาก ถ้ารู้จักกลจะรู้จังหวะ ฝ่ายไล่พยายามเดินให้เข้ากล',
+        'รุกทุกตา · ไม่ให้เรือแดงมีจังหวะ',[
+        step('เรือแดง ช1 คอยกินหมากที่เข้าใกล้ ถ้าเดินช้า เรือแดงจะเข้ามาช่วย (กลที่ 212)','k:h8 K:f6 N:h6 R:g5 r:g1',['g1','h6','g5']),
+        step('เรือแดง ฉ2 คุมแถว 2 เรือขาวต้องลงไปรุกแถว 1 ก่อน แล้วเบี้ยหงายจึงปิดทาง (กลที่ 210)','k:e1 r:f2 K:e3 M:c3 M:f3 R:h3',['h3','h1','f2'])
+      ],[
+        puzzle('book-212','กลที่ 212','k:h8 K:f6 N:h6 R:g5 r:g1',3,['h6f7','h8h7','g5h5','h7g8','h5h8']),
+        puzzle('book-211','กลที่ 211','k:h8 R:a7 K:f6 N:h6 r:g1',3,['h6f7','h8h7','f7g5']),
+        puzzle('book-214','กลที่ 214','k:h8 K:f7 M:f6 R:a5 N:g1 r:h1',3,['f6g7','h8h7']),
+        puzzle('book-210','กลที่ 210','k:e1 r:f2 K:e3 M:c3 M:f3 R:h3',3,['h3h1','f2f1','f3e2','f1h1','c3d2']),
+        puzzle('book-215','กลที่ 215','k:e8 B:d6 B:f6 r:b5 N:e4 K:a3 R:e2 r:b1',3,['e4c5'])
+      ],'แดงยังมีหมากอื่น จึงยังไม่นับศักดิ์หมาก ถ้ามีการขอนับให้นับศักดิ์กระดาน 64 ตา',[129,130,131,132]),
+      puzzleLesson('puzzle-twist-sacrifice','กลพลิกแพลง · สละหมาก','กลพลิกแพลง · ยอมให้แดงกิน',
+        'บางครั้งต้อง<strong>ยอมให้แดงกินหมาก</strong> เพื่อดึงหมากแดงออกจากช่องสำคัญ',
+        'เมื่อแดงกิน หมากแดงจะย้ายไปขวางทางหนีของขุนตัวเอง หรือเปิดช่องให้เรารุก',
+        'สละหมาก → แดงกิน → รุกจน',[
+        step('โคน ง7 ยอมให้โคนแดงกิน ช่อง ค8 หรือ จ8 จะว่าง แล้วโคนอีกตัวรุกจน (กลที่ 216)','k:d8 b:c8 b:e8 B:d6 B:e6 N:d5 K:d1 r:a2 r:h2',['e6','d7','c8','e8']),
+        step('เบี้ยหงาย ช7 ยอมให้ม้าแดงกิน ม้าแดงจึงไปขวางทางหนีของขุนแดงเอง (กลที่ 218)','k:h8 n:d8 n:e8 N:e6 N:f6 K:g6 M:h6',['h6','g7','e8'])
+      ],[
+        puzzle('book-216','กลที่ 216','k:d8 b:c8 b:e8 B:d6 B:e6 N:d5 K:d1 r:a2 r:h2',2,['e6d7']),
+        puzzle('book-217','กลที่ 217','k:f8 K:h8 N:c6 N:d6 M:f6 n:f5',3,['f6e7','f5e7']),
+        puzzle('book-218','กลที่ 218','k:h8 n:d8 n:e8 N:e6 N:f6 K:g6 M:h6',3,['h6g7','e8g7','e6d8']),
+        puzzle('book-219','กลที่ 219','k:h4 K:g6 M:f4 n:e4 n:c3 N:e2 N:f2',3,['f4g3','e4g3','e2d4'])
+      ],'แดงยังมีหมากอื่น จึงยังไม่นับศักดิ์หมาก ถ้ามีการขอนับให้นับศักดิ์กระดาน 64 ตา',[132,133])
     ];
   };
 })(typeof window==='object'?window:globalThis);
