@@ -9,7 +9,7 @@ for(const file of ['endgame-lessons.js','puzzle-trees.js'])vm.runInContext(fs.re
 const plain=v=>JSON.parse(JSON.stringify(v));
 const lessons=plain(ctx.window.buildEndgameLessons().filter(l=>l.puzzle)),trees=plain(ctx.window.MakrukPuzzleTrees);
 const solver=createSolver();
-assert.deepEqual(lessons.map(l=>l.id),['endgame-stalemate','endgame-count','endgame-corner','endgame-tempo','puzzle-khon','puzzle-khon-met','puzzle-knight','puzzle-twist-rook','puzzle-twist-sacrifice','chase-rook','chase-knight-met','chase-khon-pair','chase-knight-khon']);
+assert.deepEqual(lessons.map(l=>l.id),['endgame-stalemate','endgame-count','endgame-corner','endgame-tempo','puzzle-khon','puzzle-khon-met','puzzle-knight','puzzle-twist-rook','puzzle-twist-sacrifice','chase-rook','chase-knight-met','chase-khon-pair','chase-knight-khon','escape-count','escape-corner']);
 let boards=0,puzzles=0,nodes=0;const keys=new Set();
 function walk(pieces,node,left,label){
   nodes++;
