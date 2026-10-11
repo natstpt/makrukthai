@@ -514,6 +514,37 @@
       @supports(height:100svh){.app,.app:not(.roomyPanel){--boardSize:min(calc(100vw - 32px),calc(100svh - var(--coach) - 74px - var(--panelNeed) - 32px - env(safe-area-inset-bottom)))}}
       .mobileCoachRow{padding-bottom:10px}
     }
+
+    /* Bottom navigation (เมนู · คำใบ้ · ย้อนกลับ · ถัดไป): icon above a short label, like a mobile tab bar. */
+    .lessonFoot{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:4px!important;align-items:stretch;background:#2b2924}
+    .lessonFoot .mainBtn{display:none!important}
+    .navBtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:0!important;height:auto!important;padding:4px 2px;border:0!important;border-radius:12px;background:transparent!important;color:#d7d3c8;font:inherit;font-size:14px;font-weight:800;line-height:1.1;cursor:pointer;-webkit-tap-highlight-color:transparent}
+    .navBtn svg{width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+    .navBtn span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+    @media(hover:hover){.navBtn:hover:not(:disabled){background:rgba(255,255,255,.06)!important}}
+    .navBtn:focus-visible{outline:3px solid #f2c14e;outline-offset:-2px}
+    .navBtn:disabled{color:#6f6a60;cursor:default}
+    #navHintBtn[aria-pressed="true"]{color:#ffc83a}
+    #navHintBtn[aria-pressed="true"] .bulb{fill:rgba(255,200,58,.25)}
+    #navHintBtn[aria-pressed="false"] .rays{opacity:.25}
+    #navNextBtn.go{color:#ffa75a}
+    #navNextBtn.go svg{stroke-width:3.2}
+    /* Progress: one thick rounded orange bar with a badge counting finished tasks. */
+    .progressRow{display:flex;align-items:center;gap:12px;margin-top:8px}
+    .practiceCard #practiceCounter{margin-bottom:0!important}
+    .progressRow .challengeTrack{flex:1;height:20px!important;margin:0;border:0;border-radius:99px;background:#4a4740;box-shadow:inset 0 2px 4px rgba(0,0,0,.35)}
+    .progressRow .challengeTrack:after{display:none}
+    .progressRow .challengeFill,.practiceCard.ready .progressRow .challengeFill{border-radius:99px;background:linear-gradient(180deg,#ffb36e,#ff9f4f);box-shadow:none}
+    .practiceCard.ready .progressRow .challengeFill{background:linear-gradient(180deg,#8fd47f,#5fb455)}
+    .progressBadge{position:relative;flex:0 0 auto;width:44px;height:44px;display:grid;place-items:center;transform:rotate(-12deg)}
+    .progressBadge svg{position:absolute;inset:0;width:100%;height:100%;fill:#a9c8ee;stroke:#5d86bf;stroke-width:2;filter:drop-shadow(0 3px 0 #4f74a8)}
+    .progressBadge b{position:relative;font-size:18px;font-weight:950;color:#fff;-webkit-text-stroke:3px #2f3f57;paint-order:stroke;transform:rotate(12deg)}
+    .square.hintSource:after{content:"";position:absolute;inset:6%;border:3px dashed #ffc83a;border-radius:50%;z-index:6;pointer-events:none}
+    @media(max-width:699px){
+      .lessonFoot{padding:4px 8px max(6px,env(safe-area-inset-bottom))!important}
+      .navBtn{font-size:13px}.navBtn svg{width:28px;height:28px}
+      .progressRow .challengeTrack{height:16px!important}.progressBadge{width:38px;height:38px}.progressBadge b{font-size:16px}
+    }
   </style>
 </head>
 <body>
@@ -630,7 +661,7 @@
             <small id="practiceSetLabel" hidden></small>
             <strong id="practiceCounter" role="status" aria-live="polite"></strong>
             <p id="practiceRequirement"></p>
-            <div class="challengeTrack" id="challengeTrack"><div class="challengeFill" id="challengeFill"></div></div>
+            <div class="progressRow"><div class="challengeTrack" id="challengeTrack"><div class="challengeFill" id="challengeFill"></div></div><span class="progressBadge" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M8 11h7a4 4 0 1 1 8 0h7v7a4 4 0 1 0 0 8v7h-7a4 4 0 1 1-8 0H8v-7a4 4 0 1 0 0-8z"/></svg><b id="progressBadgeCount">0</b></span></div>
           </div>
 
           <div class="quizBox" id="quizBox" hidden></div>
@@ -656,7 +687,10 @@
       </div>
 
       <div class="lessonFoot">
-        <button class="menuBtn" id="menuBtn" type="button" aria-label="เมนูบทเรียนและเครื่องมือ" aria-haspopup="dialog" aria-controls="menuOverlay">☰</button>
+        <button class="menuBtn navBtn" id="menuBtn" type="button" aria-label="เมนูบทเรียนและเครื่องมือ" aria-haspopup="dialog" aria-controls="menuOverlay"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span>เมนู</span></button>
+        <button class="navBtn" id="navHintBtn" type="button" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="bulb" d="M9 17h6M10 20.5h4M12 6.5a5 5 0 0 0-3 9c.6.5 1 1 1 1.5h4c0-.5.4-1 1-1.5a5 5 0 0 0-3-9z"/><path class="rays" d="M12 2v1.2M4.6 5l.9.9M19.4 5l-.9.9M2.5 11.5h1.3M20.2 11.5h1.3"/></svg><span>คำใบ้</span></button>
+        <button class="navBtn" id="navBackBtn" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>ย้อนกลับ</span></button>
+        <button class="navBtn" id="navNextBtn" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg><span id="navNextLabel">ถัดไป</span></button>
         <button class="mainBtn" id="mainBtn" type="button">เริ่มฝึก</button>
       </div>
     </aside>
@@ -1109,11 +1143,17 @@
   }
   function isStarPractice(l){return !!l.piece&&l.type!=='game'&&l.type!=='notation'&&l.id!=='assessment';}
   function updatePracticeUI(){
+    // A task revisited with "ย้อนกลับ" can be played again but is only counted once.
+    if(state.roundDone&&state.phase==='active'&&state.correctMoves>state.creditBase){
+      state.creditedRounds=state.creditedRounds||{};
+      if(state.creditedRounds[state.roundIndex])state.correctMoves=state.creditBase;else state.creditedRounds[state.roundIndex]=true;
+    }
     var l=lessons[state.lesson],ready=practiceReady();
     practiceCard.hidden=state.phase!=='active'&&state.phase!=='done'||!isBoardPractice()&&l.type!=='quiz';
     // One segment per required answer; long counts stay one continuous bar.
     document.getElementById('challengeTrack').style.cssText='--steps:'+((l.requiredCorrect||1)<=10?(l.requiredCorrect||1):1);
     document.getElementById('challengeFill').style.width=Math.min(100,state.correctMoves/(l.requiredCorrect||1)*100)+'%';
+    document.getElementById('progressBadgeCount').textContent=String(Math.min(state.correctMoves,l.requiredCorrect||state.correctMoves));
     practiceCard.classList.toggle('ready',ready);
     if(l.puzzle){
       practiceCounter.textContent=(l.defend?'หนีรอด ':'รุกจน ')+state.correctMoves+' / '+l.requiredCorrect+' โจทย์'+(ready?' · ครบแล้ว ✓':'');
@@ -1162,7 +1202,8 @@
       do{start={r:Math.floor(Math.random()*8),c:Math.floor(Math.random()*8)};}while(state.lastPracticeStart&&same(start,state.lastPracticeStart));
     }
     if(l.type==='game')state.gamePieces=Rules.clonePieces(task?task.pieces:fullSetup());
-    state.puzzleNode=l.puzzle&&task?puzzleNodeAt(task.tree,0):null;state.puzzleSay='';state.puzzleLeft=l.puzzle&&task?task.moves:0;state.puzzleCount=l.puzzle&&task&&task.count?task.count.start:0;
+    state.creditBase=state.correctMoves;
+    state.puzzleNode=l.puzzle&&task?puzzleNodeAt(task.tree,0):null;state.puzzleHintOn=false;state.puzzleSay='';state.puzzleLeft=l.puzzle&&task?task.moves:0;state.puzzleCount=l.puzzle&&task&&task.count?task.count.start:0;
     state.current=start?{r:start.r,c:start.c}:null;
     if(start&&l.type==='move')state.lastPracticeStart={r:start.r,c:start.c};
     state.starTarget=null;state.routeMoves=0;
@@ -1393,6 +1434,9 @@
     var canMove=state.phase==='active'&&state.tool==='move'&&isBoardPractice()&&!state.completed&&!state.roundDone&&!state.pendingNotation&&!state.replyPending;
     var destinations=canMove&&state.selected||state.phase==='demo'?moveDestinations():[];
     var answers=l.routePuzzle&&state.hint&&state.starTarget?routeHintSteps():goalDestinations();
+    // Puzzle lessons have no fixed star: when the learner asks, the hint star shows the best move from the solution tree.
+    var hintKey=l.puzzle&&state.puzzleHintOn&&state.phase==='active'&&!state.roundDone&&!state.replyPending&&state.puzzleNode?Object.keys(state.puzzleNode)[0]:null;
+    var puzzleHint=hintKey?{from:puzzleSquare(hintKey,0),to:puzzleSquare(hintKey,2)}:null;
     boardEl.innerHTML='';
     for(var r=0;r<8;r++){
       for(var c=0;c<8;c++){
@@ -1409,7 +1453,8 @@
           if(questionSquare)s.classList.add('coordinateTarget');
         }
         if((state.phase==='active'||l.teachingBoards)&&exampleTask&&exampleTask.marks&&exampleTask.marks.some(function(m){return same(m,p);}))s.classList.add('exampleMark');
-        if(state.phase==='active'&&state.showStarHint&&state.starTarget&&!state.roundDone&&!state.pendingNotation&&same(p,state.starTarget))s.innerHTML+='<span class="goalStar" aria-hidden="true">'+GOAL_STAR+'</span>';
+        if(puzzleHint&&same(p,puzzleHint.from))s.classList.add('hintSource');
+        if(state.phase==='active'&&state.showStarHint&&(state.starTarget||puzzleHint&&puzzleHint.to)&&!state.roundDone&&!state.pendingNotation&&same(p,state.starTarget||puzzleHint.to))s.innerHTML+='<span class="goalStar" aria-hidden="true">'+GOAL_STAR+'</span>';
         var pc=pieces.find(function(x){return same(x.at,p);});
         var source=canMove&&state.current&&same(p,state.current);
         if(canMove&&pc&&pc.side===userSide()&&(source||l.type==='game'))s.classList.add('selectable');
@@ -1437,6 +1482,7 @@
     renderNotationPrimer();
     renderReviewComparison();
     presentation.flush();
+    if(navNextBtn)syncNav();
   }
 
   function renderLesson(){
@@ -1451,7 +1497,7 @@
     state.phase='intro';state.teachingIndex=0;state.current=l.start?{r:l.start.r,c:l.start.c}:null;state.completed=false;state.hint=false;
     document.getElementById('lessonReward').hidden=true;
     state.selected=false;state.promoted=false;state.captured=null;state.focus=state.current||{r:7,c:0};
-    state.correctMoves=0;state.roundIndex=0;state.roundDone=false;state.roundMessage='';state.quizCorrect=false;state.lastFrom=state.lastTo=null;state.lastPracticeStart=null;
+    state.correctMoves=0;state.creditedRounds={};state.roundIndex=0;state.roundDone=false;state.roundMessage='';state.quizCorrect=false;state.lastFrom=state.lastTo=null;state.lastPracticeStart=null;
     state.matchResults=[];state.savedScores=[];state.pendingNotation=null;state.starTarget=null;state.lastStarTarget=null;state.scoreMoves=[];notationForm.hidden=true;notationChoices.innerHTML='';
     if(l.type==='notation'){
       if(window.matchMedia('(max-width:700px)').matches)nextRoundHome.appendChild(nextRoundBtn);
@@ -2064,7 +2110,7 @@
     if(l.practiceSets){state.practiceSet++;localStorage.setItem('makrukPracticeSet:'+l.id,String(state.practiceSet));}
     appEl.classList.remove('lessonPassed');
     document.getElementById('lessonReward').hidden=true;
-    state.completed=false;state.phase='active';state.correctMoves=0;state.roundIndex=0;
+    state.completed=false;state.phase='active';state.correctMoves=0;state.creditedRounds={};state.roundIndex=0;
     state.matchResults=[];state.savedScores=[];state.lastStarTarget=null;
     startRound();
   }
@@ -2115,6 +2161,48 @@
   });
   retryBtn.addEventListener('click',function(){renderLesson();activateLesson();});
   hintBtn.addEventListener('click',showHint);
+  // Bottom navigation. "ถัดไป" runs the lesson's main action (next step, next task, pass the lesson);
+  // "ย้อนกลับ" goes to the previous teaching step or task; "คำใบ้" shows or hides the hint star.
+  var navHintBtn=document.getElementById('navHintBtn'),navBackBtn=document.getElementById('navBackBtn'),navNextBtn=document.getElementById('navNextBtn'),navNextLabel=document.getElementById('navNextLabel');
+  function canGoBack(){
+    if(state.replyPending||state.completed)return false;
+    return (state.phase==='intro'||state.phase==='demo')?state.teachingIndex>0:state.phase==='active'&&state.roundIndex>0;
+  }
+  // A task already counted (reached again with "ย้อนกลับ") can be skipped forward without solving it again.
+  function canSkipForward(){
+    return state.phase==='active'&&!state.roundDone&&!state.replyPending&&!!(state.creditedRounds&&state.creditedRounds[state.roundIndex]);
+  }
+  function syncNav(){
+    var text=mainBtn.textContent.trim();
+    navNextBtn.disabled=mainBtn.disabled&&!canSkipForward();
+    navNextLabel.textContent=/รอฝ่าย/.test(text)?'รอสักครู่':/ผ่านบท/.test(text)?'ผ่านบท':/เรียนซ้ำ/.test(text)?'เริ่มใหม่':/บทถัดไป/.test(text)?'บทถัดไป':/^เริ่ม/.test(text)?'เริ่ม':'ถัดไป';
+    navNextBtn.setAttribute('aria-label',text);navNextBtn.title=text;
+    navNextBtn.classList.toggle('go',!navNextBtn.disabled);
+    navBackBtn.disabled=!canGoBack();
+    var hintOn=hintIsOn();
+    navHintBtn.setAttribute('aria-pressed',String(hintOn));
+    navHintBtn.setAttribute('aria-label',hintOn?'ซ่อนดาวคำใบ้':'แสดงดาวคำใบ้');
+  }
+  new MutationObserver(syncNav).observe(mainBtn,{attributes:true,childList:true,characterData:true,subtree:true});
+  navNextBtn.addEventListener('click',function(){
+    if(!mainBtn.disabled)mainBtn.click();
+    else if(canSkipForward()){state.roundIndex++;setTool('move');startRound();}
+    syncNav();
+  });
+  navBackBtn.addEventListener('click',function(){
+    if(!canGoBack())return;
+    if(state.phase==='intro'||state.phase==='demo'){
+      state.teachingIndex--;state.phase=state.teachingIndex?'demo':'intro';startRound();showTeachingStep();
+    }else{state.roundIndex--;setTool('move');startRound();}
+    syncNav();
+  });
+  // Star lessons share the "ดาวคำใบ้" setting (on by default). Puzzles start without a star, since it shows the answer.
+  function hintIsOn(){return lessons[state.lesson].puzzle?!!state.puzzleHintOn:!!state.showStarHint;}
+  navHintBtn.addEventListener('click',function(){
+    if(lessons[state.lesson].puzzle){state.puzzleHintOn=!state.puzzleHintOn;renderBoard();}
+    else{starHintToggle.checked=!state.showStarHint;starHintToggle.dispatchEvent(new Event('change'));}
+    showToast(hintIsOn()?'แสดงดาวคำใบ้':'ซ่อนดาวคำใบ้','good');syncNav();
+  });
   prevBtn.addEventListener('click',function(){if(state.lesson>0){state.lesson--;renderLesson();}});
   document.getElementById('menuTools').addEventListener('click',function(e){
     var control=e.target.closest('button,a');
