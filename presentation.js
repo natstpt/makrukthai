@@ -28,9 +28,10 @@
       67,69,72,74,76,79,81,84,81,79,76,74,72,null,null,null];
     var step=60/138/2;
     function hz(note){return 440*Math.pow(2,(note-69)/12);}
-    function ranat(note,at){tone(musicBus,hz(note),at,.2,.05,'sine',true);tone(musicBus,hz(note+12),at,.07,.016,'sine',true);}
+    // Triangle waves and an upper octave keep the tune audible on small phone speakers that drop low notes.
+    function ranat(note,at){tone(musicBus,hz(note),at,.2,.06,'triangle',true);tone(musicBus,hz(note+12),at,.08,.022,'sine',true);}
     function ching(at,open){tone(musicBus,3150,at,open?.34:.05,.011,'sine',true);tone(musicBus,4730,at,open?.28:.04,.007,'sine',true);}
-    function klong(at){tone(musicBus,150,at,.24,.12,'sine',true).frequency.exponentialRampToValueAtTime(55,at+.18);}
+    function klong(at){tone(musicBus,150,at,.24,.12,'sine',true).frequency.exponentialRampToValueAtTime(55,at+.18);tone(musicBus,420,at,.06,.03,'triangle',true);}
     function schedule(){
       if(!context||context.state!=='running'||!music||doc.hidden)return;
       if(nextBeat<context.currentTime)nextBeat=context.currentTime+.04;
@@ -39,16 +40,38 @@
         if(melody[i]!==null)ranat(melody[i],nextBeat);
         if(i%2===0)ching(nextBeat,i%4===2);
         if(i%8===0||i%16===6)klong(nextBeat);
-        if(i%16===0)[48,55].forEach(function(n){tone(musicBus,hz(n),nextBeat,3.4,.014,'sine',true);});
+        if(i%16===0)[60,67].forEach(function(n){tone(musicBus,hz(n),nextBeat,3.4,.012,'sine',true);});
         nextBeat+=step;beat++;
       }
     }
     function stopMusic(){if(timer!==null){win.clearInterval(timer);timer=null;}musicNodes.forEach(function(n){try{n.stop();}catch(e){}});musicNodes.clear();}
     function startMusic(){if(!context||!unlocked||!music||doc.hidden||timer!==null||context.state!=='running')return;nextBeat=context.currentTime+.04;beat=0;schedule();timer=win.setInterval(schedule,100);}
+    // iPhone and iPad mute Web Audio when the ring/silent switch is off. Asking for a "playback" audio session
+    // (Safari 16.4+) or, on older iOS, keeping a silent <audio> element playing lets the music be heard like a video.
+    var silentLoop=null;
+    function playbackSession(){
+      try{if(win.navigator&&win.navigator.audioSession){win.navigator.audioSession.type='playback';return;}}catch(e){}
+      try{
+        if(!silentLoop&&doc.createElement){
+          silentLoop=doc.createElement('audio');silentLoop.setAttribute('playsinline','');silentLoop.loop=true;silentLoop.preload='auto';
+          silentLoop.src='data:audio/wav;base64,UklGRkQDAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YSADAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA==';
+        }
+        if(silentLoop&&silentLoop.paused){var started=silentLoop.play();if(started&&started.catch)started.catch(function(){});}
+      }catch(e){}
+    }
     function unlock(){
       if(!AudioContext||doc.hidden||!music&&!effects)return;
       try{
-        if(!context){context=new AudioContext();musicBus=context.createGain();effectBus=context.createGain();musicBus.gain.value=.24;effectBus.gain.value=effects ? 0.5 : 0;musicBus.connect(context.destination);effectBus.connect(context.destination);}
+        playbackSession();
+        if(!context){
+          context=new AudioContext();musicBus=context.createGain();effectBus=context.createGain();
+          // A gentle compressor lets the mix be louder without clipping on phone speakers.
+          var out=context.destination;
+          if(context.createDynamicsCompressor){var squeeze=context.createDynamicsCompressor();squeeze.threshold.value=-18;squeeze.knee.value=12;squeeze.ratio.value=4;squeeze.connect(context.destination);out=squeeze;}
+          musicBus.gain.value=.42;effectBus.gain.value=effects ? 0.75 : 0;musicBus.connect(out);effectBus.connect(out);
+          // Safari can "interrupt" audio (call, lock screen, another app); the next tap resumes it.
+          context.onstatechange=function(){if(context.state!=='running'){if(timer!==null){win.clearInterval(timer);timer=null;}}};
+        }
         unlocked=true;
         if(context.state!=='running')context.resume().then(startMusic).catch(function(){unlocked=false;});else startMusic();
       }catch(e){unlocked=false;}
@@ -92,10 +115,13 @@
       animation.onfinish=function(){if(active!==item)return;active=null;ghost.remove();item.target.style.visibility='';};
     }
     if(musicButton)musicButton.addEventListener('click',function(){music=!music;save('makrukMusic',music);sync();if(music)unlock();else stopMusic();});
-    if(effectsButton)effectsButton.addEventListener('click',function(){effects=!effects;save('makrukEffects',effects);sync();if(effectBus)effectBus.gain.setTargetAtTime(effects ? 0.5 : 0,context.currentTime,.015);if(effects)unlock();else stopOutcome();});
+    if(effectsButton)effectsButton.addEventListener('click',function(){effects=!effects;save('makrukEffects',effects);sync();if(effectBus)effectBus.gain.setTargetAtTime(effects ? 0.75 : 0,context.currentTime,.015);if(effects)unlock();else stopOutcome();});
     doc.addEventListener('pointerdown',unlock,{passive:true});
+    doc.addEventListener('touchend',unlock,{passive:true});
+    doc.addEventListener('click',unlock,{passive:true});
     doc.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' ')unlock();});
-    doc.addEventListener('visibilitychange',function(){if(doc.hidden){stopMusic();stopOutcome();clearMotion();if(context&&context.state==='running')context.suspend().catch(function(){});}else if(unlocked)unlock();});
+    doc.addEventListener('visibilitychange',function(){if(doc.hidden){stopMusic();stopOutcome();clearMotion();if(silentLoop)try{silentLoop.pause();}catch(e){}if(context&&context.state==='running')context.suspend().catch(function(){});}else if(unlocked)unlock();});
+    win.addEventListener&&win.addEventListener('pageshow',function(){if(unlocked)unlock();});
     if(reduced&&reduced.addEventListener)reduced.addEventListener('change',function(){if(reduced.matches)clearMotion();});
     sync();
     return {playResult:playResult,queueMove:queueMove,flush:flush,clearMotion:clearMotion,replyDelay:function(){return reduced&&reduced.matches?100:330;}};
