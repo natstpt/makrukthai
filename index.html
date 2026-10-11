@@ -568,6 +568,10 @@
 
     .mapNode .mapFocus{display:block;margin-top:2px;font-style:normal;font-size:.78em;font-weight:800;color:#f2c14e}
     .mapNode.locked .mapFocus{color:inherit}
+
+    .wrongBadge{background:none!important;border:0!important;box-shadow:none!important;filter:drop-shadow(0 2px 4px rgba(0,0,0,.35))}
+    .wrongBadge svg{width:100%;height:100%;display:block}
+    .arrowShape.refuteArrowShape{fill:#e0362a!important;fill-opacity:.82!important}
   </style>
 </head>
 <body>
@@ -618,7 +622,7 @@
       <div class="boardWrap">
         <div class="board" id="board" role="group" aria-label="กระดาน 8 คูณ 8 ใช้ปุ่มลูกศรเลื่อนช่อง และ Enter เพื่อเลือก" aria-describedby="boardHelp"></div>
         <svg class="arrowLayer" id="arrowLayer" viewBox="0 0 800 800" aria-hidden="true">
-          <g id="savedArrows"></g><g id="previewArrow"></g>
+          <g id="savedArrows"></g><g id="previewArrow"></g><g id="refuteArrow"></g>
         </svg>
         <svg class="demoLayer" id="demoLayer" viewBox="0 0 800 800" aria-hidden="true"></svg>
         <div class="notationPrimer" id="notationPrimer" hidden></div>
@@ -1227,7 +1231,7 @@
       do{start={r:Math.floor(Math.random()*8),c:Math.floor(Math.random()*8)};}while(state.lastPracticeStart&&same(start,state.lastPracticeStart));
     }
     if(l.type==='game')state.gamePieces=Rules.clonePieces(task?task.pieces:fullSetup());
-    state.creditBase=state.correctMoves;state.wrongMove=null;speechEl.classList.remove('sayError');
+    state.creditBase=state.correctMoves;state.wrongMove=null;state.wrongReply=null;clearTimeout(wrongReplyTimer);speechEl.classList.remove('sayError');
     state.puzzleNode=l.puzzle&&task?puzzleNodeAt(task.tree,0):null;state.puzzleHintOn=false;state.puzzleSay='';state.puzzleLeft=l.puzzle&&task?task.moves:0;state.puzzleCount=l.puzzle&&task&&task.count?task.count.start:0;
     state.current=start?{r:start.r,c:start.c}:null;
     if(start&&l.type==='move')state.lastPracticeStart={r:start.r,c:start.c};
@@ -1419,7 +1423,11 @@
   }
 
   function boardPieces(){
-    if(state.wrongMove){var wrong=state.wrongMove;state.wrongMove=null;var shown=boardPieces();state.wrongMove=wrong;return Rules.applyMove(shown,wrong.from,wrong.to);}
+    if(state.wrongMove){
+      var wrong=state.wrongMove,reply=state.wrongReply;state.wrongMove=null;state.wrongReply=null;
+      var shown=Rules.applyMove(boardPieces(),wrong.from,wrong.to);state.wrongMove=wrong;state.wrongReply=reply;
+      return reply?Rules.applyMove(shown,reply.from,reply.to):shown;
+    }
     var l=lessons[state.lesson];
     if(l.id==='review'&&(state.phase==='intro'||state.phase==='demo'))return [{piece:activePiece(),side:'white',at:pos('d',4)}];
     var pieces=basePieces(l);
@@ -1481,7 +1489,7 @@
         if((state.phase==='active'||l.teachingBoards)&&exampleTask&&exampleTask.marks&&exampleTask.marks.some(function(m){return same(m,p);}))s.classList.add('exampleMark');
         if(puzzleHint&&same(p,puzzleHint.from))s.classList.add('hintSource');
         if(state.wrongMove&&same(p,state.wrongMove.from))s.classList.add('wrongFrom');
-        if(state.wrongMove&&same(p,state.wrongMove.to)){s.classList.add('wrongTo');s.insertAdjacentHTML('beforeend','<span class="wrongBadge" aria-hidden="true">✕</span>');}
+        if(state.wrongMove&&same(p,state.wrongMove.to)){s.classList.add('wrongTo');s.insertAdjacentHTML('beforeend','<span class="wrongBadge" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#e8473b" stroke="#fff" stroke-width="2"/><path d="M8 8l8 8M16 8l-8 8" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></span>');}
         if(state.phase==='active'&&state.showStarHint&&(state.starTarget||puzzleHint&&puzzleHint.to)&&!state.roundDone&&!state.pendingNotation&&same(p,state.starTarget||puzzleHint.to))s.innerHTML+='<span class="goalStar" aria-hidden="true">'+GOAL_STAR+'</span>';
         var pc=pieces.find(function(x){return same(x.at,p);});
         var source=canMove&&state.current&&same(p,state.current);
@@ -1506,6 +1514,7 @@
       }
     }
     if(focused&&state.focus){var focusSquare=boardEl.querySelector('[data-r="'+state.focus.r+'"][data-c="'+state.focus.c+'"]');if(focusSquare)focusSquare.focus({preventScroll:true});}
+    document.getElementById('refuteArrow').innerHTML=state.wrongReply?arrowSvg(state.wrongReply.from,state.wrongReply.to,false).replace('arrowShape','arrowShape refuteArrowShape'):'';
     renderDemonstration();
     renderNotationPrimer();
     renderReviewComparison();
@@ -2011,18 +2020,57 @@
   }
 
   // A legal but wrong move is played on the board first, then marked wrong; "ลองใหม่" puts the piece back.
+  // The other side's best-looking answer to a wrong move, shown once with a red arrow so the learner sees why it fails.
+  function refutation(pieces,side){
+    var other=side==='white'?'black':'white',best=null;
+    Rules.legalMoves(pieces,other).forEach(function(move,i){
+      var after=Rules.applyMove(pieces,move.from,move.to),victim=pieces.find(function(x){return same(x.at,move.to);});
+      var moving=pieces.find(function(x){return same(x.at,move.from);}),score=0;
+      if(other==='black'){
+        // Red: take a piece if it can, avoid stepping into a mate in one, prefer the open middle.
+        if(victim)score+=100;
+        if(Rules.legalMoves(after,'white').some(function(m){return Rules.gameStatus(Rules.applyMove(after,m.from,m.to),'black').state==='checkmate';}))score-=50;
+        score-=Math.max(Math.abs(move.to.r-3.5),Math.abs(move.to.c-3.5));
+      }else{
+        // White (when the learner plays red): mate at once if it can, otherwise check and shrink the red king's room.
+        var status=Rules.gameStatus(after,'black');
+        if(status.state==='checkmate')score+=1000;else if(status.check)score+=10;
+        score-=Rules.legalMoves(after,'black').length*2;
+      }
+      score-=i/1000;
+      if(!best||score>best.score)best={score:score,from:move.from,to:move.to,piece:moving.piece,victim:victim,mate:other==='white'&&Rules.gameStatus(after,'black').state==='checkmate'};
+    });
+    return best;
+  }
+  var wrongReplyTimer=null;
+  // A legal but wrong move is played on the board first, then marked wrong; the other side answers once with a red
+  // arrow, and "ลองใหม่" puts both moves back.
   function wrongMove(from,to,message){
     var moving=boardPieces().find(function(x){return same(x.at,from);});
-    state.wrongMove={from:{r:from.r,c:from.c},to:{r:to.r,c:to.c}};state.selected=false;state.focus=to;
+    state.wrongMove={from:{r:from.r,c:from.c},to:{r:to.r,c:to.c}};state.wrongReply=null;state.selected=false;state.focus=to;
     if(moving)queueMoveFeedback(from,to,moving.piece,moving.side,boardPieces());
     var text='ไม่ถูกต้อง · '+message;
+    showWrongText(text);
+    presentation.playResult('failure');renderBoard();updateBoardHelp();
+    var side=moving?moving.side:userSide(),answer=refutation(boardPieces(),side);
+    clearTimeout(wrongReplyTimer);
+    if(answer)wrongReplyTimer=setTimeout(function(){
+      wrongReplyTimer=null;if(!state.wrongMove)return;
+      state.wrongReply={from:answer.from,to:answer.to};
+      queueMoveFeedback(answer.from,answer.to,answer.piece,side==='white'?'black':'white',boardPieces());
+      var why=side==='white'?(answer.victim?pieceName[answer.piece]+'แดงกิน'+pieceName[answer.victim.piece]+'ได้':lessons[state.lesson].puzzle&&state.puzzleLeft>1?'ขุนแดงหนีไป '+squareLabel(answer.to)+' แล้วจะจนไม่ทันใน '+state.puzzleLeft+' ตา':'ขุนแดงยังหนีไป '+squareLabel(answer.to)+' ได้'):
+        answer.mate?'ฝ่ายขาวรุกจนได้ทันที':'ฝ่ายขาวเดิน'+pieceName[answer.piece]+'ไป '+squareLabel(answer.to)+' ไล่ต่อ';
+      showWrongText('ไม่ถูกต้อง · '+why);renderBoard();
+    },presentation.replyDelay()+250);
+  }
+  function showWrongText(text){
     feedbackEl.className='feedback error';feedbackEl.textContent=text;
     speechEl.textContent=text;speechEl.classList.add('sayError');coachSay(text,'error');
-    presentation.playResult('failure');renderBoard();updateBoardHelp();
   }
   function retryWrongMove(){
     if(!state.wrongMove)return;
-    state.wrongMove=null;speechEl.classList.remove('sayError');
+    clearTimeout(wrongReplyTimer);wrongReplyTimer=null;
+    state.wrongMove=null;state.wrongReply=null;speechEl.classList.remove('sayError');
     renderBoard();updatePracticeUI();
   }
   function moveError(message){
