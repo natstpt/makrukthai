@@ -54,7 +54,7 @@
     .boardToggles{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
     .destinationsControl{display:flex;align-items:center;gap:8px;min-height:44px;color:#e8e5dd;font-size:15px;font-weight:750;cursor:pointer;padding:4px 6px}
     .destinationsControl input{width:22px;height:22px;margin:0;accent-color:var(--arrow);cursor:pointer;flex:none}
-    .boardWrap{width:min(100%,calc(100dvh - 304px));max-width:860px;aspect-ratio:1;flex-shrink:0;position:relative;user-select:none;touch-action:manipulation}
+    .boardWrap{width:min(100%,calc(100dvh - 304px));max-width:860px;aspect-ratio:1;flex-shrink:0;position:relative;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none}
     .board{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));grid-template-rows:repeat(8,minmax(0,1fr));width:100%;height:100%;box-shadow:0 12px 38px rgba(0,0,0,.25);position:relative;z-index:1;background:var(--board);outline:1.5px solid var(--boardLine)}
     .square{position:relative;display:grid;place-items:center;cursor:default;min-width:0;min-height:0;border:0;border-right:1.5px solid var(--boardLine);border-bottom:1.5px solid var(--boardLine);padding:0;background:transparent;border-radius:0;overflow:hidden;touch-action:manipulation}
     .square:nth-child(8n){border-right:0}
@@ -85,7 +85,10 @@
     .arrowLayer{position:absolute;inset:0;width:100%;height:100%;z-index:7;pointer-events:none;overflow:hidden}
     .arrowShape{fill:var(--arrow)}
     .arrowPreview{opacity:.72}
-    .dragPiece{position:absolute;width:11%;height:11%;z-index:11;pointer-events:none;transform:translate(-50%,-50%)}
+    /* Dragged piece: like the setup editor, slightly larger and lifted above the finger. */
+    .dragPiece{position:absolute;width:14.5%;height:14.5%;z-index:11;pointer-events:none;transform:translate(-50%,-70%);filter:drop-shadow(0 8px 10px rgba(0,0,0,.45))}
+    .boardWrap.dragging .square.dragSource .piece{opacity:.25}
+    .boardWrap.dragging .square.dropTarget{box-shadow:inset 0 0 0 4px #7d6016;background:#e2d374}
     .dragPiece img{width:100%;height:100%;object-fit:contain}
     .boardMeta{width:100%;max-width:860px;height:76px;flex-shrink:0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:start;color:#e2d0b4;font-size:12px;line-height:1.5}
     .nextRoundBtn{border-color:#8b7c54;color:#ebe0c2;background:#3b3122;min-height:44px}
@@ -1177,7 +1180,7 @@
       }
     }
     state.lastFrom=state.lastTo=null;state.focus=state.current||{r:7,c:0};
-    missionEl.textContent=l.requiredGames?'เกมที่ '+(state.roundIndex+1)+' · หาทางรุกจน':task&&task.mission?task.mission:l.type==='notation'?'เดินตามโจทย์ แล้วดูวิธีจดตานั้น':l.piece?'เดิน'+pieceName[activePiece()]+'ไปเก็บดาว':'ดูโจทย์แล้วเลือกคำตอบ';
+    missionEl.textContent=l.requiredGames?'เกมที่ '+(state.roundIndex+1)+' · หาทางรุกจน':task&&task.mission?task.mission:l.type==='notation'?'เดินตามโจทย์ แล้วดูวิธีจดตานั้น':l.piece?'เดิน'+pieceName[activePiece()]+'ไปเก็บดาว':l.type==='game'?'เดินหมากขาว แล้วดูฝ่ายแดงเดินตอบ':'ดูโจทย์แล้วเลือกคำตอบ';
     if(!l.routePuzzle&&state.starTarget&&l.type!=='notation')missionEl.textContent+=' · เดินไปช่องดาว '+squareLabel(state.starTarget);
     if(l.routePuzzle&&state.starTarget)missionEl.textContent='เดิน'+pieceName[l.piece]+'ไป '+squareLabel(state.starTarget)+(state.roundIndex%3?' · เดินต่อได้หลายตา':' · ลองเดิน 1 ตา');
     mobileSpeechEl.textContent=l.type==='notation'?'เดินหมาก แล้วดูวิธีจดตานั้น':l.puzzle&&task?task.mission:l.type==='game'?'เลือกหมากขาว แล้วทำภารกิจ':l.type==='quiz'?task&&task.mission?task.mission:l.mission:task&&task.mission?task.mission:l.piece?state.showStarHint?'เดิน'+pieceName[activePiece()]+'ไปเก็บดาว ⭐':'ลองเดิน'+pieceName[activePiece()]:'มาลองทำภารกิจนี้กัน'; mobileSpeechEl.classList.remove('sayError','saySuccess');
@@ -1276,7 +1279,7 @@
       state.gesture={kind:'arrow',id:e.pointerId,from:at};
       boardWrap.setPointerCapture(e.pointerId);renderBoard();return;
     }
-    if(state.phase!=='active'||e.button!==0||e.pointerType==='touch'||state.tool!=='move'||state.completed||state.roundDone||state.pendingNotation)return;
+    if(state.phase!=='active'||e.button!==0||!e.isPrimary||state.tool!=='move'||state.completed||state.roundDone||state.pendingNotation)return;
     var l=lessons[state.lesson],pc=boardPieces().find(function(x){return same(x.at,at);});
     if(isBoardPractice()&&pc&&pc.side===userSide()&&(l.type==='game'||state.current&&same(at,state.current))){
       state.gesture={kind:'piece',id:e.pointerId,from:at,x:e.clientX,y:e.clientY,dragging:false};
@@ -1297,12 +1300,17 @@
       state.current=gesture.from;state.focus=gesture.from;
       state.selected=true;gesture.dragging=true;
       boardWrap.setPointerCapture(e.pointerId);renderBoard();updateBoardHelp();
-      dragPiece.innerHTML='<img src="assets/pieces/makruk/ada/w'+pieceFile[activePiece()]+'.svg" alt="">';
+      dragPiece.innerHTML='<img src="assets/pieces/makruk/ada/'+(userSide()==='white'?'w':'r')+pieceFile[activePiece()]+'.svg" alt="" draggable="false">';
       dragPiece.hidden=false;boardWrap.classList.add('dragging');
+      var sourceEl=boardEl.querySelector('.square[data-r="'+gesture.from.r+'"][data-c="'+gesture.from.c+'"]');if(sourceEl)sourceEl.classList.add('dragSource');
     }
     e.preventDefault();
     var rect=boardWrap.getBoundingClientRect();
     dragPiece.style.left=(e.clientX-rect.left)+'px';dragPiece.style.top=(e.clientY-rect.top)+'px';
+    // Highlight the square under the finger when the piece may land there.
+    var over=squareFromPointer(e),canLand=over&&moveDestinations().some(function(x){return same(x,over);});
+    boardEl.querySelectorAll('.square.dropTarget').forEach(function(el){el.classList.remove('dropTarget');});
+    if(canLand){var overEl=boardEl.querySelector('.square[data-r="'+over.r+'"][data-c="'+over.c+'"]');if(overEl)overEl.classList.add('dropTarget');}
   }
 
   function endPointer(e){
