@@ -12,6 +12,33 @@
   function same(a,b){return a&&b&&a.r===b.r&&a.c===b.c;}
   function opponent(side){return side==='white'?'black':'white';}
   function sideName(side){return side==='white'?'ขาว':'แดง';}
+  // Games opened from the lesson page's settings: editor.html?play=2 (two players on one device) or
+  // ?play=ai&side=white|black (the learner plays that side against a simple computer player).
+  var game=null;
+  try{var playParams=new URLSearchParams(location.search);if(playParams.get('play')==='2')game={ai:false};else if(playParams.get('play')==='ai')game={ai:true,human:playParams.get('side')==='black'?'black':'white'};}catch(e){}
+  function aiSide(){return game&&game.ai?opponent(game.human):null;}
+  function aiTurn(){return mode==='play'&&!!aiSide()&&state.turn===aiSide();}
+  // A friendly opponent: mates when it can, takes material, avoids leaving pieces hanging, and varies its play a little.
+  function chooseAiMove(pieces,side){
+    var values={king:0,rook:5,knight:3,khon:2.6,met:1.7,promoted:1.7,pawn:1},forward=side==='white'?-1:1;
+    var best=null,bestScore=-Infinity;
+    R.legalMoves(pieces,side).forEach(function(move){
+      var moving=pieces.find(function(x){return same(x.at,move.from);}),taken=pieces.find(function(x){return same(x.at,move.to);});
+      var after=R.applyMove(pieces,move.from,move.to),status=R.gameStatus(after,opponent(side));
+      var score=(taken?values[taken.piece]*10:0)+(status.check?2:0)+Math.random()*1.5;
+      if(status.state==='checkmate')score+=10000;else if(status.state!=='playing')score-=50;
+      if(R.isAttacked(after,move.to,opponent(side)))score-=values[moving.piece]*8;
+      if(moving.piece==='pawn'||moving.piece==='khon'||moving.piece==='knight')score+=(move.to.r-move.from.r)*forward*0.4;
+      if(score>bestScore){bestScore=score;best=move;}
+    });
+    return best;
+  }
+  var aiTimer=0;
+  function scheduleAi(){
+    clearTimeout(aiTimer);
+    if(!aiTurn()||R.gameStatus(state.pieces,state.turn).state!=='playing')return;
+    aiTimer=setTimeout(function(){aiTimer=0;if(!aiTurn())return;var move=chooseAiMove(state.pieces,state.turn);if(move)playMove(move.from,move.to);},700);
+  }
   function label(at){return files[at.c]+(8-at.r);}
   function asset(p){return 'assets/pieces/makruk/ada/'+(p.side==='white'?'w':'r')+icons[p.piece]+'.svg';}
   function clone(s){return {pieces:R.clonePieces(s.pieces),turn:s.turn};}
@@ -68,7 +95,7 @@
     $('panelTitle').textContent=mode==='edit'?'จัดตำแหน่งหมาก':'ทดลองเดิน';
     $('topSide').textContent=flipped?'ฝ่ายขาว':'ฝ่ายแดง';$('bottomSide').textContent=flipped?'ฝ่ายแดง':'ฝ่ายขาว';
     $('topDot').classList.toggle('white',flipped);$('bottomDot').classList.toggle('white',!flipped);
-    $('modeLabel').textContent=mode==='edit'?'1 · ตั้งตำแหน่ง':'2 · ทดลองเดิน';$('turn').value=state.turn;
+    $('modeLabel').textContent=mode==='edit'?'1 · ตั้งตำแหน่ง':game?(game.ai?'คุณเป็นฝ่าย'+sideName(game.human):'เครื่องเดียวกัน'):'2 · ทดลองเดิน';document.querySelector('.brand h1').textContent=game?(game.ai?'เล่นกับ AI':'เล่น 2 คน'):'ตั้งหมาก';$('turn').value=state.turn;
     document.querySelectorAll('[data-tool]').forEach(function(b){b.setAttribute('aria-pressed',String(tool===b.dataset.tool));});
     $('fen').value=M.fen(state);
     $('saveNote').textContent=storageOK?'เก็บตำแหน่งที่ตั้งไว้ให้อัตโนมัติในเครื่องนี้ (ไม่ทับด้วยตาที่ทดลองเดิน)':'เครื่องนี้เก็บอัตโนมัติไม่ได้ กรุณาคัดลอกรหัสไว้';
@@ -79,7 +106,7 @@
       message('');
     }else{
       // Play mode shows no help text under the board: the turn line beside the move record says whose move it is.
-      $('turnHeading').textContent=status.state==='checkmate'?'รุกจน · '+sideName(status.winner)+'ชนะ':status.state==='playing'?sideName(state.turn)+'เดิน'+(status.check?' · รุก!':''):status.state==='stalemate'?'อับ · เสมอ':'เสมอ';
+      $('turnHeading').textContent=status.state==='checkmate'?'รุกจน · '+sideName(status.winner)+'ชนะ':status.state==='playing'?(aiTurn()?'AI ('+sideName(state.turn)+') กำลังคิด':sideName(state.turn)+'เดิน')+(status.check?' · รุก!':''):status.state==='stalemate'?'อับ · เสมอ':'เสมอ';
       $('turnHeading').classList.toggle('alert',status.state!=='playing'||!!status.check);
       $('instruction').textContent=status.state==='playing'?(status.check?'รุก! ต้องเดินให้ขุนพ้นจากการรุก':'ตาฝ่าย'+sideName(state.turn)+' ลากหรือแตะหมากไปช่องที่มีจุด'):'จบตำแหน่งนี้แล้ว ย้อนกลับเพื่อทดลองทางอื่นได้';
       message(status.state==='checkmate'?'รุกจน — ฝ่าย'+sideName(status.winner)+'ชนะ':status.state==='stalemate'?'เสมอเพราะอับ — ไม่มีตาเดินและขุนไม่ถูกรุก':status.state==='draw'?'เสมอ — เหลือขุนทั้งสองฝ่าย':status.check?'ขุน'+sideName(state.turn)+'กำลังถูกรุก':'');
@@ -142,6 +169,7 @@
     moves.push(record);
     render();sound.queueMove({from:from,to:at,check:result.check,skipAnimation:true});sound.flush();if(!dragged)animateMove(from,at);
     if(result.state!=='playing')sound.playResult(result.state==='checkmate'?'complete':'draw');
+    scheduleAi();
   }
   $('board').addEventListener('click',function(e){
     if(suppressClick)return;
@@ -154,6 +182,7 @@
       editMove(selected,at);return;
     }
     if(R.gameStatus(state.pieces,state.turn).state!=='playing'){message('ตำแหน่งนี้จบแล้ว กดย้อนกลับ หรือกลับไปตั้งหมาก');return;}
+    if(aiTurn()){message('รอ AI เดินก่อนนะ');return;}
     if(p&&p.side===state.turn){selected=same(selected,at)?null:at;render();return;}
     if(!selected){message('เลือกหมากฝ่าย'+sideName(state.turn)+'ก่อน แล้วเลือกช่องปลายทาง');return;}
     playMove(selected,at);
@@ -166,7 +195,7 @@
   $('board').addEventListener('pointerdown',function(e){
     var sq=e.target.closest('.square');if(!sq)return;
     var at={r:Number(sq.dataset.r),c:Number(sq.dataset.c)},p=pieceAt(at);if(!p)return;
-    if(mode==='play'&&(p.side!==state.turn||R.gameStatus(state.pieces,state.turn).state!=='playing'))return;
+    if(mode==='play'&&(aiTurn()||p.side!==state.turn||R.gameStatus(state.pieces,state.turn).state!=='playing'))return;
     beginDrag(e,{from:at,piece:p});
   });
   function startDrag(){
@@ -257,11 +286,11 @@
     }catch(e){$('imageLoading').textContent='สร้างรูปไม่ได้: '+e.message+' กรุณาปิดแล้วเปิดแชร์อีกครั้ง';}
     finally{button.disabled=false;button.removeAttribute('aria-busy');button.textContent='↗ แชร์ตำแหน่ง';}
   };
-  $('undo').onclick=function(){var prev=history.pop();if(!prev)return;future.push(snapshot());restore(prev);};
-  $('redo').onclick=function(){var next=future.pop();if(!next)return;history.push(snapshot());restore(next);};
+  $('undo').onclick=function(){clearTimeout(aiTimer);aiTimer=0;var prev=history.pop();if(!prev)return;future.push(snapshot());restore(prev);if(aiTurn()&&history.length){prev=history.pop();future.push(snapshot());restore(prev);}scheduleAi();};
+  $('redo').onclick=function(){clearTimeout(aiTimer);aiTimer=0;var next=future.pop();if(!next)return;history.push(snapshot());restore(next);if(aiTurn()&&future.length){next=future.pop();history.push(snapshot());restore(next);}scheduleAi();};
   $('start').onclick=function(){var error=M.validate(state);if(error){message(error,true);sound.playResult('failure');return;}save();trial={state:clone(state),history:history.slice(),future:future.slice()};mode='play';history=[];future=[];moves=[];selected=null;last=null;render();};
-  $('restart').onclick=function(){remember();state=clone(trial.state);moves=[];selected=null;last=null;render();$('optionsDialog').close();};
-  $('edit').onclick=function(){mode='edit';state=clone(trial.state);history=trial.history;future=trial.future;trial=null;moves=[];selected=null;last=null;render();};
+  $('restart').onclick=function(){clearTimeout(aiTimer);aiTimer=0;remember();state=clone(trial.state);moves=[];selected=null;last=null;render();$('optionsDialog').close();scheduleAi();};
+  $('edit').onclick=function(){clearTimeout(aiTimer);aiTimer=0;game=null;mode='edit';state=clone(trial.state);history=trial.history;future=trial.future;trial=null;moves=[];selected=null;last=null;render();};
   $('load').onclick=function(){if(mode!=='edit')return;try{var next=M.parse($('fen').value);remember();state=next;changed();$('optionsDialog').close();message('เปิดตำแหน่งแล้ว'+(M.validate(state)?' — '+M.validate(state):''));}catch(e){$('saveNote').textContent=e.message;}};
   $('copy').onclick=async function(){try{await navigator.clipboard.writeText($('fen').value);$('saveNote').textContent='คัดลอกรหัสแล้ว';}catch(e){$('fen').focus();$('fen').select();$('saveNote').textContent='เลือกข้อความแล้ว กรุณาคัดลอกด้วยเมนูของเครื่อง';}};
   document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('exportDialog').open&&!$('optionsDialog').open){if(drag)return;selected=null;tool='move';render();}});
@@ -291,5 +320,11 @@
   if(window.visualViewport)window.visualViewport.addEventListener('resize',scheduleFit);
   if(window.ResizeObserver){var fitObserver=new ResizeObserver(scheduleFit);['.pageHeader','.actionDock','#editTools','.positionFeedback'].forEach(function(selector){fitObserver.observe(document.querySelector(selector));});}
 
+  if(game){
+    // Start straight from the opening position; the teacher's saved setup is left untouched.
+    state=M.initial();flipped=!!game.ai&&game.human==='black';notice='';
+    trial={state:clone(state),history:[],future:[]};mode='play';history=[];future=[];moves=[];selected=null;last=null;
+  }
   render();if(notice)message(notice,notice!=='เปิดตำแหน่งจากลิงก์แชร์แล้ว');
+  scheduleAi();
 })();
