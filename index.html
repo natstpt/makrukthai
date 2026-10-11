@@ -1113,8 +1113,8 @@
     document.getElementById('challengeFill').style.width=Math.min(100,state.correctMoves/(l.requiredCorrect||1)*100)+'%';
     practiceCard.classList.toggle('ready',ready);
     if(l.puzzle){
-      practiceCounter.textContent='รุกจน '+state.correctMoves+' / '+l.requiredCorrect+' โจทย์'+(ready?' · ครบแล้ว ✓':'');
-      practiceRequirement.textContent='เดินผิดลองใหม่ได้ · ขุนแดงจะหนีเองทุกตา';
+      practiceCounter.textContent=(l.defend?'หนีรอด ':'รุกจน ')+state.correctMoves+' / '+l.requiredCorrect+' โจทย์'+(ready?' · ครบแล้ว ✓':'');
+      practiceRequirement.textContent=l.defend?'เดินผิดลองใหม่ได้ · ฝ่ายขาวจะไล่เองทุกตา':'เดินผิดลองใหม่ได้ · ขุนแดงจะหนีเองทุกตา';
     }else if(l.type==='game'){
       practiceCounter.textContent=l.requiredGames?'จบเกม '+state.matchResults.length+' / '+l.requiredGames+' เกม'+(ready?' · ครบแล้ว ✓':''):'เดินฝ่ายขาวถูก '+state.correctMoves+' / '+l.requiredCorrect+' ตา'+(ready?' · ครบแล้ว ✓':'');
       var score=state.matchResults.reduce(function(sum,result){return sum+(result==='white'?1:result===null ? 0.5 : 0);},0);
@@ -1135,7 +1135,7 @@
     if(state.phase==='active'&&(isBoardPractice()||l.type==='quiz')){
       var nextRoundAvailable=state.roundDone&&!ready;
       mainBtn.disabled=!ready&&!nextRoundAvailable;
-      mainBtn.textContent=nextRoundAvailable?(l.type==='quiz'&&!l.exampleLesson?'ข้อถัดไป →':nextRoundBtn.textContent):ready?'ผ่านบทนี้ →':l.puzzle?'รุกจนอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' โจทย์เพื่อผ่าน':l.requiredGames?'จบเกมอีก '+Math.max(0,l.requiredGames-state.matchResults.length)+' เกมเพื่อผ่าน':l.type==='quiz'?'ตอบถูกอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ข้อเพื่อผ่าน':l.endgame?'รุกจนอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' แบบเพื่อผ่าน':l.id==='assessment'?'ทำอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ด่านเพื่อผ่าน':isStarPractice(l)?'เก็บดาวอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ดวงเพื่อผ่าน':'เดินถูกอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ครั้งเพื่อผ่าน';
+      mainBtn.textContent=nextRoundAvailable?(l.type==='quiz'&&!l.exampleLesson?'ข้อถัดไป →':nextRoundBtn.textContent):ready?'ผ่านบทนี้ →':l.puzzle?(l.defend?'หนีรอดอีก ':'รุกจนอีก ')+Math.max(0,l.requiredCorrect-state.correctMoves)+' โจทย์เพื่อผ่าน':l.requiredGames?'จบเกมอีก '+Math.max(0,l.requiredGames-state.matchResults.length)+' เกมเพื่อผ่าน':l.type==='quiz'?'ตอบถูกอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ข้อเพื่อผ่าน':l.endgame?'รุกจนอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' แบบเพื่อผ่าน':l.id==='assessment'?'ทำอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ด่านเพื่อผ่าน':isStarPractice(l)?'เก็บดาวอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ดวงเพื่อผ่าน':'เดินถูกอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ครั้งเพื่อผ่าน';
       if(l.type==='notation'&&!ready&&!nextRoundAvailable)mainBtn.textContent='เดินอีก '+Math.max(0,l.requiredCorrect-state.correctMoves)+' ตาเพื่อผ่าน';
     }
     if(state.replyPending){mainBtn.disabled=true;mainBtn.textContent='รอฝ่ายแดงเดิน…';nextRoundBtn.hidden=true;}
@@ -1182,7 +1182,7 @@
     if(l.routePuzzle&&state.starTarget)missionEl.textContent='เดิน'+pieceName[l.piece]+'ไป '+squareLabel(state.starTarget)+(state.roundIndex%3?' · เดินต่อได้หลายตา':' · ลองเดิน 1 ตา');
     mobileSpeechEl.textContent=l.type==='notation'?'เดินหมาก แล้วดูวิธีจดตานั้น':l.puzzle&&task?task.mission:l.type==='game'?'เลือกหมากขาว แล้วทำภารกิจ':l.type==='quiz'?task&&task.mission?task.mission:l.mission:task&&task.mission?task.mission:l.piece?state.showStarHint?'เดิน'+pieceName[activePiece()]+'ไปเก็บดาว ⭐':'ลองเดิน'+pieceName[activePiece()]:'มาลองทำภารกิจนี้กัน'; mobileSpeechEl.classList.remove('sayError','saySuccess');
     boardCaption.textContent=l.puzzle&&task?'โจทย์ที่ '+(state.roundIndex+1)+' · '+task.mission:l.type==='game'?(l.requiredGames?'มินิเกมที่ '+(state.roundIndex+1):'เกมฝึกเต็มกระดาน')+' · คุณเล่นฝ่ายขาว':task&&task.mission?'โจทย์ที่ '+(state.roundIndex+1)+' · '+task.mission:state.current?pieceName[activePiece()]+'อยู่ที่ '+squareLabel(state.current):l.caption;
-    feedbackEl.className='feedback';feedbackEl.textContent=l.puzzle?'ขาวเดินก่อน · ขุนแดงจะหนีให้นานที่สุด':l.type==='game'?'เลือกหมาก แล้วเดินให้ปลอดภัย':l.type==='quiz'?'เลือกคำตอบด้านล่าง':isStarPractice(l)?'เดินไปเก็บดาวให้ครบ '+l.requiredCorrect+' ดวง':'เดินให้ถูกตามภารกิจ';
+    feedbackEl.className='feedback';feedbackEl.textContent=l.defend?'คุณเล่นขุนแดง · ฝ่ายขาวจะไล่':l.puzzle?'ขาวเดินก่อน · ขุนแดงจะหนีให้นานที่สุด':l.type==='game'?'เลือกหมาก แล้วเดินให้ปลอดภัย':l.type==='quiz'?'เลือกคำตอบด้านล่าง':isStarPractice(l)?'เดินไปเก็บดาวให้ครบ '+l.requiredCorrect+' ดวง':'เดินให้ถูกตามภารกิจ';
     if(l.coordinateLesson){
       if(state.phase==='intro'){
         missionEl.textContent=l.mission;boardCaption.textContent=l.caption;
@@ -1278,7 +1278,7 @@
     }
     if(state.phase!=='active'||e.button!==0||e.pointerType==='touch'||state.tool!=='move'||state.completed||state.roundDone||state.pendingNotation)return;
     var l=lessons[state.lesson],pc=boardPieces().find(function(x){return same(x.at,at);});
-    if(isBoardPractice()&&pc&&pc.side==='white'&&(l.type==='game'||state.current&&same(at,state.current))){
+    if(isBoardPractice()&&pc&&pc.side===userSide()&&(l.type==='game'||state.current&&same(at,state.current))){
       state.gesture={kind:'piece',id:e.pointerId,from:at,x:e.clientX,y:e.clientY,dragging:false};
     }
   }
@@ -1404,7 +1404,7 @@
         if(state.phase==='active'&&state.showStarHint&&state.starTarget&&!state.roundDone&&!state.pendingNotation&&same(p,state.starTarget))s.innerHTML+='<span class="goalStar" aria-hidden="true">'+GOAL_STAR+'</span>';
         var pc=pieces.find(function(x){return same(x.at,p);});
         var source=canMove&&state.current&&same(p,state.current);
-        if(canMove&&pc&&pc.side==='white'&&(source||l.type==='game'))s.classList.add('selectable');
+        if(canMove&&pc&&pc.side===userSide()&&(source||l.type==='game'))s.classList.add('selectable');
         if(source&&state.selected)s.classList.add('selected');
         if((state.lastFrom&&same(p,state.lastFrom))||(state.lastTo&&same(p,state.lastTo)))s.classList.add('last');
         if(state.arrowStart&&same(p,state.arrowStart))s.classList.add('arrowOrigin');
@@ -1580,7 +1580,7 @@
     }
     state.phase='active';
     startRound();
-    feedbackEl.textContent=l.puzzle?'คุณเล่นฝ่ายขาว · เลือกหมากแล้วเลือกปลายทาง ขุนแดงจะหนีเอง':l.type==='game'?'คุณเล่นฝ่ายขาว · เลือกหมากแล้วเลือกปลายทาง คู่ฝึกสีแดงจะเดินตอบ':'เลือก'+pieceName[activePiece()]+'บนกระดานก่อน แล้วเลือกช่องปลายทาง';
+    feedbackEl.textContent=l.defend?'คุณเล่นขุนแดง · แตะขุนแดงแล้วเลือกช่องที่จะหนี ฝ่ายขาวจะไล่เอง':l.puzzle?'คุณเล่นฝ่ายขาว · เลือกหมากแล้วเลือกปลายทาง ขุนแดงจะหนีเอง':l.type==='game'?'คุณเล่นฝ่ายขาว · เลือกหมากแล้วเลือกปลายทาง คู่ฝึกสีแดงจะเดินตอบ':'เลือก'+pieceName[activePiece()]+'บนกระดานก่อน แล้วเลือกช่องปลายทาง';
     renderBoard();
     updatePracticeUI();
   }
@@ -1790,48 +1790,60 @@
     if(!tree||!tree.nodes)return ref===0?tree:ref;
     var node={};
     (tree.nodes[ref]||'').split(',').forEach(function(entry){
-      if(entry)node[entry.slice(0,4)]=entry.charAt(4)==='#'?'#':{r:entry.slice(4,8),n:parseInt(entry.slice(8),36)};
+      if(entry)node[entry.slice(0,4)]=entry.charAt(4)==='#'||entry.charAt(4)==='!'?entry.charAt(4):{r:entry.slice(4,8),n:parseInt(entry.slice(8),36)};
     });
     return node;
   }
   function puzzleKey(from,to){return 'abcdefgh'[from.c]+(8-from.r)+'abcdefgh'[to.c]+(8-to.r);}
   // Short puzzles: only moves that still mate in time are accepted; the red king answers from the solution tree.
+  // Defend lessons (เป็นฝ่ายหนี): the learner plays the red king and white answers from the tablebase.
+  function userSide(){return lessons[state.lesson].defend?'black':'white';}
   function playPuzzleMove(dest){
+    var l=lessons[state.lesson],defend=!!l.defend,mine=defend?'black':'white',theirs=defend?'white':'black';
     var from={r:state.current.r,c:state.current.c},task=challenge(),child=state.puzzleNode&&state.puzzleNode[puzzleKey(from,dest)];
     if(!child){
-      var after=Rules.gameStatus(Rules.applyMove(state.gamePieces,from,dest),'black');
+      var after=Rules.gameStatus(Rules.applyMove(state.gamePieces,from,dest),theirs);
       state.selected=false;
-      moveError(after.state==='stalemate'?'อับ! ขุนแดงไม่ถูกรุกแต่ไม่มีที่เดิน = เสมอ · ลองตาอื่นที่รุกได้':
+      moveError(defend?(task.defend==='count'?'ตานี้ฝ่ายขาวจะจนได้ก่อนนับครบ ลองช่องอื่นนะ':'ตานี้ฝ่ายขาวจะไล่จนได้ ลองหนีไปทางมุมที่ปลอดภัย'):
+        after.state==='stalemate'?'อับ! ขุนแดงไม่ถูกรุกแต่ไม่มีที่เดิน = เสมอ · ลองตาอื่นที่รุกได้':
         after.state==='checkmate'?'รุกจนได้ แต่โจทย์นี้ให้จนใน '+task.moves+' ตา ลองอีกครั้งนะ':
         state.puzzleLeft===1?'ตานี้ยังไม่รุกจน ต้องจนในตานี้เลย ลองใหม่นะ':'ตานี้ขุนแดงจะหนีได้นานเกิน '+state.puzzleLeft+' ตา ลองคิดใหม่นะ');
       return;
     }
     var moving=state.gamePieces.find(function(x){return same(x.at,from);});
     state.gamePieces=Rules.applyMove(state.gamePieces,from,dest);
-    queueMoveFeedback(from,dest,moving.piece,'white',state.gamePieces);
-    state.gameHistory.push('ขาว '+pieceName[moving.piece]+' '+squareLabel(from)+'→'+squareLabel(dest));
+    queueMoveFeedback(from,dest,moving.piece,mine,state.gamePieces);
+    state.gameHistory.push((defend?'แดง ':'ขาว ')+pieceName[moving.piece]+' '+squareLabel(from)+'→'+squareLabel(dest));
     state.selected=false;state.current=null;state.focus=dest;state.lastFrom=from;state.lastTo=dest;
-    if(child==='#'){
+    var redCount=defend&&task.count?state.puzzleCount++:0;
+    if(child==='#'||child==='!'){
       state.correctMoves++;state.roundDone=true;state.gameOver=true;state.puzzleNode=null;
       var used=task.moves-state.puzzleLeft+1;
-      state.roundMessage=task.success||'รุกจน! จนได้ใน '+used+' ตา'+(task.count?' ก่อนนับครบ '+task.count.ceiling:'');
-      feedbackEl.className='feedback success';feedbackEl.textContent=state.roundMessage;boardCaption.textContent='รุกจน!';
-      showToast('รุกจน ✓','good','complete');
+      state.roundMessage=task.success||(defend?(task.defend==='count'?'รอดแล้ว! แดงนับ '+redCount+' เกินเพดาน '+task.count.ceiling+' ฝ่ายขาวไล่ไม่ทัน เกมเสมอ':'รอดแล้ว! ขุนแดงหนีอยู่ทางมุมที่เบี้ยหงายไม่ถูกมุม ฝ่ายขาวไล่ไม่จน เกมเสมอ'):
+        'รุกจน! จนได้ใน '+used+' ตา'+(task.count?' ก่อนนับครบ '+task.count.ceiling:''));
+      feedbackEl.className='feedback success';feedbackEl.textContent=state.roundMessage;boardCaption.textContent=defend?'หนีรอด!':'รุกจน!';
+      showToast(defend?'หนีรอด ✓':'รุกจน ✓','good','complete');
       renderBoard();updatePracticeUI();return;
     }
-    state.replyPending=true;state.puzzleLeft--;
-    feedbackEl.className='feedback success';feedbackEl.textContent='ถูกทาง! รอดูฝ่ายแดงเดินตอบ';boardCaption.textContent='ถึงตาฝ่ายแดง';
-    state.puzzleSay='ถูกทาง! รอดูฝ่ายแดงเดินตอบ';
+    state.replyPending=true;if(!defend)state.puzzleLeft--;
+    state.puzzleSay=defend?'หนีถูกทาง! รอดูฝ่ายขาวไล่ต่อ':'ถูกทาง! รอดูฝ่ายแดงเดินตอบ';
+    feedbackEl.className='feedback success';feedbackEl.textContent=state.puzzleSay;boardCaption.textContent=defend?'ถึงตาฝ่ายขาว':'ถึงตาฝ่ายแดง';
     gameReplyTimer=setTimeout(function(){
       gameReplyTimer=null;state.replyPending=false;
       var reply={from:puzzleSquare(child.r,0),to:puzzleSquare(child.r,2)};
-      var redPiece=state.gamePieces.find(function(x){return same(x.at,reply.from);}),victim=state.gamePieces.find(function(x){return same(x.at,reply.to);});
+      var replyPiece=state.gamePieces.find(function(x){return same(x.at,reply.from);}),victim=state.gamePieces.find(function(x){return same(x.at,reply.to);});
       state.gamePieces=Rules.applyMove(state.gamePieces,reply.from,reply.to);
-      queueMoveFeedback(reply.from,reply.to,redPiece.piece,'black',state.gamePieces);
-      state.gameHistory.push('แดง '+pieceName[redPiece.piece]+' '+squareLabel(reply.from)+'→'+squareLabel(reply.to));
+      queueMoveFeedback(reply.from,reply.to,replyPiece.piece,theirs,state.gamePieces);
+      state.gameHistory.push((defend?'ขาว ':'แดง ')+pieceName[replyPiece.piece]+' '+squareLabel(reply.from)+'→'+squareLabel(reply.to));
       state.lastFrom=reply.from;state.lastTo=reply.to;state.puzzleNode=puzzleNodeAt(task.tree,child.n);
-      var say=state.puzzleSay=(victim?pieceName[redPiece.piece]+'แดงกิน'+pieceName[victim.piece]+'ที่ '+squareLabel(reply.to):redPiece.piece==='king'?'ขุนแดงหนีไป '+squareLabel(reply.to):'แดงเดิน'+pieceName[redPiece.piece]+' '+squareLabel(reply.from)+' → '+squareLabel(reply.to))+(task.count?' · นับ '+(state.puzzleCount++)+' จาก '+task.count.ceiling:'')+' · เหลืออีก '+state.puzzleLeft+' ตา'+(state.puzzleLeft===1?' ต้องจนตานี้':'');
-      feedbackEl.className='feedback';feedbackEl.textContent=say;boardCaption.textContent='ถึงตาฝ่ายขาว · '+say;
+      var say;
+      if(defend){
+        state.puzzleLeft--;
+        say='ขาวเดิน'+pieceName[replyPiece.piece]+' '+squareLabel(reply.from)+' → '+squareLabel(reply.to)+(task.count?' · แดงนับ '+redCount+' จาก '+task.count.ceiling:'')+
+          (task.defend==='count'?' · ขาวเหลืออีก '+state.puzzleLeft+' ตา':' · หนีต่ออีก '+(state.puzzleLeft+1)+' ตา');
+      }else say=(victim?pieceName[replyPiece.piece]+'แดงกิน'+pieceName[victim.piece]+'ที่ '+squareLabel(reply.to):replyPiece.piece==='king'?'ขุนแดงหนีไป '+squareLabel(reply.to):'แดงเดิน'+pieceName[replyPiece.piece]+' '+squareLabel(reply.from)+' → '+squareLabel(reply.to))+(task.count?' · นับ '+(state.puzzleCount++)+' จาก '+task.count.ceiling:'')+' · เหลืออีก '+state.puzzleLeft+' ตา'+(state.puzzleLeft===1?' ต้องจนตานี้':'');
+      state.puzzleSay=say;
+      feedbackEl.className='feedback';feedbackEl.textContent=say;boardCaption.textContent=(defend?'ถึงตาฝ่ายแดง · ':'ถึงตาฝ่ายขาว · ')+say;
       renderBoard();updatePracticeUI();
     },presentation.replyDelay());
     renderBoard();updatePracticeUI();
@@ -1849,7 +1861,7 @@
     }
     var l=lessons[state.lesson];if(state.phase!=='active'||!isBoardPractice()||state.completed||state.roundDone||state.pendingNotation)return;
     var clickedPiece=boardPieces().find(function(x){return same(x.at,dest);});
-    if((l.type==='game'&&clickedPiece&&clickedPiece.side==='white')||(state.current&&same(state.current,dest))){
+    if((l.type==='game'&&clickedPiece&&clickedPiece.side===userSide())||(state.current&&same(state.current,dest))){
       if(state.phase==='intro')activateLesson();
       var alreadySelected=state.selected&&state.current&&same(state.current,dest);
       state.current=dest;state.selected=!alreadySelected;
@@ -1858,7 +1870,7 @@
       renderBoard();updateBoardHelp();return;
     }
     if(!state.selected){
-      feedbackEl.className='feedback';feedbackEl.textContent='แตะหมากฝ่ายขาวก่อนนะ';coachSay('แตะหมากฝ่ายขาวก่อนนะ','error');
+      var pickFirst=lessons[state.lesson].defend?'แตะขุนแดงก่อนนะ':'แตะหมากฝ่ายขาวก่อนนะ';feedbackEl.className='feedback';feedbackEl.textContent=pickFirst;coachSay(pickFirst,'error');
       return;
     }
     attemptMove(dest);

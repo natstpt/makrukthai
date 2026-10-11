@@ -56,6 +56,16 @@
     task.mission=title+' · รุกจนภายใน '+moves+' ตา';
     return task;
   }
+  // Defend lessons (เป็นฝ่ายหนี): the learner plays the red king; white answers from the tablebase.
+  // mode 'count': survive until red's count passes the ceiling. mode 'fortress': keep a drawn position for `steps` moves.
+  function escape(key,title,position,mode,ceiling,steps){
+    var task=puzzle(key,title,position,0,[]),start=task.pieces.length+1;
+    task.chase=true;task.defend=mode;task.count={start:start,ceiling:ceiling};
+    task.moves=mode==='count'?ceiling-start+1:steps;
+    task.mission=title+' · '+(mode==='count'?'หนีให้รอดจนแดงนับเกิน '+ceiling:'หนีให้รอด '+(steps+1)+' ตา');
+    return task;
+  }
+  function defendLesson(){var l=puzzleLesson.apply(null,arguments);l.defend=true;l.hint='หนีไปช่องที่ยังมีทางหนีต่อ อย่าเข้าขอบหรือมุมที่ฝ่ายขาวไล่จนได้';return l;}
   var STALEMATE_NOTE={text:'อับคือขุนไม่ถูกรุกแต่ไม่มีตาเดินที่ปลอดภัย เกมจบเสมอ ฝ่ายไล่จึงต้องรุกในตาสุดท้ายเสมอ',page:9,clause:'ก 4.3'};
   function puzzleLesson(id,title,heading,speech,description,rule,steps,puzzles,count,bookPages,extraNote){
     var notes=[extraNote||MATE_NOTE,countNote(count)];
@@ -293,7 +303,31 @@
       ],[        chase('chase-knight-khon-1','ม้ากับโคน แบบที่ 1','k:a1 K:b3 B:d2 N:e2',7,44),
         chase('chase-knight-khon-2','ม้ากับโคน แบบที่ 2','k:f7 K:e5 N:c5 B:h4',12,44),
         chase('chase-knight-khon-3','ม้ากับโคน แบบที่ 3','k:c7 K:e5 N:f5 B:d4',12,44)
-      ],'ม้า 1 ตัว 64 ตา · โคน 1 ตัว 44 ตา · ใช้เพดานต่ำสุด 44 ตา',[117,118])
+      ],'ม้า 1 ตัว 64 ตา · โคน 1 ตัว 44 ตา · ใช้เพดานต่ำสุด 44 ตา',[117,118]),
+      defendLesson('escape-count','การหนีให้รอดจนนับครบ','เป็นฝ่ายหนี · หนีจนนับครบ',
+        'คราวนี้คุณเป็น<strong>ขุนแดง</strong> หนีให้รอดจนนับเกินเพดาน ฝ่ายขาวจะไล่ไม่ทัน',
+        'อยู่กลางกระดานไว้ อย่าเข้าขอบหรือมุม ทุกตาที่ขุนแดงเดินจะนับเพิ่มหนึ่ง',
+        'อยู่กลางกระดาน · ไม่ติดขอบ · นับต่อทุกตา',[
+        step('เพลงยาวในตำรา: “แม้ว่าเรือลำเดียวเกี่ยวกวดขัน จะไล่นั้นได้เพียงสิบหกหน” เรือเดี่ยวนับได้แค่ 16','k:f5 K:d1 R:a3',['f5']),
+        step('“อีกโคนคู่ดูระบอบให้ชอบกล ยี่สิบสองไม่จนอย่าบุกบั่น” ถ้าไล่ไม่จนภายในนับ 22 เกมเสมอ','k:d6 K:f2 B:c4 B:c1',['d6']),
+        step('ขุนแดงกลางกระดานมีทางหนีหลายทาง ถ้าเข้าขอบ เรือกับขุนขาวจะต้อนจนได้เร็ว','k:d4 K:e2 R:g2',['d4','c5','e5'])
+      ],[
+        escape('escape-rook-1','หนีเรือเดี่ยว แบบที่ 1','k:f5 K:d1 R:a3','count',16),
+        escape('escape-rook-2','หนีเรือเดี่ยว แบบที่ 2','k:d4 K:e2 R:g2','count',16),
+        escape('escape-khon-pair','หนีโคนคู่','k:d6 K:f2 B:c4 B:c1','count',22)
+      ],'เรือ 1 ลำ 16 ตา · โคน 2 ตัว 22 ตา · ฝ่ายหนีนับทุกตาที่เดิน',[7]),
+      defendLesson('escape-corner','การหนีไปมุมที่ไม่ถูกมุม','หนีไปมุมที่เบี้ยหงายเข้าไม่ได้',
+        'ม้ากับเบี้ยหงายไล่จนได้เฉพาะมุมที่ถูกมุม คุณเป็นขุนแดง ต้อง<strong>หนีไปมุมที่ไม่ถูกมุม</strong>',
+        'ดูว่าเบี้ยหงายเดินเข้ามุมไหนไม่ได้ แล้วพาขุนแดงไปอยู่ใกล้มุมนั้น ฝ่ายขาวจะไล่ไม่จน',
+        'หาเบี้ยหงาย → ดูมุมที่เข้าไม่ได้ → หนีไปมุมนั้น',[
+        step('ตำราสอนฝ่ายหนีว่า “ให้หนีไปเข้ามุมที่เบี้ยหงายไม่ถูกมุม จึงจะไม่จน”','k:a6 K:c5 N:c2 M:d2',['d2']),
+        step('เบี้ยหงาย ง2 เข้าได้แค่มุม ก1 กับ ญ8 ขุนแดง ก6 จึงควรหนีไปทางมุม ก8','k:a6 K:c5 N:c2 M:d2',['a6','a7','a8']),
+        step('เพลงยาวยังมีชื่อท่าหนีอีกหลายท่า เช่น ควายสู้เสือ หมูหลบหอก ลูกติดแม่ หนีได้ครบนับ 64 ก็เสมอ','k:d8 K:e5 N:g8 M:b6',['d8'])
+      ],[
+        escape('escape-corner-1','หนีเข้ามุม แบบที่ 1','k:a6 K:c5 N:c2 M:d2','fortress',64,5),
+        escape('escape-corner-2','หนีเข้ามุม แบบที่ 2','k:d1 K:e3 N:b1 M:f5','fortress',64,5),
+        escape('escape-corner-3','หนีเข้ามุม แบบที่ 3','k:d8 K:e5 N:g8 M:b6','fortress',64,5)
+      ],'ม้า 1 ตัวกับเบี้ยหงาย 64 ตา · หนีได้ครบนับ 64 เกมเสมอ',[7,8,94])
     ];
   };
 })(typeof window==='object'?window:globalThis);

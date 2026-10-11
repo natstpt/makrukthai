@@ -6,6 +6,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const { chaseTree } = require('./chase-tree.cjs');
+const { defenseTree } = require('./defense-tree.cjs');
 
 const repo = path.join(__dirname, '..');
 const context = { window: {} };
@@ -17,6 +18,11 @@ for (const lesson of context.window.buildEndgameLessons()) {
   for (const task of lesson.games) {
     if (!task.chase) continue;
     const pieces = JSON.parse(JSON.stringify(task.pieces));
+    if (task.defend) {
+      trees[task.key] = defenseTree(pieces, task.defend, task.moves, cache);
+      console.log(task.key, 'defend', task.defend, 'white moves', task.moves, 'nodes', trees[task.key].nodes.length);
+      continue;
+    }
     // White may use every move the counting rule allows: red counts from pieces + 1 up to the ceiling.
     const countMoves = task.count.ceiling - task.count.start + 2;
     if (task.moves > countMoves) throw new Error(`${task.key}: ${task.moves} moves is more than the count allows (${countMoves})`);

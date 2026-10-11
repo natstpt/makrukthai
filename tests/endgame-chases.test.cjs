@@ -11,13 +11,42 @@ for(const file of ['endgame-lessons.js','chase-trees.js'])vm.runInContext(fs.rea
 const plain=v=>JSON.parse(JSON.stringify(v));
 const lessons=plain(ctx.window.buildEndgameLessons().filter(l=>l.games&&l.games.some(t=>t.chase))),trees=plain(ctx.window.MakrukChaseTrees);
 const solver=createSolver();
-const decode=s=>Object.fromEntries((s||'').split(',').filter(Boolean).map(e=>[e.slice(0,4),e[4]==='#'?'#':{r:e.slice(4,8),n:parseInt(e.slice(8),36)}]));
-assert.deepEqual(lessons.map(l=>l.id),['chase-rook','chase-knight-met','chase-khon-pair','chase-knight-khon']);
+const decode=s=>Object.fromEntries((s||'').split(',').filter(Boolean).map(e=>[e.slice(0,4),(e[4]==='#'||e[4]==='!')?e[4]:{r:e.slice(4,8),n:parseInt(e.slice(8),36)}]));
+assert.deepEqual(lessons.map(l=>l.id),['chase-rook','chase-knight-met','chase-khon-pair','chase-knight-khon','escape-count','escape-corner']);
+let defends=0;
 let chases=0,visited=0,exact=0;
+// Defend tasks: the learner moves the red king. Every accepted red move is legal and keeps red alive (white cannot
+// mate in the moves it has left, checked by the solver near the end); every white reply is legal and never mates.
+function checkDefence(l,t,tree,label){
+  assert(l.defend,label+': defend lesson');
+  assert.equal(t.count.start,t.pieces.length+1,label+': red counts from the number of pieces + 1');
+  if(t.defend==='count')assert.equal(t.moves,t.count.ceiling-t.count.start+1,label+': white gets the moves the count allows');
+  const seen=new Set();
+  const walk=(pieces,ref,left)=>{
+    if(seen.has(ref))return;seen.add(ref);visited++;
+    const node=decode(tree.nodes[ref]),redMoves=Rules.legalMoves(pieces,'black').map(moveKey);
+    assert(Object.keys(node).length>0,label+': red always has a safe move');
+    for(const [move,child] of Object.entries(node)){
+      assert(redMoves.includes(move),label+': red move '+move+' is legal');
+      const m=fromKey(move),after=Rules.applyMove(pieces,m.from,m.to);
+      if(left<=3&&t.defend==='count'){assert(!solver.wins(after,left),label+': after '+move+' white cannot mate in '+left);exact++;}
+      if(t.defend==='fortress'){assert(!solver.wins(after,3),label+': after '+move+' white has no quick mate');exact++;}
+      if(child==='!'){assert(left===0||t.defend==='fortress'&&left===0||!after.some(p=>p.side==='white'&&p.piece!=='king'),label+': success only when the moves run out');continue;}
+      assert(Rules.legalMoves(after,'white').some(x=>moveKey(x)===child.r),label+': white reply '+child.r+' is legal');
+      const r=fromKey(child.r),next=Rules.applyMove(after,r.from,r.to);
+      assert.equal(Rules.gameStatus(next,'black').state,'playing',label+': white reply leaves red a move');
+      walk(next,child.n,left-1);
+    }
+    // Near the end, every rejected red move really loses in time.
+    if(left<=3&&t.defend==='count')for(const move of redMoves)if(!node[move]){const m=fromKey(move);assert(solver.wins(Rules.applyMove(pieces,m.from,m.to),left),label+': rejected '+move+' loses');exact++;}
+  };
+  walk(plain(t.pieces),0,t.moves);
+}
 for(const l of lessons){
   for(const t of l.games){
     const label=l.id+' '+t.key,tree=trees[t.key];
     assert(t.chase&&tree,label+': has a chase tree');
+    if(t.defend){checkDefence(l,t,tree,label);chases++;defends++;continue;}
     assert.equal(t.count.start,t.pieces.length+1,label+': red counts from the number of pieces + 1');
     assert(t.moves<=t.count.ceiling-t.count.start+2,label+': the counting rule leaves enough moves');
     assert(tree.dtm<=t.moves&&t.moves-tree.dtm<=1,label+': at most one spare move');
@@ -45,4 +74,5 @@ for(const l of lessons){
   }
 }
 assert.equal(Object.keys(trees).length,chases,'no stale chase trees');
+assert.equal(defends,6,'six defend tasks');
 console.log('Endgame chases verified: '+chases+' chases, '+visited+' positions, '+exact+' end positions checked against the solver.');

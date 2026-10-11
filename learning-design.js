@@ -6,7 +6,8 @@
       'endgame-rook-khon','endgame-khon-promoted','endgame-knight','endgame-promoted',
       'endgame-stalemate','endgame-count','endgame-corner','endgame-tempo','puzzle-khon','puzzle-khon-met','puzzle-knight',
       'puzzle-twist-rook','puzzle-twist-sacrifice',
-      'chase-rook','chase-knight-met','chase-khon-pair','chase-knight-khon','finish'];
+      'chase-rook','chase-knight-met','chase-khon-pair','chase-knight-khon',
+      'escape-count','escape-corner','finish'];
     var introductions={
       board:['ทุกช่องมีชื่อ ลองดูชื่อบนกระดานกัน','อ่านตัวอักษรก่อน แล้วตามด้วยเลข เช่น ฉ8'],
       king:['นี่คือขุน เราต้องดูแลให้ปลอดภัย','ขุนเดินได้รอบตัว ทีละ 1 ช่อง'],
