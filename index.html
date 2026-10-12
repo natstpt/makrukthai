@@ -353,7 +353,7 @@
     .menuTools button,.menuTools a{min-height:44px;font-size:16px}
     .aiChoice{margin-top:8px;padding:10px 12px;border:1px solid #524a3f;border-radius:12px;background:#2d2922}.aiChoice p{margin:0 0 8px;font-size:14px;color:#dcc6a4}.aiChoice>div{display:grid;grid-template-columns:1fr 1fr;gap:8px}
     .aiSide{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 6px;border:1px solid #6a5a3e;border-radius:12px;background:#3a3226;color:#f2ebd7;font-weight:800;text-decoration:none}.aiSide small{font-weight:400;font-size:12px;color:#cbb994}.aiSide:hover{border-color:#c29931}
-    .aiChoice .aiLevels{margin-bottom:10px}.aiLevel{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 6px;border:1px solid #6a5a3e;border-radius:12px;background:#3a3226;color:#f2ebd7;font:inherit;font-weight:800;cursor:pointer}.aiLevel small{font-weight:400;font-size:12px;color:#cbb994}.aiLevel[aria-pressed="true"]{border:2px solid #e2b23c;background:#5a4720}
+    .aiChoice .aiLevels{margin-bottom:10px;grid-template-columns:repeat(3,1fr)}.aiLevel{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 6px;border:1px solid #6a5a3e;border-radius:12px;background:#3a3226;color:#f2ebd7;font:inherit;font-weight:800;cursor:pointer}.aiLevel small{font-weight:400;font-size:12px;color:#cbb994}.aiLevel[aria-pressed="true"]{border:2px solid #e2b23c;background:#5a4720}
     .sideDot{width:18px;height:18px;border-radius:50%;background:#f4ecd8;border:2px solid #8b7a5a}.aiSide.black .sideDot{background:#d8342c;border-color:#7d1712}
     .colorChoice{display:grid;grid-template-columns:auto 1fr 1fr;align-items:center;gap:6px;margin-top:10px;padding:8px 10px;border:1px solid #524a3f;border-radius:12px;background:#2d2922}
     .colorChoiceLabel{font-size:14px;color:#dcc6a4;padding-right:2px}
@@ -769,7 +769,7 @@
           <button type="button" class="colorOption" data-colors="red" role="radio"><span class="pair"><img src="assets/pieces/makruk/ada/wK.svg" alt=""><img src="assets/pieces/makruk/ada/rK.svg" alt=""></span>ขาว–แดง</button>
           <button type="button" class="colorOption" data-colors="black" role="radio"><span class="pair"><img src="assets/pieces/makruk/ada/wK.svg" alt=""><img src="assets/pieces/makruk/ada/bK.svg" alt=""></span>ขาว–ดำ</button>
         </div>
-        <div class="aiChoice" id="aiChoice" hidden><p>ระดับ AI</p><div class="aiLevels" role="group" aria-label="ระดับ AI"><button type="button" class="aiLevel" data-level="easy" aria-pressed="true">ง่าย<small>เหมาะกับผู้เริ่มต้น</small></button><button type="button" class="aiLevel" data-level="hard" aria-pressed="false">ยาก<small>คิดไม่เกิน 1 วินาที · โหลดครั้งแรก ~48 MB</small></button></div><p>เลือกฝ่ายที่จะเล่นกับ AI</p><div><a class="aiSide white" href="editor.html?play=ai&amp;side=white"><span class="sideDot"></span>ฝ่ายขาว<small>เดินก่อน</small></a><a class="aiSide black" href="editor.html?play=ai&amp;side=black"><span class="sideDot"></span>ฝ่ายแดง<small>AI เดินก่อน</small></a></div></div>
+        <div class="aiChoice" id="aiChoice" hidden><p>ระดับ AI</p><div class="aiLevels" role="group" aria-label="ระดับ AI"><button type="button" class="aiLevel" data-level="easy" aria-pressed="true">ง่าย<small>เดินพลาดบ้าง</small></button><button type="button" class="aiLevel" data-level="medium" aria-pressed="false">กลาง<small>เดินตามแผน</small></button><button type="button" class="aiLevel" data-level="hard" aria-pressed="false">ยาก<small>โหลด ~48 MB</small></button></div><p>เลือกฝ่ายที่จะเล่นกับ AI</p><div><a class="aiSide white" href="editor.html?play=ai&amp;side=white"><span class="sideDot"></span>ฝ่ายขาว<small>เดินก่อน</small></a><a class="aiSide black" href="editor.html?play=ai&amp;side=black"><span class="sideDot"></span>ฝ่ายแดง<small>AI เดินก่อน</small></a></div></div>
         <div id="boardSettings"></div>
         <div id="menuHidden" hidden></div>
       </section>
@@ -899,13 +899,13 @@
       if(item.aiChoice){
         el.setAttribute('aria-expanded','false');el.setAttribute('aria-controls','aiChoice');
         el.addEventListener('click',function(){aiChoice.hidden=!aiChoice.hidden;el.setAttribute('aria-expanded',String(!aiChoice.hidden));});
-        // Level: easy (the simple player) or hard (Fairy-Stockfish); remembered on this device and passed to the side links.
+        // Level: easy (makes mistakes), medium (the simple player) or hard (Fairy-Stockfish); remembered on this device and passed to the side links.
         var setLevel=function(level){
           aiChoice.querySelectorAll('.aiLevel').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.level===level));});
           aiChoice.querySelectorAll('.aiSide').forEach(function(a){a.href=a.getAttribute('href').replace(/&level=\w+/,'')+'&level='+level;});
           try{localStorage.setItem('makrukAiLevel',level);}catch(e){}
         };
-        var savedLevel='easy';try{if(localStorage.getItem('makrukAiLevel')==='hard')savedLevel='hard';}catch(e){}
+        var savedLevel='easy';try{var kept=localStorage.getItem('makrukAiLevel');if(kept==='medium'||kept==='hard')savedLevel=kept;}catch(e){}
         setLevel(savedLevel);
         aiChoice.querySelectorAll('.aiLevel').forEach(function(b){b.addEventListener('click',function(){setLevel(b.dataset.level);});});
       }

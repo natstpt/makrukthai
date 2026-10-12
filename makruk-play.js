@@ -189,6 +189,12 @@
       }
     }
     if (options.openingOnly) return null;
+    // Easy level: now and then a move is picked at random instead of the best one (never when a mate in one is there),
+    // so a beginner can win material and learn from the AI's mistakes.
+    if (options.mistakes && top < 10000 && random() < options.mistakes) {
+      var others = scored.filter(function (x) { return x.score < top - 0.5; });
+      if (others.length) return others[Math.floor(random() * others.length)].move;
+    }
     var best = null, bestScore = -Infinity;
     scored.forEach(function (x) { var s = x.score + random() * 0.35; if (s > bestScore) { bestScore = s; best = x.move; } });
     return best;
