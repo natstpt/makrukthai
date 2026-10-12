@@ -49,12 +49,17 @@
       if(P.canRequestBoardCount(state.pieces,count)&&P.material(state.pieces,state.turn)<P.material(state.pieces,opponent(state.turn)))count=P.requestBoardCount(state.turn);
       var easy=function(){var move=P.chooseMove(state.pieces,state.turn,{count:count});if(move)playMove(move.from,move.to);};
       if(!hard){easy();return;}
+      // Hard AI: the opening shape first (ง4 จ4 / ง5 จ5 pawns, then the pieces behind them); once it is done or has
+      // to stop, the engine plays the rest of the game.
+      var book=!game.bookDone&&P.openingChoice(state.pieces,state.turn);
+      if(book){playMove(book.from,book.to);return;}
+      game.bookDone=true;
       E.bestMove(M.fen(state)).then(function(key){
         if(token!==aiSearch||!aiTurn())return;
         var move=key&&R.legalMoves(state.pieces,state.turn).find(function(m){return moveKey(m)===key;});
         if(move)playMove(move.from,move.to);else easy();
       },function(){if(token===aiSearch&&aiTurn())easy();});
-    },hard?100:700);
+    },hard?(game.bookDone?100:500):700);
   }
   function label(at){return files[at.c]+(8-at.r);}
   function asset(p){return 'assets/pieces/makruk/ada/'+window.MakrukPieceColors.prefix(p.side)+icons[p.piece]+'.svg';}
@@ -310,7 +315,7 @@
   $('undo').onclick=function(){cancelAi();var prev=history.pop();if(!prev)return;future.push(snapshot());restore(prev);if(aiTurn()&&history.length){prev=history.pop();future.push(snapshot());restore(prev);}scheduleAi();};
   $('redo').onclick=function(){cancelAi();var next=future.pop();if(!next)return;history.push(snapshot());restore(next);if(aiTurn()&&future.length){next=future.pop();history.push(snapshot());restore(next);}scheduleAi();};
   $('start').onclick=function(){var error=M.validate(state);if(error){message(error,true);sound.playResult('failure');return;}save();trial={state:clone(state),history:history.slice(),future:future.slice()};mode='play';history=[];future=[];moves=[];selected=null;last=null;startCount();render();};
-  $('restart').onclick=function(){cancelAi();remember();state=clone(trial.state);moves=[];selected=null;last=null;startCount();render();$('optionsDialog').close();scheduleAi();};
+  $('restart').onclick=function(){cancelAi();if(game)game.bookDone=false;remember();state=clone(trial.state);moves=[];selected=null;last=null;startCount();render();$('optionsDialog').close();scheduleAi();};
   $('edit').onclick=function(){cancelAi();game=null;count=null;mode='edit';state=clone(trial.state);history=trial.history;future=trial.future;trial=null;moves=[];selected=null;last=null;render();};
   $('load').onclick=function(){if(mode!=='edit')return;try{var next=M.parse($('fen').value);remember();state=next;changed();$('optionsDialog').close();message('เปิดตำแหน่งแล้ว'+(M.validate(state)?' — '+M.validate(state):''));}catch(e){$('saveNote').textContent=e.message;}};
   $('copy').onclick=async function(){try{await navigator.clipboard.writeText($('fen').value);$('saveNote').textContent='คัดลอกรหัสแล้ว';}catch(e){$('fen').focus();$('fen').select();$('saveNote').textContent='เลือกข้อความแล้ว กรุณาคัดลอกด้วยเมนูของเครื่อง';}};
