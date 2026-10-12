@@ -94,7 +94,7 @@
   palette('redPalette','black');trayTool('redPalette','erase','🗑','ลบ');
   function render(){
     sound.clearMotion();
-    document.body.dataset.mode=mode;$('setupOptions').hidden=mode!=='edit';$('clear').hidden=mode!=='edit';$('initial').hidden=mode!=='edit';$('redo').hidden=mode==='edit';$('start').hidden=mode!=='edit';$('restart').hidden=mode!=='play';$('edit').hidden=mode!=='play';
+    document.body.dataset.mode=mode;$('setupOptions').hidden=mode!=='edit';$('clear').hidden=mode!=='edit';$('initial').hidden=mode!=='edit';$('redo').hidden=mode==='edit';$('start').hidden=mode!=='edit';$('restart').hidden=mode!=='play';$('edit').hidden=mode!=='play'||!!game;$('restart').textContent=game?'↺ เริ่มเกมใหม่':'↺ เริ่มทดลองใหม่';
     $('board').replaceChildren();
     var destinations=mode==='play'&&selected?R.legalDestinations(state.pieces,selected):[];
     var status=mode==='play'?playStatus():null;
@@ -350,6 +350,8 @@
   if(game){
     // Start straight from the opening position; the teacher's saved setup is left untouched.
     state=M.initial();flipped=!!game.ai&&game.human==='black';notice='';
+    // In a game the options start with "เริ่มเกมใหม่"; the board cannot be edited (no แก้ตำแหน่ง button).
+    var body=$('restart').parentNode;body.insertBefore($('restart'),body.firstChild);
     trial={state:clone(state),history:[],future:[]};mode='play';history=[];future=[];moves=[];selected=null;last=null;startCount();
   }
   if(game&&game.ai&&game.level==='hard')loadEngine();
