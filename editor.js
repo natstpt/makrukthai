@@ -13,24 +13,48 @@
   function opponent(side){return side==='white'?'black':'white';}
   function sideName(side){return side==='white'?'ขาว':'แดง';}
   // Games opened from the lesson page's settings: editor.html?play=2 (two players on one device) or
-  // ?play=ai&side=white|black (the learner plays that side against a simple computer player).
+  // ?play=ai&side=white|black&level=easy|hard (the learner plays that side against the computer: easy is the simple
+  // player in makruk-play.js, hard is Fairy-Stockfish in engine-ai.js, at most 1 second a move).
   var game=null;
-  try{var playParams=new URLSearchParams(location.search);if(playParams.get('play')==='2')game={ai:false};else if(playParams.get('play')==='ai')game={ai:true,human:playParams.get('side')==='black'?'black':'white'};}catch(e){}
+  try{var playParams=new URLSearchParams(location.search);if(playParams.get('play')==='2')game={ai:false};else if(playParams.get('play')==='ai')game={ai:true,human:playParams.get('side')==='black'?'black':'white',level:playParams.get('level')==='hard'?'hard':'easy'};}catch(e){}
   function aiSide(){return game&&game.ai?opponent(game.human):null;}
   function aiTurn(){return mode==='play'&&!!aiSide()&&state.turn===aiSide();}
   // Counting to a draw (กติกา ข้อ ก 5) while playing; kept in the undo history with the position.
   var count=null;
   function startCount(){count=P.nextCount(null,state.pieces,opponent(state.turn));}
   function playStatus(){var s=R.gameStatus(state.pieces,state.turn);return s.state==='playing'&&count&&count.draw?{state:'countdraw',check:s.check}:s;}
-  var aiTimer=0;
+  var aiTimer=0,aiSearch=0,E=window.MakrukEngine,engine={state:'off',progress:0};
+  function hardAi(){return !!game&&!!game.ai&&game.level==='hard'&&engine.state!=='failed';}
+  function cancelAi(){clearTimeout(aiTimer);aiTimer=0;aiSearch++;}
+  function moveKey(m){return 'abcdefgh'[m.from.c]+(8-m.from.r)+'abcdefgh'[m.to.c]+(8-m.to.r);}
+  // The hard AI loads once (about 48 MB the first time); if it cannot run here, the easy AI plays instead.
+  function loadEngine(){
+    if(!E){engine.state='failed';return;}
+    engine.state='loading';
+    E.ensureIsolation().then(function(ok){
+      if(!ok)throw Error('not isolated');
+      return E.load(function(f){var pct=Math.floor(f*100);if(pct!==engine.progress){engine.progress=pct;render();}});
+    }).then(function(){engine.state='ready';render();},function(){engine.state='failed';message('เปิด AI ระดับยากบนอุปกรณ์นี้ไม่ได้ จึงเล่นกับ AI ระดับง่ายแทน',true);render();scheduleAi();});
+  }
   $('requestCount').addEventListener('click',function(){
     if(!P.canRequestBoardCount(state.pieces,count))return;
     remember();count=P.requestBoardCount(state.turn);render();
   });
   function scheduleAi(){
-    clearTimeout(aiTimer);
+    cancelAi();
     if(!aiTurn()||playStatus().state!=='playing')return;
-    aiTimer=setTimeout(function(){aiTimer=0;if(!aiTurn())return;if(P.canRequestBoardCount(state.pieces,count)&&P.material(state.pieces,state.turn)<P.material(state.pieces,opponent(state.turn)))count=P.requestBoardCount(state.turn);var move=P.chooseMove(state.pieces,state.turn,{count:count});if(move)playMove(move.from,move.to);},700);
+    var token=aiSearch,hard=hardAi();
+    aiTimer=setTimeout(function(){
+      aiTimer=0;if(token!==aiSearch||!aiTurn())return;
+      if(P.canRequestBoardCount(state.pieces,count)&&P.material(state.pieces,state.turn)<P.material(state.pieces,opponent(state.turn)))count=P.requestBoardCount(state.turn);
+      var easy=function(){var move=P.chooseMove(state.pieces,state.turn,{count:count});if(move)playMove(move.from,move.to);};
+      if(!hard){easy();return;}
+      E.bestMove(M.fen(state)).then(function(key){
+        if(token!==aiSearch||!aiTurn())return;
+        var move=key&&R.legalMoves(state.pieces,state.turn).find(function(m){return moveKey(m)===key;});
+        if(move)playMove(move.from,move.to);else easy();
+      },function(){if(token===aiSearch&&aiTurn())easy();});
+    },hard?100:700);
   }
   function label(at){return files[at.c]+(8-at.r);}
   function asset(p){return 'assets/pieces/makruk/ada/'+window.MakrukPieceColors.prefix(p.side)+icons[p.piece]+'.svg';}
@@ -88,7 +112,7 @@
     $('panelTitle').textContent=mode==='edit'?'จัดตำแหน่งหมาก':'ทดลองเดิน';
     $('topSide').textContent=flipped?'ฝ่ายขาว':'ฝ่ายแดง';$('bottomSide').textContent=flipped?'ฝ่ายแดง':'ฝ่ายขาว';
     $('topDot').classList.toggle('white',flipped);$('bottomDot').classList.toggle('white',!flipped);
-    $('modeLabel').textContent=mode==='edit'?'1 · ตั้งตำแหน่ง':game?(game.ai?'คุณเป็นฝ่าย'+sideName(game.human):'เครื่องเดียวกัน'):'2 · ทดลองเดิน';document.querySelector('.brand h1').textContent=game?(game.ai?'เล่นกับ AI':'เล่น 2 คน'):'ตั้งหมาก';$('turn').value=state.turn;
+    $('modeLabel').textContent=mode==='edit'?'1 · ตั้งตำแหน่ง':game?(game.ai?'คุณเป็นฝ่าย'+sideName(game.human)+' · AI ระดับ'+(game.level!=='hard'?'ง่าย':hardAi()?'ยาก':'ง่าย (ระดับยากใช้บนอุปกรณ์นี้ไม่ได้)'):'เครื่องเดียวกัน'):'2 · ทดลองเดิน';document.querySelector('.brand h1').textContent=game?(game.ai?'เล่นกับ AI':'เล่น 2 คน'):'ตั้งหมาก';$('turn').value=state.turn;
     document.querySelectorAll('[data-tool]').forEach(function(b){b.setAttribute('aria-pressed',String(tool===b.dataset.tool));});
     $('fen').value=M.fen(state);
     $('saveNote').textContent=storageOK?'เก็บตำแหน่งที่ตั้งไว้ให้อัตโนมัติในเครื่องนี้ (ไม่ทับด้วยตาที่ทดลองเดิน)':'เครื่องนี้เก็บอัตโนมัติไม่ได้ กรุณาคัดลอกรหัสไว้';
@@ -99,7 +123,7 @@
       message('');
     }else{
       // Play mode shows no help text under the board: the turn line beside the move record says whose move it is.
-      $('turnHeading').textContent=status.state==='checkmate'?'รุกจน · '+sideName(status.winner)+'ชนะ':status.state==='playing'?(aiTurn()?'AI ('+sideName(state.turn)+') กำลังคิด':sideName(state.turn)+'เดิน')+(status.check?' · รุก!':''):status.state==='stalemate'?'อับ · เสมอ':status.state==='countdraw'?'นับครบ · เสมอ':'เสมอ';
+      $('turnHeading').textContent=status.state==='checkmate'?'รุกจน · '+sideName(status.winner)+'ชนะ':status.state==='playing'?(aiTurn()?(hardAi()&&engine.state==='loading'?'กำลังโหลด AI ระดับยาก '+engine.progress+'%':'AI ('+sideName(state.turn)+') กำลังคิด'):sideName(state.turn)+'เดิน')+(status.check?' · รุก!':''):status.state==='stalemate'?'อับ · เสมอ':status.state==='countdraw'?'นับครบ · เสมอ':'เสมอ';
       $('countLine').textContent=P.countText(count,sideName)+(count&&count.extra&&!count.draw&&status.state==='playing'?' · ฝ่าย'+sideName(opponent(count.counter))+'เหลือตาสุดท้าย':'');$('countLine').hidden=!count;$('countLine').classList.toggle('alert',!!count&&(count.extra||count.value>=count.ceiling-3));
       // Board count: only the weaker side (or an even side) may ask for it, on its own turn.
       var mayAsk=status.state==='playing'&&!aiTurn()&&P.canRequestBoardCount(state.pieces,count)&&P.material(state.pieces,state.turn)<=P.material(state.pieces,opponent(state.turn));
@@ -283,11 +307,11 @@
     }catch(e){$('imageLoading').textContent='สร้างรูปไม่ได้: '+e.message+' กรุณาปิดแล้วเปิดแชร์อีกครั้ง';}
     finally{button.disabled=false;button.removeAttribute('aria-busy');button.textContent='↗ แชร์ตำแหน่ง';}
   };
-  $('undo').onclick=function(){clearTimeout(aiTimer);aiTimer=0;var prev=history.pop();if(!prev)return;future.push(snapshot());restore(prev);if(aiTurn()&&history.length){prev=history.pop();future.push(snapshot());restore(prev);}scheduleAi();};
-  $('redo').onclick=function(){clearTimeout(aiTimer);aiTimer=0;var next=future.pop();if(!next)return;history.push(snapshot());restore(next);if(aiTurn()&&future.length){next=future.pop();history.push(snapshot());restore(next);}scheduleAi();};
+  $('undo').onclick=function(){cancelAi();var prev=history.pop();if(!prev)return;future.push(snapshot());restore(prev);if(aiTurn()&&history.length){prev=history.pop();future.push(snapshot());restore(prev);}scheduleAi();};
+  $('redo').onclick=function(){cancelAi();var next=future.pop();if(!next)return;history.push(snapshot());restore(next);if(aiTurn()&&future.length){next=future.pop();history.push(snapshot());restore(next);}scheduleAi();};
   $('start').onclick=function(){var error=M.validate(state);if(error){message(error,true);sound.playResult('failure');return;}save();trial={state:clone(state),history:history.slice(),future:future.slice()};mode='play';history=[];future=[];moves=[];selected=null;last=null;startCount();render();};
-  $('restart').onclick=function(){clearTimeout(aiTimer);aiTimer=0;remember();state=clone(trial.state);moves=[];selected=null;last=null;startCount();render();$('optionsDialog').close();scheduleAi();};
-  $('edit').onclick=function(){clearTimeout(aiTimer);aiTimer=0;game=null;count=null;mode='edit';state=clone(trial.state);history=trial.history;future=trial.future;trial=null;moves=[];selected=null;last=null;render();};
+  $('restart').onclick=function(){cancelAi();remember();state=clone(trial.state);moves=[];selected=null;last=null;startCount();render();$('optionsDialog').close();scheduleAi();};
+  $('edit').onclick=function(){cancelAi();game=null;count=null;mode='edit';state=clone(trial.state);history=trial.history;future=trial.future;trial=null;moves=[];selected=null;last=null;render();};
   $('load').onclick=function(){if(mode!=='edit')return;try{var next=M.parse($('fen').value);remember();state=next;changed();$('optionsDialog').close();message('เปิดตำแหน่งแล้ว'+(M.validate(state)?' — '+M.validate(state):''));}catch(e){$('saveNote').textContent=e.message;}};
   $('copy').onclick=async function(){try{await navigator.clipboard.writeText($('fen').value);$('saveNote').textContent='คัดลอกรหัสแล้ว';}catch(e){$('fen').focus();$('fen').select();$('saveNote').textContent='เลือกข้อความแล้ว กรุณาคัดลอกด้วยเมนูของเครื่อง';}};
   document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('exportDialog').open&&!$('optionsDialog').open){if(drag)return;selected=null;tool='move';render();}});
@@ -322,6 +346,7 @@
     state=M.initial();flipped=!!game.ai&&game.human==='black';notice='';
     trial={state:clone(state),history:[],future:[]};mode='play';history=[];future=[];moves=[];selected=null;last=null;startCount();
   }
+  if(game&&game.ai&&game.level==='hard')loadEngine();
   render();if(notice)message(notice,notice!=='เปิดตำแหน่งจากลิงก์แชร์แล้ว');
   scheduleAi();
 })();
