@@ -2038,7 +2038,8 @@
       queueMoveFeedback(from,to,mover.piece,'black',state.gamePieces);
       state.lastFrom=from;state.lastTo=to;
       var said=task.count.start-1;
-      state.puzzleSay=(mover.piece==='king'?'ขุนแดง':pieceName[mover.piece]+'แดง')+' '+squareLabel(from)+' → '+squareLabel(to)+' · แดงนับ '+said+
+      var piece=task.count.kind!=='board';
+      state.puzzleSay=(mover.piece==='king'?'ขุนแดง':pieceName[mover.piece]+'แดง')+' '+squareLabel(from)+' → '+squareLabel(to)+' · แดง'+(piece?'เริ่มนับศักดิ์หมาก '+said+' (นับได้ถึง '+task.count.ceiling+')':'นับ '+said)+
         (task.leadNote?' · '+task.leadNote:said>=task.count.ceiling?' ครบแล้ว · ขาวต้องจนตานี้':' · ถึงตาขาว');
       feedbackEl.className='feedback';feedbackEl.textContent=state.puzzleSay;boardCaption.textContent='ถึงตาฝ่ายขาว · '+state.puzzleSay;
       renderBoard();updatePracticeUI();
@@ -2053,7 +2054,7 @@
     var from={r:state.current.r,c:state.current.c},task=challenge(),child=state.puzzleNode&&state.puzzleNode[puzzleKey(from,dest)];
     if(!child){
       var after=Rules.gameStatus(Rules.applyMove(state.gamePieces,from,dest),theirs);
-      wrongMove(from,dest,defend?(task.defend==='count'?'ตานี้ฝ่ายขาวจะจนได้ก่อนแดงนับเกินเพดาน ลองช่องอื่นนะ':'ตานี้ฝ่ายขาวจะไล่จนได้ ลองหนีไปทางมุมที่ปลอดภัย'):
+      wrongMove(from,dest,defend?(task.defend==='count'?'ตานี้ฝ่ายขาวจะจนได้ก่อนแดงนับเกินศักดิ์ ลองช่องอื่นนะ':'ตานี้ฝ่ายขาวจะไล่จนได้ ลองหนีไปทางมุมที่ปลอดภัย'):
         after.state==='stalemate'?'อับ! ขุนแดงไม่ถูกรุกแต่ไม่มีที่เดิน = เสมอ · ลองตาอื่นที่รุกได้':
         after.state==='checkmate'?'รุกจนได้ แต่โจทย์นี้ให้จนใน '+task.moves+' ตา ลองอีกครั้งนะ':
         state.puzzleLeft===1&&countRunsOut(task)?'ตานี้ยังไม่รุกจน แดงจะนับ '+((state.pieceCount?state.pieceCount.ceiling:task.count.kind==='board'?64:task.count.ceiling)+1)+' เกินกำหนด แล้วเกมเสมอ ลองใหม่นะ':
@@ -2069,7 +2070,7 @@
     if(child==='#'||child==='!'){
       state.correctMoves++;state.roundDone=true;state.gameOver=true;state.puzzleNode=null;
       var used=task.moves-state.puzzleLeft+1;
-      state.roundMessage=task.success||(defend?(task.defend==='count'?'รอดแล้ว! แดงนับ '+redCount+' เกินเพดาน '+task.count.ceiling+' ฝ่ายขาวไล่ไม่ทัน เกมเสมอ':'รอดแล้ว! ขุนแดงหนีอยู่ทางมุมที่เบี้ยหงายไม่ถูกมุม ฝ่ายขาวไล่ไม่จน เกมเสมอ'):
+      state.roundMessage=task.success||(defend?(task.defend==='count'?'รอดแล้ว! แดงนับ '+redCount+' เกินศักดิ์ '+task.count.ceiling+' ฝ่ายขาวไล่ไม่ทัน เกมเสมอ':'รอดแล้ว! ขุนแดงหนีอยู่ทางมุมที่เบี้ยหงายไม่ถูกมุม ฝ่ายขาวไล่ไม่จน เกมเสมอ'):
         'รุกจน! จนได้ใน '+used+' ตา'+(task.count?' ก่อนแดงนับเกิน '+task.count.ceiling:''));
       feedbackEl.className='feedback success';feedbackEl.textContent=state.roundMessage;boardCaption.textContent=defend?'หนีรอด!':'รุกจน!';
       showToast(defend?'หนีรอด ✓':'รุกจน ✓','good','complete');

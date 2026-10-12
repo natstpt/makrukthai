@@ -47,7 +47,7 @@ for(const l of lessons){
     const label=l.id+' '+t.key,tree=trees[t.key];
     assert(t.chase&&tree,label+': has a chase tree');
     if(t.defend){checkDefence(l,t,tree,label);chases++;defends++;continue;}
-    assert.equal(t.count.start,t.pieces.length+1,label+': red counts from the number of pieces + 1');
+    assert.equal(t.count.start,t.pieces.length+(t.lead?2:1),label+': red counts from the number of pieces + 1 (said on the lead move when there is one)');
     assert(t.moves<=t.count.ceiling-t.count.start+2,label+': the counting rule leaves enough moves');
     assert(tree.dtm<=t.moves&&t.moves-tree.dtm<=1,label+': at most one spare move');
     const seen=new Set();
