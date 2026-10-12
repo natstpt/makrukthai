@@ -54,6 +54,9 @@ jobs:
       - name: Verify counting and the computer player
         run: node tests/makruk-play.test.cjs
 
+      - name: Verify hard AI engine files
+        run: node tests/engine-files.test.cjs
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
         with:
