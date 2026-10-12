@@ -57,6 +57,9 @@ jobs:
       - name: Verify hard AI engine files
         run: node tests/engine-files.test.cjs
 
+      - name: Verify tactics lessons
+        run: node tests/tactics-lessons.test.cjs
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
         with:
