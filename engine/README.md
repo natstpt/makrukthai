@@ -6,6 +6,7 @@
 |---|---|
 | `stockfish.js`, `stockfish.wasm`, `stockfish.worker.js` | Fairy-Stockfish รุ่น WebAssembly จากแพ็กเกจ npm [`fairy-stockfish-nnue.wasm@1.1.12`](https://www.npmjs.com/package/fairy-stockfish-nnue.wasm) (commit b2e693ef, ซอร์สโค้ด: <https://github.com/fairy-stockfish/fairy-stockfish.wasm>) |
 | `makruk-a8c621e24a8c.nnue` | โครงข่าย NNUE หมากรุกไทย จาก release [makruk-a8c621e24a8c](https://github.com/fairy-stockfish/Fairy-Stockfish-NNUE/releases/tag/makruk-a8c621e24a8c) (ฝึกโดย belzedar_, 19 ก.ย. 2022) ส่งออกจากโปรแกรม `fairy-stockfish_x86-64` ใน release นั้นด้วยคำสั่ง `export_net` |
+| (แก้ไข) `stockfish.js` | ลดหน่วยความจำร่วมสูงสุดจาก 2 GB (`maximum:32768`) เป็น 512 MB (`maximum:8192`) เพราะ Safari บน iPhone จองหน่วยความจำร่วม 2 GB ไม่ได้ เครื่องยนต์ใช้จริงประมาณ 320 MB |
 | `AUTHORS`, `Copying.txt` | รายชื่อผู้พัฒนาและสัญญาอนุญาต GPL-3.0 ของ Fairy-Stockfish |
 
 ชื่อไฟล์ NNUE คือ 12 ตัวแรกของ SHA-256 ของไฟล์ (`a8c621e24a8c…`) ตรวจด้วย `node tests/engine-files.test.cjs`

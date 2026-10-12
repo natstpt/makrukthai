@@ -33,9 +33,9 @@
     if(!E){engine.state='failed';return;}
     engine.state='loading';
     E.ensureIsolation().then(function(ok){
-      if(!ok)throw Error('not isolated');
+      if(!ok){var why=E.unsupported();var e=Error(why);e.reason=why||'เบราว์เซอร์ไม่เปิดให้ใช้ SharedArrayBuffer (ลองเปิดใน Safari หรือ Chrome รุ่นล่าสุด)';throw e;}
       return E.load(function(f){var pct=Math.floor(f*100);if(pct!==engine.progress){engine.progress=pct;render();}});
-    }).then(function(){engine.state='ready';render();},function(){engine.state='failed';message('เปิด AI ระดับยากบนอุปกรณ์นี้ไม่ได้ จึงเล่นกับ AI ระดับกลางแทน',true);render();scheduleAi();});
+    }).then(function(){engine.state='ready';render();},function(e){engine.state='failed';engine.reason=(e&&e.reason)||'เบราว์เซอร์นี้ยังไม่รองรับ';render();scheduleAi();});
   }
   $('requestCount').addEventListener('click',function(){
     if(!P.canRequestBoardCount(state.pieces,count))return;
@@ -45,22 +45,22 @@
     cancelAi();
     if(!aiTurn()||playStatus().state!=='playing')return;
     var token=aiSearch,hard=hardAi();
+    // Hard AI: the opening shape first (ง4 จ4 / ง5 จ5 pawns, then the pieces behind them); once it is done or has
+    // to stop, the engine plays the rest of the game. Decided now, so an engine move does not wait the opening delay.
+    var book=hard&&!game.bookDone&&P.openingChoice(state.pieces,state.turn);
+    if(hard&&!book)game.bookDone=true;
     aiTimer=setTimeout(function(){
       aiTimer=0;if(token!==aiSearch||!aiTurn())return;
       if(P.canRequestBoardCount(state.pieces,count)&&P.material(state.pieces,state.turn)<P.material(state.pieces,opponent(state.turn)))count=P.requestBoardCount(state.turn);
       var easy=function(){var move=P.chooseMove(state.pieces,state.turn,{count:count,mistakes:game.level==='easy'?0.35:0});if(move)playMove(move.from,move.to);};
       if(!hard){easy();return;}
-      // Hard AI: the opening shape first (ง4 จ4 / ง5 จ5 pawns, then the pieces behind them); once it is done or has
-      // to stop, the engine plays the rest of the game.
-      var book=!game.bookDone&&P.openingChoice(state.pieces,state.turn);
       if(book){playMove(book.from,book.to);return;}
-      game.bookDone=true;
       E.bestMove(M.fen(state)).then(function(key){
         if(token!==aiSearch||!aiTurn())return;
         var move=key&&R.legalMoves(state.pieces,state.turn).find(function(m){return moveKey(m)===key;});
         if(move)playMove(move.from,move.to);else easy();
       },function(){if(token===aiSearch&&aiTurn())easy();});
-    },hard?(game.bookDone?100:500):700);
+    },hard?(book?500:100):700);
   }
   function label(at){return files[at.c]+(8-at.r);}
   function asset(p){return 'assets/pieces/makruk/ada/'+window.MakrukPieceColors.prefix(p.side)+icons[p.piece]+'.svg';}
@@ -136,7 +136,7 @@
       $('requestCount').hidden=!mayAsk;$('requestCount').textContent='ฝ่าย'+sideName(state.turn)+'ขอนับศักดิ์กระดาน';
       $('turnHeading').classList.toggle('alert',status.state!=='playing'||!!status.check);
       $('instruction').textContent=status.state==='playing'?(status.check?'รุก! ต้องเดินให้ขุนพ้นจากการรุก':'ตาฝ่าย'+sideName(state.turn)+' ลากหรือแตะหมากไปช่องที่มีจุด'):'จบตำแหน่งนี้แล้ว ย้อนกลับเพื่อทดลองทางอื่นได้';
-      message(status.state==='checkmate'?'รุกจน — ฝ่าย'+sideName(status.winner)+'ชนะ':status.state==='stalemate'?'เสมอเพราะอับ — ไม่มีตาเดินและขุนไม่ถูกรุก':status.state==='draw'?'เสมอ — เหลือขุนทั้งสองฝ่าย':status.state==='countdraw'?'เสมอ — นับครบตามกติกาแล้วยังไม่รุกจน':status.check?'ขุน'+sideName(state.turn)+'กำลังถูกรุก':'');
+      message(status.state==='checkmate'?'รุกจน — ฝ่าย'+sideName(status.winner)+'ชนะ':status.state==='stalemate'?'เสมอเพราะอับ — ไม่มีตาเดินและขุนไม่ถูกรุก':status.state==='draw'?'เสมอ — เหลือขุนทั้งสองฝ่าย':status.state==='countdraw'?'เสมอ — นับครบตามกติกาแล้วยังไม่รุกจน':status.check?'ขุน'+sideName(state.turn)+'กำลังถูกรุก':engine.reason?'AI ระดับยากใช้ไม่ได้: '+engine.reason:'',!!engine.reason&&!status.check);
     }
     renderMoves();scheduleFit();
   }

@@ -12,5 +12,7 @@ const nets = fs.readdirSync(dir).filter(f => f.endsWith('.nnue'));
 assert.deepEqual(nets, ['makruk-a8c621e24a8c.nnue'], 'one makruk network');
 const hash = crypto.createHash('sha256').update(fs.readFileSync(path.join(dir, nets[0]))).digest('hex');
 assert.equal(hash.slice(0, 12), 'a8c621e24a8c', 'the network matches its name');
+// iPhone Safari refuses a 2 GB shared memory reservation: the engine is patched to reserve 512 MB (it uses about 320 MB).
+assert(fs.readFileSync(path.join(dir, 'stockfish.js'), 'utf8').includes('maximum:8192,shared:!0'), 'shared memory capped at 512 MB');
 assert(fs.readFileSync(path.join(dir, 'Copying.txt'), 'utf8').includes('GNU GENERAL PUBLIC LICENSE'), 'GPL licence kept');
 console.log('Engine files verified: network ' + nets[0] + ' (sha256 ' + hash.slice(0, 12) + '…), WASM engine and licence present.');
