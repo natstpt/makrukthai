@@ -7,7 +7,7 @@ const Learning=require('../learning-design.js');
 const source=fs.readFileSync(require('node:path').join(__dirname,'../index.html'),'utf8');
 // Execute the production move handlers, with rendering replaced by no-ops.
 // This tests state transitions independently of CSS and browser timing.
-const names=['same','squareLabel','challenge','activePiece','isBoardPractice','basePieces','boardPieces','moveDestinations','goalDestinations','attemptMove'];
+const names=['same','squareLabel','challenge','activePiece','isBoardPractice','basePieces','boardPieces','moveDestinations','goalDestinations','routeDistance','attemptMove'];
 const functions=names.map(name=>{
   const firstLine=source.slice(source.indexOf('  function '+name+'(')).split(/\r?\n/)[0];
   if(firstLine.trimEnd().endsWith('}'))return firstLine;
@@ -19,9 +19,9 @@ for(const piece of ['king','rook','knight','met','khon','promoted']){
   for(const showStarHint of [true,false]){
     const start={r:4,c:3},route=Learning.routeTargets(Rules,piece,start,2)[0];
     const lesson={id:piece,type:'move',piece,start,routePuzzle:true,requiredCorrect:3};
-    const state={lesson:0,phase:'active',current:start,selected:true,completed:false,roundDone:false,showStarHint,starTarget:route.at,correctMoves:0,routeMoves:0};
-    const context={Rules,lessons:[lesson],state,pieceName:{[piece]:piece},displayFiles:'กขคงจฉชญ',
-      boardCaption:{},feedbackEl:{},queueMoveFeedback(){},showToast(){},renderBoard(){},updatePracticeUI(){},isStarPractice(){return true;},
+    const state={lesson:0,phase:'active',current:start,selected:true,completed:false,roundDone:false,showStarHint,starTarget:route.at,correctMoves:0,routeMoves:0,routeLimit:2};
+    const context={Rules,lessons:[lesson],state,pieceName:{[piece]:piece},displayFiles:'กขคงจฉชญ',window:{MakrukLearning:Learning},
+      boardCaption:{},feedbackEl:{},speechEl:{},coachSay(){},queueMoveFeedback(){},showToast(){},renderBoard(){},updatePracticeUI(){},isStarPractice(){return true;},
       moveError(){context.errors++;},wrongMove(from,to){context.errors++;context.wrong={from,to};},errors:0};
     vm.createContext(context);vm.runInContext(functions,context);
     context.attemptMove(start);assert.equal(context.errors,1);assert.equal(state.correctMoves,0);
@@ -35,6 +35,24 @@ for(const piece of ['king','rook','knight','met','khon','promoted']){
     scenarios++;
   }
 }
+// A step that can no longer reach the star in the moves left is a wrong move (shown with ลองใหม่), never a dead end.
+for(const piece of ['king','rook','knight','met','khon','promoted']){
+  const start={r:4,c:3},targets=Learning.routeTargets(Rules,piece,start,1),star=targets[0].at;
+  const away=targets.map(t=>t.at).find(at=>at.r!==star.r||at.c!==star.c);
+  const lesson={id:piece,type:'move',piece,start,routePuzzle:true,requiredCorrect:3};
+  const state={lesson:0,phase:'active',current:start,selected:true,completed:false,roundDone:false,starTarget:star,correctMoves:0,routeMoves:0,routeLimit:1};
+  const context={Rules,lessons:[lesson],state,pieceName:{[piece]:piece},displayFiles:'กขคงจฉชญ',window:{MakrukLearning:Learning},
+    boardCaption:{},feedbackEl:{},speechEl:{},coachSay(){},queueMoveFeedback(){},showToast(){},renderBoard(){},updatePracticeUI(){},isStarPractice(){return true;},
+    moveError(){context.errors++;},wrongMove(from,to){context.errors++;context.wrong={from,to};},errors:0};
+  vm.createContext(context);vm.runInContext(functions,context);
+  assert.equal(context.routeDistance(start,star),1);
+  context.attemptMove(away);
+  assert.equal(context.errors,1,`${piece}: a one-move route to another square is wrong`);
+  assert.deepEqual(JSON.parse(JSON.stringify(context.wrong)),{from:start,to:away});
+  assert.deepEqual(state.current,start,`${piece}: the piece stays for ลองใหม่`);assert.equal(state.routeMoves,0);
+  context.attemptMove(star);assert.equal(state.correctMoves,1);assert(state.roundDone);
+  scenarios++;
+}
 console.log(`Production puzzle flow verified: ${scenarios} piece / hint scenarios, illegal steps and duplicate awards rejected.`);
 
 
@@ -44,7 +62,7 @@ for(const showStarHint of [true,false]){
   const task={piece:'rook',start,enemies:[{piece:'king',side:'black',at:{r:0,c:7}}]};
   const lesson={id:'check',type:'check',piece:'rook',challenges:[task],requiredCorrect:3};
   const state={lesson:0,phase:'active',roundIndex:0,current:start,selected:true,completed:false,roundDone:false,showStarHint,starTarget:goal,correctMoves:0,routeMoves:0};
-  const context={Rules,lessons:[lesson],state,pieceName:{rook:'เรือ'},displayFiles:'กขคงจฉชญ',boardCaption:{},feedbackEl:{},queueMoveFeedback(){},showToast(){},renderBoard(){},updatePracticeUI(){},isStarPractice(){return true;},moveError(){context.errors++;},wrongMove(from,to){context.errors++;context.wrong={from,to};},errors:0};
+  const context={Rules,lessons:[lesson],state,pieceName:{rook:'เรือ'},displayFiles:'กขคงจฉชญ',boardCaption:{},feedbackEl:{},speechEl:{},coachSay(){},queueMoveFeedback(){},showToast(){},renderBoard(){},updatePracticeUI(){},isStarPractice(){return true;},moveError(){context.errors++;},wrongMove(from,to){context.errors++;context.wrong={from,to};},errors:0};
   vm.createContext(context);vm.runInContext(functions,context);
   assert(Rules.inCheck(Rules.applyMove(context.boardPieces(),start,other),'black'));
   context.attemptMove(other);assert.equal(state.correctMoves,0);assert.equal(context.errors,1);assert.deepEqual(state.current,start);

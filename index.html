@@ -1333,7 +1333,7 @@
     state.puzzleNode=l.puzzle&&task?puzzleNodeAt(task.tree,0):null;state.puzzleHintOn=false;state.puzzleSay='';state.puzzleLeft=l.puzzle&&task?task.moves:0;state.puzzleCount=l.puzzle&&task&&task.count?task.count.start:0;state.pieceCount=null;
     state.current=start?{r:start.r,c:start.c}:null;
     if(start&&l.type==='move')state.lastPracticeStart={r:start.r,c:start.c};
-    state.starTarget=null;state.routeMoves=0;
+    state.starTarget=null;state.routeMoves=0;state.routeLimit=0;
     state.promoted=false;state.captured=null;state.selected=false;state.roundDone=false;state.roundMessage='';state.hint=false;
     state.quizCorrect=false;state.gameOver=false;state.gameResult=null;state.gameHistory=[];
     state.pendingNotation=null;state.scoreMoves=[];notationForm.hidden=true;notationChoices.innerHTML='';
@@ -1345,12 +1345,13 @@
         if(!starOptions.length)starOptions=starMoves;
         state.starTarget=l.practiceSets&&state.phase==='active'&&task.goal?task.goal:starOptions[Math.floor(Math.random()*starOptions.length)];
         state.lastStarTarget={r:state.starTarget.r,c:state.starTarget.c};
+        if(l.routePuzzle)state.routeLimit=routeDistance(state.current,state.starTarget);
       }
     }
     state.lastFrom=state.lastTo=null;state.focus=state.current||{r:7,c:0};
     missionEl.textContent=l.requiredGames?'เกมที่ '+(state.roundIndex+1)+' · หาทางรุกจน':task&&task.mission?task.mission:l.type==='notation'?'เดินตามโจทย์ แล้วดูวิธีจดตานั้น':l.piece?'เดิน'+pieceName[activePiece()]+'ไปเก็บดาว':l.type==='game'?'เดินหมากขาว แล้วดูฝ่ายแดงเดินตอบ':'ดูโจทย์แล้วเลือกคำตอบ';
     if(!l.routePuzzle&&state.starTarget&&l.type!=='notation')missionEl.textContent+=' · เดินไปช่องดาว '+squareLabel(state.starTarget);
-    if(l.routePuzzle&&state.starTarget)missionEl.textContent='เดิน'+pieceName[l.piece]+'ไป '+squareLabel(state.starTarget)+(state.roundIndex%3?' · เดินต่อได้หลายตา':' · ลองเดิน 1 ตา');
+    if(l.routePuzzle&&state.starTarget)missionEl.textContent='เดิน'+pieceName[l.piece]+'ไป '+squareLabel(state.starTarget)+' · เดิน '+state.routeLimit+' ตา';
     mobileSpeechEl.textContent=l.type==='notation'?'เดินหมาก แล้วดูวิธีจดตานั้น':l.puzzle&&task?task.mission:l.type==='game'?'เลือกหมากขาว แล้วทำภารกิจ':l.type==='quiz'?task&&task.mission?task.mission:l.mission:task&&task.mission?task.mission:l.piece?state.showStarHint?'เดิน'+pieceName[activePiece()]+'ไปเก็บดาว ⭐':'ลองเดิน'+pieceName[activePiece()]:'มาลองทำภารกิจนี้กัน'; mobileSpeechEl.classList.remove('sayError','saySuccess');
     boardCaption.textContent=l.puzzle&&task?'โจทย์ที่ '+(state.roundIndex+1)+' · '+task.mission:l.type==='game'?(l.requiredGames?'มินิเกมที่ '+(state.roundIndex+1):'เกมฝึกเต็มกระดาน')+' · คุณเล่นฝ่ายขาว':task&&task.mission?'โจทย์ที่ '+(state.roundIndex+1)+' · '+task.mission:state.current?pieceName[activePiece()]+'อยู่ที่ '+squareLabel(state.current):l.caption;
     feedbackEl.className='feedback';feedbackEl.textContent=l.defend?'คุณเล่นขุนแดง · ฝ่ายขาวจะไล่':l.puzzle?'ขาวเดินก่อน · ขุนแดงจะหนีให้นานที่สุด':l.type==='game'?'เลือกหมาก แล้วเดินให้ปลอดภัย':l.type==='quiz'?'เลือกคำตอบด้านล่าง':isStarPractice(l)?'เดินไปเก็บดาวให้ครบ '+l.requiredCorrect+' ดวง':'เดินให้ถูกตามภารกิจ';
@@ -2152,6 +2153,10 @@
     if(l.type==='game'){playGameMove(dest);return;}
     var legal=goalDestinations();
     if(!l.routePuzzle&&state.starTarget&&!same(dest,state.starTarget)){wrongMove(state.current,dest,'ตานี้ให้เดินไปช่องดาวที่ '+squareLabel(state.starTarget)+' ตามโจทย์นะ');return;}
+    // A route puzzle gives as many moves as the shortest way to the star: a step that no longer reaches it in time is wrong.
+    if(l.routePuzzle&&state.starTarget&&!same(dest,state.starTarget)&&routeDistance(dest,state.starTarget)>state.routeLimit-state.routeMoves-1){
+      wrongMove(state.current,dest,state.routeLimit===1?'ตานี้ต้องเดินถึงช่องดาว '+squareLabel(state.starTarget)+' ใน 1 ตา':'ทางนี้ไปถึง '+squareLabel(state.starTarget)+' ไม่ทันใน '+state.routeLimit+' ตา ลองทางอื่นนะ');return;
+    }
     if(!legal.some(function(x){return same(x,dest);})){wrongMove(state.current,dest,l.type==='check'?'ยังไม่รุกขุน ลองอีกช่องนะ':'ยังไม่ตรงโจทย์ ลองอีกครั้งนะ');return;}
     queueMoveFeedback(state.current,dest,activePiece(),'white',Rules.applyMove(boardPieces(),state.current,dest));
     var notation=l.type==='notation'?Notation.formatMove(boardPieces(),state.current,dest):null;
@@ -2167,8 +2172,9 @@
     var message;
     var task=challenge();
     if(l.routePuzzle&&!reached){
-      feedbackEl.className='feedback';feedbackEl.textContent='เดินถูกแล้ว! ไปต่อให้ถึง '+squareLabel(state.starTarget);
-      showToast('เดินถูกแล้ว ไปต่อได้','good');renderBoard();updatePracticeUI();return;
+      var onTheWay='เดินถูกแล้ว! อีก '+(state.routeLimit-state.routeMoves)+' ตาไปให้ถึง '+squareLabel(state.starTarget);
+      showToast('เดินถูกแล้ว ไปต่อได้','good');renderBoard();updatePracticeUI();
+      feedbackEl.className='feedback';feedbackEl.textContent=onTheWay;speechEl.textContent=onTheWay;coachSay(onTheWay,'');return;
     }
     if(activePiece()==='pawn'&&dest.r===2){
       state.promoted=true;boardCaption.textContent='เบี้ยหงายอยู่ที่ '+displayFiles[dest.c]+(8-dest.r);
@@ -2313,6 +2319,12 @@
     if(state.phase==='active')renderBoard();
   }
 
+  // The fewest moves the lesson piece needs to go from one square to another (99 when it cannot get there).
+  function routeDistance(from,to){
+    if(same(from,to))return 0;
+    for(var distance=1;distance<15;distance++)if(window.MakrukLearning.routeTargets(Rules,activePiece(),from,distance).some(function(item){return same(item.at,to);}))return distance;
+    return 99;
+  }
   function routeHintSteps(){
     if(!state.current||!state.starTarget)return [];
     for(var distance=1;distance<15;distance++){
