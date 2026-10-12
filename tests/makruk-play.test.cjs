@@ -95,6 +95,10 @@ assert(!R.isAttacked(R.applyMove(board('K:a1 R:d4 P:h3 k:h8 n:f5'), at(saved.sli
   // A free piece comes first: the shape waits.
   const hung = board('K:d1 M:e1 R:a1 R:h1 N:b1 N:g1 B:c1 B:f1 P:a3 P:b3 P:c3 P:d3 P:e3 P:f3 P:g3 P:h3 k:e8 n:a5');
   assert.notEqual(key(P.chooseMove(hung, 'white', { random: fixed })), 'e3e4', 'takes the free knight instead of the opening move'); checks++;
+  // The hard AI's opening: the same shape move, or null when the shape is done or must wait (here a free knight).
+  eq(key(P.openingChoice(M.initial().pieces, 'white')), 'e3e4', 'hard AI opens with the centre pawn');
+  eq(P.openingChoice(ps, 'white'), null, 'shape complete: the engine takes over');
+  eq(P.openingChoice(hung, 'white'), null, 'a capture to make: the engine takes over');
 }
 
 // Whole games: the computer plays both sides with counting; every game ends (mate or a draw) within the count limits.

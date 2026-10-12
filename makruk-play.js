@@ -188,10 +188,14 @@
         if (entry && entry.score > -0.5 && entry.score >= top - 0.6) return steps[i];
       }
     }
+    if (options.openingOnly) return null;
     var best = null, bestScore = -Infinity;
     scored.forEach(function (x) { var s = x.score + random() * 0.35; if (s > bestScore) { bestScore = s; best = x.move; } });
     return best;
   }
+  // The opening-shape move chooseMove would play now (centre pawns first), or null when the shape is done or has to
+  // wait; the hard AI plays these before handing the game to the engine.
+  function openingChoice(pieces, side) { return chooseMove(pieces, side, { openingOnly: true }); }
   // Can the opponent win material right now (a capture whose exchange pays)?
   function underAttack(pieces, side) {
     var enemy = opponent(side), seen = [];
@@ -203,5 +207,5 @@
     });
   }
 
-  return { canRequestBoardCount: canRequestBoardCount, requestBoardCount: requestBoardCount, material: material, VALUES: VALUES, OPENING: OPENING, openingMove: openingMove, openingMoves: openingMoves, ceilingFor: ceilingFor, nextCount: nextCount, countText: countText, exchange: exchange, chooseMove: chooseMove };
+  return { canRequestBoardCount: canRequestBoardCount, requestBoardCount: requestBoardCount, material: material, VALUES: VALUES, OPENING: OPENING, openingMove: openingMove, openingMoves: openingMoves, openingChoice: openingChoice, ceilingFor: ceilingFor, nextCount: nextCount, countText: countText, exchange: exchange, chooseMove: chooseMove };
 });
