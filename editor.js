@@ -13,10 +13,11 @@
   function opponent(side){return side==='white'?'black':'white';}
   function sideName(side){return side==='white'?'ขาว':'แดง';}
   // Games opened from the lesson page's settings: editor.html?play=2 (two players on one device) or
-  // ?play=ai&side=white|black&level=easy|hard (the learner plays that side against the computer: easy is the simple
-  // player in makruk-play.js, hard is Fairy-Stockfish in engine-ai.js, at most 1 second a move).
+  // ?play=ai&side=white|black&level=easy|medium|hard (the learner plays that side against the computer: medium is the
+  // player in makruk-play.js, easy is the same player making a mistake now and then, hard is Fairy-Stockfish in
+  // engine-ai.js, at most 1 second a move).
   var game=null;
-  try{var playParams=new URLSearchParams(location.search);if(playParams.get('play')==='2')game={ai:false};else if(playParams.get('play')==='ai')game={ai:true,human:playParams.get('side')==='black'?'black':'white',level:playParams.get('level')==='hard'?'hard':'easy'};}catch(e){}
+  try{var playParams=new URLSearchParams(location.search);if(playParams.get('play')==='2')game={ai:false};else if(playParams.get('play')==='ai')game={ai:true,human:playParams.get('side')==='black'?'black':'white',level:['easy','hard'].indexOf(playParams.get('level'))>=0?playParams.get('level'):'medium'};}catch(e){}
   function aiSide(){return game&&game.ai?opponent(game.human):null;}
   function aiTurn(){return mode==='play'&&!!aiSide()&&state.turn===aiSide();}
   // Counting to a draw (กติกา ข้อ ก 5) while playing; kept in the undo history with the position.
@@ -34,7 +35,7 @@
     E.ensureIsolation().then(function(ok){
       if(!ok)throw Error('not isolated');
       return E.load(function(f){var pct=Math.floor(f*100);if(pct!==engine.progress){engine.progress=pct;render();}});
-    }).then(function(){engine.state='ready';render();},function(){engine.state='failed';message('เปิด AI ระดับยากบนอุปกรณ์นี้ไม่ได้ จึงเล่นกับ AI ระดับง่ายแทน',true);render();scheduleAi();});
+    }).then(function(){engine.state='ready';render();},function(){engine.state='failed';message('เปิด AI ระดับยากบนอุปกรณ์นี้ไม่ได้ จึงเล่นกับ AI ระดับกลางแทน',true);render();scheduleAi();});
   }
   $('requestCount').addEventListener('click',function(){
     if(!P.canRequestBoardCount(state.pieces,count))return;
@@ -47,7 +48,7 @@
     aiTimer=setTimeout(function(){
       aiTimer=0;if(token!==aiSearch||!aiTurn())return;
       if(P.canRequestBoardCount(state.pieces,count)&&P.material(state.pieces,state.turn)<P.material(state.pieces,opponent(state.turn)))count=P.requestBoardCount(state.turn);
-      var easy=function(){var move=P.chooseMove(state.pieces,state.turn,{count:count});if(move)playMove(move.from,move.to);};
+      var easy=function(){var move=P.chooseMove(state.pieces,state.turn,{count:count,mistakes:game.level==='easy'?0.35:0});if(move)playMove(move.from,move.to);};
       if(!hard){easy();return;}
       // Hard AI: the opening shape first (ง4 จ4 / ง5 จ5 pawns, then the pieces behind them); once it is done or has
       // to stop, the engine plays the rest of the game.
@@ -117,7 +118,7 @@
     $('panelTitle').textContent=mode==='edit'?'จัดตำแหน่งหมาก':'ทดลองเดิน';
     $('topSide').textContent=flipped?'ฝ่ายขาว':'ฝ่ายแดง';$('bottomSide').textContent=flipped?'ฝ่ายแดง':'ฝ่ายขาว';
     $('topDot').classList.toggle('white',flipped);$('bottomDot').classList.toggle('white',!flipped);
-    $('modeLabel').textContent=mode==='edit'?'1 · ตั้งตำแหน่ง':game?(game.ai?'คุณเป็นฝ่าย'+sideName(game.human)+' · AI ระดับ'+(game.level!=='hard'?'ง่าย':hardAi()?'ยาก':'ง่าย (ระดับยากใช้บนอุปกรณ์นี้ไม่ได้)'):'เครื่องเดียวกัน'):'2 · ทดลองเดิน';document.querySelector('.brand h1').textContent=game?(game.ai?'เล่นกับ AI':'เล่น 2 คน'):'ตั้งหมาก';$('turn').value=state.turn;
+    $('modeLabel').textContent=mode==='edit'?'1 · ตั้งตำแหน่ง':game?(game.ai?'คุณเป็นฝ่าย'+sideName(game.human)+' · AI ระดับ'+({easy:'ง่าย',medium:'กลาง'}[game.level]||(hardAi()?'ยาก':'กลาง (ระดับยากใช้บนอุปกรณ์นี้ไม่ได้)')):'เครื่องเดียวกัน'):'2 · ทดลองเดิน';document.querySelector('.brand h1').textContent=game?(game.ai?'เล่นกับ AI':'เล่น 2 คน'):'ตั้งหมาก';$('turn').value=state.turn;
     document.querySelectorAll('[data-tool]').forEach(function(b){b.setAttribute('aria-pressed',String(tool===b.dataset.tool));});
     $('fen').value=M.fen(state);
     $('saveNote').textContent=storageOK?'เก็บตำแหน่งที่ตั้งไว้ให้อัตโนมัติในเครื่องนี้ (ไม่ทับด้วยตาที่ทดลองเดิน)':'เครื่องนี้เก็บอัตโนมัติไม่ได้ กรุณาคัดลอกรหัสไว้';

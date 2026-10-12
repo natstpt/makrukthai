@@ -72,6 +72,10 @@ assert.notEqual(key(P.chooseMove(board('K:e1 R:d1 P:h3 k:e8 p:d5 p:c6'), 'white'
 eq(P.exchange(board('K:e1 R:d1 k:e8 p:d5 p:c6'), at('d5'), 'white', 0), 0, 'a rook does not take a defended pawn');
 eq(P.exchange(board('K:e1 R:d1 k:e8 p:d5'), at('d5'), 'white', 0), 1, 'an undefended pawn wins 1');
 eq(Math.round(P.exchange(board('K:a1 N:c3 k:h8 r:d5 p:c6'), at('d5'), 'white', 0) * 10) / 10, 1.4, 'knight takes a defended rook: 5 - 3.6');
+// Easy level: a mistake replaces the best move (here the free knight is left), but a mate in one is never missed.
+assert.notEqual(key(P.chooseMove(board('K:e1 R:a1 k:e8 n:a5'), 'white', { random: fixed, mistakes: 1 })), 'a1a5', 'easy level can miss a free knight'); checks++;
+eq(key(P.chooseMove(board('K:f6 R:a1 k:h8'), 'white', { random: fixed, mistakes: 1 })), 'a1a8', 'easy level still mates in one');
+eq(key(P.chooseMove(board('K:e1 R:a1 k:e8 n:a5'), 'white', { random: fixed, mistakes: 0 })), 'a1a5', 'no mistakes at the medium level');
 // Moves the rook away from an attack instead of leaving it to a knight.
 const saved = key(P.chooseMove(board('K:a1 R:d4 P:h3 k:h8 n:f5'), 'white', { random: fixed }));
 assert(!R.isAttacked(R.applyMove(board('K:a1 R:d4 P:h3 k:h8 n:f5'), at(saved.slice(0, 2)), at(saved.slice(2))), at(saved.slice(2)), 'black'), 'rook moves to a safe square, played ' + saved); checks++;
