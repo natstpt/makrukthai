@@ -1,33 +1,41 @@
-/* The hard computer player: Fairy-Stockfish (WebAssembly) with the makruk NNUE network in engine/.
- * The engine needs SharedArrayBuffer, so the page must be cross-origin isolated; on GitHub Pages coi-sw.js adds the
- * headers (registered by ensureIsolation, which reloads the page once). Each move is searched for at most 1 second. */
+/* The hard computer player: Fairy-Stockfish (WebAssembly), at most 1 second a move, in one of two builds:
+ * - full (engine/): multi-threaded, SIMD, with the makruk NNUE network (48 MB download, about 320 MB of memory).
+ *   It needs SharedArrayBuffer, so the page must be cross-origin isolated; on GitHub Pages coi-sw.js adds the headers
+ *   (registered by start(), which reloads the page once). Used only on computers with enough cores and memory.
+ * - lite (engine/lite/): single-threaded, plain WebAssembly without SIMD, classical evaluation, run in a Web Worker
+ *   (about 1.4 MB download, 32 MB of memory to start). No SharedArrayBuffer and no service worker, so it runs on old
+ *   phones and light browsers (Safari 11+, Chrome 58+). Phones, tablets and anything the full build cannot run use it.
+ * Either way the search is told 0.8 s (lite 0.7 s) and the answer is given up after 1 s. */
 (function (root) {
   'use strict';
-  var NET = 'makruk-a8c621e24a8c.nnue', THINK_MS = 800, STOP_MS = 950;
-  var engine = null, ready = false, loading = null, listener = null, busy = Promise.resolve();
-  var phone = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var NET = 'makruk-a8c621e24a8c.nnue';
+  var phone = /iPhone|iPad|iPod|Android|Mobile/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var tier = null, starting = null, line = null, listener = null, busy = Promise.resolve();
   // A failure carries a short Thai reason for the page to show, so a learner can tell the teacher what went wrong.
   function fail(reason) { var e = Error(reason); e.reason = reason; return e; }
   function withTimeout(promise, ms, reason) {
     return Promise.race([promise, new Promise(function (_, reject) { setTimeout(function () { reject(fail(reason)); }, ms); })]);
   }
-  // The engine is built with WebAssembly SIMD (Safari 16.4+, iOS 16.4+): a tiny module using v128 must validate.
+  // The full build uses WebAssembly SIMD: a tiny module using v128 must validate.
   function simdSupported() {
     try { return WebAssembly.validate(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 96, 0, 1, 123, 3, 2, 1, 0, 10, 10, 1, 8, 0, 65, 0, 253, 15, 253, 98, 11])); }
     catch (e) { return false; }
   }
-  // Why the engine cannot run in this browser, or '' when it can.
+  // Why no engine can run in this browser, or '' when the lite one can.
   function unsupported() {
-    if (typeof WebAssembly !== 'object') return 'เบราว์เซอร์นี้ไม่รองรับ WebAssembly';
-    if (!simdSupported()) return 'ต้องใช้ iOS 16.4 / Safari 16.4 ขึ้นไป (อัปเดตระบบแล้วลองใหม่)';
-    if (!root.crossOriginIsolated || typeof SharedArrayBuffer !== 'function') return 'เบราว์เซอร์ไม่เปิดให้ใช้ SharedArrayBuffer (ลองเปิดใน Safari หรือ Chrome รุ่นล่าสุด)';
+    if (typeof WebAssembly !== 'object') return 'เบราว์เซอร์นี้ไม่รองรับ WebAssembly (ลองเปิดใน Chrome หรือ Safari)';
+    if (typeof Worker !== 'function') return 'เบราว์เซอร์นี้ไม่รองรับ Web Worker';
     return '';
+  }
+  // The full build only on a computer with 4+ cores and (where the browser says) 4 GB+ of memory.
+  function fullWanted() {
+    var memory = navigator.deviceMemory, cores = navigator.hardwareConcurrency || 1;
+    return !phone && cores >= 4 && (memory === undefined || memory >= 4) && 'serviceWorker' in navigator && simdSupported();
   }
 
   // Registers coi-sw.js and reloads once so the page gets the isolation headers. Resolves true when isolated.
   function ensureIsolation() {
     if (root.crossOriginIsolated) return Promise.resolve(true);
-    if (!('serviceWorker' in navigator)) return Promise.resolve(false);
     var tried = false;
     try { tried = sessionStorage.getItem('makrukIsolationReload') === location.href; } catch (e) {}
     return navigator.serviceWorker.register('coi-sw.js').then(function (reg) {
@@ -42,15 +50,13 @@
       });
     }).catch(function () { return false; });
   }
-
   function loadScript(src) {
     return new Promise(function (resolve, reject) {
-      var s = document.createElement('script'); s.src = src; s.onload = resolve; s.onerror = function () { reject(Error('load ' + src)); };
+      var s = document.createElement('script'); s.src = src; s.onload = resolve; s.onerror = function () { reject(fail('โหลดไฟล์ AI ไม่สำเร็จ')); };
       document.head.appendChild(s);
     });
   }
-  // Downloads the network, reporting progress as a fraction (0–1), straight into one buffer (no second copy:
-  // memory is tight on phones).
+  // Downloads the network, reporting progress as a fraction (0–1), straight into one buffer.
   function fetchNet(onProgress) {
     return fetch('engine/' + NET).then(function (res) {
       if (!res.ok) throw fail('โหลดไฟล์ AI ไม่สำเร็จ (' + res.status + ')');
@@ -69,38 +75,57 @@
     }, function () { throw fail('โหลดไฟล์ AI ไม่สำเร็จ (ตรวจอินเทอร์เน็ตแล้วลองใหม่)'); });
   }
   function waitFor(word) {
-    return new Promise(function (resolve) { listener = function (line) { if (line.indexOf(word) === 0) { listener = null; resolve(line); } }; });
+    return new Promise(function (resolve) { listener = function (text) { if (text.indexOf(word) === 0) { listener = null; resolve(text); } }; });
+  }
+  function hear(text) { if (listener) listener(text); }
+  // Sends the set-up commands and a depth-1 search (which reads the evaluation), then resolves.
+  function setUp(post, options) {
+    var ok = waitFor('readyok');
+    ['uci', 'setoption name UCI_Variant value makruk'].concat(options, ['isready']).forEach(post);
+    return ok.then(function () { var warm = waitFor('bestmove'); post('position startpos'); post('go depth 1'); return warm; });
   }
 
-  // Starts the engine once; later calls share the same promise.
-  function load(onProgress) {
-    if (loading) return loading;
+  function startFull(onProgress) {
+    return Promise.all([loadScript('engine/stockfish.js?v=mem2g'), fetchNet(onProgress)]).then(function (r) {
+      // The engine reports a crash (for example out of memory) through onAbort; without it the page would wait forever.
+      var started = {};
+      var aborted = new Promise(function (_, reject) { started.onAbort = function (what) { reject(fail('หน่วยความจำของเครื่องไม่พอ (' + String(what).slice(0, 60) + ')')); }; });
+      var run = root.Stockfish(started).then(function (sf) {
+        sf.FS.writeFile('/' + NET, r[1]); r[1] = null;
+        sf.addMessageListener(hear);
+        line = { post: function (c) { sf.postMessage(c); }, stops: true, think: 800 };
+        var threads = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1));
+        return setUp(line.post, ['setoption name EvalFile value /' + NET, 'setoption name Hash value 16', 'setoption name Threads value ' + threads])
+          .then(function () { try { sf.FS.unlink('/' + NET); } catch (e) {} });
+      });
+      return withTimeout(Promise.race([run, aborted]), 60000, 'เครื่องยนต์เริ่มทำงานไม่สำเร็จภายใน 1 นาที');
+    });
+  }
+  function startLite() {
+    return new Promise(function (resolve, reject) {
+      var worker;
+      try { worker = new Worker('engine/lite/lite-worker.js?v=1'); } catch (e) { reject(fail('เปิดเครื่องยนต์ไม่ได้ (' + e.message + ')')); return; }
+      worker.onmessage = function (e) { hear(String(e.data)); };
+      worker.onerror = function (e) { reject(fail('เครื่องยนต์หยุดทำงาน (' + (e.message || 'error') + ')')); };
+      // The lite engine searches on one thread and cannot be stopped early: it is given 0.7 s.
+      line = { post: function (c) { worker.postMessage(c); }, stops: false, think: 700 };
+      resolve(setUp(line.post, ['setoption name Use NNUE value false', 'setoption name Hash value 8']));
+    }).then(function (p) { return withTimeout(p, 30000, 'เครื่องยนต์เริ่มทำงานไม่สำเร็จภายใน 30 วินาที'); });
+  }
+
+  // Starts the engine once (later calls share the promise) and resolves with 'full' or 'lite'. The full build may
+  // reload the page once to become cross-origin isolated; if it fails, the lite build is used instead.
+  function start(onProgress) {
+    if (starting) return starting;
     var why = unsupported();
-    loading = (why ? Promise.reject(fail(why)) : Promise.resolve())
-      .then(function () { return Promise.all([loadScript('engine/stockfish.js?v=mem512'), fetchNet(onProgress)]); })
-      .then(function (r) {
-        // The engine reports a crash (for example out of memory) through onAbort; without it the page would wait forever.
-        var started = {};
-        var aborted = new Promise(function (_, reject) { started.onAbort = function (what) { reject(fail('หน่วยความจำของเครื่องไม่พอ หรือเครื่องยนต์หยุดทำงาน (' + String(what).slice(0, 60) + ')')); }; });
-        var run = root.Stockfish(started).then(function (sf) {
-          sf.FS.writeFile('/' + NET, r[1]); r[1] = null;
-          sf.addMessageListener(function (line) { if (listener) listener(line); });
-          engine = sf;
-          var ok = waitFor('readyok');
-          // Phones get fewer threads and a small hash table: each thread and the hash use shared memory.
-          var threads = Math.max(1, Math.min(phone ? 2 : 4, (navigator.hardwareConcurrency || 2) - 1));
-          ['uci', 'setoption name UCI_Variant value makruk', 'setoption name EvalFile value /' + NET, 'setoption name Hash value ' + (phone ? 8 : 16),
-           'setoption name Threads value ' + threads, 'isready'].forEach(function (c) { sf.postMessage(c); });
-          // A short first search reads the network, so the first real move is not slowed down by it; then the file copy
-          // is no longer needed.
-          return ok.then(function () { var warm = waitFor('bestmove'); sf.postMessage('position startpos'); sf.postMessage('go depth 1'); return warm; })
-            .then(function () { try { sf.FS.unlink('/' + NET); } catch (e) {} });
-        });
-        return withTimeout(Promise.race([run, aborted]), 60000, 'เครื่องยนต์เริ่มทำงานไม่สำเร็จภายใน 1 นาที');
-      })
-      .then(function () { ready = true; return true; });
-    loading.catch(function () {});
-    return loading;
+    if (why) { starting = Promise.reject(fail(why)); starting.catch(function () {}); return starting; }
+    var lite = function () { listener = null; return startLite().then(function () { tier = 'lite'; return tier; }); };
+    starting = !fullWanted() ? lite() : ensureIsolation().then(function (isolated) {
+      if (!isolated || typeof SharedArrayBuffer !== 'function') return lite();
+      return startFull(onProgress).then(function () { tier = 'full'; return tier; }, lite);
+    });
+    starting.catch(function () {});
+    return starting;
   }
 
   // The best move for the side to move in fen, as 'e3e4' (promotion suffixes dropped), within 1 second; null when
@@ -108,20 +133,20 @@
   function bestMove(fen) {
     var searched, searchDone = new Promise(function (r) { searched = r; }), before = busy;
     busy = searchDone;
-    return before.then(function () { return load(); }).then(function () {
+    return before.then(function () { return start(); }).then(function () {
       return new Promise(function (resolve) {
-        listener = function (line) {
-          if (line.indexOf('bestmove') !== 0) return;
+        listener = function (text) {
+          if (text.indexOf('bestmove') !== 0) return;
           listener = null; clearTimeout(stop); clearTimeout(give); searched();
-          var m = line.split(/\s+/)[1]; resolve(m && m !== '(none)' ? m.slice(0, 4) : null);
+          var m = text.split(/\s+/)[1]; resolve(m && m !== '(none)' ? m.slice(0, 4) : null);
         };
-        var stop = setTimeout(function () { engine.postMessage('stop'); }, STOP_MS);
+        var stop = line.stops ? setTimeout(function () { line.post('stop'); }, 950) : 0;
         var give = setTimeout(function () { resolve(null); }, 1000);
-        engine.postMessage('position fen ' + fen);
-        engine.postMessage('go movetime ' + THINK_MS);
+        line.post('position fen ' + fen);
+        line.post('go movetime ' + line.think);
       });
     }, function (e) { searched(); throw e; });
   }
 
-  root.MakrukEngine = { ensureIsolation: ensureIsolation, unsupported: unsupported, load: load, bestMove: bestMove, ready: function () { return ready; } };
+  root.MakrukEngine = { start: start, unsupported: unsupported, bestMove: bestMove, tier: function () { return tier; }, ready: function () { return !!tier; } };
 })(window);
