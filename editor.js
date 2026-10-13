@@ -17,7 +17,7 @@
   // player in makruk-play.js, easy is the same player making a mistake now and then, hard is Fairy-Stockfish in
   // engine-ai.js, at most 1 second a move).
   var game=null;
-  try{var playParams=new URLSearchParams(location.search);if(playParams.get('play')==='2')game={ai:false};else if(playParams.get('play')==='ai')game={ai:true,human:playParams.get('side')==='black'?'black':'white',level:['easy','hard'].indexOf(playParams.get('level'))>=0?playParams.get('level'):'medium'};}catch(e){}
+  try{var playParams=new URLSearchParams(location.search);if(playParams.get('play')==='2')game={ai:false};else if(playParams.get('play')==='ai')game={ai:true,human:playParams.get('side')==='black'?'black':'white',level:['easy','hard'].indexOf(playParams.get('level'))>=0?playParams.get('level'):'medium',lesson:playParams.get('lesson')};}catch(e){}
   function aiSide(){return game&&game.ai?opponent(game.human):null;}
   function aiTurn(){return mode==='play'&&!!aiSide()&&state.turn===aiSide();}
   // Counting to a draw (กติกา ข้อ ก 5) while playing; kept in the undo history with the position.
@@ -60,6 +60,17 @@
         if(move)playMove(move.from,move.to);else easy();
       },function(){if(token===aiSearch&&aiTurn())easy();});
     },hard?(book?500:100):700);
+  }
+  // A finished game against the AI is counted for its level (makrukAiGames), once per game; the play-the-computer
+  // lessons (ai-lessons.js) pass after one.
+  function recordGame(result){
+    if(!game||!game.ai||game.recorded)return;
+    game.recorded=true;
+    try{
+      var all=JSON.parse(localStorage.getItem('makrukAiGames')||'{}'),rec=all[game.level]||{done:0,won:0};
+      rec.done++;if(result.winner===game.human)rec.won++;all[game.level]=rec;
+      localStorage.setItem('makrukAiGames',JSON.stringify(all));
+    }catch(e){}
   }
   function label(at){return files[at.c]+(8-at.r);}
   function asset(p){return 'assets/pieces/makruk/ada/'+window.MakrukPieceColors.prefix(p.side)+icons[p.piece]+'.svg';}
@@ -135,7 +146,7 @@
       $('requestCount').hidden=!mayAsk;$('requestCount').textContent='ฝ่าย'+sideName(state.turn)+'ขอนับศักดิ์กระดาน';
       $('turnHeading').classList.toggle('alert',status.state!=='playing'||!!status.check);
       $('instruction').textContent=status.state==='playing'?(status.check?'รุก! ต้องเดินให้ขุนพ้นจากการรุก':'ตาฝ่าย'+sideName(state.turn)+' ลากหรือแตะหมากไปช่องที่มีจุด'):'จบตำแหน่งนี้แล้ว ย้อนกลับเพื่อทดลองทางอื่นได้';
-      message(status.state==='checkmate'?'รุกจน — ฝ่าย'+sideName(status.winner)+'ชนะ':status.state==='stalemate'?'เสมอเพราะอับ — ไม่มีตาเดินและขุนไม่ถูกรุก':status.state==='draw'?'เสมอ — เหลือขุนทั้งสองฝ่าย':status.state==='countdraw'?'เสมอ — นับครบตามกติกาแล้วยังไม่รุกจน':status.check?'ขุน'+sideName(state.turn)+'กำลังถูกรุก':engine.reason?'AI ระดับยากใช้ไม่ได้: '+engine.reason:'',!!engine.reason&&!status.check);
+      message((status.state==='checkmate'?'รุกจน — ฝ่าย'+sideName(status.winner)+'ชนะ':status.state==='stalemate'?'เสมอเพราะอับ — ไม่มีตาเดินและขุนไม่ถูกรุก':status.state==='draw'?'เสมอ — เหลือขุนทั้งสองฝ่าย':status.state==='countdraw'?'เสมอ — นับครบตามกติกาแล้วยังไม่รุกจน':status.check?'ขุน'+sideName(state.turn)+'กำลังถูกรุก':engine.reason?'AI ระดับยากใช้ไม่ได้: '+engine.reason:'')+(game&&game.lesson&&status.state!=='playing'?' · กด “← บทเรียน” เพื่อกลับไปผ่านบท':''),!!engine.reason&&!status.check);
     }
     renderMoves();scheduleFit();
   }
@@ -195,6 +206,7 @@
     moves.push(record);
     render();sound.queueMove({from:from,to:at,check:result.check,skipAnimation:true});sound.flush();if(!dragged)animateMove(from,at);
     if(result.state!=='playing')sound.playResult(result.state==='checkmate'?'complete':'draw');
+    if(result.state!=='playing')recordGame(result);
     scheduleAi();
   }
   $('board').addEventListener('click',function(e){
@@ -315,7 +327,7 @@
   $('undo').onclick=function(){cancelAi();var prev=history.pop();if(!prev)return;future.push(snapshot());restore(prev);if(aiTurn()&&history.length){prev=history.pop();future.push(snapshot());restore(prev);}scheduleAi();};
   $('redo').onclick=function(){cancelAi();var next=future.pop();if(!next)return;history.push(snapshot());restore(next);if(aiTurn()&&future.length){next=future.pop();history.push(snapshot());restore(next);}scheduleAi();};
   $('start').onclick=function(){var error=M.validate(state);if(error){message(error,true);sound.playResult('failure');return;}save();trial={state:clone(state),history:history.slice(),future:future.slice()};mode='play';history=[];future=[];moves=[];selected=null;last=null;startCount();render();};
-  $('restart').onclick=function(){cancelAi();if(game)game.bookDone=false;remember();state=clone(trial.state);moves=[];selected=null;last=null;startCount();render();$('optionsDialog').close();scheduleAi();};
+  $('restart').onclick=function(){cancelAi();if(game){game.bookDone=false;game.recorded=false;}remember();state=clone(trial.state);moves=[];selected=null;last=null;startCount();render();$('optionsDialog').close();scheduleAi();};
   $('edit').onclick=function(){cancelAi();game=null;count=null;mode='edit';state=clone(trial.state);history=trial.history;future=trial.future;trial=null;moves=[];selected=null;last=null;render();};
   $('load').onclick=function(){if(mode!=='edit')return;try{var next=M.parse($('fen').value);remember();state=next;changed();$('optionsDialog').close();message('เปิดตำแหน่งแล้ว'+(M.validate(state)?' — '+M.validate(state):''));}catch(e){$('saveNote').textContent=e.message;}};
   $('copy').onclick=async function(){try{await navigator.clipboard.writeText($('fen').value);$('saveNote').textContent='คัดลอกรหัสแล้ว';}catch(e){$('fen').focus();$('fen').select();$('saveNote').textContent='เลือกข้อความแล้ว กรุณาคัดลอกด้วยเมนูของเครื่อง';}};

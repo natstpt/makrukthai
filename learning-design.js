@@ -6,7 +6,8 @@
       'count-board','count-pieces','endgame-rook-khon','endgame-promoted','endgame-khon-promoted','endgame-knight','endgame-stalemate','endgame-count',
       'endgame-corner','puzzle-khon','endgame-tempo','puzzle-khon-met','puzzle-knight','puzzle-twist-rook','puzzle-twist-sacrifice',
       'chase-knight-khon','chase-knight-met','chase-rook','chase-khon-pair','escape-corner','escape-count',
-      'tactic-center','tactic-develop','tactic-king-safety','tactic-fork','tactic-pin','tactic-skewer','tactic-trapped','tactic-discovered','finish'];
+      'tactic-center','tactic-develop','tactic-king-safety','tactic-fork','tactic-pin','tactic-skewer','tactic-trapped','tactic-discovered',
+      'ai-easy','ai-medium','ai-hard','finish'];
     var introductions={
       board:['นี่คือกระดานหมากรุก มีช่องสี่เหลี่ยม 64 ช่อง เรียงเป็น 8 แถว',
         'ด้านล่างมีตัวอักษร ก ข ค ง จ ฉ ช ญ เรียงจากซ้ายไปขวา',
