@@ -60,6 +60,9 @@ jobs:
       - name: Verify tactics lessons
         run: node tests/tactics-lessons.test.cjs
 
+      - name: Verify play-the-computer lessons
+        run: node tests/ai-lessons.test.cjs
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
         with:
