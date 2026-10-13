@@ -148,7 +148,7 @@
     }, function (e) { searched(); throw e; });
   }
 
-  // Analysis (the ถอดหมาก page): searches fen with three lines (MultiPV 3) and calls onUpdate({depth, lines, done})
+  // Analysis (the ถอดหมาก page): searches fen with two lines (MultiPV 2) and calls onUpdate({depth, lines, done})
   // with each new depth; a line is {score: {cp}|{mate}, pv: ['e3e4', …]} from the side to move. A new call replaces
   // the running search: the full build is stopped at once, the lite one (which cannot be stopped) finishes first.
   // The full build searches 4 s, the lite one 1.5 s; stop() ends the analysis.
@@ -181,7 +181,7 @@
         runAnalysis();
       }
     };
-    if (!analysis.multipv) { line.post('setoption name MultiPV value 3'); analysis.multipv = true; }
+    if (!analysis.multipv) { line.post('setoption name MultiPV value 2'); analysis.multipv = true; }
     line.post('position fen ' + job.fen);
     line.post('go movetime ' + (line.stops ? 4000 : 1500));
   }
