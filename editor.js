@@ -72,6 +72,95 @@
       localStorage.setItem('makrukAiGames',JSON.stringify(all));
     }catch(e){}
   }
+  // ถอดหมาก (editor.html?analysis=1, or #fen= for a position): both sides move freely while the hard AI
+  // (engine-ai.js) analyses every position with three lines. The assistance options switch each part on or off.
+  var analysis=false;try{analysis=new URLSearchParams(location.search).get('analysis')==='1';}catch(e){}
+  var assist={bar:true,arrows:true,threats:true,lines:true,feedback:true};
+  try{var savedAssist=JSON.parse(localStorage.getItem('makrukAssist')||'{}');Object.keys(assist).forEach(function(k){if(typeof savedAssist[k]==='boolean')assist[k]=savedAssist[k];});}catch(e){}
+  var view={fen:null,lines:[],depth:0,done:false,prev:null,moves:0,error:''};
+  function square(key,i){return {r:8-Number(key.charAt(i+1)),c:'abcdefgh'.indexOf(key.charAt(i))};}
+  // A score from the side to move, as pawns for white (a mate counts as 100).
+  function whiteValue(score,turn){var v=score.mate!==undefined?(score.mate>0?100:-100):score.cp/100;return turn==='white'?v:-v;}
+  function scoreText(score,turn){
+    if(score.mate!==undefined){var m=turn==='white'?score.mate:-score.mate;return (m>0?'+':'-')+'M'+Math.abs(m);}
+    var v=whiteValue(score,turn);return (v>=0?'+':'')+v.toFixed(2);
+  }
+  function pvText(pv,limit){
+    var ps=R.clonePieces(state.pieces),turn=state.turn,ply=moves.length+(trial&&trial.state.turn==='black'?1:0),out=[];
+    for(var i=0;i<pv.length&&i<limit;i++){
+      var from=square(pv[i],0),to=square(pv[i],2),rec=N.formatMove(ps,from,to);if(!rec)break;
+      var no=Math.floor(ply/2)+1;
+      out.push((turn==='white'?no+'. ':i===0?no+'… ':'')+rec.text.replace(/ - /g,'-').replace(/ × /g,'×'));
+      ps=R.applyMove(ps,from,to);turn=opponent(turn);ply++;
+    }
+    return out.join(' ');
+  }
+  function arrow(key,color,dashed){
+    var a=square(key,0),b=square(key,2),pt=function(s){return {x:(flipped?7-s.c:s.c)+0.5,y:(flipped?7-s.r:s.r)+0.5};};
+    var p=pt(a),q=pt(b),dx=q.x-p.x,dy=q.y-p.y,len=Math.hypot(dx,dy),ux=dx/len,uy=dy/len,tip={x:q.x-ux*0.18,y:q.y-uy*0.18},base={x:tip.x-ux*0.42,y:tip.y-uy*0.42};
+    return '<line x1="'+p.x+'" y1="'+p.y+'" x2="'+base.x+'" y2="'+base.y+'" stroke="'+color+'" stroke-width="0.17" stroke-linecap="round"'+(dashed?' stroke-dasharray="0.25 0.18"':'')+'/>'+
+      '<polygon points="'+tip.x+','+tip.y+' '+(base.x-uy*0.26)+','+(base.y+ux*0.26)+' '+(base.x+uy*0.26)+','+(base.y-ux*0.26)+'" fill="'+color+'"/>';
+  }
+  // How good the last move was: the evaluation before it (the best line then) against now, for the side that moved.
+  function moveFeedback(){
+    var prev=view.prev;if(!prev||!prev.line||!view.lines[0]||moves.length!==prev.moves+1||!last)return '';
+    if(!view.done&&view.depth<8)return '';
+    var played='abcdefgh'[last.from.c]+(8-last.from.r)+'abcdefgh'[last.to.c]+(8-last.to.r),mover=prev.turn,sign=mover==='white'?1:-1;
+    if(prev.line.pv[0]===played)return '★ ตาที่ดีที่สุด (Best)';
+    var loss=sign*whiteValue(prev.line.score,prev.turn)-sign*whiteValue(view.lines[0].score,state.turn);
+    return loss<=0.3?'✓ ตาดี (Good)':loss<=1?'?! ไม่แม่น (Inaccuracy) · เสียไป '+loss.toFixed(1):loss<=2.5?'? พลาด (Mistake) · เสียไป '+loss.toFixed(1):'?? พลาดหนัก (Blunder) · เสียไป '+Math.min(loss,99).toFixed(1);
+  }
+  function drawAnalysis(){
+    var on=analysis&&mode==='play',lines=view.lines,top=lines[0];
+    $('analysisPanel').hidden=!on;$('bestMove').hidden=!on;$('bestMove').disabled=!top;
+    $('arrowLayer').innerHTML='';
+    if(!on)return;
+    $('evalBar').hidden=!assist.bar;$('engineLines').hidden=!assist.lines;
+    $('modeLabel').textContent='AI ระดับยาก'+(E&&E.tier()?' ('+(E.tier()==='lite'?'Lite':'Full')+')':'');
+    var v=top?whiteValue(top.score,state.turn):0;
+    $('evalFill').style.width=(top?(top.score.mate!==undefined?(v>0?100:0):50+50*Math.tanh(v/4)):50)+'%';
+    $('evalText').textContent=top?scoreText(top.score,state.turn)+' · ลึก '+view.depth:(view.error||'AI กำลังคิด…');
+    var list=$('engineLines');list.replaceChildren();
+    if(view.error){var err=document.createElement('li');err.className='lineError';err.textContent=view.error;list.appendChild(err);}
+    lines.slice(0,3).forEach(function(l){
+      var li=document.createElement('li'),b=document.createElement('button');b.type='button';
+      b.innerHTML='<span class="lineScore"></span><span class="linePv"></span>';
+      b.firstChild.textContent=scoreText(l.score,state.turn);b.lastChild.textContent=pvText(l.pv,8);
+      b.addEventListener('click',function(){var m=l.pv[0];if(m)playMove(square(m,0),square(m,2));});
+      li.appendChild(b);list.appendChild(li);
+    });
+    if(top&&assist.arrows&&top.pv[0])$('arrowLayer').innerHTML+=arrow(top.pv[0],'rgba(74,163,223,.88)');
+    if(top&&assist.threats&&top.pv[1])$('arrowLayer').innerHTML+=arrow(top.pv[1],'rgba(216,52,44,.8)',true);
+    var feedback=assist.feedback?moveFeedback():'',status=playStatus();
+    if(feedback&&status.state==='playing')message(feedback,/พลาด|ไม่แม่น/.test(feedback));
+  }
+  function updateAnalysis(){
+    if(!analysis)return;
+    if(mode!=='play'){if(E)E.stopAnalysis();view.fen=null;drawAnalysis();return;}
+    var fen=M.fen(state);
+    if(fen!==view.fen){
+      view.prev=view.fen?{line:view.lines[0],turn:view.turn,moves:view.moves}:null;
+      view.fen=fen;view.turn=state.turn;view.moves=moves.length;view.lines=[];view.depth=0;view.done=false;
+      if(playStatus().state!=='playing'){if(E)E.stopAnalysis();}
+      else if(!E){view.error='เปิด AI ไม่ได้';}
+      else E.analyse(fen,function(u){if(view.fen!==fen)return;view.lines=u.lines;view.depth=u.depth;view.done=u.done;drawAnalysis();})
+        .catch(function(e){view.error='AI ใช้ไม่ได้: '+((e&&e.reason)||'เบราว์เซอร์นี้ยังไม่รองรับ');drawAnalysis();});
+    }
+    drawAnalysis();
+  }
+  // Every render also refreshes the analysis and the options that depend on the mode.
+  var baseRender=render;
+  render=function(){
+    baseRender();
+    $('assistOptions').hidden=!analysis;$('analyse').hidden=analysis||mode!=='play';
+    if(analysis)updateAnalysis();
+  };
+  document.querySelectorAll('[data-assist]').forEach(function(box){
+    box.checked=assist[box.dataset.assist];
+    box.addEventListener('change',function(){assist[box.dataset.assist]=box.checked;try{localStorage.setItem('makrukAssist',JSON.stringify(assist));}catch(e){}drawAnalysis();scheduleFit();});
+  });
+  $('bestMove').addEventListener('click',function(){var top=view.lines[0];if(top&&top.pv[0])playMove(square(top.pv[0],0),square(top.pv[0],2));});
+  $('analyse').addEventListener('click',function(){location.href='editor.html?analysis=1#fen='+encodeURIComponent(M.fen(state))+(flipped?'&flip=1':'');});
   function label(at){return files[at.c]+(8-at.r);}
   function asset(p){return 'assets/pieces/makruk/ada/'+window.MakrukPieceColors.prefix(p.side)+icons[p.piece]+'.svg';}
   function clone(s){return {pieces:R.clonePieces(s.pieces),turn:s.turn};}
@@ -128,7 +217,7 @@
     $('panelTitle').textContent=mode==='edit'?'จัดตำแหน่งหมาก':'ทดลองเดิน';
     $('topSide').textContent=flipped?'ฝ่ายขาว':'ฝ่ายแดง';$('bottomSide').textContent=flipped?'ฝ่ายแดง':'ฝ่ายขาว';
     $('topDot').classList.toggle('white',flipped);$('bottomDot').classList.toggle('white',!flipped);
-    $('modeLabel').textContent=mode==='edit'?'1 · ตั้งตำแหน่ง':game?(game.ai?'คุณเป็นฝ่าย'+sideName(game.human)+' · AI ระดับ'+({easy:'ง่าย',medium:'กลาง'}[game.level]||(hardAi()?(E&&E.tier()==='lite'?'ยาก (Lite)':E&&E.tier()==='full'?'ยาก (Full)':'ยาก'):'กลาง (Fallback)')):'เครื่องเดียวกัน'):'2 · ทดลองเดิน';document.querySelector('.brand h1').textContent=game?(game.ai?'เล่นกับ AI':'เล่น 2 คน'):'ตั้งหมาก';$('turn').value=state.turn;
+    $('modeLabel').textContent=mode==='edit'?'1 · ตั้งตำแหน่ง':analysis?'AI ระดับยาก'+(E&&E.tier()?' ('+(E.tier()==='lite'?'Lite':'Full')+')':''):game?(game.ai?'คุณเป็นฝ่าย'+sideName(game.human)+' · AI ระดับ'+({easy:'ง่าย',medium:'กลาง'}[game.level]||(hardAi()?(E&&E.tier()==='lite'?'ยาก (Lite)':E&&E.tier()==='full'?'ยาก (Full)':'ยาก'):'กลาง (Fallback)')):'เครื่องเดียวกัน'):'2 · ทดลองเดิน';document.querySelector('.brand h1').textContent=analysis?'ถอดหมาก':game?(game.ai?'เล่นกับ AI':'เล่น 2 คน'):'ตั้งหมาก';$('turn').value=state.turn;
     document.querySelectorAll('[data-tool]').forEach(function(b){b.setAttribute('aria-pressed',String(tool===b.dataset.tool));});
     $('fen').value=M.fen(state);
     $('saveNote').textContent=storageOK?'เก็บตำแหน่งที่ตั้งไว้ให้อัตโนมัติในเครื่องนี้ (ไม่ทับด้วยตาที่ทดลองเดิน)':'เครื่องนี้เก็บอัตโนมัติไม่ได้ กรุณาคัดลอกรหัสไว้';
@@ -347,8 +436,9 @@
     if(stacked){
       var feedback=document.querySelector('.positionFeedback').offsetHeight;
       var tools=parseFloat(getComputedStyle(main).getPropertyValue('--tools-reserve'))||112;
-      size=Math.min(main.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight),available-tools-feedback-gap-8);
-    }else{size=Math.min(boardArea.clientWidth,available-44);}
+      var panelHeight=$('analysisPanel').hidden?0:$('analysisPanel').offsetHeight+6;
+      size=Math.min(main.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight),available-tools-feedback-gap-8-panelHeight);
+    }else{size=Math.min(boardArea.clientWidth,available-44-($('analysisPanel').hidden?0:$('analysisPanel').offsetHeight+6));}
     main.style.setProperty('--board-size',Math.max(80,Math.floor(size))+'px');
   }
   // Fixed scale on phones: block pinch and gesture zoom (iOS ignores user-scalable).
@@ -356,8 +446,14 @@
   document.addEventListener('touchmove',function(e){if(e.touches.length>1)e.preventDefault();},{passive:false});
   window.addEventListener('resize',scheduleFit);
   if(window.visualViewport)window.visualViewport.addEventListener('resize',scheduleFit);
-  if(window.ResizeObserver){var fitObserver=new ResizeObserver(scheduleFit);['.pageHeader','.actionDock','#editTools','.positionFeedback'].forEach(function(selector){fitObserver.observe(document.querySelector(selector));});}
+  if(window.ResizeObserver){var fitObserver=new ResizeObserver(scheduleFit);['.pageHeader','.actionDock','#editTools','.positionFeedback','#analysisPanel'].forEach(function(selector){fitObserver.observe(document.querySelector(selector));});}
 
+  if(analysis&&!game){
+    // ถอดหมาก starts moving at once, from the shared position (#fen=) or the opening position.
+    var hasFen=false;try{hasFen=new URLSearchParams(location.hash.slice(1)).has('fen');}catch(e){}
+    if(!hasFen)state=M.initial();
+    notice='';trial={state:clone(state),history:[],future:[]};mode='play';history=[];future=[];moves=[];selected=null;last=null;startCount();
+  }
   if(game){
     // Start straight from the opening position; the teacher's saved setup is left untouched.
     state=M.initial();flipped=!!game.ai&&game.human==='black';notice='';

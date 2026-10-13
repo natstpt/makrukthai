@@ -148,5 +148,51 @@
     }, function (e) { searched(); throw e; });
   }
 
-  root.MakrukEngine = { start: start, unsupported: unsupported, bestMove: bestMove, tier: function () { return tier; }, ready: function () { return !!tier; } };
+  // Analysis (the ถอดหมาก page): searches fen with three lines (MultiPV 3) and calls onUpdate({depth, lines, done})
+  // with each new depth; a line is {score: {cp}|{mate}, pv: ['e3e4', …]} from the side to move. A new call replaces
+  // the running search: the full build is stopped at once, the lite one (which cannot be stopped) finishes first.
+  // The full build searches 4 s, the lite one 1.5 s; stop() ends the analysis.
+  var analysis = { running: false, next: null, multipv: false };
+  function parseInfo(text) {
+    var t = text.split(/\s+/), info = {}, i;
+    for (i = 1; i < t.length; i++) {
+      if (t[i] === 'depth') info.depth = +t[++i];
+      else if (t[i] === 'multipv') info.multipv = +t[++i];
+      else if (t[i] === 'score') { var kind = t[++i], value = +t[++i]; info.score = kind === 'mate' ? { mate: value } : { cp: value }; }
+      else if (t[i] === 'pv') { info.pv = t.slice(i + 1).map(function (m) { return m.slice(0, 4); }); break; }
+    }
+    return info;
+  }
+  function runAnalysis() {
+    var job = analysis.next; analysis.next = null;
+    if (!job) { analysis.running = false; return; }
+    analysis.running = true;
+    var lines = [], depth = 0;
+    listener = function (text) {
+      if (text.indexOf('info') === 0 && text.indexOf(' pv ') > 0 && text.indexOf('lowerbound') < 0 && text.indexOf('upperbound') < 0) {
+        var info = parseInfo(text);
+        if (!info.pv || !info.score) return;
+        if (info.depth > depth) depth = info.depth;
+        lines[(info.multipv || 1) - 1] = { score: info.score, pv: info.pv };
+        if (!analysis.next) job.onUpdate({ depth: depth, lines: lines.filter(Boolean), done: false });
+      } else if (text.indexOf('bestmove') === 0) {
+        listener = null;
+        if (!analysis.next) job.onUpdate({ depth: depth, lines: lines.filter(Boolean), done: true });
+        runAnalysis();
+      }
+    };
+    if (!analysis.multipv) { line.post('setoption name MultiPV value 3'); analysis.multipv = true; }
+    line.post('position fen ' + job.fen);
+    line.post('go movetime ' + (line.stops ? 4000 : 1500));
+  }
+  function analyse(fen, onUpdate) {
+    return start().then(function () {
+      analysis.next = { fen: fen, onUpdate: onUpdate };
+      if (analysis.running) { if (line.stops) line.post('stop'); return; }
+      runAnalysis();
+    });
+  }
+  function stopAnalysis() { analysis.next = null; if (analysis.running && line && line.stops) line.post('stop'); }
+
+  root.MakrukEngine = { start: start, unsupported: unsupported, bestMove: bestMove, analyse: analyse, stopAnalysis: stopAnalysis, tier: function () { return tier; }, ready: function () { return !!tier; } };
 })(window);
