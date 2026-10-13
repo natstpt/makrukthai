@@ -1,0 +1,104 @@
+diff --git a/src/thread.cpp b/src/thread.cpp
+index 32aaf58..5a16613 100644
+--- a/src/thread.cpp
++++ b/src/thread.cpp
+@@ -36,15 +36,24 @@ ThreadPool Threads; // Global object
+ /// Thread constructor launches the thread and waits until it goes to sleep
+ /// in idle_loop(). Note that 'searching' and 'exit' should be already set.
+ 
++#ifdef SINGLE_THREAD
++// Single-threaded build (WebAssembly without SharedArrayBuffer): no native threads; a search runs to the end
++// inside start_searching(), so the "go" command returns once "bestmove" is printed.
++Thread::Thread(size_t n) : idx(n) { searching = false; }
++#else
+ Thread::Thread(size_t n) : idx(n), stdThread(&Thread::idle_loop, this) {
+ 
+   wait_for_search_finished();
+ }
++#endif
+ 
+ 
+ /// Thread destructor wakes up the thread in idle_loop() and waits
+ /// for its termination. Thread should be already waiting.
+ 
++#ifdef SINGLE_THREAD
++Thread::~Thread() { exit = true; }
++#else
+ Thread::~Thread() {
+ 
+   assert(!searching);
+@@ -53,6 +62,7 @@ Thread::~Thread() {
+   start_searching();
+   stdThread.join();
+ }
++#endif
+ 
+ 
+ /// Thread::clear() reset histories, usually before a new game
+@@ -78,27 +88,44 @@ void Thread::clear() {
+ 
+ /// Thread::start_searching() wakes up the thread that will start the search
+ 
++#ifdef SINGLE_THREAD
++void Thread::start_searching() {
++  if (exit)
++      return;
++  searching = true;
++  search();
++  searching = false;
++}
++#else
+ void Thread::start_searching() {
+ 
+   std::lock_guard<std::mutex> lk(mutex);
+   searching = true;
+   cv.notify_one(); // Wake up the thread in idle_loop()
+ }
++#endif
+ 
+ 
+ /// Thread::wait_for_search_finished() blocks on the condition variable
+ /// until the thread has finished searching.
+ 
++#ifdef SINGLE_THREAD
++void Thread::wait_for_search_finished() {}
++#else
+ void Thread::wait_for_search_finished() {
+ 
+   std::unique_lock<std::mutex> lk(mutex);
+   cv.wait(lk, [&]{ return !searching; });
+ }
++#endif
+ 
+ 
+ /// Thread::idle_loop() is where the thread is parked, blocked on the
+ /// condition variable, when it has no work to do.
+ 
++#ifdef SINGLE_THREAD
++void Thread::idle_loop() {}
++#else
+ void Thread::idle_loop() {
+ 
+   // If OS already scheduled us on a different group than 0 then don't overwrite
+@@ -130,6 +157,7 @@ void Thread::idle_loop() {
+       search();
+   }
+ }
++#endif
+ 
+ /// ThreadPool::set() creates/destroys threads to match the requested number.
+ /// Created and launched threads will immediately go to sleep in idle_loop.
+diff --git a/src/thread.h b/src/thread.h
+index 464be79..b798456 100644
+--- a/src/thread.h
++++ b/src/thread.h
+@@ -45,7 +45,9 @@ class Thread {
+   std::condition_variable cv;
+   size_t idx;
+   bool exit = false, searching = true; // Set before starting std::thread
++#ifndef SINGLE_THREAD
+   NativeThread stdThread;
++#endif
+ 
+ public:
+   explicit Thread(size_t);
