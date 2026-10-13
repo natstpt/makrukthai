@@ -122,17 +122,20 @@
     $('evalText').textContent=top?scoreText(top.score,state.turn)+' · ลึก '+view.depth:(view.error||'AI กำลังคิด…');
     var list=$('engineLines');list.replaceChildren();
     if(view.error){var err=document.createElement('li');err.className='lineError';err.textContent=view.error;list.appendChild(err);}
-    lines.slice(0,3).forEach(function(l){
-      var li=document.createElement('li'),b=document.createElement('button');b.type='button';
+    // Always two rows (empty while the AI thinks), so the panel keeps its height and the board never jumps.
+    if(!view.error)[0,1].forEach(function(i){
+      var l=lines[i],li=document.createElement('li'),b=document.createElement('button');b.type='button';b.disabled=!l;
       b.innerHTML='<span class="lineScore"></span><span class="linePv"></span>';
-      b.firstChild.textContent=scoreText(l.score,state.turn);b.lastChild.textContent=pvText(l.pv,8);
-      b.addEventListener('click',function(){var m=l.pv[0];if(m)playMove(square(m,0),square(m,2));});
+      b.firstChild.textContent=l?scoreText(l.score,state.turn):'…';b.lastChild.textContent=l?pvText(l.pv,8):'';
+      if(l)b.addEventListener('click',function(){var m=l.pv[0];if(m)playMove(square(m,0),square(m,2));});
       li.appendChild(b);list.appendChild(li);
     });
     if(top&&assist.arrows&&top.pv[0])$('arrowLayer').innerHTML+=arrow(top.pv[0],'rgba(74,163,223,.88)');
     if(top&&assist.threats&&top.pv[1])$('arrowLayer').innerHTML+=arrow(top.pv[1],'rgba(216,52,44,.8)',true);
-    var feedback=assist.feedback?moveFeedback():'',status=playStatus();
-    if(feedback&&status.state==='playing')message(feedback,/พลาด|ไม่แม่น/.test(feedback));
+    // The last move's rating sits at the right of the evaluation bar (play mode shows no status line).
+    var feedback=assist.feedback?moveFeedback():'',rating=$('moveRating');
+    rating.hidden=!feedback;rating.textContent=feedback.replace(/ · เสียไป .*/,'');rating.title=feedback;
+    rating.className='moveRating'+(/พลาดหนัก|Mistake|พลาด/.test(feedback)?' bad':/ไม่แม่น/.test(feedback)?' warn':' good');
   }
   function updateAnalysis(){
     if(!analysis)return;
@@ -152,7 +155,7 @@
   var baseRender=render;
   render=function(){
     baseRender();
-    $('assistOptions').hidden=!analysis;$('analyse').hidden=analysis||mode!=='play';
+    document.body.classList.toggle('analysisMode',analysis&&mode==='play');$('assistOptions').hidden=!analysis;$('analyse').hidden=analysis||mode!=='play';
     if(analysis)updateAnalysis();
   };
   document.querySelectorAll('[data-assist]').forEach(function(box){
@@ -437,7 +440,9 @@
       var feedback=document.querySelector('.positionFeedback').offsetHeight;
       var tools=parseFloat(getComputedStyle(main).getPropertyValue('--tools-reserve'))||112;
       var panelHeight=$('analysisPanel').hidden?0:$('analysisPanel').offsetHeight+6;
-      size=Math.min(main.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight),available-tools-feedback-gap-8-panelHeight);
+      // ถอดหมาก uses the lesson page's board size (16 px from each side) and leaves the move record what is left.
+      if(analysis&&mode==='play')size=Math.min(window.innerWidth-32,available-panelHeight-feedback-gap-72);
+      else size=Math.min(main.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight),available-tools-feedback-gap-8-panelHeight);
     }else{size=Math.min(boardArea.clientWidth,available-44-($('analysisPanel').hidden?0:$('analysisPanel').offsetHeight+6));}
     main.style.setProperty('--board-size',Math.max(80,Math.floor(size))+'px');
   }
