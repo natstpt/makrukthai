@@ -93,3 +93,21 @@ body[data-mode="play"] main{--tools-reserve:236px}
 #countLine{flex-basis:100%;font-size:12.5px;color:#cbb994;text-align:right}#countLine.alert{color:#ffb35c;font-weight:700}
 html.blackPieces .playerDot:not(.white){background:#262626;box-shadow:0 0 0 2px #9a9a9a}
 .countRequest{flex-basis:100%;min-height:36px;margin:2px 0 4px;padding:4px 10px;border:1px solid #c29931;border-radius:10px;background:#3a3226;color:#ead295;font-size:13px;font-weight:700}
+/* ถอดหมาก (analysis): evaluation bar, the AI's three lines, arrows on the board and the assistance switches. */
+.analysisPanel{width:var(--board-size);max-width:100%;min-width:0;display:grid;grid-template-columns:minmax(0,1fr);gap:2px;margin:0 0 4px}
+.evalBar{position:relative;height:22px;border-radius:5px;background:#3d362c;border:1px solid var(--line);overflow:hidden}
+.evalFill{position:absolute;inset:0 auto 0 0;width:50%;background:#f2ebd7;transition:width .4s ease}
+.evalText{position:absolute;left:8px;top:50%;transform:translateY(-50%);font-weight:800;font-size:13px;color:#262018;mix-blend-mode:normal;text-shadow:0 0 3px #f2ebd7}
+.engineLines{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:minmax(0,1fr);gap:1px;min-width:0}.engineLines li{min-width:0}
+.engineLines button{width:100%;min-width:0;min-height:26px;display:flex;align-items:center;gap:8px;padding:2px 6px;border:0;border-radius:6px;background:transparent;color:#f2f0ec;text-align:left;cursor:pointer}
+.engineLines button:hover{background:#3a3226}
+.lineScore{flex:none;min-width:52px;padding:0 5px;border-radius:6px;background:#f2ebd7;color:#262018;font-weight:800;font-size:13px;text-align:center}
+.linePv{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}
+.lineError{color:#ffb4a8;font-size:13px;padding:2px 6px}
+.arrowLayer{position:absolute;inset:2px;width:calc(100% - 4px);height:calc(100% - 4px);pointer-events:none}
+.assistOptions{display:grid;gap:4px;padding:8px 0;border-top:1px solid var(--line)}
+.assistOptions h3{margin:0 0 4px;font-size:15px;color:var(--muted)}
+.switchRow{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:40px;cursor:pointer}
+.switchRow input{appearance:none;-webkit-appearance:none;flex:none;width:48px;height:28px;border-radius:14px;background:#4a4136;position:relative;cursor:pointer;transition:background .2s;border:0;margin:0}
+.switchRow input::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#f2ebd7;transition:transform .2s}
+.switchRow input:checked{background:#6aa84f}.switchRow input:checked::after{transform:translateX(20px)}
