@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const R = require('../makruk-rules.js');
 const P = require('../makruk-play.js');
 const M = require('../editor-model.js');
+const N = require('../makruk-notation.js');
 
 const KIND = { K: 'king', R: 'rook', B: 'khon', N: 'knight', M: 'met', F: 'promoted', P: 'pawn' };
 const at = sq => ({ r: 8 - Number(sq[1]), c: 'abcdefgh'.indexOf(sq[0]) });
@@ -66,31 +67,56 @@ eq([c.kind, c.counter, c.value, c.ceiling], ['piece', 'black', null, 16], 'lone 
 eq(P.nextCount(null, board('K:e1 R:a1 P:c3 k:e8'), 'white'), null, 'no count with pawns');
 
 // Special board count (ข้อ ข 4.2): unpromoted pawns are still on the board but the shape no longer changes.
-{ const quiet = n => Array.from({ length: n }, () => ({ piece: 'knight', capture: null }));
+{ // Quiet moves that never come back to a square (from and to are all different).
+  const quiet = n => Array.from({ length: n }, (_, i) => ({ piece: 'knight', capture: null, from: 'a' + i, to: 'b' + i }));
+  // A king walking to and fro: ข2-ก2, ก2-ข2, …; every move after the first comes back to a square.
+  const shuffle = n => Array.from({ length: n }, (_, i) => ({ piece: 'king', capture: null, from: i % 2 ? 'ก2' : 'ข2', to: i % 2 ? 'ข2' : 'ก2' }));
   eq(P.quietPlies([{ piece: 'pawn' }, ...quiet(3)]), 3, 'plies since the last pawn move');
   eq(P.quietPlies([...quiet(4), { piece: 'rook', capture: 'knight' }]), 0, 'a capture changes the shape');
   // Pawns head to head (ง4 against ง5) cannot move: the shape is locked, so the count may be asked for after
   // 3 moves each without a capture.
   const locked = board('K:e1 R:a1 P:d4 k:e8 n:b8 p:d5');
   eq(P.pawnsLocked(locked), true, 'pawns head to head are locked');
-  eq(P.canRequestSpecialCount(locked, null, P.LOCKED_PLIES - 1), false, 'locked pawns: not before 3 moves each');
-  eq(P.canRequestSpecialCount(locked, null, P.LOCKED_PLIES), true, 'locked pawns: 3 moves each without a capture');
+  eq(P.canRequestSpecialCount(locked, null, quiet(P.LOCKED_PLIES - 1)), false, 'locked pawns: not before 3 moves each');
+  eq(P.canRequestSpecialCount(locked, null, quiet(P.LOCKED_PLIES)), true, 'locked pawns: 3 moves each without a capture');
   // The reported game: all six pawns locked, even material (either side may ask on its turn).
   const reported = M.parse('8/8/8/1km1p1p1/s1p1P1P1/2P1M3/1KS5/8 w - - 0 1').pieces;
-  eq([P.pawnsLocked(reported), P.canRequestSpecialCount(reported, null, 6)], [true, true], 'reported position qualifies');
+  eq([P.pawnsLocked(reported), P.canRequestSpecialCount(reported, null, quiet(6))], [true, true], 'reported position qualifies');
   // A pawn whose way is blocked stays locked even when it could capture diagonally.
   eq(P.pawnsLocked(board('K:e1 P:d4 k:e8 p:d5 n:c5')), true, 'a capture does not unlock a blocked pawn');
   eq(P.pawnsLocked(board('K:e1 P:d4 P:a3 k:e8 p:d5')), false, 'a pawn with a free square ahead is not locked');
   eq(P.canRequestBoardCount(locked, null), false, 'not the ordinary board count while pawns are left');
-  // A pawn that could still move: never, however long nobody moves a pawn.
+  // Free pawns: pieces moving on to new squares do not change the count's chances; walking to and fro does.
   const free = board('K:h1 k:a8 n:d3 b:e2 p:g5');
   eq(P.pawnsLocked(free), false, 'a free pawn is not locked');
-  eq(P.canRequestSpecialCount(free, null, 40), false, 'free pawns: no special count');
-  // The reported opening (8 moves each, pawns still free): no special count, and equal material compares equal.
+  eq(P.canRequestSpecialCount(free, null, quiet(40)), false, 'free pawns, pieces going somewhere: no special count');
+  eq(P.shuffleMoves(shuffle(4)), 3, 'every move after the first comes back');
+  eq(P.canRequestSpecialCount(free, null, shuffle(4)), false, '3 moves back: not yet');
+  eq(P.canRequestSpecialCount(free, null, shuffle(5)), true, 'more than 3 moves back: the button comes up');
+  eq(P.canRequestSpecialCount(free, null, [...shuffle(5), { piece: 'pawn', capture: null, from: 'ช5', to: 'ช4' }]), false, 'a pawn move starts again');
+  // Exact repeats (the same positions again) do not count: the threefold-repetition draw handles them.
+  { let ps = free, side = 'white'; const recs = [];
+    const walk = (list) => list.forEach(m => { const from = at(m.slice(0, 2)), to = at(m.slice(2)), rec = N.formatMove(ps, from, to);
+      ps = R.applyMove(ps, from, to); side = side === 'white' ? 'black' : 'white'; rec.fen = M.fen({ pieces: ps, turn: side }); recs.push(rec); });
+    walk(['h1g1', 'a8b8', 'g1h1', 'b8a8', 'h1g1', 'a8b8', 'g1h1']);
+    eq(P.shuffleMoves(recs, M.fen({ pieces: free, turn: 'white' })), 1, 'kings to and fro on the same squares: only the first return is a new position');
+    eq(P.canRequestSpecialCount(free, null, recs, M.fen({ pieces: free, turn: 'white' })), false, 'exact repeats: no button');
+    // Red's king wanders while white's goes back and forth: returns into new positions count.
+    recs.length = 0; ps = free; side = 'white';
+    walk(['h1g1', 'a8b8', 'g1h1', 'b8b7', 'h1g1', 'b7c7', 'g1h1', 'c7c8', 'h1g1']);
+    eq(P.shuffleMoves(recs, M.fen({ pieces: free, turn: 'white' })), 4, 'to and fro without repeating a position');
+    eq(P.canRequestSpecialCount(free, null, recs, M.fen({ pieces: free, turn: 'white' })), true, 'more than 3: the button comes up'); }
+  eq(P.canRequestSpecialCount(free, null, [...shuffle(5), { piece: 'knight', capture: 'khon', from: 'ง3', to: 'จ2' }]), false, 'a capture starts again');
+  // The reported opening (8 moves each, pawns still free, pieces developing): no special count, and equal
+  // material compares equal.
   const opening = M.parse('r3k1nr/2sns3/pppm1ppp/3pp3/4PP2/PPPPMSPP/2SN4/R2K2NR b - - 0 1').pieces;
-  eq(P.canRequestSpecialCount(opening, null, 11), false, 'opening with free pawns: no special count');
+  { let ps = M.initial().pieces; const recs = [];
+    for (const m of 'e1f2 d6d5 e3e4 e6e5 f3f4 b8d7 c1c2 d8c7 f2e3 c7d6 b1d2 c8c7 f1f2 f8e7 f2f3'.split(' ')) {
+      const from = at(m.slice(0, 2)), to = at(m.slice(2)); recs.push(N.formatMove(ps, from, to)); ps = R.applyMove(ps, from, to); }
+    eq(P.shuffleMoves(recs), 0, 'developing pieces never come back');
+    eq(P.canRequestSpecialCount(opening, null, recs), false, 'opening with free pawns: no special count'); }
   eq(P.material(opening, 'white'), P.material(opening, 'black'), 'equal material is equal');
-  eq(P.canRequestSpecialCount(board('K:e1 R:a1 k:e8 r:h8'), null, 20), false, 'no pawns: the ordinary board count instead');
+  eq(P.canRequestSpecialCount(board('K:e1 R:a1 k:e8 r:h8'), null, shuffle(20)), false, 'no pawns: the ordinary board count instead');
   // Counting once the special count is on (asked for here directly): white says 1 on its move, up to 64, then draw.
   let s = P.requestSpecialCount('white', free);
   eq([s.kind, s.special, s.counter, s.lone], ['board', true, 'white', 'white'], 'special count asked by the lone king');
