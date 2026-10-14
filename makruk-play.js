@@ -84,16 +84,32 @@
       return pieces.some(function (x) { return same(x.at, ahead); });
     });
   }
-  // The shape no longer changes once the pawns are locked and LOCKED_PLIES plies (3 moves each) pass without a
-  // capture, or once QUIET_PLIES plies (5 moves each) pass without a pawn move or a capture.
-  var LOCKED_PLIES = 6, QUIET_PLIES = 10;
+  // Moves since the last pawn move or capture (the pawns and the pieces of both sides are unchanged) that bring a
+  // piece back to a square it already stood on in that stretch, into a position that has not stood before: pieces
+  // walking to and fro without repeating. Exact repeats are left to the threefold-repetition draw. Records carry
+  // the position after the move (fen) when the game page keeps it; startFen is the position before the first record.
+  function shuffleMoves(records, startFen) {
+    var start = records.length - quietPlies(records), seen = {}, n = 0;
+    var before = start > 0 ? records[start - 1].fen : startFen, positions = before ? [before] : [];
+    records.slice(start).forEach(function (m) {
+      var been = seen[m.from] || [m.from], repeat = !!m.fen && positions.indexOf(m.fen) >= 0;
+      if (m.fen) positions.push(m.fen);
+      if (been.indexOf(m.to) >= 0 && !repeat) n++;
+      delete seen[m.from];
+      seen[m.to] = been.concat([m.to]);
+    });
+    return n;
+  }
+  // The shape no longer changes (รูปหมากไม่เปลี่ยนแปลง) once, with no pawn move and no capture:
+  // every pawn is locked and LOCKED_PLIES plies (3 moves each) have passed, or pieces have walked back to squares
+  // they came from more than SHUFFLES times (เดินวนไปมา).
+  var LOCKED_PLIES = 6, SHUFFLES = 3;
   // Can the special board count (ข้อ ข 4.2) be asked for now? Unpromoted pawns are still on the board, nothing is
-  // being counted yet, and the shape no longer changes: the pawns are locked and nobody has captured for LOCKED_PLIES
-  // plies, or nobody has moved a pawn or captured for QUIET_PLIES plies. The time condition (under 5 minutes) is left out:
-  // the games here have no clock.
-  function canRequestSpecialCount(pieces, current, quiet) {
+  // being counted yet, and the shape no longer changes (see above), judged from the game's move records. The time
+  // condition (under 5 minutes) is left out: the games here have no clock.
+  function canRequestSpecialCount(pieces, current, records, startFen) {
     if (current || !hasPawns(pieces)) return false;
-    return quiet >= QUIET_PLIES || (quiet >= LOCKED_PLIES && pawnsLocked(pieces));
+    return (quietPlies(records) >= LOCKED_PLIES && pawnsLocked(pieces)) || shuffleMoves(records, startFen) > SHUFFLES;
   }
   function requestSpecialCount(side, pieces) {
     return { kind: 'board', counter: side, value: null, start: 1, ceiling: 64, extra: false, draw: false, special: true, lone: loneSide(pieces) };
@@ -104,7 +120,8 @@
     if (c.value >= c.ceiling) c.extra = true;
     return c;
   }
-  function material(pieces, side) { return pieces.filter(function (p) { return p.side === side; }).reduce(function (s, p) { return s + VALUES[p.piece]; }, 0); }
+  // Rounded to a tenth, so equal sides compare equal (0.1 steps in floating point do not add up exactly).
+  function material(pieces, side) { return Math.round(pieces.filter(function (p) { return p.side === side; }).reduce(function (s, p) { return s + VALUES[p.piece]; }, 0) * 10) / 10; }
   // Short text for the turn line, e.g. "แดงนับศักดิ์หมาก 7/16".
   function countText(c, sideName) {
     if (!c) return '';
@@ -259,5 +276,5 @@
     });
   }
 
-  return { canRequestBoardCount: canRequestBoardCount, requestBoardCount: requestBoardCount, canRequestSpecialCount: canRequestSpecialCount, requestSpecialCount: requestSpecialCount, quietPlies: quietPlies, pawnsLocked: pawnsLocked, LOCKED_PLIES: LOCKED_PLIES, QUIET_PLIES: QUIET_PLIES, material: material, VALUES: VALUES, OPENING: OPENING, openingMove: openingMove, openingMoves: openingMoves, openingChoice: openingChoice, ceilingFor: ceilingFor, nextCount: nextCount, countText: countText, exchange: exchange, chooseMove: chooseMove };
+  return { canRequestBoardCount: canRequestBoardCount, requestBoardCount: requestBoardCount, canRequestSpecialCount: canRequestSpecialCount, requestSpecialCount: requestSpecialCount, quietPlies: quietPlies, pawnsLocked: pawnsLocked, LOCKED_PLIES: LOCKED_PLIES, SHUFFLES: SHUFFLES, shuffleMoves: shuffleMoves, material: material, VALUES: VALUES, OPENING: OPENING, openingMove: openingMove, openingMoves: openingMoves, openingChoice: openingChoice, ceilingFor: ceilingFor, nextCount: nextCount, countText: countText, exchange: exchange, chooseMove: chooseMove };
 });

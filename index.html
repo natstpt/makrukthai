@@ -823,7 +823,7 @@
 <script src="rules-lessons.js?v=20261005-feedback"></script>
 <script src="endgame-lessons.js?v=20261013-chase"></script>
 <script src="puzzle-trees.js?v=20261012-puzzles"></script>
-<script src="tactics-lessons.js?v=20261013-names2"></script>
+<script src="tactics-lessons.js?v=20261015-steps"></script>
 <script src="tactic-trees.js?v=20261013-tactics"></script>
 <script src="ai-lessons.js?v=20261013-ai"></script>
 <script src="chase-trees.js?v=20261013-chase"></script>
@@ -1708,6 +1708,8 @@
     renderPath();
     if(isBoardPractice()||l.questions)startRound();else{renderBoard();updatePracticeUI();updateGameUI();}
     showTeachingStep();
+    // Play-the-computer lessons skip their teaching steps: the lesson opens on its play step.
+    if(l.type==='aiGame'){state.teachingIndex=l.teachingSteps.length-1;activateLesson();}
     saveProgress();
   }
 
@@ -1818,6 +1820,13 @@
   // Play-the-computer lessons (ai-lessons.js): a button opens the AI page at the lesson's level; the AI page records
   // finished games (makrukAiGames), and one finished game passes the lesson.
   var AI_NAMES={easy:'ง่าย',medium:'กลาง',hard:'ยาก'};
+  // Moving on to a play-the-computer lesson (บทถัดไป or the lesson menu) opens its game at once; coming back from the
+  // game page shows the lesson's play step with the result.
+  function launchAiGame(){
+    var l=lessons[state.lesson];if(l.type!=='aiGame')return;
+    try{sessionStorage.setItem('makrukAiLessonReturn',l.id);}catch(e){}
+    location.href='editor.html?play=ai&side=white&level='+l.aiLevel+'&lesson='+l.id;
+  }
   function aiRecord(level){try{return (JSON.parse(localStorage.getItem('makrukAiGames')||'{}')[level])||{done:0,won:0};}catch(e){return {done:0,won:0};}}
   function renderAiGame(){
     var l=lessons[state.lesson];if(l.type!=='aiGame'||state.phase!=='active')return;
@@ -2333,7 +2342,7 @@
   function nextLesson(){
     if(!state.completed)return;
     if(state.lesson>=lessons.length-1){state.lesson=0;renderLesson();return;}
-    state.lesson++;state.unlocked=Math.max(state.unlocked,state.lesson);renderLesson();
+    state.lesson++;state.unlocked=Math.max(state.unlocked,state.lesson);renderLesson();launchAiGame();
   }
 
   function showHint(){
@@ -2408,7 +2417,7 @@
       card.className='mapNode'+(locked?' locked':i===state.lesson?' current':'');
       card.disabled=locked;
       card.innerHTML='<span class="mapBadge"><img src="'+lessonIcon(l)+'" alt="">'+(locked?'<i class="mapMark">🔒</i>':i<state.lesson?'<i class="mapMark done">✓</i>':'')+'</span><span><strong>'+lessonTitleHtml(l.title)+'</strong><small>บท '+(i+1)+(locked?' · เรียนบทก่อนหน้าเพื่อเปิด':i===state.lesson?' · กำลังเรียน':i<state.lesson?' · ผ่านแล้ว':' · พร้อมเรียน')+'</small></span>';
-      if(!locked)card.addEventListener('click',function(){state.lesson=i;closeOverlay('menuOverlay');renderLesson();});
+      if(!locked)card.addEventListener('click',function(){state.lesson=i;closeOverlay('menuOverlay');renderLesson();launchAiGame();});
       grid.appendChild(card);
     });
   }

@@ -28,7 +28,7 @@
   // Each move record keeps the position after it (fen) and its key (uci).
   function repetitions(fen){return (trial&&M.fen(trial.state)===fen?1:0)+moves.filter(function(m){return m.fen===fen;}).length;}
   // The special board count (ข้อ ข 4.2) is asked for while unpromoted pawns are still on the board.
-  function canAskSpecial(){return P.canRequestSpecialCount(state.pieces,count,P.quietPlies(moves));}
+  function canAskSpecial(){return P.canRequestSpecialCount(state.pieces,count,moves,trial&&M.fen(trial.state));}
   function askCount(side){count=P.canRequestBoardCount(state.pieces,count)?P.requestBoardCount(side):P.requestSpecialCount(side,state.pieces);}
   var aiTimer=0,aiSearch=0,E=window.MakrukEngine,engine={state:'off',progress:0};
   function hardAi(){return !!game&&!!game.ai&&game.level==='hard'&&engine.state!=='failed';}
@@ -56,7 +56,8 @@
     if(hard&&!book)game.bookDone=true;
     aiTimer=setTimeout(function(){
       aiTimer=0;if(token!==aiSearch||!aiTurn())return;
-      if((P.canRequestBoardCount(state.pieces,count)||canAskSpecial())&&P.material(state.pieces,state.turn)<P.material(state.pieces,opponent(state.turn)))askCount(state.turn);
+      // The AI asks for the ordinary board count when it is behind; the special count is for the player only.
+      if(P.canRequestBoardCount(state.pieces,count)&&P.material(state.pieces,state.turn)<P.material(state.pieces,opponent(state.turn)))count=P.requestBoardCount(state.turn);
       var repeats=function(ps,turn){return repetitions(M.fen({pieces:ps,turn:turn}));};
       var easy=function(){var move=P.chooseMove(state.pieces,state.turn,{count:count,repeats:repeats,mistakes:game.level==='easy'?0.35:0});if(move)playMove(move.from,move.to);};
       if(!hard){easy();return;}
