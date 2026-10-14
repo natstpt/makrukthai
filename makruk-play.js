@@ -80,16 +80,16 @@
       return pieces.some(function (x) { return same(x.at, ahead); });
     });
   }
-  // The shape no longer changes once the pawns are locked and LOCKED_PLIES plies (3 moves each) pass without a
-  // capture, or once QUIET_PLIES plies (5 moves each) pass without a pawn move or a capture.
-  var LOCKED_PLIES = 6, QUIET_PLIES = 10;
+  // The shape no longer changes once every pawn is locked and LOCKED_PLIES plies (3 moves each) pass without a
+  // capture.
+  var LOCKED_PLIES = 6;
   // Can the special board count (ข้อ ข 4.2) be asked for now? Unpromoted pawns are still on the board, nothing is
-  // being counted yet, and the shape no longer changes: the pawns are locked and nobody has captured for LOCKED_PLIES
-  // plies, or nobody has moved a pawn or captured for QUIET_PLIES plies. The time condition (under 5 minutes) is left out:
+  // being counted yet, and the shape no longer changes: every pawn is locked and nobody has captured for LOCKED_PLIES
+  // plies. The time condition (under 5 minutes) is left out:
   // the games here have no clock.
   function canRequestSpecialCount(pieces, current, quiet) {
     if (current || !hasPawns(pieces)) return false;
-    return quiet >= QUIET_PLIES || (quiet >= LOCKED_PLIES && pawnsLocked(pieces));
+    return quiet >= LOCKED_PLIES && pawnsLocked(pieces);
   }
   function requestSpecialCount(side, pieces) {
     return { kind: 'board', counter: side, value: null, start: 1, ceiling: 64, extra: false, draw: false, special: true, lone: loneSide(pieces) };
@@ -100,7 +100,8 @@
     if (c.value >= c.ceiling) c.extra = true;
     return c;
   }
-  function material(pieces, side) { return pieces.filter(function (p) { return p.side === side; }).reduce(function (s, p) { return s + VALUES[p.piece]; }, 0); }
+  // Rounded to a tenth, so equal sides compare equal (0.1 steps in floating point do not add up exactly).
+  function material(pieces, side) { return Math.round(pieces.filter(function (p) { return p.side === side; }).reduce(function (s, p) { return s + VALUES[p.piece]; }, 0) * 10) / 10; }
   // Short text for the turn line, e.g. "แดงนับศักดิ์หมาก 7/16".
   function countText(c, sideName) {
     if (!c) return '';
@@ -255,5 +256,5 @@
     });
   }
 
-  return { canRequestBoardCount: canRequestBoardCount, requestBoardCount: requestBoardCount, canRequestSpecialCount: canRequestSpecialCount, requestSpecialCount: requestSpecialCount, quietPlies: quietPlies, pawnsLocked: pawnsLocked, LOCKED_PLIES: LOCKED_PLIES, QUIET_PLIES: QUIET_PLIES, material: material, VALUES: VALUES, OPENING: OPENING, openingMove: openingMove, openingMoves: openingMoves, openingChoice: openingChoice, ceilingFor: ceilingFor, nextCount: nextCount, countText: countText, exchange: exchange, chooseMove: chooseMove };
+  return { canRequestBoardCount: canRequestBoardCount, requestBoardCount: requestBoardCount, canRequestSpecialCount: canRequestSpecialCount, requestSpecialCount: requestSpecialCount, quietPlies: quietPlies, pawnsLocked: pawnsLocked, LOCKED_PLIES: LOCKED_PLIES, material: material, VALUES: VALUES, OPENING: OPENING, openingMove: openingMove, openingMoves: openingMoves, openingChoice: openingChoice, ceilingFor: ceilingFor, nextCount: nextCount, countText: countText, exchange: exchange, chooseMove: chooseMove };
 });

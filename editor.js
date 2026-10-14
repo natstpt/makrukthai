@@ -56,7 +56,8 @@
     if(hard&&!book)game.bookDone=true;
     aiTimer=setTimeout(function(){
       aiTimer=0;if(token!==aiSearch||!aiTurn())return;
-      if((P.canRequestBoardCount(state.pieces,count)||canAskSpecial())&&P.material(state.pieces,state.turn)<P.material(state.pieces,opponent(state.turn)))askCount(state.turn);
+      // The AI asks for the ordinary board count when it is behind; the special count is for the player only.
+      if(P.canRequestBoardCount(state.pieces,count)&&P.material(state.pieces,state.turn)<P.material(state.pieces,opponent(state.turn)))count=P.requestBoardCount(state.turn);
       var repeats=function(ps,turn){return repetitions(M.fen({pieces:ps,turn:turn}));};
       var easy=function(){var move=P.chooseMove(state.pieces,state.turn,{count:count,repeats:repeats,mistakes:game.level==='easy'?0.35:0});if(move)playMove(move.from,move.to);};
       if(!hard){easy();return;}
