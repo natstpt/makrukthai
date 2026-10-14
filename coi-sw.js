@@ -7,7 +7,8 @@ self.addEventListener('fetch', function (e) {
   var req = e.request;
   if (new URL(req.url).origin !== self.location.origin) return;
   if (req.cache === 'only-if-cached' && req.mode !== 'same-origin') return;
-  e.respondWith(fetch(req).then(function (res) {
+  // Pages are checked with the server each time (a 304 when unchanged), so an update reaches the game at once.
+  e.respondWith(fetch(req, req.mode === 'navigate' ? { cache: 'no-cache' } : undefined).then(function (res) {
     if (res.status === 0) return res;
     var headers = new Headers(res.headers);
     headers.set('Cross-Origin-Embedder-Policy', 'require-corp');
