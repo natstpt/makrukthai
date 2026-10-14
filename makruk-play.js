@@ -77,14 +77,16 @@
       return !R.legalMoves(pieces, side).some(function (m) { var p = pieces.find(function (x) { return same(x.at, m.from); }); return p.piece === 'pawn'; });
     });
   }
-  // The shape no longer changes once this many plies (5 moves each) pass without a pawn move or a capture.
-  var QUIET_PLIES = 10;
+  // The shape no longer changes once the pawns are locked and LOCKED_PLIES plies (3 moves each) pass without a
+  // capture, or once QUIET_PLIES plies (5 moves each) pass without a pawn move or a capture.
+  var LOCKED_PLIES = 6, QUIET_PLIES = 10;
   // Can the special board count (ข้อ ข 4.2) be asked for now? Unpromoted pawns are still on the board, nothing is
-  // being counted yet, and the shape no longer changes: the pawns are locked, or nobody has moved a pawn or captured for QUIET_PLIES plies. The time condition (under 5 minutes) is left out:
+  // being counted yet, and the shape no longer changes: the pawns are locked and nobody has captured for LOCKED_PLIES
+  // plies, or nobody has moved a pawn or captured for QUIET_PLIES plies. The time condition (under 5 minutes) is left out:
   // the games here have no clock.
   function canRequestSpecialCount(pieces, current, quiet) {
     if (current || !hasPawns(pieces)) return false;
-    return pawnsLocked(pieces) || quiet >= QUIET_PLIES;
+    return quiet >= QUIET_PLIES || (quiet >= LOCKED_PLIES && pawnsLocked(pieces));
   }
   function requestSpecialCount(side, pieces) {
     return { kind: 'board', counter: side, value: null, start: 1, ceiling: 64, extra: false, draw: false, special: true, lone: loneSide(pieces) };
@@ -249,5 +251,5 @@
     });
   }
 
-  return { canRequestBoardCount: canRequestBoardCount, requestBoardCount: requestBoardCount, canRequestSpecialCount: canRequestSpecialCount, requestSpecialCount: requestSpecialCount, quietPlies: quietPlies, pawnsLocked: pawnsLocked, QUIET_PLIES: QUIET_PLIES, material: material, VALUES: VALUES, OPENING: OPENING, openingMove: openingMove, openingMoves: openingMoves, openingChoice: openingChoice, ceilingFor: ceilingFor, nextCount: nextCount, countText: countText, exchange: exchange, chooseMove: chooseMove };
+  return { canRequestBoardCount: canRequestBoardCount, requestBoardCount: requestBoardCount, canRequestSpecialCount: canRequestSpecialCount, requestSpecialCount: requestSpecialCount, quietPlies: quietPlies, pawnsLocked: pawnsLocked, LOCKED_PLIES: LOCKED_PLIES, QUIET_PLIES: QUIET_PLIES, material: material, VALUES: VALUES, OPENING: OPENING, openingMove: openingMove, openingMoves: openingMoves, openingChoice: openingChoice, ceilingFor: ceilingFor, nextCount: nextCount, countText: countText, exchange: exchange, chooseMove: chooseMove };
 });

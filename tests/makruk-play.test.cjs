@@ -66,10 +66,15 @@ eq(P.nextCount(null, board('K:e1 R:a1 P:c3 k:e8'), 'white'), null, 'no count wit
 { const quiet = n => Array.from({ length: n }, () => ({ piece: 'knight', capture: null }));
   eq(P.quietPlies([{ piece: 'pawn' }, ...quiet(3)]), 3, 'plies since the last pawn move');
   eq(P.quietPlies([...quiet(4), { piece: 'rook', capture: 'knight' }]), 0, 'a capture changes the shape');
-  // Pawns head to head (ง4 against ง5) cannot move: the shape is locked, so the count may be asked for at once.
+  // Pawns head to head (ง4 against ง5) cannot move: the shape is locked, so the count may be asked for after
+  // 3 moves each without a capture.
   const locked = board('K:e1 R:a1 P:d4 k:e8 n:b8 p:d5');
   eq(P.pawnsLocked(locked), true, 'pawns head to head are locked');
-  eq(P.canRequestSpecialCount(locked, null, 0), true, 'locked pawns: special count at once');
+  eq(P.canRequestSpecialCount(locked, null, P.LOCKED_PLIES - 1), false, 'locked pawns: not before 3 moves each');
+  eq(P.canRequestSpecialCount(locked, null, P.LOCKED_PLIES), true, 'locked pawns: 3 moves each without a capture');
+  // The reported game: all six pawns locked, even material (either side may ask on its turn).
+  const reported = M.parse('8/8/8/1km1p1p1/s1p1P1P1/2P1M3/1KS5/8 w - - 0 1').pieces;
+  eq([P.pawnsLocked(reported), P.canRequestSpecialCount(reported, null, 6)], [true, true], 'reported position qualifies');
   eq(P.canRequestBoardCount(locked, null), false, 'not the ordinary board count while pawns are left');
   // A pawn that could still move: only after QUIET_PLIES plies without a pawn move or capture.
   const free = board('K:h1 k:a8 n:d3 b:e2 p:g5');
