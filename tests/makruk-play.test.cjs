@@ -75,6 +75,9 @@ eq(P.nextCount(null, board('K:e1 R:a1 P:c3 k:e8'), 'white'), null, 'no count wit
   // The reported game: all six pawns locked, even material (either side may ask on its turn).
   const reported = M.parse('8/8/8/1km1p1p1/s1p1P1P1/2P1M3/1KS5/8 w - - 0 1').pieces;
   eq([P.pawnsLocked(reported), P.canRequestSpecialCount(reported, null, 6)], [true, true], 'reported position qualifies');
+  // A pawn whose way is blocked stays locked even when it could capture diagonally.
+  eq(P.pawnsLocked(board('K:e1 P:d4 k:e8 p:d5 n:c5')), true, 'a capture does not unlock a blocked pawn');
+  eq(P.pawnsLocked(board('K:e1 P:d4 P:a3 k:e8 p:d5')), false, 'a pawn with a free square ahead is not locked');
   eq(P.canRequestBoardCount(locked, null), false, 'not the ordinary board count while pawns are left');
   // A pawn that could still move: only after QUIET_PLIES plies without a pawn move or capture.
   const free = board('K:h1 k:a8 n:d3 b:e2 p:g5');

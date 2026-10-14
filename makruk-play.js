@@ -71,10 +71,13 @@
     for (var i = records.length - 1; i >= 0 && records[i].piece !== 'pawn' && !records[i].capture; i--) n++;
     return n;
   }
-  // No unpromoted pawn of either side has a move (pawns locked head to head, ข้อ ข 4.2's example).
+  // Every unpromoted pawn of both sides is blocked: the square in front of it is taken (pawns head to head,
+  // ข้อ ข 4.2's example). A capture a pawn could make does not unlock it; captures are watched by quietPlies.
   function pawnsLocked(pieces) {
-    return ['white', 'black'].every(function (side) {
-      return !R.legalMoves(pieces, side).some(function (m) { var p = pieces.find(function (x) { return same(x.at, m.from); }); return p.piece === 'pawn'; });
+    return pieces.every(function (p) {
+      if (p.piece !== 'pawn') return true;
+      var ahead = { r: p.at.r + (p.side === 'white' ? -1 : 1), c: p.at.c };
+      return pieces.some(function (x) { return same(x.at, ahead); });
     });
   }
   // The shape no longer changes once the pawns are locked and LOCKED_PLIES plies (3 moves each) pass without a
