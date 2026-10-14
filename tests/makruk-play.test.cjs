@@ -29,13 +29,15 @@ eq([c.kind, c.counter, c.value, c.ceiling], ['piece', 'black', null, 16], 'lone 
 c = P.nextCount(c, pieces, 'black'); eq(c.value, 4, 'first count is pieces + 1');
 for (let n = 5; n <= 16; n++) { c = P.nextCount(c, pieces, 'white'); c = P.nextCount(c, pieces, 'black'); }
 eq([c.value, c.extra, c.draw], [16, true, false], 'count reaches the ceiling: white has one move left');
-c = P.nextCount(c, pieces, 'white'); eq(c.draw, true, 'white used its last move without mate: draw');
+c = P.nextCount(c, pieces, 'white'); eq([c.value, c.draw], [16, false], 'white used its last move without mate: still 16');
+c = P.nextCount(c, pieces, 'black'); eq([c.value, c.draw], [17, true], 'red moves and says 17: draw');
 // Two rooks: red counts 5, 6, 7, 8; white's next move is the last, then red would say 9 = draw.
 { const two = board('K:e1 R:a1 R:h1 k:e8'); let t = P.nextCount(null, two, 'white');
   for (let n = 5; n <= 8; n++) { t = P.nextCount(t, two, 'black'); if (n < 8) t = P.nextCount(t, two, 'white'); }
   eq([t.value, t.extra, t.draw], [8, true, false], 'red says 8: white has one move left');
-  t = P.nextCount(t, two, 'white'); eq(t.draw, true, 'red would say 9: draw');
-  eq(P.countText(t, s => s === 'white' ? 'ขาว' : 'แดง'), 'แดงนับ 9 เกิน 8 · เสมอ', 'draw text'); }
+  t = P.nextCount(t, two, 'white'); eq(t.draw, false, 'white used its last move: red still to say 9');
+  t = P.nextCount(t, two, 'black'); eq(t.draw, true, 'red moves and says 9: draw');
+  eq(P.countText(t, s => s === 'white' ? 'ขาว' : 'แดง'), 'แดงนับเกิน 8 · เสมอ', 'draw text'); }
 // A capture never restarts the piece count.
 c = P.nextCount(null, board('K:e1 R:a1 R:h1 k:e8'), 'white'); c = P.nextCount(c, board('K:e1 R:a1 R:h1 k:e8'), 'black');
 c = P.nextCount(c, board('K:e1 R:a1 k:h1'), 'black');
@@ -53,7 +55,8 @@ c = P.nextCount(c, pieces, 'white'); eq(c.value, null, 'only the counting side c
 c = P.nextCount(c, pieces, 'black'); eq(c.value, 1, 'red says 1 on its move');
 for (let n = 2; n <= 64; n++) { c = P.nextCount(c, pieces, 'white'); c = P.nextCount(c, pieces, 'black'); }
 eq([c.value, c.extra, c.draw], [64, true, false], 'red says 64: white has one more move');
-c = P.nextCount(c, pieces, 'white'); eq(c.draw, true, 'no mate: red would say 65, a draw');
+c = P.nextCount(c, pieces, 'white'); eq([c.value, c.draw], [64, false], 'white used its last move: red to move at 64');
+c = P.nextCount(c, pieces, 'black'); eq([c.value, c.draw], [65, true], 'red moves and says 65: a draw');
 pieces = board('K:e1 R:a1 k:e8 r:h8');
 // A capture that leaves a lone king switches to the piece count.
 c = P.requestBoardCount('black'); c = P.nextCount(c, pieces, 'black');
@@ -92,7 +95,9 @@ eq(P.nextCount(null, board('K:e1 R:a1 P:c3 k:e8'), 'white'), null, 'no count wit
   eq(P.countText(s, x => x === 'white' ? 'ขาว' : 'แดง'), 'ขาวนับศักดิ์กระดานกรณีพิเศษ 1/64', 'special count text');
   for (let n = 2; n <= 64; n++) { s = P.nextCount(s, free, 'black'); s = P.nextCount(s, free, 'white'); }
   eq([s.value, s.extra, s.draw], [64, true, false], 'white says 64: red has one more move');
-  s = P.nextCount(s, free, 'black'); eq(s.draw, true, 'no mate: a draw');
+  s = P.nextCount(s, free, 'black'); eq([s.value, s.draw], [64, false], 'red used its last move: white to move at 64/64');
+  s = P.nextCount(s, free, 'white'); eq([s.value, s.draw], [65, true], 'white moves and says 65: a draw');
+  eq(P.countText(s, x => x === 'white' ? 'ขาว' : 'แดง'), 'ขาวนับเกิน 64 · เสมอ', 'count over text');
   // The pawn is promoted after the count began: the count carries on, it does not start again or switch.
   s = P.nextCount(P.nextCount(P.requestSpecialCount('white', free), free, 'white'), board('K:h1 k:a8 n:d3 b:e2 f:g3'), 'black');
   eq([s.kind, s.value], ['board', 1], 'no pawns left: the special count goes on');
