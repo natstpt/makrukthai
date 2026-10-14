@@ -33,7 +33,7 @@
   // Special board count (ข้อ ข 4.2): asked for while unpromoted pawns are still on the board but the shape no longer
   // changes (requestSpecialCount); it counts 1 to 64 the same way and carries on if the pawns go.
   // Piece count (ศักดิ์หมาก): starts by itself when one side has only its king; the lone king says the number of
-  // pieces + 1 on its first move, up to the ceiling of the chasing side's pieces. A capture never restarts it.
+  // pieces left after that move + 1 on its first move, up to the ceiling of the chasing side's pieces. A capture never restarts it.
   // A board count switches to it when a capture leaves a lone king (not for a king that was already alone when the
   // special count was asked for).
   // In both, once the counting side has said the last number (64 or the ceiling) the other side has one more move;
@@ -49,7 +49,11 @@
     if (lone && (!c || c.kind !== 'piece') && !(c && c.lone === lone))
       return { kind: 'piece', counter: lone, value: null, start: pieces.length + 1, ceiling: ceilingFor(pieces, opponent(lone)), extra: false, draw: false, special: !!(c && c.special) };
     if (!c) return null; // board count: only on request
-    if (mover === c.counter) return advance(c);
+    if (mover === c.counter) {
+      // The lone king says pieces + 1 counted after its own first move, so a capture on that move lowers the start.
+      if (c.kind === 'piece' && c.value === null) c.start = pieces.length + 1;
+      return advance(c);
+    }
     return c;
   }
   function hasPawns(pieces) { return pieces.some(function (p) { return p.piece === 'pawn'; }); }
