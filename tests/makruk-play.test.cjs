@@ -82,13 +82,16 @@ eq(P.nextCount(null, board('K:e1 R:a1 P:c3 k:e8'), 'white'), null, 'no count wit
   eq(P.pawnsLocked(board('K:e1 P:d4 k:e8 p:d5 n:c5')), true, 'a capture does not unlock a blocked pawn');
   eq(P.pawnsLocked(board('K:e1 P:d4 P:a3 k:e8 p:d5')), false, 'a pawn with a free square ahead is not locked');
   eq(P.canRequestBoardCount(locked, null), false, 'not the ordinary board count while pawns are left');
-  // A pawn that could still move: only after QUIET_PLIES plies without a pawn move or capture.
+  // A pawn that could still move: never, however long nobody moves a pawn.
   const free = board('K:h1 k:a8 n:d3 b:e2 p:g5');
   eq(P.pawnsLocked(free), false, 'a free pawn is not locked');
-  eq(P.canRequestSpecialCount(free, null, P.QUIET_PLIES - 1), false, 'the shape still changed recently');
-  eq(P.canRequestSpecialCount(free, null, P.QUIET_PLIES), true, 'the shape has not changed for 5 moves each');
+  eq(P.canRequestSpecialCount(free, null, 40), false, 'free pawns: no special count');
+  // The reported opening (8 moves each, pawns still free): no special count, and equal material compares equal.
+  const opening = M.parse('r3k1nr/2sns3/pppm1ppp/3pp3/4PP2/PPPPMSPP/2SN4/R2K2NR b - - 0 1').pieces;
+  eq(P.canRequestSpecialCount(opening, null, 11), false, 'opening with free pawns: no special count');
+  eq(P.material(opening, 'white'), P.material(opening, 'black'), 'equal material is equal');
   eq(P.canRequestSpecialCount(board('K:e1 R:a1 k:e8 r:h8'), null, 20), false, 'no pawns: the ordinary board count instead');
-  // White's lone king asks (the red pawn on ช4 is never promoted): white says 1 on its move, up to 64, then draw.
+  // Counting once the special count is on (asked for here directly): white says 1 on its move, up to 64, then draw.
   let s = P.requestSpecialCount('white', free);
   eq([s.kind, s.special, s.counter, s.lone], ['board', true, 'white', 'white'], 'special count asked by the lone king');
   s = P.nextCount(s, free, 'white'); eq(s.value, 1, 'counts 1 even with pawns on the board');
