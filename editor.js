@@ -28,7 +28,7 @@
   // Each move record keeps the position after it (fen) and its key (uci).
   function repetitions(fen){return (trial&&M.fen(trial.state)===fen?1:0)+moves.filter(function(m){return m.fen===fen;}).length;}
   // The special board count (ข้อ ข 4.2) is asked for while unpromoted pawns are still on the board.
-  function canAskSpecial(){return P.canRequestSpecialCount(state.pieces,count,moves);}
+  function canAskSpecial(){return P.canRequestSpecialCount(state.pieces,count,moves,trial&&M.fen(trial.state));}
   function askCount(side){count=P.canRequestBoardCount(state.pieces,count)?P.requestBoardCount(side):P.requestSpecialCount(side,state.pieces);}
   var aiTimer=0,aiSearch=0,E=window.MakrukEngine,engine={state:'off',progress:0};
   function hardAi(){return !!game&&!!game.ai&&game.level==='hard'&&engine.state!=='failed';}

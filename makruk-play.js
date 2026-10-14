@@ -81,12 +81,16 @@
     });
   }
   // Moves since the last pawn move or capture (the pawns and the pieces of both sides are unchanged) that bring a
-  // piece back to a square it already stood on in that stretch: pieces walking to and fro.
-  function shuffleMoves(records) {
+  // piece back to a square it already stood on in that stretch, into a position that has not stood before: pieces
+  // walking to and fro without repeating. Exact repeats are left to the threefold-repetition draw. Records carry
+  // the position after the move (fen) when the game page keeps it; startFen is the position before the first record.
+  function shuffleMoves(records, startFen) {
     var start = records.length - quietPlies(records), seen = {}, n = 0;
+    var before = start > 0 ? records[start - 1].fen : startFen, positions = before ? [before] : [];
     records.slice(start).forEach(function (m) {
-      var been = seen[m.from] || [m.from];
-      if (been.indexOf(m.to) >= 0) n++;
+      var been = seen[m.from] || [m.from], repeat = !!m.fen && positions.indexOf(m.fen) >= 0;
+      if (m.fen) positions.push(m.fen);
+      if (been.indexOf(m.to) >= 0 && !repeat) n++;
       delete seen[m.from];
       seen[m.to] = been.concat([m.to]);
     });
@@ -99,9 +103,9 @@
   // Can the special board count (ข้อ ข 4.2) be asked for now? Unpromoted pawns are still on the board, nothing is
   // being counted yet, and the shape no longer changes (see above), judged from the game's move records. The time
   // condition (under 5 minutes) is left out: the games here have no clock.
-  function canRequestSpecialCount(pieces, current, records) {
+  function canRequestSpecialCount(pieces, current, records, startFen) {
     if (current || !hasPawns(pieces)) return false;
-    return (quietPlies(records) >= LOCKED_PLIES && pawnsLocked(pieces)) || shuffleMoves(records) > SHUFFLES;
+    return (quietPlies(records) >= LOCKED_PLIES && pawnsLocked(pieces)) || shuffleMoves(records, startFen) > SHUFFLES;
   }
   function requestSpecialCount(side, pieces) {
     return { kind: 'board', counter: side, value: null, start: 1, ceiling: 64, extra: false, draw: false, special: true, lone: loneSide(pieces) };

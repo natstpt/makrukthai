@@ -94,6 +94,18 @@ eq(P.nextCount(null, board('K:e1 R:a1 P:c3 k:e8'), 'white'), null, 'no count wit
   eq(P.canRequestSpecialCount(free, null, shuffle(4)), false, '3 moves back: not yet');
   eq(P.canRequestSpecialCount(free, null, shuffle(5)), true, 'more than 3 moves back: the button comes up');
   eq(P.canRequestSpecialCount(free, null, [...shuffle(5), { piece: 'pawn', capture: null, from: 'ช5', to: 'ช4' }]), false, 'a pawn move starts again');
+  // Exact repeats (the same positions again) do not count: the threefold-repetition draw handles them.
+  { let ps = free, side = 'white'; const recs = [];
+    const walk = (list) => list.forEach(m => { const from = at(m.slice(0, 2)), to = at(m.slice(2)), rec = N.formatMove(ps, from, to);
+      ps = R.applyMove(ps, from, to); side = side === 'white' ? 'black' : 'white'; rec.fen = M.fen({ pieces: ps, turn: side }); recs.push(rec); });
+    walk(['h1g1', 'a8b8', 'g1h1', 'b8a8', 'h1g1', 'a8b8', 'g1h1']);
+    eq(P.shuffleMoves(recs, M.fen({ pieces: free, turn: 'white' })), 1, 'kings to and fro on the same squares: only the first return is a new position');
+    eq(P.canRequestSpecialCount(free, null, recs, M.fen({ pieces: free, turn: 'white' })), false, 'exact repeats: no button');
+    // Red's king wanders while white's goes back and forth: returns into new positions count.
+    recs.length = 0; ps = free; side = 'white';
+    walk(['h1g1', 'a8b8', 'g1h1', 'b8b7', 'h1g1', 'b7c7', 'g1h1', 'c7c8', 'h1g1']);
+    eq(P.shuffleMoves(recs, M.fen({ pieces: free, turn: 'white' })), 4, 'to and fro without repeating a position');
+    eq(P.canRequestSpecialCount(free, null, recs, M.fen({ pieces: free, turn: 'white' })), true, 'more than 3: the button comes up'); }
   eq(P.canRequestSpecialCount(free, null, [...shuffle(5), { piece: 'knight', capture: 'khon', from: 'ง3', to: 'จ2' }]), false, 'a capture starts again');
   // The reported opening (8 moves each, pawns still free, pieces developing): no special count, and equal
   // material compares equal.
