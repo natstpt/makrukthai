@@ -105,7 +105,7 @@
   function countText(c, sideName) {
     if (!c) return '';
     var who = sideName ? sideName(c.counter) : '', name = c.kind === 'board' ? 'นับศักดิ์กระดาน' + (c.special ? 'กรณีพิเศษ' : '') : 'นับศักดิ์หมาก';
-    if (c.draw) return who + 'นับ ' + (c.ceiling + 1) + ' เกิน ' + c.ceiling + ' · เสมอ';
+    if (c.draw) return who + 'นับเกิน ' + c.ceiling + ' · เสมอ';
     return c.value === null ? who + 'เริ่ม' + name + (c.kind === 'piece' ? ' ' + c.start + ' ถึง ' + c.ceiling : ' 1 ถึง 64') : who + name + ' ' + c.value + '/' + c.ceiling;
   }
 
