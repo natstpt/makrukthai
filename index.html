@@ -597,7 +597,7 @@
     /* No double-tap zoom on controls and text either (the board keeps touch-action:none for dragging). */
     button,a,summary,label,.square,.lessonPanel,.lessonFoot,.mobileCoachRow,.overlay{touch-action:manipulation}
   </style>
-</head>
+<script src="piece-colors.js?v=20261014-preload"></script></head>
 <body>
 <div class="app">
   <header class="topbar">
@@ -816,7 +816,7 @@
 </div>
 
 <div class="overlay" id="notationHelpOverlay"><div class="modal infoModal" role="dialog" aria-modal="true" aria-labelledby="notationHelpTitle" tabindex="-1"><div class="modalHead"><h2 id="notationHelpTitle">ตารางช่วยจำการจดหมาก</h2><button type="button" data-close="notationHelpOverlay" aria-label="ปิด">×</button></div><div class="modalBody"><p>อ่านทีละส่วน: ชื่อหมาก → ช่องเริ่ม → เดินหรือกิน → ช่องที่ไป</p><table class="notationTable"><thead><tr><th>ชื่อย่อ</th><th>ตัวหมาก</th></tr></thead><tbody><tr><td><img src="assets/pieces/makruk/ada/wK.svg" alt="">ข.</td><td>ขุน</td></tr><tr><td><img src="assets/pieces/makruk/ada/wR.svg" alt="">ร.</td><td>เรือ</td></tr><tr><td><img src="assets/pieces/makruk/ada/wN.svg" alt="">ม.</td><td>ม้า</td></tr><tr><td><img src="assets/pieces/makruk/ada/wB.svg" alt="">ค.</td><td>โคน</td></tr><tr><td><img src="assets/pieces/makruk/ada/wQ.svg" alt="">ม็.</td><td>เม็ด</td></tr><tr><td><img src="assets/pieces/makruk/ada/wP.svg" alt="">บ.</td><td>เบี้ย</td></tr><tr><td><img src="assets/pieces/makruk/ada/wF.svg" alt="">ง.</td><td>เบี้ยหงาย</td></tr></tbody></table><p><b>-</b> เดิน · <b>×</b> กิน · <b>+</b> รุก · <b>#</b> รุกจน</p><p><b>ม.ข1 - ง2</b><br>ม้าเดินจาก ข1 ไป ง2</p><p><b>ร.ก4 × บ.ง4</b><br>เรือจาก ก4 กินเบี้ยที่ ง4</p><p>เติม + ท้ายบันทึกเมื่อรุก หรือ # เมื่อรุกจน<br>รุกจน หมายถึงขุนถูกรุกและไม่มีวิธีแก้ให้ปลอดภัย</p><p>เบี้ยถึงแถวหงาย: จดตาที่เดินด้วย บ. แล้วตาถัดไปใช้ ง. ไม่มีการเลือกเปลี่ยนเป็นตัวอื่น</p><p>ผลเกม: <b>1-0</b> ขาวชนะ · <b>0-1</b> แดงชนะ · <b>½-½</b> เสมอ (เขียน 0.5-0.5 ได้)</p><p>จุดหลังชื่อย่อช่วยแยกชื่อหมากจากชื่อช่อง หนังสือบางเล่มใช้ X หรือ x แทน × ซึ่งหมายถึงกินเหมือนกัน</p></div></div></div>
-<script src="piece-colors.js?v=20261011-colors"></script>
+
 <script src="makruk-rules.js?v=20261004-learn"></script>
 <script src="makruk-notation.js?v=20261004-practice5"></script>
 <script src="day2-lessons.js?v=20261005-feedback"></script>

@@ -112,3 +112,5 @@ html.blackPieces .playerDot:not(.white){background:#262626;box-shadow:0 0 0 2px 
 .switchRow input::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#f2ebd7;transition:transform .2s}
 .switchRow input:checked{background:#6aa84f}.switchRow input:checked::after{transform:translateX(20px)}
 .moveRating{position:absolute;right:3px;top:50%;transform:translateY(-50%);padding:0 8px;border-radius:9px;font-size:12px;font-weight:800;line-height:18px;white-space:nowrap;background:#3f7d3a;color:#fff}.moveRating.warn{background:#c2902a}.moveRating.bad{background:#c0392b}
+/* Until every piece picture is loaded (piece-colors.js) the board stays hidden, so no piece pops in during play. */
+.piecesLoading #board,.piecesLoading #arrowLayer{visibility:hidden}
