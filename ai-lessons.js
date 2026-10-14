@@ -1,5 +1,5 @@
-/* Play-the-computer chapter (lessons before เล่นจริง): one lesson per AI level. Each teaches how that AI plays and
-   what to watch for, then the learner plays one whole game on the AI page (editor.html?play=ai&level=…&lesson=…).
+/* Play-the-computer chapter (lessons before เล่นจริง): one lesson per AI level. The lesson page skips the teaching
+   steps and opens the game at once; the learner plays one whole game on the AI page (editor.html?play=ai&level=…&lesson=…).
    The AI page records finished games in localStorage (makrukAiGames); a lesson passes after one finished game at its
    level, whether it was won, lost or drawn. */
 (function(root){
