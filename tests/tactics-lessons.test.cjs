@@ -63,4 +63,24 @@ for (const l of lessons) {
     tasks++;
   }
 }
-console.log('Tactics verified: ' + lessons.length + ' lessons, ' + tasks + ' tasks, ' + lines + ' solved lines.');
+// Teaching steps follow one game on one board (lessons 47–53 at least): each board is the one before, or that board
+// after one legal move, and the moves alternate sides. The teaching game is not a practice task's position, so the
+// tactic puzzles are still for the learner to find (the opening lessons' tasks take several answers).
+const squareKey = p => p.side + p.piece + p.at.r + ',' + p.at.c, sameBoard = (a, b) => a.map(squareKey).sort().join() === b.map(squareKey).sort().join();
+let teachingMoves = 0;
+for (const l of lessons.filter(l => l.id !== 'tactic-discovered')) {
+  let mover = null;
+  l.teachingBoards.forEach((s, i) => {
+    if (i === 0) return;
+    const prev = l.teachingBoards[i - 1].pieces;
+    if (sameBoard(prev, s.pieces)) return;
+    const label = l.id + ' board ' + (i + 1);
+    const move = ['white', 'black'].flatMap(side => R.legalMoves(prev, side).map(m => ({ side, m }))).find(x => sameBoard(R.applyMove(prev, x.m.from, x.m.to), s.pieces));
+    assert(move, label + ': one legal move after the board before');
+    assert.notEqual(move.side, mover, label + ': the sides take turns');
+    mover = move.side; teachingMoves++;
+  });
+  for (const t of l.games.filter(t => t.kind === 'win')) assert(!l.teachingBoards.some(s => sameBoard(s.pieces, t.pieces)), l.id + ': teaching does not show task ' + t.key);
+}
+assert(teachingMoves >= 25, 'teaching games show their moves');
+console.log('Tactics verified: ' + lessons.length + ' lessons, ' + tasks + ' tasks, ' + lines + ' solved lines, ' + teachingMoves + ' teaching moves one at a time.');
