@@ -23,7 +23,13 @@
   // Counting to a draw (กติกา ข้อ ก 5) while playing; kept in the undo history with the position.
   var count=null;
   function startCount(){count=P.nextCount(null,state.pieces,opponent(state.turn));}
-  function playStatus(){var s=R.gameStatus(state.pieces,state.turn);return s.state==='playing'&&count&&count.draw?{state:'countdraw',check:s.check}:s;}
+  function playStatus(){var s=R.gameStatus(state.pieces,state.turn);return s.state!=='playing'?s:count&&count.draw?{state:'countdraw',check:s.check}:repetitions(M.fen(state))>=3?{state:'repetition',check:s.check}:s;}
+  // Draw by repetition: the same position (pieces and side to move) a third time, at any point of the game, ends it.
+  // Each move record keeps the position after it (fen) and its key (uci).
+  function repetitions(fen){return (trial&&M.fen(trial.state)===fen?1:0)+moves.filter(function(m){return m.fen===fen;}).length;}
+  // The special board count (ข้อ ข 4.2) is asked for while unpromoted pawns are still on the board.
+  function canAskSpecial(){return P.canRequestSpecialCount(state.pieces,count,P.quietPlies(moves));}
+  function askCount(side){count=P.canRequestBoardCount(state.pieces,count)?P.requestBoardCount(side):P.requestSpecialCount(side,state.pieces);}
   var aiTimer=0,aiSearch=0,E=window.MakrukEngine,engine={state:'off',progress:0};
   function hardAi(){return !!game&&!!game.ai&&game.level==='hard'&&engine.state!=='failed';}
   function cancelAi(){clearTimeout(aiTimer);aiTimer=0;aiSearch++;}
@@ -37,8 +43,8 @@
       .then(function(){engine.state='ready';render();},function(e){engine.state='failed';engine.reason=(e&&e.reason)||'เบราว์เซอร์นี้ยังไม่รองรับ';render();scheduleAi();});
   }
   $('requestCount').addEventListener('click',function(){
-    if(!P.canRequestBoardCount(state.pieces,count))return;
-    remember();count=P.requestBoardCount(state.turn);render();
+    if(!P.canRequestBoardCount(state.pieces,count)&&!canAskSpecial())return;
+    remember();askCount(state.turn);render();
   });
   function scheduleAi(){
     cancelAi();
@@ -50,11 +56,15 @@
     if(hard&&!book)game.bookDone=true;
     aiTimer=setTimeout(function(){
       aiTimer=0;if(token!==aiSearch||!aiTurn())return;
-      if(P.canRequestBoardCount(state.pieces,count)&&P.material(state.pieces,state.turn)<P.material(state.pieces,opponent(state.turn)))count=P.requestBoardCount(state.turn);
-      var easy=function(){var move=P.chooseMove(state.pieces,state.turn,{count:count,mistakes:game.level==='easy'?0.35:0});if(move)playMove(move.from,move.to);};
+      if((P.canRequestBoardCount(state.pieces,count)||canAskSpecial())&&P.material(state.pieces,state.turn)<P.material(state.pieces,opponent(state.turn)))askCount(state.turn);
+      var repeats=function(ps,turn){return repetitions(M.fen({pieces:ps,turn:turn}));};
+      var easy=function(){var move=P.chooseMove(state.pieces,state.turn,{count:count,repeats:repeats,mistakes:game.level==='easy'?0.35:0});if(move)playMove(move.from,move.to);};
       if(!hard){easy();return;}
       if(book){playMove(book.from,book.to);return;}
-      E.bestMove(M.fen(state)).then(function(key){
+      // The engine gets the moves since the last pawn move or capture (no position before it can come back), so it
+      // sees the repetitions and never needs a promotion suffix.
+      var since=moves.length;while(since>0&&moves[since-1].piece!=='pawn'&&!moves[since-1].capture)since--;
+      E.bestMove(since?moves[since-1].fen:M.fen(trial.state),moves.slice(since).map(function(m){return m.uci;})).then(function(key){
         if(token!==aiSearch||!aiTurn())return;
         var move=key&&R.legalMoves(state.pieces,state.turn).find(function(m){return moveKey(m)===key;});
         if(move)playMove(move.from,move.to);else easy();
@@ -231,14 +241,16 @@
       message('');
     }else{
       // Play mode shows no help text under the board: the turn line beside the move record says whose move it is.
-      $('turnHeading').textContent=status.state==='checkmate'?'รุกจน · '+sideName(status.winner)+'ชนะ':status.state==='playing'?(aiTurn()?(hardAi()&&engine.state==='loading'?'กำลังโหลด AI ระดับยาก'+(engine.progress?' '+engine.progress+'%':'…'):'AI ('+sideName(state.turn)+') กำลังคิด'):sideName(state.turn)+'เดิน')+(status.check?' · รุก!':''):status.state==='stalemate'?'อับ · เสมอ':status.state==='countdraw'?'นับครบ · เสมอ':'เสมอ';
+      $('turnHeading').textContent=status.state==='checkmate'?'รุกจน · '+sideName(status.winner)+'ชนะ':status.state==='playing'?(aiTurn()?(hardAi()&&engine.state==='loading'?'กำลังโหลด AI ระดับยาก'+(engine.progress?' '+engine.progress+'%':'…'):'AI ('+sideName(state.turn)+') กำลังคิด'):sideName(state.turn)+'เดิน')+(status.check?' · รุก!':''):status.state==='stalemate'?'อับ · เสมอ':status.state==='countdraw'?'นับครบ · เสมอ':status.state==='repetition'?'เดินซ้ำ 3 ครั้ง · เสมอ':'เสมอ';
       $('countLine').textContent=P.countText(count,sideName)+(count&&count.extra&&!count.draw&&status.state==='playing'?' · ฝ่าย'+sideName(opponent(count.counter))+'เหลือตาสุดท้าย':'');$('countLine').hidden=!count;$('countLine').classList.toggle('alert',!!count&&(count.extra||count.value>=count.ceiling-3));
-      // Board count: only the weaker side (or an even side) may ask for it, on its own turn.
-      var mayAsk=status.state==='playing'&&!aiTurn()&&P.canRequestBoardCount(state.pieces,count)&&P.material(state.pieces,state.turn)<=P.material(state.pieces,opponent(state.turn));
-      $('requestCount').hidden=!mayAsk;$('requestCount').textContent='ฝ่าย'+sideName(state.turn)+'ขอนับศักดิ์กระดาน';
+      // Board count (or the special one while pawns are left): only the weaker side (or an even side) may ask for it,
+      // on its own turn.
+      var special=canAskSpecial(),mayAsk=status.state==='playing'&&!aiTurn()&&(P.canRequestBoardCount(state.pieces,count)||special)&&P.material(state.pieces,state.turn)<=P.material(state.pieces,opponent(state.turn));
+      $('requestCount').hidden=!mayAsk;$('requestCount').textContent='ฝ่าย'+sideName(state.turn)+'ขอนับศักดิ์กระดาน'+(special?'กรณีพิเศษ (ข้อ ข 4.2)':'');
+      $('requestCount').title=special?'ยังมีเบี้ยคว่ำแต่รูปหมากไม่เปลี่ยน: นับ 1 ถึง 64 ถ้ายังไม่มีผลแพ้ชนะ เสมอ':'';
       $('turnHeading').classList.toggle('alert',status.state!=='playing'||!!status.check);
       $('instruction').textContent=status.state==='playing'?(status.check?'รุก! ต้องเดินให้ขุนพ้นจากการรุก':'ตาฝ่าย'+sideName(state.turn)+' ลากหรือแตะหมากไปช่องที่มีจุด'):'จบตำแหน่งนี้แล้ว ย้อนกลับเพื่อทดลองทางอื่นได้';
-      message((status.state==='checkmate'?'รุกจน — ฝ่าย'+sideName(status.winner)+'ชนะ':status.state==='stalemate'?'เสมอเพราะอับ — ไม่มีตาเดินและขุนไม่ถูกรุก':status.state==='draw'?'เสมอ — เหลือขุนทั้งสองฝ่าย':status.state==='countdraw'?'เสมอ — นับครบตามกติกาแล้วยังไม่รุกจน':status.check?'ขุน'+sideName(state.turn)+'กำลังถูกรุก':engine.reason?'AI ระดับยากใช้ไม่ได้: '+engine.reason:'')+(game&&game.lesson&&status.state!=='playing'?' · กด “← บทเรียน” เพื่อกลับไปผ่านบท':''),!!engine.reason&&!status.check);
+      message((status.state==='checkmate'?'รุกจน — ฝ่าย'+sideName(status.winner)+'ชนะ':status.state==='stalemate'?'เสมอเพราะอับ — ไม่มีตาเดินและขุนไม่ถูกรุก':status.state==='draw'?'เสมอ — เหลือขุนทั้งสองฝ่าย':status.state==='countdraw'?'เสมอ — นับครบตามกติกาแล้วยังไม่รุกจน':status.state==='repetition'?'เสมอ — ตำแหน่งเดิมเกิดขึ้นครบ 3 ครั้ง':status.check?'ขุน'+sideName(state.turn)+'กำลังถูกรุก':engine.reason?'AI ระดับยากใช้ไม่ได้: '+engine.reason:'')+(game&&game.lesson&&status.state!=='playing'?' · กด “← บทเรียน” เพื่อกลับไปผ่านบท':''),!!engine.reason&&!status.check);
     }
     renderMoves();scheduleFit();
   }
@@ -294,6 +306,7 @@
     if(!R.legalDestinations(state.pieces,from).some(function(to){return same(to,at);})){message('เดินช่องนี้ไม่ได้ ลองเลือกช่องที่มีจุดสีเขียว',true);sound.playResult('failure');return;}
     remember();var record=N.formatMove(state.pieces,from,at);
     var mover=state.turn;state.pieces=R.applyMove(state.pieces,from,at);state.turn=opponent(state.turn);count=P.nextCount(count,state.pieces,mover);last={from:from,to:at};selected=null;
+    record.fen=M.fen(state);record.uci=moveKey({from:from,to:at});
     var result=playStatus();
     moves.push(record);
     render();sound.queueMove({from:from,to:at,check:result.check,skipAnimation:true});sound.flush();if(!dragged)animateMove(from,at);

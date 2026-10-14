@@ -30,32 +30,65 @@
   // Only the weaker side counts, one more each time it moves (both sides have moved once).
   // Board count (ศักดิ์กระดาน): no unpromoted pawns and both sides still have pieces; it starts only when the weaker
   // side asks for it (requestBoardCount), counting 1 on its next move up to 64.
+  // Special board count (ข้อ ข 4.2): asked for while unpromoted pawns are still on the board but the shape no longer
+  // changes (requestSpecialCount); it counts 1 to 64 the same way and carries on if the pawns go.
   // Piece count (ศักดิ์หมาก): starts by itself when one side has only its king; the lone king says the number of
   // pieces + 1 on its first move, up to the ceiling of the chasing side's pieces. A capture never restarts it.
+  // A board count switches to it when a capture leaves a lone king (not for a king that was already alone when the
+  // special count was asked for).
   // In both, once the counting side has said the last number (64 or the ceiling) the other side has one more move;
   // if it does not mate, the counting side would say one more (65, or ceiling + 1) and the game is drawn.
   function nextCount(current, pieces, mover) {
-    if (pieces.some(function (p) { return p.piece === 'pawn'; })) return null;
+    if (hasPawns(pieces) && !(current && current.special)) return null;
     var white = pieces.filter(function (p) { return p.side === 'white'; }).length;
     var black = pieces.length - white;
     if (white === 1 && black === 1) return current; // bare kings: MakrukRules reports the draw
     var c = current ? Object.assign({}, current) : null;
-    var lone = white === 1 ? 'white' : black === 1 ? 'black' : null;
-    if (lone && (!c || c.kind !== 'piece'))
-      return { kind: 'piece', counter: lone, value: null, start: pieces.length + 1, ceiling: ceilingFor(pieces, opponent(lone)), extra: false, draw: false };
+    var lone = loneSide(pieces);
+    if (lone && (!c || c.kind !== 'piece') && !(c && c.lone === lone))
+      return { kind: 'piece', counter: lone, value: null, start: pieces.length + 1, ceiling: ceilingFor(pieces, opponent(lone)), extra: false, draw: false, special: !!(c && c.special) };
     if (!c) return null; // board count: only on request
     if (mover === c.counter) return advance(c);
     if (c.extra) c.draw = true; // the other side used its last move without mate
     return c;
   }
+  function hasPawns(pieces) { return pieces.some(function (p) { return p.piece === 'pawn'; }); }
+  function loneSide(pieces) {
+    var white = pieces.filter(function (p) { return p.side === 'white'; }).length, black = pieces.length - white;
+    return white === 1 ? 'white' : black === 1 ? 'black' : null;
+  }
   // Can a board count be asked for now (no pawns left, both sides still have more than a king, not counting yet)?
   function canRequestBoardCount(pieces, current) {
-    if (current || pieces.some(function (p) { return p.piece === 'pawn'; })) return false;
+    if (current || hasPawns(pieces)) return false;
     var white = pieces.filter(function (p) { return p.side === 'white'; }).length;
     return white > 1 && pieces.length - white > 1;
   }
   // `side` (the weaker side) asks for the board count; it says 1 on its next move.
   function requestBoardCount(side) { return { kind: 'board', counter: side, value: null, start: 1, ceiling: 64, extra: false, draw: false }; }
+  // Plies since the last pawn move or capture, from the move records (makruk-notation.js) of the game so far.
+  function quietPlies(records) {
+    var n = 0;
+    for (var i = records.length - 1; i >= 0 && records[i].piece !== 'pawn' && !records[i].capture; i--) n++;
+    return n;
+  }
+  // No unpromoted pawn of either side has a move (pawns locked head to head, ข้อ ข 4.2's example).
+  function pawnsLocked(pieces) {
+    return ['white', 'black'].every(function (side) {
+      return !R.legalMoves(pieces, side).some(function (m) { var p = pieces.find(function (x) { return same(x.at, m.from); }); return p.piece === 'pawn'; });
+    });
+  }
+  // The shape no longer changes once this many plies (5 moves each) pass without a pawn move or a capture.
+  var QUIET_PLIES = 10;
+  // Can the special board count (ข้อ ข 4.2) be asked for now? Unpromoted pawns are still on the board, nothing is
+  // being counted yet, and the shape no longer changes: the pawns are locked, or nobody has moved a pawn or captured for QUIET_PLIES plies. The time condition (under 5 minutes) is left out:
+  // the games here have no clock.
+  function canRequestSpecialCount(pieces, current, quiet) {
+    if (current || !hasPawns(pieces)) return false;
+    return pawnsLocked(pieces) || quiet >= QUIET_PLIES;
+  }
+  function requestSpecialCount(side, pieces) {
+    return { kind: 'board', counter: side, value: null, start: 1, ceiling: 64, extra: false, draw: false, special: true, lone: loneSide(pieces) };
+  }
   function advance(c) {
     c.value = c.value === null ? c.start : c.value + 1;
     if (c.value >= c.ceiling) c.extra = true;
@@ -65,7 +98,7 @@
   // Short text for the turn line, e.g. "แดงนับศักดิ์หมาก 7/16".
   function countText(c, sideName) {
     if (!c) return '';
-    var who = sideName ? sideName(c.counter) : '', name = c.kind === 'board' ? 'นับศักดิ์กระดาน' : 'นับศักดิ์หมาก';
+    var who = sideName ? sideName(c.counter) : '', name = c.kind === 'board' ? 'นับศักดิ์กระดาน' + (c.special ? 'กรณีพิเศษ' : '') : 'นับศักดิ์หมาก';
     if (c.draw) return who + 'นับ ' + (c.ceiling + 1) + ' เกิน ' + c.ceiling + ' · เสมอ';
     return c.value === null ? who + 'เริ่ม' + name + (c.kind === 'piece' ? ' ' + c.start + ' ถึง ' + c.ceiling : ' 1 ถึง 64') : who + name + ' ' + c.value + '/' + c.ceiling;
   }
@@ -134,7 +167,8 @@
   }
 
   // Pick a move for `side`: mate at once, never allow a mate in one, weigh captures by the exchange that follows,
-  // keep pieces from hanging, and add a little variety so games differ. options.random: 0..1 (default Math.random).
+  // keep pieces from hanging, avoid a third repetition when ahead, and add a little variety so games differ.
+  // options.random: 0..1 (default Math.random).
   function chooseMove(pieces, side, options) {
     options = options || {};
     var random = options.random || Math.random, enemy = opponent(side);
@@ -146,6 +180,8 @@
       var moving = pieces.find(function (p) { return same(p.at, move.from); });
       var taken = pieces.find(function (p) { return same(p.at, move.to); });
       var after = R.applyMove(pieces, move.from, move.to), status = R.gameStatus(after, enemy);
+      // options.repeats(position, side to move): how often that position has stood before; a third time is a draw.
+      if (status.state === 'playing' && options.repeats && options.repeats(after, enemy) >= 2) status = { state: 'repetition' };
       var score;
       if (status.state === 'checkmate') score = 10000;
       else if (status.state !== 'playing') score = ahead > 1 ? -500 : ahead < -1 ? 300 : 0; // a draw: avoid it when ahead
@@ -213,5 +249,5 @@
     });
   }
 
-  return { canRequestBoardCount: canRequestBoardCount, requestBoardCount: requestBoardCount, material: material, VALUES: VALUES, OPENING: OPENING, openingMove: openingMove, openingMoves: openingMoves, openingChoice: openingChoice, ceilingFor: ceilingFor, nextCount: nextCount, countText: countText, exchange: exchange, chooseMove: chooseMove };
+  return { canRequestBoardCount: canRequestBoardCount, requestBoardCount: requestBoardCount, canRequestSpecialCount: canRequestSpecialCount, requestSpecialCount: requestSpecialCount, quietPlies: quietPlies, pawnsLocked: pawnsLocked, QUIET_PLIES: QUIET_PLIES, material: material, VALUES: VALUES, OPENING: OPENING, openingMove: openingMove, openingMoves: openingMoves, openingChoice: openingChoice, ceilingFor: ceilingFor, nextCount: nextCount, countText: countText, exchange: exchange, chooseMove: chooseMove };
 });

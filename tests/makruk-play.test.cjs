@@ -62,6 +62,43 @@ eq([c.kind, c.counter, c.value, c.ceiling], ['piece', 'black', null, 16], 'lone 
 // No counting while unpromoted pawns are on the board.
 eq(P.nextCount(null, board('K:e1 R:a1 P:c3 k:e8'), 'white'), null, 'no count with pawns');
 
+// Special board count (ข้อ ข 4.2): unpromoted pawns are still on the board but the shape no longer changes.
+{ const quiet = n => Array.from({ length: n }, () => ({ piece: 'knight', capture: null }));
+  eq(P.quietPlies([{ piece: 'pawn' }, ...quiet(3)]), 3, 'plies since the last pawn move');
+  eq(P.quietPlies([...quiet(4), { piece: 'rook', capture: 'knight' }]), 0, 'a capture changes the shape');
+  // Pawns head to head (ง4 against ง5) cannot move: the shape is locked, so the count may be asked for at once.
+  const locked = board('K:e1 R:a1 P:d4 k:e8 n:b8 p:d5');
+  eq(P.pawnsLocked(locked), true, 'pawns head to head are locked');
+  eq(P.canRequestSpecialCount(locked, null, 0), true, 'locked pawns: special count at once');
+  eq(P.canRequestBoardCount(locked, null), false, 'not the ordinary board count while pawns are left');
+  // A pawn that could still move: only after QUIET_PLIES plies without a pawn move or capture.
+  const free = board('K:h1 k:a8 n:d3 b:e2 p:g5');
+  eq(P.pawnsLocked(free), false, 'a free pawn is not locked');
+  eq(P.canRequestSpecialCount(free, null, P.QUIET_PLIES - 1), false, 'the shape still changed recently');
+  eq(P.canRequestSpecialCount(free, null, P.QUIET_PLIES), true, 'the shape has not changed for 5 moves each');
+  eq(P.canRequestSpecialCount(board('K:e1 R:a1 k:e8 r:h8'), null, 20), false, 'no pawns: the ordinary board count instead');
+  // White's lone king asks (the red pawn on ช4 is never promoted): white says 1 on its move, up to 64, then draw.
+  let s = P.requestSpecialCount('white', free);
+  eq([s.kind, s.special, s.counter, s.lone], ['board', true, 'white', 'white'], 'special count asked by the lone king');
+  s = P.nextCount(s, free, 'white'); eq(s.value, 1, 'counts 1 even with pawns on the board');
+  eq(P.countText(s, x => x === 'white' ? 'ขาว' : 'แดง'), 'ขาวนับศักดิ์กระดานกรณีพิเศษ 1/64', 'special count text');
+  for (let n = 2; n <= 64; n++) { s = P.nextCount(s, free, 'black'); s = P.nextCount(s, free, 'white'); }
+  eq([s.value, s.extra, s.draw], [64, true, false], 'white says 64: red has one more move');
+  s = P.nextCount(s, free, 'black'); eq(s.draw, true, 'no mate: a draw');
+  // The pawn is promoted after the count began: the count carries on, it does not start again or switch.
+  s = P.nextCount(P.nextCount(P.requestSpecialCount('white', free), free, 'white'), board('K:h1 k:a8 n:d3 b:e2 f:g3'), 'black');
+  eq([s.kind, s.value], ['board', 1], 'no pawns left: the special count goes on');
+  // Both sides had pieces: a capture that leaves a lone king switches to the piece count.
+  s = P.nextCount(P.requestSpecialCount('white', locked), locked, 'white');
+  s = P.nextCount(s, board('K:e1 k:e8 n:a1 p:d5'), 'black');
+  eq([s.kind, s.counter, s.ceiling], ['piece', 'white', 64], 'lone king: switch to the piece count');
+  s = P.nextCount(s, board('K:e2 k:e8 n:a1 p:d5'), 'white'); eq(s.value, 5, 'piece count goes on with pawns left'); }
+
+// Repetition: a move that would bring a position back a third time counts as a draw for the computer.
+{ const ps = board('K:a1 R:h1 k:a8 r:h8 P:c3 p:c6');
+  const avoid = key(P.chooseMove(ps, 'white', { random: fixed, repeats: (after) => after.some(p => p.piece === 'rook' && p.side === 'white' && p.at.r === 7 && p.at.c === 6) ? 2 : 0 }));
+  assert.notEqual(avoid, 'h1g1', 'ahead: avoids the move that repeats a third time'); checks++; }
+
 // The computer player.
 eq(key(P.chooseMove(board('K:f6 R:a1 k:h8'), 'white', { random: fixed })), 'a1a8', 'mates in one');
 eq(key(P.chooseMove(board('K:e1 R:a1 k:e8 n:a5'), 'white', { random: fixed })), 'a1a5', 'takes a free knight');

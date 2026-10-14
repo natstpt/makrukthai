@@ -130,7 +130,9 @@
 
   // The best move for the side to move in fen, as 'e3e4' (promotion suffixes dropped), within 1 second; null when
   // the engine has not answered by then. Searches run one at a time, so a late answer never reaches the next search.
-  function bestMove(fen) {
+  // moves (optional, 'e3e4' keys played from fen) let the engine see positions that already stood, so it knows a
+  // third repetition is a draw.
+  function bestMove(fen, moves) {
     var searched, searchDone = new Promise(function (r) { searched = r; }), before = busy;
     busy = searchDone;
     return before.then(function () { return start(); }).then(function () {
@@ -142,7 +144,7 @@
         };
         var stop = line.stops ? setTimeout(function () { line.post('stop'); }, 950) : 0;
         var give = setTimeout(function () { resolve(null); }, 1000);
-        line.post('position fen ' + fen);
+        line.post('position fen ' + fen + (moves && moves.length ? ' moves ' + moves.join(' ') : ''));
         line.post('go movetime ' + line.think);
       });
     }, function (e) { searched(); throw e; });
