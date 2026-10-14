@@ -247,7 +247,7 @@
       // Board count: only the weaker side (or an even side) may ask for it, on its own turn. The special count
       // (ข้อ ข 4.2, pawns still on the board) may be asked for by either side ("ฝ่ายที่ต้องการนับ").
       var special=canAskSpecial(),mayAsk=status.state==='playing'&&!aiTurn()&&(special||P.canRequestBoardCount(state.pieces,count)&&P.material(state.pieces,state.turn)<=P.material(state.pieces,opponent(state.turn)));
-      $('requestCount').hidden=!mayAsk;$('requestCount').textContent='ฝ่าย'+sideName(state.turn)+'ขอนับศักดิ์กระดาน'+(special?'กรณีพิเศษ (ข้อ ข 4.2)':'');
+      $('requestCount').hidden=!mayAsk;$('requestCount').textContent=special?'นับเพื่อเสมอ กรณีพิเศษ':'ฝ่าย'+sideName(state.turn)+'ขอนับศักดิ์กระดาน';
       $('requestCount').title=special?'ยังมีเบี้ยคว่ำแต่รูปหมากไม่เปลี่ยน: นับ 1 ถึง 64 ถ้ายังไม่มีผลแพ้ชนะ เสมอ':'';
       $('turnHeading').classList.toggle('alert',status.state!=='playing'||!!status.check);
       $('instruction').textContent=status.state==='playing'?(status.check?'รุก! ต้องเดินให้ขุนพ้นจากการรุก':'ตาฝ่าย'+sideName(state.turn)+' ลากหรือแตะหมากไปช่องที่มีจุด'):'จบตำแหน่งนี้แล้ว ย้อนกลับเพื่อทดลองทางอื่นได้';
@@ -482,5 +482,7 @@
   }
   if(game&&game.ai&&game.level==='hard')loadEngine();
   render();if(notice)message(notice,notice!=='เปิดตำแหน่งจากลิงก์แชร์แล้ว');
-  scheduleAi();
+  // The board shows, and the AI starts, once every piece picture is loaded (piece-colors.js), at most 2.5 s.
+  document.body.classList.add('piecesLoading');
+  Promise.race([window.MakrukPieceColors.ready,new Promise(function(r){setTimeout(r,2500);})]).then(function(){document.body.classList.remove('piecesLoading');scheduleAi();});
 })();
