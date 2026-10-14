@@ -42,6 +42,11 @@ c = P.nextCount(c, pieces, 'black'); eq([c.value, c.draw], [17, true], 'red move
 c = P.nextCount(null, board('K:e1 R:a1 R:h1 k:e8'), 'white'); c = P.nextCount(c, board('K:e1 R:a1 R:h1 k:e8'), 'black');
 c = P.nextCount(c, board('K:e1 R:a1 k:h1'), 'black');
 eq([c.value, c.ceiling], [6, 8], 'after the king takes a rook the count and ceiling carry on');
+// A capture on the lone king's first counting move lowers the start: 8 pieces, the king takes one, 7 left, says 8.
+{ const before = board('K:b6 R:d6 N:e2 B:f2 F:a6 F:c6 F:a8 k:b8'), after = board('K:b6 R:d6 N:e2 B:f2 F:a6 F:c6 k:a8');
+  let t = P.nextCount({ kind: 'board', counter: 'black', value: 13, start: 1, ceiling: 64, extra: false, draw: false }, before, 'white');
+  eq([t.kind, t.start, t.ceiling], ['piece', 9, 16], 'board count switches to the piece count');
+  t = P.nextCount(t, after, 'black'); eq([t.value, t.ceiling], [8, 16], 'king captures on its first count: 7 pieces left, says 8'); }
 
 // Board count: no pawns and both sides still have pieces. It only starts when the weaker side asks; that side
 // says 1 on its next move and counts alone. After it says 64 the other side has one more move; then 65 = draw.
