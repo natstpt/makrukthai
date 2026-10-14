@@ -481,5 +481,7 @@
   }
   if(game&&game.ai&&game.level==='hard')loadEngine();
   render();if(notice)message(notice,notice!=='เปิดตำแหน่งจากลิงก์แชร์แล้ว');
-  scheduleAi();
+  // The board shows, and the AI starts, once every piece picture is loaded (piece-colors.js), at most 2.5 s.
+  document.body.classList.add('piecesLoading');
+  Promise.race([window.MakrukPieceColors.ready,new Promise(function(r){setTimeout(r,2500);})]).then(function(){document.body.classList.remove('piecesLoading');scheduleAi();});
 })();

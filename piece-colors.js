@@ -46,5 +46,22 @@
     if (doc.body) start(); else doc.addEventListener('DOMContentLoaded', start);
   }
 
-  root.MakrukPieceColors = { mode: function () { return mode; }, prefix: prefix, choose: choose };
+  // Every piece picture for the chosen colours (white plus red or black, promoted pawn included) is fetched and
+  // decoded when the page opens, so no piece appears late during play, such as the first promoted pawn. The Image
+  // objects are kept so the browser keeps them decoded. `ready` resolves when all are in (or have failed).
+  var kept = [];
+  var ready = Promise.all(['w', mode === 'black' ? 'b' : 'r'].reduce(function (list, side) {
+    return list.concat(['K', 'Q', 'B', 'N', 'R', 'P', 'F'].map(function (piece) {
+      var img = new Image();
+      img.decoding = 'async';
+      img.src = 'assets/pieces/makruk/ada/' + side + piece + '.svg';
+      kept.push(img);
+      return new Promise(function (resolve) {
+        var done = function () { if (img.decode) img.decode().then(resolve, resolve); else resolve(); };
+        if (img.complete) done(); else { img.onload = done; img.onerror = resolve; }
+      });
+    }));
+  }, []));
+
+  root.MakrukPieceColors = { mode: function () { return mode; }, prefix: prefix, choose: choose, ready: ready };
 })(window);
