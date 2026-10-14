@@ -37,7 +37,8 @@
   // A board count switches to it when a capture leaves a lone king (not for a king that was already alone when the
   // special count was asked for).
   // In both, once the counting side has said the last number (64 or the ceiling) the other side has one more move;
-  // if it does not mate, the counting side would say one more (65, or ceiling + 1) and the game is drawn.
+  // if it does not mate, the counting side makes its next move, says one more (65, or ceiling + 1) and the game is
+  // drawn.
   function nextCount(current, pieces, mover) {
     if (hasPawns(pieces) && !(current && current.special)) return null;
     var white = pieces.filter(function (p) { return p.side === 'white'; }).length;
@@ -49,7 +50,6 @@
       return { kind: 'piece', counter: lone, value: null, start: pieces.length + 1, ceiling: ceilingFor(pieces, opponent(lone)), extra: false, draw: false, special: !!(c && c.special) };
     if (!c) return null; // board count: only on request
     if (mover === c.counter) return advance(c);
-    if (c.extra) c.draw = true; // the other side used its last move without mate
     return c;
   }
   function hasPawns(pieces) { return pieces.some(function (p) { return p.piece === 'pawn'; }); }
@@ -95,6 +95,7 @@
     return { kind: 'board', counter: side, value: null, start: 1, ceiling: 64, extra: false, draw: false, special: true, lone: loneSide(pieces) };
   }
   function advance(c) {
+    if (c.extra) { c.value++; c.draw = true; return c; } // past the last number: drawn
     c.value = c.value === null ? c.start : c.value + 1;
     if (c.value >= c.ceiling) c.extra = true;
     return c;

@@ -242,7 +242,7 @@
     }else{
       // Play mode shows no help text under the board: the turn line beside the move record says whose move it is.
       $('turnHeading').textContent=status.state==='checkmate'?'รุกจน · '+sideName(status.winner)+'ชนะ':status.state==='playing'?(aiTurn()?(hardAi()&&engine.state==='loading'?'กำลังโหลด AI ระดับยาก'+(engine.progress?' '+engine.progress+'%':'…'):'AI ('+sideName(state.turn)+') กำลังคิด'):sideName(state.turn)+'เดิน')+(status.check?' · รุก!':''):status.state==='stalemate'?'อับ · เสมอ':status.state==='countdraw'?'นับครบ · เสมอ':status.state==='repetition'?'เดินซ้ำ 3 ครั้ง · เสมอ':'เสมอ';
-      $('countLine').textContent=P.countText(count,sideName)+(count&&count.extra&&!count.draw&&status.state==='playing'?' · ฝ่าย'+sideName(opponent(count.counter))+'เหลือตาสุดท้าย':'');$('countLine').hidden=!count;$('countLine').classList.toggle('alert',!!count&&(count.extra||count.value>=count.ceiling-3));
+      $('countLine').textContent=P.countText(count,sideName)+(count&&count.extra&&!count.draw&&status.state==='playing'&&state.turn!==count.counter?' · ฝ่าย'+sideName(opponent(count.counter))+'เหลือตาสุดท้าย':'');$('countLine').hidden=!count;$('countLine').classList.toggle('alert',!!count&&(count.extra||count.value>=count.ceiling-3));
       // Board count: only the weaker side (or an even side) may ask for it, on its own turn. The special count
       // (ข้อ ข 4.2, pawns still on the board) may be asked for by either side ("ฝ่ายที่ต้องการนับ").
       var special=canAskSpecial(),mayAsk=status.state==='playing'&&!aiTurn()&&(special||P.canRequestBoardCount(state.pieces,count)&&P.material(state.pieces,state.turn)<=P.material(state.pieces,opponent(state.turn)));
