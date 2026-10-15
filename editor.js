@@ -65,7 +65,8 @@
   });
   function scheduleAi(){
     cancelAi();
-    if(!aiTurn()||playStatus().state!=='playing')return;
+    // While an earlier position of the game is on the board (moves to go forward to), the AI waits.
+    if(!aiTurn()||future.length||playStatus().state!=='playing')return;
     var token=aiSearch,hard=engineAi();
     // Engine AI: the opening shape first (ง4 จ4 / ง5 จ5 pawns, then the pieces behind them); once it is done or has
     // to stop, the engine plays the rest of the game. Decided now, so an engine move does not wait the opening delay.
@@ -250,7 +251,7 @@
       status.state==='resign'?'ยอมแพ้ไม่ใช่เรื่องผิด รู้ตัวว่าเสียเปรียบก็เป็นทักษะหนึ่ง ลองดูว่าเริ่มพลาดตั้งแต่ตาไหน เกมหน้าจะเตรียมตัวได้ดีขึ้น':
       lost?'แพ้ไม่เป็นไร ทุกเกมคือบทเรียน ลองดูตาที่พลาด แล้วเกมหน้าจะเล่นได้ดีขึ้นแน่นอน':
       'เสมอกับ AI ระดับ'+level+' ก็เก่งแล้ว ลองดูว่ามีตาไหนที่จะเล่นให้ชนะได้';
-    if(!review||review.length!==moves.length)startReview();else drawReview();
+    if(!review||review.length!==fullLine().length)startReview();else drawReview();
     if(!$('resultDialog').open){
       if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)$('resultDialog').showModal();
       else setTimeout(function(){if(playStatus().state!=='playing'&&!$('resultDialog').open)$('resultDialog').showModal();},status.state==='resign'?0:700);
@@ -263,16 +264,16 @@
   }
   function startReview(){
     stopReview();
-    var job={length:moves.length,fens:[M.fen(trial.state)].concat(moves.map(function(m){return m.fen;})),values:[],bests:[],rated:[],done:0,total:0,stopped:false,error:''};
+    var line=fullLine().slice(),job={length:line.length,line:line,fens:[M.fen(trial.state)].concat(line.map(function(m){return m.fen;})),values:[],bests:[],rated:[],done:0,total:0,stopped:false,error:''};
     review=job;
-    var mine=moves.map(function(m,i){return m.side===game.human?i:-1;}).filter(function(i){return i>=0;});
+    var mine=line.map(function(m,i){return m.side===game.human?i:-1;}).filter(function(i){return i>=0;});
     var need=[];mine.forEach(function(i){if(need.indexOf(i)<0)need.push(i);if(need.indexOf(i+1)<0)need.push(i+1);});
     job.total=need.length;
     if(!E||E.unsupported()||engine.state==='failed'){job.error='เครื่องนี้ใช้ AI วิเคราะห์เกมไม่ได้';drawReview();return;}
     var rate=function(i){
       var clamp=function(v){return Math.max(-1000,Math.min(1000,v));};
       var loss=Math.max(0,clamp(job.values[i])-clamp(-job.values[i+1]));
-      var kind=job.bests[i]===moves[i].uci||loss<=30?'best':loss<=120?'good':'mistake';
+      var kind=job.bests[i]===line[i].uci||loss<=30?'best':loss<=120?'good':'mistake';
       var better=null;
       if(kind==='mistake'&&job.bests[i]){try{better=N.formatMove(M.parse(job.fens[i]).pieces,square(job.bests[i],0),square(job.bests[i],2)).text;}catch(e){}}
       job.rated.push({i:i,kind:kind,loss:loss,better:better});
@@ -302,7 +303,7 @@
     $('reviewText').textContent=job.error||(job.total?'AI กำลังวิเคราะห์ตาเดิน '+job.done+'/'+job.total+' ตำแหน่ง (ลึก '+REVIEW_DEPTH+' ชั้น)':'ยังไม่มีตาเดินของคุณให้วิเคราะห์');
     var list=job.rated.filter(function(r){return r.kind==='mistake';}).sort(function(a,b){return a.i-b.i;});
     $('reviewList').innerHTML=list.length?list.map(function(r){
-      var m=moves[r.i],no=Math.floor((r.i+(trial.state.turn==='white'?0:1))/2)+1;
+      var m=job.line[r.i],no=Math.floor((r.i+(trial.state.turn==='white'?0:1))/2)+1;
       return '<li><b>ตา '+no+'</b> คุณเดิน '+m.text+(r.better?' · ควรเดิน <strong>'+r.better+'</strong>':'')+' <em>(เสีย '+(r.loss/100).toFixed(1)+' เบี้ย)</em></li>';
     }).join(''):(finished&&job.total?'<li class="none">ไม่มีตาที่ผิดพลาด เก่งมาก!</li>':'');
     $('reviewBtn').disabled=!job.rated.length&&!finished;
@@ -387,7 +388,7 @@
       message('');
     }else{
       // Play mode shows no help text under the board: the turn line beside the move record says whose move it is.
-      $('turnHeading').textContent=status.state==='checkmate'?'รุกจน · '+sideName(status.winner)+'ชนะ':status.state==='playing'?(aiTurn()?(engineAi()&&engine.state==='loading'?'กำลังโหลด AI'+(engine.progress?' '+engine.progress+'%':'…'):'AI ('+sideName(state.turn)+') กำลังคิด'):sideName(state.turn)+'เดิน')+(status.check?' · รุก!':''):status.state==='stalemate'?'อับ · เสมอ':status.state==='countdraw'?'นับครบ · เสมอ':status.state==='repetition'?'เดินซ้ำ 3 ครั้ง · เสมอ':status.state==='resign'?'ยอมแพ้ · '+sideName(status.winner)+'ชนะ':'เสมอ';
+      $('turnHeading').textContent=status.state==='checkmate'?'รุกจน · '+sideName(status.winner)+'ชนะ':status.state==='playing'?(aiTurn()?(future.length?'ย้อนดูตาเดิน · ตาของ AI ('+sideName(state.turn)+')':engineAi()&&engine.state==='loading'?'กำลังโหลด AI'+(engine.progress?' '+engine.progress+'%':'…'):'AI ('+sideName(state.turn)+') กำลังคิด'):sideName(state.turn)+'เดิน')+(status.check?' · รุก!':''):status.state==='stalemate'?'อับ · เสมอ':status.state==='countdraw'?'นับครบ · เสมอ':status.state==='repetition'?'เดินซ้ำ 3 ครั้ง · เสมอ':status.state==='resign'?'ยอมแพ้ · '+sideName(status.winner)+'ชนะ':'เสมอ';
       $('countLine').textContent=P.countText(count,sideName)+(count&&count.extra&&!count.draw&&status.state==='playing'&&state.turn!==count.counter?' · ฝ่าย'+sideName(opponent(count.counter))+'เหลือตาสุดท้าย':'');$('countLine').hidden=!count;$('countLine').classList.toggle('alert',!!count&&(count.extra||count.value>=count.ceiling-3));
       // Board count: only the weaker side (or an even side) may ask for it, on its own turn. The special count
       // (ข้อ ข 4.2, pawns still on the board) may be asked for by either side ("ฝ่ายที่ต้องการนับ").
@@ -402,8 +403,8 @@
   }
   function renderMoves(){
     var body=$('moveList');body.replaceChildren();
-    var rows=[];
-    moves.forEach(function(move,index){
+    var rows=[],line=fullLine(),current=moves.length-1;
+    line.forEach(function(move,index){
       if(move.side==='white'||!rows.length||rows[rows.length-1].black)rows.push({});
       rows[rows.length-1][move.side]={record:move,index:index};
     });
@@ -420,15 +421,22 @@
           wrap.appendChild(img);wrap.appendChild(text);td.appendChild(wrap);
           td.title=sideName(side)+' '+names[move.piece]+' '+move.text+(move.promotion?' · '+move.promotionNote:'');
           if(move.promotion){var note=document.createElement('small');note.className='promotionNote';note.textContent='หงายเบี้ย';td.appendChild(note);}
-          if(entry.index===moves.length-1){td.className='latestMove';td.setAttribute('aria-current','true');}
+          td.dataset.ply=entry.index+1;td.tabIndex=0;td.classList.add('movePick');
+          if(entry.index===current){td.classList.add('latestMove');td.setAttribute('aria-current','true');}
+          else if(entry.index>current)td.classList.add('laterMove');
         }else{td.textContent='—';td.className='noMove';td.setAttribute('aria-label','ยังไม่มีการเดินของฝ่าย'+sideName(side));}
         tr.appendChild(td);
       });
       body.appendChild(tr);
     });
     var scroll=$('moveTableScroll');scroll.hidden=false;
-    var key=moves.length+':'+(moves.length?moves[moves.length-1].text:'');
-    if(scroll.dataset.lastMove!==key){scroll.scrollTop=scroll.scrollHeight;scroll.dataset.lastMove=key;}
+    var key=moves.length+':'+line.length+':'+(moves.length?moves[moves.length-1].text:'');
+    if(scroll.dataset.lastMove!==key){
+      scroll.dataset.lastMove=key;
+      var mark=body.querySelector('.latestMove');
+      if(!mark||current===line.length-1)scroll.scrollTop=current<0?0:scroll.scrollHeight;
+      else{var top=mark.offsetTop-scroll.clientHeight/2+mark.offsetHeight/2;scroll.scrollTop=Math.max(0,top);}
+    }
   }
   function animateMove(from,to){
     if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
@@ -471,7 +479,7 @@
       editMove(selected,at);return;
     }
     if(playStatus().state!=='playing'){message('ตำแหน่งนี้จบแล้ว กดย้อนกลับ หรือกลับไปตั้งหมาก');return;}
-    if(aiTurn()){message('รอ AI เดินก่อนนะ');return;}
+    if(aiTurn()){message(future.length?'ตอนนี้ย้อนดูตาเดินอยู่ กดเดินหน้า หรือแตะตาเดินในบันทึกเพื่อไปต่อ':'รอ AI เดินก่อนนะ');return;}
     if(p&&p.side===state.turn){selected=same(selected,at)?null:at;render();return;}
     if(!selected){message('เลือกหมากฝ่าย'+sideName(state.turn)+'ก่อน แล้วเลือกช่องปลายทาง');return;}
     playMove(selected,at);
@@ -575,12 +583,23 @@
     }catch(e){$('imageLoading').textContent='สร้างรูปไม่ได้: '+e.message+' กรุณาปิดแล้วเปิดแชร์อีกครั้ง';}
     finally{button.disabled=false;button.removeAttribute('aria-busy');button.textContent='↗ แชร์ตำแหน่ง';}
   };
+  // ย้อนกลับ / เดินหน้า step one move (ply) at a time, white then red; jumpTo(n) shows the position after n moves of
+  // the game (tapping a move in the record). Going back past the AI's move leaves it to move: it waits until the
+  // game is at its last position again.
   function undo(){
-    cancelAi();stopReview();if($('resultDialog').open)$('resultDialog').close();
+    cancelAi();if($('resultDialog').open)$('resultDialog').close();
     if(game&&game.resigned){game.resigned=false;render();scheduleAi();return;}
-    var prev=history.pop();if(!prev)return;future.push(snapshot());restore(prev);if(aiTurn()&&history.length){prev=history.pop();future.push(snapshot());restore(prev);}scheduleAi();
+    var prev=history.pop();if(!prev)return;future.push(snapshot());restore(prev);scheduleAi();
   }
-  function redo(){cancelAi();var next=future.pop();if(!next)return;history.push(snapshot());restore(next);if(aiTurn()&&future.length){next=future.pop();history.push(snapshot());restore(next);}scheduleAi();}
+  function redo(){cancelAi();var next=future.pop();if(!next)return;history.push(snapshot());restore(next);scheduleAi();}
+  function jumpTo(n){
+    cancelAi();
+    while(moves.length>n&&history.length){future.push(snapshot());restore(history.pop());}
+    while(moves.length<n&&future.length){history.push(snapshot());restore(future.pop());}
+    scheduleAi();
+  }
+  // The whole game line: with moves to go forward to, the furthest position kept is the end of the line.
+  function fullLine(){return future.length?future[0].moves:moves;}
   // ย้อนกลับ and เดินหน้า act at once on every tap, and keep going while held: after 0.35 s, ten steps a second, then
   // faster, so a game of 100 moves rewinds in a few seconds. A click from the keyboard still steps once.
   function repeatButton(button,step){
@@ -594,6 +613,8 @@
     button.addEventListener('contextmenu',function(e){e.preventDefault();});
   }
   repeatButton($('undo'),undo);repeatButton($('redo'),redo);
+  var pickMove=function(e){var td=e.target.closest('td.movePick');if(!td||mode!=='play')return;if(e.type==='keydown'&&e.key!=='Enter'&&e.key!==' ')return;e.preventDefault();jumpTo(Number(td.dataset.ply));};
+  $('moveList').addEventListener('click',pickMove);$('moveList').addEventListener('keydown',pickMove);
   $('start').onclick=function(){var error=M.validate(state);if(error){message(error,true);sound.playResult('failure');return;}save();trial={state:clone(state),history:history.slice(),future:future.slice()};mode='play';history=[];future=[];moves=[];selected=null;last=null;startCount();render();};
   $('restart').onclick=function(){cancelAi();hint=null;pickShape();if(game){game.bookDone=false;game.recorded=false;game.resigned=false;}remember();state=clone(trial.state);moves=[];selected=null;last=null;startCount();render();$('optionsDialog').close();scheduleAi();};
   $('edit').onclick=function(){cancelAi();game=null;count=null;mode='edit';state=clone(trial.state);history=trial.history;future=trial.future;trial=null;moves=[];selected=null;last=null;render();};

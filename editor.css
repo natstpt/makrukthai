@@ -132,3 +132,4 @@ body.aiGame .playerBar.topBar{display:flex;height:32px;min-height:32px;padding:0
 .noticeDialog h2{margin:0 0 10px;font-size:18px;color:#ffcf6e}.noticeDialog p{margin:0 0 10px;line-height:1.5}.noticeDialog .muted{font-size:13px;color:#cbb994}
 .noticeDialog button{width:100%;min-height:44px;margin-top:4px;border:0;border-radius:12px;background:linear-gradient(#d1a841,#b68d27);color:#3b2d0a;font:inherit;font-weight:bold}
 
+.moveTable td.movePick{cursor:pointer}.moveTable td.movePick:focus-visible{outline:2px solid #e4cd92;outline-offset:-2px}.moveTable td.laterMove{opacity:.45}
