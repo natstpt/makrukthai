@@ -21,9 +21,10 @@
   var game=null;
   try{var playParams=new URLSearchParams(location.search);if(playParams.get('play')==='2')game={ai:false};else if(playParams.get('play')==='ai')game={ai:true,human:playParams.get('side')==='black'?'black':'white',level:['easy','hard'].indexOf(playParams.get('level'))>=0?playParams.get('level'):'medium',lesson:playParams.get('lesson')};}catch(e){}
   function aiSide(){return game&&game.ai?opponent(game.human):null;}
-  // Each game the AI opens with one of the shapes in makruk-play.js (OPENINGS), picked at random: centre pawns ง4 จ4,
-  // or flank pawns จ4 ฉ4 (ง5 ค5 for red) with the met and a knight behind them.
-  function pickShape(){if(game&&game.ai){var shapes=Object.keys(P.OPENINGS);game.shape=shapes[Math.floor(Math.random()*shapes.length)];}}
+  // The AI's opening shape (makruk-play.js OPENINGS): as red always the centre shape ง5 จ5 (the flank shape would
+  // leave red to deal with an advanced pawn on จ5); as white, each game picks at random between the centre shape ง4 จ4
+  // and the flank shape จ4 ฉ4, which brings ม.ช1-ฉ3 and ม็.จ1-ฉ2-จ3 up right behind its pawns.
+  function pickShape(){if(game&&game.ai)game.shape=aiSide()==='white'&&Math.random()<0.5?'flank':'centre';}
   pickShape();
   function aiTurn(){return mode==='play'&&!!aiSide()&&state.turn===aiSide();}
   // Counting to a draw (กติกา ข้อ ก 5) while playing; kept in the undo history with the position.
@@ -227,7 +228,7 @@
   $('newGameCancel').onclick=function(){$('newGameDialog').close();};
   function newGame(side){
     $('newGameDialog').close();if($('resultDialog').open)$('resultDialog').close();stopReview();
-    cancelAi();hint=null;pickShape();game.human=side;game.bookDone=false;game.recorded=false;game.resigned=false;flipped=side==='black';
+    cancelAi();hint=null;game.human=side;pickShape();game.bookDone=false;game.recorded=false;game.resigned=false;flipped=side==='black';
     try{var url=new URL(location.href);url.searchParams.set('side',side);window.history.replaceState(null,'',url);}catch(e){}
     state=M.initial();trial={state:clone(state),history:[],future:[]};history=[];future=[];moves=[];selected=null;last=null;startCount();render();scheduleAi();
   }
