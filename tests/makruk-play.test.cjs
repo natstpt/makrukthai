@@ -222,6 +222,35 @@ assert(!R.isAttacked(R.applyMove(board('K:a1 R:d4 P:h3 k:h8 n:f5'), at(saved.sli
   }
 }
 
+// An advanced pawn against the flank shape (เบี้ยสูง): white pushes a supported pawn to จ5 on its 4th move. Red
+// answers ค.ฉ8-ฉ7, then บ.ช6-ช5, then บ.ช5×ฉ4, without losing material. The same for white against a red pawn on ง4:
+// ค.ค1-ค2, บ.ข3-ข4, บ.ข4×ค5.
+for (const [ai, push, answer] of [['black', 'e4e5', ['f8f7', 'g6g5', 'g5f4']], ['white', 'd5d4', ['c1c2', 'b3b4', 'b4c5']]]) {
+  let ps = M.initial().pieces, side = 'white', other = 0;
+  const aiMoves = [];
+  for (let i = 0; i < 24; i++) {
+    let m;
+    if (side !== ai) {
+      other++;
+      const p = R.legalMoves(ps, side).find(x => key(x) === push);
+      m = other >= 4 && p ? p : P.chooseMove(ps, side, { random: fixed, shape: 'flank' });
+    } else { m = P.chooseMove(ps, side, { random: fixed, shape: 'flank' }); aiMoves.push(key(m)); }
+    ps = R.applyMove(ps, m.from, m.to); side = side === 'white' ? 'black' : 'white';
+  }
+  const at0 = aiMoves.indexOf(answer[0]);
+  assert(at0 >= 0, ai + ' answers the advanced pawn with ' + answer[0] + ': ' + aiMoves.join(' ')); checks++;
+  eq(aiMoves.slice(at0, at0 + 3), answer, ai + ': khon first, then the pawn up, then it takes');
+  assert(P.material(ps, ai) >= P.material(ps, ai === 'white' ? 'black' : 'white'), ai + ' loses no material'); checks++;
+}
+
+// After the engine AI has left the shape, the advanced-pawn answer still comes first (flankAnswer), and only then.
+{
+  const advanced = M.parse('r1smksnr/8/ppn1pppp/2ppP3/5P2/PPPP1NPP/4M3/RNSK1S1R b - - 0 1').pieces;
+  eq(key(P.flankAnswer(advanced, 'black', 'flank')), 'f8f7', 'engine AI: the khon to ฉ7 first');
+  eq(P.flankAnswer(advanced, 'black', 'centre'), null, 'only against the flank shape');
+  eq(P.flankAnswer(M.initial().pieces, 'black', 'flank'), null, 'no advanced pawn: nothing to answer');
+}
+
 // Whole games: the computer plays both sides with counting; every game ends (mate or a draw) within the count limits.
 let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
 const endings = {};
