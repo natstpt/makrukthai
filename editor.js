@@ -82,6 +82,10 @@
       if(P.canRequestBoardCount(state.pieces,count)&&P.material(state.pieces,state.turn)<P.material(state.pieces,opponent(state.turn)))count=P.requestBoardCount(state.turn);
       var repeats=function(ps,turn){return repetitions(M.fen({pieces:ps,turn:turn}));};
       var easy=function(){var move=P.chooseMove(state.pieces,state.turn,{count:count,repeats:repeats,shape:game.shape,mistakes:game.level==='easy'?0.35:0});if(move)playMove(move.from,move.to);};
+      // King + rook against a lone king: the medium and hard AI play from the endgame table (tablebase.js) at once,
+      // the rook side mating soonest, the lone king holding out longest. The easy AI keeps its own (fallible) play.
+      var table=game.level!=='easy'&&window.MakrukTablebase&&MakrukTablebase.bestMove(state.pieces,state.turn);
+      if(table){playMove(table.move.from,table.move.to);return;}
       if(!hard){easy();return;}
       if(book){playMove(book.from,book.to);return;}
       // The engine gets the moves since the last pawn move or capture (no position before it can come back), so it
@@ -205,6 +209,8 @@
     hint={fen:fen,stage:1,move:null};message('กำลังหาคำใบ้…');
     var found=function(move){if(!hint||hint.fen!==fen)return;if(!move){hint=null;message('ยังหาคำใบ้ไม่ได้ ลองอีกครั้ง');return;}hint.move=move;message('');render();};
     var simple=function(){found(P.chooseMove(state.pieces,state.turn,{count:count}));};
+    var table=window.MakrukTablebase&&MakrukTablebase.bestMove(state.pieces,state.turn);
+    if(table){found(table.move);return;}
     if(!engineAi()||engine.state!=='ready'){simple();return;}
     var since=moves.length;while(since>0&&moves[since-1].piece!=='pawn'&&!moves[since-1].capture)since--;
     E.bestMove(since?moves[since-1].fen:M.fen(trial.state),moves.slice(since).map(function(m){return m.uci;}),{depth:16,time:1500}).then(function(key){
@@ -667,7 +673,7 @@
   if(game&&game.ai){
     // ตัวเลือก and พลิก become small icons at the top right above the board; the dock keeps ย้อนกลับ, เดินหน้า, คำใบ้, ยอมแพ้.
     document.body.classList.add('aiGame');$('boardTools').hidden=false;$('boardTools').append($('options'),$('flip'));
-    loadEngine();
+    loadEngine();if(window.MakrukTablebase)MakrukTablebase.load();
   }
   render();if(notice)message(notice,notice!=='เปิดตำแหน่งจากลิงก์แชร์แล้ว');
   // The board shows, and the AI starts, once every piece picture is loaded (piece-colors.js), at most 2.5 s.
