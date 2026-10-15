@@ -16,7 +16,7 @@ const lessons = plain(ctx.window.buildTacticsLessons()), trees = plain(ctx.windo
 const key = m => 'abcdefgh'[m.from.c] + (8 - m.from.r) + 'abcdefgh'[m.to.c] + (8 - m.to.r);
 const find = (ps, side, k) => R.legalMoves(ps, side).find(m => key(m) === k);
 
-assert.deepEqual(lessons.map(l => l.id), ['tactic-center', 'tactic-develop', 'tactic-king-safety', 'tactic-fork', 'tactic-pin', 'tactic-skewer', 'tactic-trapped', 'tactic-discovered']);
+assert.deepEqual(lessons.map(l => l.id), ['tactic-center', 'tactic-develop', 'tactic-king-safety', 'tactic-fork', 'tactic-pin', 'tactic-skewer', 'tactic-trapped', 'tactic-discovered', 'tactic-pawns']);
 assert.deepEqual(trees, plain(B.build()), 'tactic-trees.js is up to date (node scripts/build-tactic-trees.cjs)');
 
 // A board must have one king a side and kings apart; a task also starts with red not in check (teaching boards may
