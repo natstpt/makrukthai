@@ -1,11 +1,12 @@
-/* The hard computer player: Fairy-Stockfish (WebAssembly), at most 1 second a move, in one of two builds:
+/* The computer player: Fairy-Stockfish (WebAssembly) in one of two builds. The hard AI searches at most 1 second a
+ * move (about 15 plies in the middle game); easy and medium search a fixed shallow depth on the lite build.
  * - full (engine/): multi-threaded, SIMD, with the makruk NNUE network (48 MB download, about 320 MB of memory).
  *   It needs SharedArrayBuffer, so the page must be cross-origin isolated; on GitHub Pages coi-sw.js adds the headers
  *   (registered by start(), which reloads the page once). Used only on computers with enough cores and memory.
  * - lite (engine/lite/): single-threaded, plain WebAssembly without SIMD, classical evaluation, run in a Web Worker
  *   (about 1.4 MB download, 32 MB of memory to start). No SharedArrayBuffer and no service worker, so it runs on old
  *   phones and light browsers (Safari 11+, Chrome 58+). Phones, tablets and anything the full build cannot run use it.
- * Either way the search is told 0.8 s (lite 0.7 s) and the answer is given up after 1 s. */
+ * A timed search is told 0.8 s (lite 0.7 s) and the answer is given up after 1 s; a depth search after 3 s. */
 (function (root) {
   'use strict';
   var NET = 'makruk-a8c621e24a8c.nnue';
@@ -115,12 +116,13 @@
 
   // Starts the engine once (later calls share the promise) and resolves with 'full' or 'lite'. The full build may
   // reload the page once to become cross-origin isolated; if it fails, the lite build is used instead.
-  function start(onProgress) {
+  // preferLite: use the lite build even where the full one could run (the easy and medium AI search shallowly).
+  function start(onProgress, preferLite) {
     if (starting) return starting;
     var why = unsupported();
     if (why) { starting = Promise.reject(fail(why)); starting.catch(function () {}); return starting; }
     var lite = function () { listener = null; return startLite().then(function () { tier = 'lite'; return tier; }); };
-    starting = !fullWanted() ? lite() : ensureIsolation().then(function (isolated) {
+    starting = preferLite || !fullWanted() ? lite() : ensureIsolation().then(function (isolated) {
       if (!isolated || typeof SharedArrayBuffer !== 'function') return lite();
       return startFull(onProgress).then(function () { tier = 'full'; return tier; }, lite);
     });
@@ -131,8 +133,8 @@
   // The best move for the side to move in fen, as 'e3e4' (promotion suffixes dropped), within 1 second; null when
   // the engine has not answered by then. Searches run one at a time, so a late answer never reaches the next search.
   // moves (optional, 'e3e4' keys played from fen) let the engine see positions that already stood, so it knows a
-  // third repetition is a draw.
-  function bestMove(fen, moves) {
+  // third repetition is a draw. depth (optional) searches that many plies instead of for a time (easy and medium AI).
+  function bestMove(fen, moves, depth) {
     var searched, searchDone = new Promise(function (r) { searched = r; }), before = busy;
     busy = searchDone;
     return before.then(function () { return start(); }).then(function () {
@@ -142,10 +144,10 @@
           listener = null; clearTimeout(stop); clearTimeout(give); searched();
           var m = text.split(/\s+/)[1]; resolve(m && m !== '(none)' ? m.slice(0, 4) : null);
         };
-        var stop = line.stops ? setTimeout(function () { line.post('stop'); }, 950) : 0;
-        var give = setTimeout(function () { resolve(null); }, 1000);
+        var stop = line.stops ? setTimeout(function () { line.post('stop'); }, depth ? 2950 : 950) : 0;
+        var give = setTimeout(function () { resolve(null); }, depth ? 3000 : 1000);
         line.post('position fen ' + fen + (moves && moves.length ? ' moves ' + moves.join(' ') : ''));
-        line.post('go movetime ' + line.think);
+        line.post(depth ? 'go depth ' + depth : 'go movetime ' + line.think);
       });
     }, function (e) { searched(); throw e; });
   }
