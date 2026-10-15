@@ -40,11 +40,20 @@
   // The engine loads once: for the hard AI the full engine (48 MB the first time) on strong computers, the lite one
   // (1.4 MB) on phones and light browsers; easy and medium always use the lite one (engine-ai.js). If neither can run
   // here, the player in makruk-play.js plays instead.
+  // When the medium or hard AI cannot run here, the player is told once that the game goes on against the easy AI
+  // (the simple player in makruk-play.js), why, and how to fix it when that is known.
+  function fallbackNotice(){
+    if(!game||!game.ai||game.level==='easy')return;
+    $('fallbackText').textContent='เครื่องหรือเบราว์เซอร์นี้ไม่รองรับ AI ระดับ'+{medium:'กลาง',hard:'ยาก'}[game.level]+' ตอนนี้จึงเล่นกับ AI ระดับง่ายแทน';
+    $('fallbackReason').textContent=engine.reason||'';$('fallbackReason').hidden=!engine.reason;
+    if($('fallbackDialog').showModal)$('fallbackDialog').showModal();
+  }
+  $('closeFallback').onclick=function(){$('fallbackDialog').close();};
   function loadEngine(){
-    if(!E){engine.state='failed';return;}
+    if(!E){engine.state='failed';fallbackNotice();return;}
     engine.state='loading';
     E.start(function(f){var pct=Math.floor(f*100);if(pct!==engine.progress){engine.progress=pct;render();}},game.level!=='hard')
-      .then(function(){engine.state='ready';render();},function(e){engine.state='failed';engine.reason=(e&&e.reason)||'เบราว์เซอร์นี้ยังไม่รองรับ';render();scheduleAi();});
+      .then(function(){engine.state='ready';render();},function(e){engine.state='failed';engine.reason=(e&&e.reason)||'เบราว์เซอร์นี้ยังไม่รองรับ';render();fallbackNotice();scheduleAi();});
   }
   $('requestCount').addEventListener('click',function(){
     if(!P.canRequestBoardCount(state.pieces,count)&&!canAskSpecial())return;
@@ -283,7 +292,7 @@
     $('panelTitle').textContent=mode==='edit'?'จัดตำแหน่งหมาก':'ทดลองเดิน';
     $('topSide').textContent=flipped?'ฝ่ายขาว':'ฝ่ายแดง';$('bottomSide').textContent=flipped?'ฝ่ายแดง':'ฝ่ายขาว';
     $('topDot').classList.toggle('white',flipped);$('bottomDot').classList.toggle('white',!flipped);
-    $('modeLabel').textContent=mode==='edit'?'1 · ตั้งตำแหน่ง':analysis?'AI ระดับยาก'+(E&&E.tier()?' ('+(E.tier()==='lite'?'Lite':'Full')+')':''):game?(game.ai?'คุณเป็นฝ่าย'+sideName(game.human)+' · AI ระดับ'+({easy:'ง่าย',medium:'กลาง',hard:'ยาก'}[game.level])+(!engineAi()?' (Fallback)':' (คิดลึก '+(game.level==='hard'&&E&&E.lastDepth()||AI_LIMITS[game.level].depth)+' ชั้น)'):'เครื่องเดียวกัน'):'2 · ทดลองเดิน';document.querySelector('.brand h1').textContent=analysis?'ถอดหมาก':game?(game.ai?'เล่นกับ AI':'เล่น 2 คน'):'ตั้งหมาก';$('turn').value=state.turn;
+    $('modeLabel').textContent=mode==='edit'?'1 · ตั้งตำแหน่ง':analysis?'AI ระดับยาก'+(E&&E.tier()?' ('+(E.tier()==='lite'?'Lite':'Full')+')':''):game?(game.ai?'คุณเป็นฝ่าย'+sideName(game.human)+' · AI ระดับ'+(!engineAi()?'ง่าย'+(game.level==='easy'?'':' (สำรอง)'):({easy:'ง่าย',medium:'กลาง',hard:'ยาก'}[game.level])+' (คิดลึก '+(game.level==='hard'&&E&&E.lastDepth()||AI_LIMITS[game.level].depth)+' ชั้น)'):'เครื่องเดียวกัน'):'2 · ทดลองเดิน';document.querySelector('.brand h1').textContent=analysis?'ถอดหมาก':game?(game.ai?'เล่นกับ AI':'เล่น 2 คน'):'ตั้งหมาก';$('turn').value=state.turn;
     document.querySelectorAll('[data-tool]').forEach(function(b){b.setAttribute('aria-pressed',String(tool===b.dataset.tool));});
     $('fen').value=M.fen(state);
     $('saveNote').textContent=storageOK?'เก็บตำแหน่งที่ตั้งไว้ให้อัตโนมัติในเครื่องนี้ (ไม่ทับด้วยตาที่ทดลองเดิน)':'เครื่องนี้เก็บอัตโนมัติไม่ได้ กรุณาคัดลอกรหัสไว้';

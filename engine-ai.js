@@ -24,7 +24,10 @@
   }
   // Why no engine can run in this browser, or '' when the lite one can.
   function unsupported() {
-    if (typeof WebAssembly !== 'object') return 'เบราว์เซอร์นี้ไม่รองรับ WebAssembly (ลองเปิดใน Chrome หรือ Safari)';
+    // iPhone and iPad Safari only switch WebAssembly off in Lockdown Mode (โหมดล็อคดาวน์).
+    if (typeof WebAssembly !== 'object') return /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+      ? 'เครื่องนี้ปิด WebAssembly ไว้ (iPhone/iPad ที่เปิดโหมดล็อคดาวน์จะปิดไว้) · ปิดเฉพาะเว็บนี้ได้ที่ปุ่ม กก บนแถบที่อยู่ › การตั้งค่าเว็บไซต์ › ปิดโหมดล็อคดาวน์ แล้วโหลดหน้าใหม่'
+      : 'เบราว์เซอร์นี้ไม่รองรับ WebAssembly (ลองเปิดใน Chrome หรือ Safari)';
     if (typeof Worker !== 'function') return 'เบราว์เซอร์นี้ไม่รองรับ Web Worker';
     return '';
   }
