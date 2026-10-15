@@ -13,9 +13,11 @@
   function opponent(side){return side==='white'?'black':'white';}
   function sideName(side){return side==='white'?'ขาว':'แดง';}
   // Games opened from the lesson page's settings: editor.html?play=2 (two players on one device) or
-  // ?play=ai&side=white|black&level=easy|medium|hard (the learner plays that side against the computer: medium is the
-  // player in makruk-play.js, easy is the same player making a mistake now and then, hard is Fairy-Stockfish in
-  // engine-ai.js, at most 1 second a move).
+  // ?play=ai&side=white|black&level=easy|medium|hard (the learner plays that side against the computer). Every level is
+  // Fairy-Stockfish (engine-ai.js) after the same opening shape, with the limits in AI_LIMITS: hard searches toward 20
+  // plies for at most 3 seconds a move, medium 5 plies and easy 1 ply with a low Skill Level (now and then a weaker
+  // move), both on the small lite engine. If no engine runs in this browser, the player in makruk-play.js plays instead
+  // (easy making a mistake now and then).
   var game=null;
   try{var playParams=new URLSearchParams(location.search);if(playParams.get('play')==='2')game={ai:false};else if(playParams.get('play')==='ai')game={ai:true,human:playParams.get('side')==='black'?'black':'white',level:['easy','hard'].indexOf(playParams.get('level'))>=0?playParams.get('level'):'medium',lesson:playParams.get('lesson')};}catch(e){}
   function aiSide(){return game&&game.ai?opponent(game.human):null;}
@@ -23,7 +25,7 @@
   // Counting to a draw (กติกา ข้อ ก 5) while playing; kept in the undo history with the position.
   var count=null;
   function startCount(){count=P.nextCount(null,state.pieces,opponent(state.turn));}
-  function playStatus(){var s=R.gameStatus(state.pieces,state.turn);return s.state!=='playing'?s:count&&count.draw?{state:'countdraw',check:s.check}:repetitions(M.fen(state))>=3?{state:'repetition',check:s.check}:s;}
+  function playStatus(){if(game&&game.resigned)return {state:'resign',winner:aiSide(),check:false};var s=R.gameStatus(state.pieces,state.turn);return s.state!=='playing'?s:count&&count.draw?{state:'countdraw',check:s.check}:repetitions(M.fen(state))>=3?{state:'repetition',check:s.check}:s;}
   // Draw by repetition: the same position (pieces and side to move) a third time, at any point of the game, ends it.
   // Each move record keeps the position after it (fen) and its key (uci).
   function repetitions(fen){return (trial&&M.fen(trial.state)===fen?1:0)+moves.filter(function(m){return m.fen===fen;}).length;}
@@ -31,15 +33,17 @@
   function canAskSpecial(){return P.canRequestSpecialCount(state.pieces,count,moves,trial&&M.fen(trial.state));}
   function askCount(side){count=P.canRequestBoardCount(state.pieces,count)?P.requestBoardCount(side):P.requestSpecialCount(side,state.pieces);}
   var aiTimer=0,aiSearch=0,E=window.MakrukEngine,engine={state:'off',progress:0};
-  function hardAi(){return !!game&&!!game.ai&&game.level==='hard'&&engine.state!=='failed';}
+  var AI_LIMITS={easy:{depth:1,skill:3},medium:{depth:5},hard:{depth:20,time:3000}};
+  function engineAi(){return !!game&&!!game.ai&&engine.state!=='failed';}
   function cancelAi(){clearTimeout(aiTimer);aiTimer=0;aiSearch++;}
   function moveKey(m){return 'abcdefgh'[m.from.c]+(8-m.from.r)+'abcdefgh'[m.to.c]+(8-m.to.r);}
-  // The hard AI loads once: the full engine (48 MB the first time) on strong computers, the lite one (1.4 MB) on phones
-  // and light browsers (engine-ai.js); if neither can run here, the medium AI plays instead.
+  // The engine loads once: for the hard AI the full engine (48 MB the first time) on strong computers, the lite one
+  // (1.4 MB) on phones and light browsers; easy and medium always use the lite one (engine-ai.js). If neither can run
+  // here, the player in makruk-play.js plays instead.
   function loadEngine(){
     if(!E){engine.state='failed';return;}
     engine.state='loading';
-    E.start(function(f){var pct=Math.floor(f*100);if(pct!==engine.progress){engine.progress=pct;render();}})
+    E.start(function(f){var pct=Math.floor(f*100);if(pct!==engine.progress){engine.progress=pct;render();}},game.level!=='hard')
       .then(function(){engine.state='ready';render();},function(e){engine.state='failed';engine.reason=(e&&e.reason)||'เบราว์เซอร์นี้ยังไม่รองรับ';render();scheduleAi();});
   }
   $('requestCount').addEventListener('click',function(){
@@ -49,8 +53,8 @@
   function scheduleAi(){
     cancelAi();
     if(!aiTurn()||playStatus().state!=='playing')return;
-    var token=aiSearch,hard=hardAi();
-    // Hard AI: the opening shape first (ง4 จ4 / ง5 จ5 pawns, then the pieces behind them); once it is done or has
+    var token=aiSearch,hard=engineAi();
+    // Engine AI: the opening shape first (ง4 จ4 / ง5 จ5 pawns, then the pieces behind them); once it is done or has
     // to stop, the engine plays the rest of the game. Decided now, so an engine move does not wait the opening delay.
     var book=hard&&!game.bookDone&&P.openingChoice(state.pieces,state.turn);
     if(hard&&!book)game.bookDone=true;
@@ -65,12 +69,12 @@
       // The engine gets the moves since the last pawn move or capture (no position before it can come back), so it
       // sees the repetitions and never needs a promotion suffix.
       var since=moves.length;while(since>0&&moves[since-1].piece!=='pawn'&&!moves[since-1].capture)since--;
-      E.bestMove(since?moves[since-1].fen:M.fen(trial.state),moves.slice(since).map(function(m){return m.uci;})).then(function(key){
+      E.bestMove(since?moves[since-1].fen:M.fen(trial.state),moves.slice(since).map(function(m){return m.uci;}),AI_LIMITS[game.level]).then(function(key){
         if(token!==aiSearch||!aiTurn())return;
         var move=key&&R.legalMoves(state.pieces,state.turn).find(function(m){return moveKey(m)===key;});
         if(move)playMove(move.from,move.to);else easy();
       },function(){if(token===aiSearch&&aiTurn())easy();});
-    },hard?(book?500:100):700);
+    },hard?(book||game.level!=='hard'?500:100):700);
   }
   // A finished game against the AI is counted for its level (makrukAiGames), once per game; the play-the-computer
   // lessons (ai-lessons.js) pass after one.
@@ -168,7 +172,35 @@
     baseRender();
     document.body.classList.toggle('analysisMode',analysis&&mode==='play');$('assistOptions').hidden=!analysis;$('analyse').hidden=analysis||mode!=='play';
     if(analysis)updateAnalysis();
+    else $('arrowLayer').innerHTML=hintNow()&&hint.stage>1?arrow(moveKey(hint.move),'rgba(76,160,58,.9)'):'';
   };
+  // Hint (games against the AI, on the player's turn): the first tap marks the piece the AI would move, the next tap
+  // adds an arrow to its square. The engine searches the player's side up to depth 16 (1.5 s at most); without it the
+  // player in makruk-play.js suggests. A move, an undo or a new game clears it.
+  var hint=null;
+  function hintNow(){return !!hint&&!!hint.move&&hint.fen===M.fen(state);}
+  function canHint(){return !!game&&!!game.ai&&mode==='play'&&!aiTurn()&&playStatus().state==='playing';}
+  $('hint').addEventListener('click',function(){
+    if(!canHint())return;
+    var fen=M.fen(state);
+    if(hint&&hint.fen===fen){if(hint.move){hint.stage=2;render();}return;}
+    hint={fen:fen,stage:1,move:null};message('กำลังหาคำใบ้…');
+    var found=function(move){if(!hint||hint.fen!==fen)return;if(!move){hint=null;message('ยังหาคำใบ้ไม่ได้ ลองอีกครั้ง');return;}hint.move=move;message('');render();};
+    var simple=function(){found(P.chooseMove(state.pieces,state.turn,{count:count}));};
+    if(!engineAi()||engine.state!=='ready'){simple();return;}
+    var since=moves.length;while(since>0&&moves[since-1].piece!=='pawn'&&!moves[since-1].capture)since--;
+    E.bestMove(since?moves[since-1].fen:M.fen(trial.state),moves.slice(since).map(function(m){return m.uci;}),{depth:16,time:1500}).then(function(key){
+      if(!hint||hint.fen!==fen)return;
+      var move=key&&R.legalMoves(state.pieces,state.turn).find(function(m){return moveKey(m)===key;});
+      if(move)found(move);else simple();
+    },simple);
+  });
+  // Resign: the AI wins the game (counted as a finished game). Undo takes the resignation back.
+  $('resign').addEventListener('click',function(){
+    if(!game||!game.ai||mode!=='play'||playStatus().state!=='playing')return;
+    if(!window.confirm('ยอมแพ้เกมนี้ใช่ไหม?'))return;
+    cancelAi();hint=null;game.resigned=true;render();sound.playResult('failure');recordGame({winner:aiSide()});
+  });
   document.querySelectorAll('[data-assist]').forEach(function(box){
     box.checked=assist[box.dataset.assist];
     box.addEventListener('change',function(){assist[box.dataset.assist]=box.checked;try{localStorage.setItem('makrukAssist',JSON.stringify(assist));}catch(e){}drawAnalysis();scheduleFit();});
@@ -219,6 +251,7 @@
       sq.classList.toggle('selected',!!same(at,selected));sq.setAttribute('aria-pressed',String(!!same(at,selected)));
       sq.classList.toggle('target',destinations.some(function(d){return same(d,at);}));
       sq.classList.toggle('last',!!last&&(same(at,last.from)||same(at,last.to)));
+      sq.classList.toggle('hintFrom',mode==='play'&&hintNow()&&same(at,hint.move.from));
       if(p){var img=document.createElement('img');img.className='piece';img.src=asset(p);img.alt='';img.draggable=false;sq.appendChild(img);
         if(mode==='play'&&p.piece==='king'&&R.inCheck(state.pieces,p.side))sq.classList.add('check');}
       if(cc===0){var rank=document.createElement('span');rank.className='coord rank';rank.textContent=8-r;sq.appendChild(rank);}
@@ -226,12 +259,14 @@
       $('board').appendChild(sq);
     }
     ['redPalette','whitePalette','editTools'].forEach(function(id){$(id).hidden=mode!=='edit';});
-    $('playTools').hidden=mode!=='play';$('load').disabled=mode!=='edit';$('undo').disabled=!history.length;$('redo').disabled=!future.length;
+    $('playTools').hidden=mode!=='play';$('load').disabled=mode!=='edit';$('undo').disabled=!history.length&&!(game&&game.resigned);$('redo').disabled=!future.length;
+    var aiGame=!!game&&!!game.ai&&mode==='play';$('hint').hidden=$('resign').hidden=!aiGame;
+    $('hint').disabled=!canHint();$('resign').disabled=!aiGame||status.state!=='playing';
     $('emptyMoves').hidden=moves.length>0;
     $('panelTitle').textContent=mode==='edit'?'จัดตำแหน่งหมาก':'ทดลองเดิน';
     $('topSide').textContent=flipped?'ฝ่ายขาว':'ฝ่ายแดง';$('bottomSide').textContent=flipped?'ฝ่ายแดง':'ฝ่ายขาว';
     $('topDot').classList.toggle('white',flipped);$('bottomDot').classList.toggle('white',!flipped);
-    $('modeLabel').textContent=mode==='edit'?'1 · ตั้งตำแหน่ง':analysis?'AI ระดับยาก'+(E&&E.tier()?' ('+(E.tier()==='lite'?'Lite':'Full')+')':''):game?(game.ai?'คุณเป็นฝ่าย'+sideName(game.human)+' · AI ระดับ'+({easy:'ง่าย',medium:'กลาง'}[game.level]||(hardAi()?(E&&E.tier()==='lite'?'ยาก (Lite)':E&&E.tier()==='full'?'ยาก (Full)':'ยาก'):'กลาง (Fallback)')):'เครื่องเดียวกัน'):'2 · ทดลองเดิน';document.querySelector('.brand h1').textContent=analysis?'ถอดหมาก':game?(game.ai?'เล่นกับ AI':'เล่น 2 คน'):'ตั้งหมาก';$('turn').value=state.turn;
+    $('modeLabel').textContent=mode==='edit'?'1 · ตั้งตำแหน่ง':analysis?'AI ระดับยาก'+(E&&E.tier()?' ('+(E.tier()==='lite'?'Lite':'Full')+')':''):game?(game.ai?'คุณเป็นฝ่าย'+sideName(game.human)+' · AI ระดับ'+({easy:'ง่าย',medium:'กลาง',hard:'ยาก'}[game.level])+(!engineAi()?' (Fallback)':' (คิดลึก '+(game.level==='hard'&&E&&E.lastDepth()||AI_LIMITS[game.level].depth)+' ชั้น)'):'เครื่องเดียวกัน'):'2 · ทดลองเดิน';document.querySelector('.brand h1').textContent=analysis?'ถอดหมาก':game?(game.ai?'เล่นกับ AI':'เล่น 2 คน'):'ตั้งหมาก';$('turn').value=state.turn;
     document.querySelectorAll('[data-tool]').forEach(function(b){b.setAttribute('aria-pressed',String(tool===b.dataset.tool));});
     $('fen').value=M.fen(state);
     $('saveNote').textContent=storageOK?'เก็บตำแหน่งที่ตั้งไว้ให้อัตโนมัติในเครื่องนี้ (ไม่ทับด้วยตาที่ทดลองเดิน)':'เครื่องนี้เก็บอัตโนมัติไม่ได้ กรุณาคัดลอกรหัสไว้';
@@ -242,7 +277,7 @@
       message('');
     }else{
       // Play mode shows no help text under the board: the turn line beside the move record says whose move it is.
-      $('turnHeading').textContent=status.state==='checkmate'?'รุกจน · '+sideName(status.winner)+'ชนะ':status.state==='playing'?(aiTurn()?(hardAi()&&engine.state==='loading'?'กำลังโหลด AI ระดับยาก'+(engine.progress?' '+engine.progress+'%':'…'):'AI ('+sideName(state.turn)+') กำลังคิด'):sideName(state.turn)+'เดิน')+(status.check?' · รุก!':''):status.state==='stalemate'?'อับ · เสมอ':status.state==='countdraw'?'นับครบ · เสมอ':status.state==='repetition'?'เดินซ้ำ 3 ครั้ง · เสมอ':'เสมอ';
+      $('turnHeading').textContent=status.state==='checkmate'?'รุกจน · '+sideName(status.winner)+'ชนะ':status.state==='playing'?(aiTurn()?(engineAi()&&engine.state==='loading'?'กำลังโหลด AI'+(engine.progress?' '+engine.progress+'%':'…'):'AI ('+sideName(state.turn)+') กำลังคิด'):sideName(state.turn)+'เดิน')+(status.check?' · รุก!':''):status.state==='stalemate'?'อับ · เสมอ':status.state==='countdraw'?'นับครบ · เสมอ':status.state==='repetition'?'เดินซ้ำ 3 ครั้ง · เสมอ':status.state==='resign'?'ยอมแพ้ · '+sideName(status.winner)+'ชนะ':'เสมอ';
       $('countLine').textContent=P.countText(count,sideName)+(count&&count.extra&&!count.draw&&status.state==='playing'&&state.turn!==count.counter?' · ฝ่าย'+sideName(opponent(count.counter))+'เหลือตาสุดท้าย':'');$('countLine').hidden=!count;$('countLine').classList.toggle('alert',!!count&&(count.extra||count.value>=count.ceiling-3));
       // Board count: only the weaker side (or an even side) may ask for it, on its own turn. The special count
       // (ข้อ ข 4.2, pawns still on the board) may be asked for by either side ("ฝ่ายที่ต้องการนับ").
@@ -251,7 +286,7 @@
       $('requestCount').title=special?'ยังมีเบี้ยคว่ำแต่รูปหมากไม่เปลี่ยน: นับ 1 ถึง 64 ถ้ายังไม่มีผลแพ้ชนะ เสมอ':'';
       $('turnHeading').classList.toggle('alert',status.state!=='playing'||!!status.check);
       $('instruction').textContent=status.state==='playing'?(status.check?'รุก! ต้องเดินให้ขุนพ้นจากการรุก':'ตาฝ่าย'+sideName(state.turn)+' ลากหรือแตะหมากไปช่องที่มีจุด'):'จบตำแหน่งนี้แล้ว ย้อนกลับเพื่อทดลองทางอื่นได้';
-      message((status.state==='checkmate'?'รุกจน — ฝ่าย'+sideName(status.winner)+'ชนะ':status.state==='stalemate'?'เสมอเพราะอับ — ไม่มีตาเดินและขุนไม่ถูกรุก':status.state==='draw'?'เสมอ — เหลือขุนทั้งสองฝ่าย':status.state==='countdraw'?'เสมอ — นับครบตามกติกาแล้วยังไม่รุกจน':status.state==='repetition'?'เสมอ — ตำแหน่งเดิมเกิดขึ้นครบ 3 ครั้ง':status.check?'ขุน'+sideName(state.turn)+'กำลังถูกรุก':engine.reason?'AI ระดับยากใช้ไม่ได้: '+engine.reason:'')+(game&&game.lesson&&status.state!=='playing'?' · กด “← บทเรียน” เพื่อกลับไปผ่านบท':''),!!engine.reason&&!status.check);
+      message((hint&&!hint.move&&hint.fen===M.fen(state)&&status.state==='playing'?'กำลังหาคำใบ้…':status.state==='resign'?'คุณยอมแพ้ — ฝ่าย'+sideName(status.winner)+'ชนะ · กดย้อนกลับเพื่อเล่นต่อ':status.state==='checkmate'?'รุกจน — ฝ่าย'+sideName(status.winner)+'ชนะ':status.state==='stalemate'?'เสมอเพราะอับ — ไม่มีตาเดินและขุนไม่ถูกรุก':status.state==='draw'?'เสมอ — เหลือขุนทั้งสองฝ่าย':status.state==='countdraw'?'เสมอ — นับครบตามกติกาแล้วยังไม่รุกจน':status.state==='repetition'?'เสมอ — ตำแหน่งเดิมเกิดขึ้นครบ 3 ครั้ง':status.check?'ขุน'+sideName(state.turn)+'กำลังถูกรุก':engine.reason?'AI ระดับยากใช้ไม่ได้: '+engine.reason:'')+(game&&game.lesson&&status.state!=='playing'?' · กด “← บทเรียน” เพื่อกลับไปผ่านบท':''),!!engine.reason&&!status.check);
     }
     renderMoves();scheduleFit();
   }
@@ -430,10 +465,27 @@
     }catch(e){$('imageLoading').textContent='สร้างรูปไม่ได้: '+e.message+' กรุณาปิดแล้วเปิดแชร์อีกครั้ง';}
     finally{button.disabled=false;button.removeAttribute('aria-busy');button.textContent='↗ แชร์ตำแหน่ง';}
   };
-  $('undo').onclick=function(){cancelAi();var prev=history.pop();if(!prev)return;future.push(snapshot());restore(prev);if(aiTurn()&&history.length){prev=history.pop();future.push(snapshot());restore(prev);}scheduleAi();};
-  $('redo').onclick=function(){cancelAi();var next=future.pop();if(!next)return;history.push(snapshot());restore(next);if(aiTurn()&&future.length){next=future.pop();history.push(snapshot());restore(next);}scheduleAi();};
+  function undo(){
+    cancelAi();
+    if(game&&game.resigned){game.resigned=false;render();scheduleAi();return;}
+    var prev=history.pop();if(!prev)return;future.push(snapshot());restore(prev);if(aiTurn()&&history.length){prev=history.pop();future.push(snapshot());restore(prev);}scheduleAi();
+  }
+  function redo(){cancelAi();var next=future.pop();if(!next)return;history.push(snapshot());restore(next);if(aiTurn()&&future.length){next=future.pop();history.push(snapshot());restore(next);}scheduleAi();}
+  // ย้อนกลับ and เดินหน้า act at once on every tap, and keep going while held: after 0.35 s, ten steps a second, then
+  // faster, so a game of 100 moves rewinds in a few seconds. A click from the keyboard still steps once.
+  function repeatButton(button,step){
+    var timer=0;
+    var stop=function(){clearTimeout(timer);timer=0;};
+    var go=function(delay){timer=setTimeout(function(){if(button.disabled){stop();return;}step();go(Math.max(30,delay*0.85));},delay);};
+    button.addEventListener('pointerdown',function(e){if(e.button>0)return;step();stop();timer=setTimeout(function(){go(100);},350);});
+    ['pointerup','pointerleave','pointercancel'].forEach(function(type){button.addEventListener(type,stop);});
+    // A tap or mouse click already stepped on pointerdown (its click has detail > 0); the keyboard's click has none.
+    button.addEventListener('click',function(e){if(!e.detail)step();});
+    button.addEventListener('contextmenu',function(e){e.preventDefault();});
+  }
+  repeatButton($('undo'),undo);repeatButton($('redo'),redo);
   $('start').onclick=function(){var error=M.validate(state);if(error){message(error,true);sound.playResult('failure');return;}save();trial={state:clone(state),history:history.slice(),future:future.slice()};mode='play';history=[];future=[];moves=[];selected=null;last=null;startCount();render();};
-  $('restart').onclick=function(){cancelAi();if(game){game.bookDone=false;game.recorded=false;}remember();state=clone(trial.state);moves=[];selected=null;last=null;startCount();render();$('optionsDialog').close();scheduleAi();};
+  $('restart').onclick=function(){cancelAi();hint=null;if(game){game.bookDone=false;game.recorded=false;game.resigned=false;}remember();state=clone(trial.state);moves=[];selected=null;last=null;startCount();render();$('optionsDialog').close();scheduleAi();};
   $('edit').onclick=function(){cancelAi();game=null;count=null;mode='edit';state=clone(trial.state);history=trial.history;future=trial.future;trial=null;moves=[];selected=null;last=null;render();};
   $('load').onclick=function(){if(mode!=='edit')return;try{var next=M.parse($('fen').value);remember();state=next;changed();$('optionsDialog').close();message('เปิดตำแหน่งแล้ว'+(M.validate(state)?' — '+M.validate(state):''));}catch(e){$('saveNote').textContent=e.message;}};
   $('copy').onclick=async function(){try{await navigator.clipboard.writeText($('fen').value);$('saveNote').textContent='คัดลอกรหัสแล้ว';}catch(e){$('fen').focus();$('fen').select();$('saveNote').textContent='เลือกข้อความแล้ว กรุณาคัดลอกด้วยเมนูของเครื่อง';}};
@@ -453,7 +505,7 @@
     if(stacked){
       var feedback=document.querySelector('.positionFeedback').offsetHeight;
       var tools=parseFloat(getComputedStyle(main).getPropertyValue('--tools-reserve'))||112;
-      var panelHeight=$('analysisPanel').hidden?0:$('analysisPanel').offsetHeight+6;
+      var panelHeight=($('analysisPanel').hidden?0:$('analysisPanel').offsetHeight+6)+(document.body.classList.contains('aiGame')?document.querySelector('.topBar').offsetHeight:0);
       // ถอดหมาก uses the lesson page's board size (16 px from each side) and leaves the move record what is left.
       if(analysis&&mode==='play')size=Math.min(window.innerWidth-32,available-panelHeight-feedback-gap-72);
       else size=Math.min(main.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight),available-tools-feedback-gap-8-panelHeight);
@@ -480,7 +532,11 @@
     var body=$('restart').parentNode;body.insertBefore($('restart'),body.firstChild);
     trial={state:clone(state),history:[],future:[]};mode='play';history=[];future=[];moves=[];selected=null;last=null;startCount();
   }
-  if(game&&game.ai&&game.level==='hard')loadEngine();
+  if(game&&game.ai){
+    // ตัวเลือก and พลิก become small icons at the top right above the board; the dock keeps ย้อนกลับ, เดินหน้า, คำใบ้, ยอมแพ้.
+    document.body.classList.add('aiGame');$('boardTools').hidden=false;$('boardTools').append($('options'),$('flip'));
+    loadEngine();
+  }
   render();if(notice)message(notice,notice!=='เปิดตำแหน่งจากลิงก์แชร์แล้ว');
   // The board shows, and the AI starts, once every piece picture is loaded (piece-colors.js), at most 2.5 s.
   document.body.classList.add('piecesLoading');
