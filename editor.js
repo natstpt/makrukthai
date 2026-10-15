@@ -196,11 +196,28 @@
     },simple);
   });
   // Resign: the AI wins the game (counted as a finished game). Undo takes the resignation back.
+  // Once the game is over (resigned, mated or drawn) the same button reads เริ่มใหม่: it asks which side to play, then
+  // starts a new game from the opening position.
   $('resign').addEventListener('click',function(){
-    if(!game||!game.ai||mode!=='play'||playStatus().state!=='playing')return;
-    if(!window.confirm('ยอมแพ้เกมนี้ใช่ไหม?'))return;
-    cancelAi();hint=null;game.resigned=true;render();sound.playResult('failure');recordGame({winner:aiSide()});
+    if(!game||!game.ai||mode!=='play')return;
+    if(playStatus().state!=='playing'){$('newGameDialog').showModal();return;}
+    $('resignDialog').showModal();
   });
+  $('resignCancel').onclick=function(){$('resignDialog').close();};
+  $('resignConfirm').onclick=function(){
+    $('resignDialog').close();
+    if(!game||!game.ai||mode!=='play'||playStatus().state!=='playing')return;
+    cancelAi();hint=null;game.resigned=true;render();sound.playResult('failure');recordGame({winner:aiSide()});
+  };
+  $('newGameCancel').onclick=function(){$('newGameDialog').close();};
+  function newGame(side){
+    $('newGameDialog').close();
+    cancelAi();hint=null;game.human=side;game.bookDone=false;game.recorded=false;game.resigned=false;flipped=side==='black';
+    try{var url=new URL(location.href);url.searchParams.set('side',side);window.history.replaceState(null,'',url);}catch(e){}
+    state=M.initial();trial={state:clone(state),history:[],future:[]};history=[];future=[];moves=[];selected=null;last=null;startCount();render();scheduleAi();
+  }
+  $('newWhite').onclick=function(){newGame('white');};
+  $('newBlack').onclick=function(){newGame('black');};
   document.querySelectorAll('[data-assist]').forEach(function(box){
     box.checked=assist[box.dataset.assist];
     box.addEventListener('change',function(){assist[box.dataset.assist]=box.checked;try{localStorage.setItem('makrukAssist',JSON.stringify(assist));}catch(e){}drawAnalysis();scheduleFit();});
@@ -261,7 +278,7 @@
     ['redPalette','whitePalette','editTools'].forEach(function(id){$(id).hidden=mode!=='edit';});
     $('playTools').hidden=mode!=='play';$('load').disabled=mode!=='edit';$('undo').disabled=!history.length&&!(game&&game.resigned);$('redo').disabled=!future.length;
     var aiGame=!!game&&!!game.ai&&mode==='play';$('hint').hidden=$('resign').hidden=!aiGame;
-    $('hint').disabled=!canHint();$('resign').disabled=!aiGame||status.state!=='playing';
+    $('hint').disabled=!canHint();$('resign').disabled=!aiGame;var over=aiGame&&status.state!=='playing';$('resign').classList.toggle('newGame',over);$('resignLabel').textContent=over?'เริ่มใหม่':'ยอมแพ้';$('resign').title=over?'เริ่มเกมใหม่ เลือกสีหมาก':'ยอมแพ้เกมนี้';
     $('emptyMoves').hidden=moves.length>0;
     $('panelTitle').textContent=mode==='edit'?'จัดตำแหน่งหมาก':'ทดลองเดิน';
     $('topSide').textContent=flipped?'ฝ่ายขาว':'ฝ่ายแดง';$('bottomSide').textContent=flipped?'ฝ่ายแดง':'ฝ่ายขาว';
