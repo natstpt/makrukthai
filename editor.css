@@ -114,3 +114,14 @@ html.blackPieces .playerDot:not(.white){background:#262626;box-shadow:0 0 0 2px 
 .moveRating{position:absolute;right:3px;top:50%;transform:translateY(-50%);padding:0 8px;border-radius:9px;font-size:12px;font-weight:800;line-height:18px;white-space:nowrap;background:#3f7d3a;color:#fff}.moveRating.warn{background:#c2902a}.moveRating.bad{background:#c0392b}
 /* Until every piece picture is loaded (piece-colors.js) the board stays hidden, so no piece pops in during play. */
 .piecesLoading #board,.piecesLoading #arrowLayer{visibility:hidden}
+/* Games against the AI: ตัวเลือก and พลิก are small icons at the top right, above the board's corner; the bar is shown on
+   phones too. Quick taps on the controls never turn into a double-tap zoom. */
+.actionDock button,.boardTools button{touch-action:manipulation}
+.boardTools{display:flex;gap:6px;margin-left:auto}
+.boardTools .dockBtn{display:flex;align-items:center;justify-content:center;width:32px;height:28px;min-height:0;padding:0;border:1px solid #5a4d39;border-radius:8px;background:#2f281e;color:#dac29e;cursor:pointer}
+.boardTools .dockBtn:hover{background:#3d3427}.boardTools .dockBtn span{display:none}
+.boardTools .dockBtn svg.dockIcon{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+body.aiGame .playerBar.topBar{display:flex;height:32px;min-height:32px;padding:0 4px;box-sizing:border-box}
+/* Hint: the square of the piece to move (first tap), then an arrow from it to its square (second tap). */
+.square.hintFrom{box-shadow:inset 0 0 0 4px #3f8fd6;background:#7fb8e6}
+
