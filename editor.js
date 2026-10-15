@@ -21,6 +21,10 @@
   var game=null;
   try{var playParams=new URLSearchParams(location.search);if(playParams.get('play')==='2')game={ai:false};else if(playParams.get('play')==='ai')game={ai:true,human:playParams.get('side')==='black'?'black':'white',level:['easy','hard'].indexOf(playParams.get('level'))>=0?playParams.get('level'):'medium',lesson:playParams.get('lesson')};}catch(e){}
   function aiSide(){return game&&game.ai?opponent(game.human):null;}
+  // Each game the AI opens with one of the shapes in makruk-play.js (OPENINGS), picked at random: centre pawns ง4 จ4,
+  // or flank pawns จ4 ฉ4 (ง5 ค5 for red) with the met and a knight behind them.
+  function pickShape(){if(game&&game.ai){var shapes=Object.keys(P.OPENINGS);game.shape=shapes[Math.floor(Math.random()*shapes.length)];}}
+  pickShape();
   function aiTurn(){return mode==='play'&&!!aiSide()&&state.turn===aiSide();}
   // Counting to a draw (กติกา ข้อ ก 5) while playing; kept in the undo history with the position.
   var count=null;
@@ -65,14 +69,14 @@
     var token=aiSearch,hard=engineAi();
     // Engine AI: the opening shape first (ง4 จ4 / ง5 จ5 pawns, then the pieces behind them); once it is done or has
     // to stop, the engine plays the rest of the game. Decided now, so an engine move does not wait the opening delay.
-    var book=hard&&!game.bookDone&&P.openingChoice(state.pieces,state.turn);
+    var book=hard&&!game.bookDone&&P.openingChoice(state.pieces,state.turn,game.shape);
     if(hard&&!book)game.bookDone=true;
     aiTimer=setTimeout(function(){
       aiTimer=0;if(token!==aiSearch||!aiTurn())return;
       // The AI asks for the ordinary board count when it is behind; the special count is for the player only.
       if(P.canRequestBoardCount(state.pieces,count)&&P.material(state.pieces,state.turn)<P.material(state.pieces,opponent(state.turn)))count=P.requestBoardCount(state.turn);
       var repeats=function(ps,turn){return repetitions(M.fen({pieces:ps,turn:turn}));};
-      var easy=function(){var move=P.chooseMove(state.pieces,state.turn,{count:count,repeats:repeats,mistakes:game.level==='easy'?0.35:0});if(move)playMove(move.from,move.to);};
+      var easy=function(){var move=P.chooseMove(state.pieces,state.turn,{count:count,repeats:repeats,shape:game.shape,mistakes:game.level==='easy'?0.35:0});if(move)playMove(move.from,move.to);};
       if(!hard){easy();return;}
       if(book){playMove(book.from,book.to);return;}
       // The engine gets the moves since the last pawn move or capture (no position before it can come back), so it
@@ -221,7 +225,7 @@
   $('newGameCancel').onclick=function(){$('newGameDialog').close();};
   function newGame(side){
     $('newGameDialog').close();
-    cancelAi();hint=null;game.human=side;game.bookDone=false;game.recorded=false;game.resigned=false;flipped=side==='black';
+    cancelAi();hint=null;pickShape();game.human=side;game.bookDone=false;game.recorded=false;game.resigned=false;flipped=side==='black';
     try{var url=new URL(location.href);url.searchParams.set('side',side);window.history.replaceState(null,'',url);}catch(e){}
     state=M.initial();trial={state:clone(state),history:[],future:[]};history=[];future=[];moves=[];selected=null;last=null;startCount();render();scheduleAi();
   }
@@ -511,7 +515,7 @@
   }
   repeatButton($('undo'),undo);repeatButton($('redo'),redo);
   $('start').onclick=function(){var error=M.validate(state);if(error){message(error,true);sound.playResult('failure');return;}save();trial={state:clone(state),history:history.slice(),future:future.slice()};mode='play';history=[];future=[];moves=[];selected=null;last=null;startCount();render();};
-  $('restart').onclick=function(){cancelAi();hint=null;if(game){game.bookDone=false;game.recorded=false;game.resigned=false;}remember();state=clone(trial.state);moves=[];selected=null;last=null;startCount();render();$('optionsDialog').close();scheduleAi();};
+  $('restart').onclick=function(){cancelAi();hint=null;pickShape();if(game){game.bookDone=false;game.recorded=false;game.resigned=false;}remember();state=clone(trial.state);moves=[];selected=null;last=null;startCount();render();$('optionsDialog').close();scheduleAi();};
   $('edit').onclick=function(){cancelAi();game=null;count=null;mode='edit';state=clone(trial.state);history=trial.history;future=trial.future;trial=null;moves=[];selected=null;last=null;render();};
   $('load').onclick=function(){if(mode!=='edit')return;try{var next=M.parse($('fen').value);remember();state=next;changed();$('optionsDialog').close();message('เปิดตำแหน่งแล้ว'+(M.validate(state)?' — '+M.validate(state):''));}catch(e){$('saveNote').textContent=e.message;}};
   $('copy').onclick=async function(){try{await navigator.clipboard.writeText($('fen').value);$('saveNote').textContent='คัดลอกรหัสแล้ว';}catch(e){$('fen').focus();$('fen').select();$('saveNote').textContent='เลือกข้อความแล้ว กรุณาคัดลอกด้วยเมนูของเครื่อง';}};

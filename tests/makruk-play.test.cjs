@@ -202,6 +202,26 @@ assert(!R.isAttacked(R.applyMove(board('K:a1 R:d4 P:h3 k:h8 n:f5'), at(saved.sli
   eq(P.openingChoice(hung, 'white'), null, 'a capture to make: the engine takes over');
 }
 
+// The flank shape (บ.จ4 บ.ฉ4, then the met and a knight behind them): both sides play it move for move, and every
+// pairing of the two shapes gets through the opening without losing material.
+{
+  let ps = M.initial().pieces, side = 'white';
+  const played = [];
+  for (let i = 0; i < 16; i++) {
+    const m = P.chooseMove(ps, side, { random: fixed, shape: 'flank' });
+    played.push(key(m)); ps = R.applyMove(ps, m.from, m.to); side = side === 'white' ? 'black' : 'white';
+  }
+  eq(played, ['e3e4', 'd6d5', 'f3f4', 'c6c5', 'g1f3', 'b8c6', 'e1f2', 'd8c7', 'f2e3', 'c7d6', 'f1f2', 'c8c7', 'c1c2', 'f8f7', 'b1d2', 'g8e7'], 'flank shape for both sides');
+  eq(M.fen({ pieces: ps, turn: side }).split(' ')[0], 'r3k2r/2s1ns2/ppnmpppp/2pp4/4PP2/PPPPMNPP/2SN1S2/R2K3R', 'the position in the flank example picture');
+  eq(P.openingMove(ps, 'white', 'flank'), null, 'flank shape complete');
+  eq(key(P.openingChoice(M.initial().pieces, 'white', 'flank')), 'e3e4', 'engine AI opens the flank shape with บ.จ4');
+  for (const [ws, bs] of [['flank', 'centre'], ['centre', 'flank']]) {
+    let q = M.initial().pieces, s = 'white';
+    for (let i = 0; i < 20; i++) { const m = P.chooseMove(q, s, { random: fixed, shape: s === 'white' ? ws : bs }); q = R.applyMove(q, m.from, m.to); s = s === 'white' ? 'black' : 'white'; }
+    eq(P.material(q, 'white'), P.material(q, 'black'), ws + ' against ' + bs + ': material stays even');
+  }
+}
+
 // Whole games: the computer plays both sides with counting; every game ends (mate or a draw) within the count limits.
 let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
 const endings = {};
