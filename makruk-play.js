@@ -35,7 +35,8 @@
   // Piece count (ศักดิ์หมาก): starts by itself when one side has only its king; the lone king says the number of
   // pieces left after that move + 1 on its first move, up to the ceiling of the chasing side's pieces. A capture never restarts it.
   // A board count switches to it when a capture leaves a lone king (not for a king that was already alone when the
-  // special count was asked for).
+  // special count was asked for). A special count goes on while unpromoted pawns are still on the board, and switches
+  // only once they are gone.
   // In both, once the counting side has said the last number (64 or the ceiling) the other side has one more move;
   // if it does not mate, the counting side makes its next move, says one more (65, or ceiling + 1) and the game is
   // drawn.
@@ -46,7 +47,7 @@
     if (white === 1 && black === 1) return current; // bare kings: MakrukRules reports the draw
     var c = current ? Object.assign({}, current) : null;
     var lone = loneSide(pieces);
-    if (lone && (!c || c.kind !== 'piece') && !(c && c.lone === lone))
+    if (lone && !hasPawns(pieces) && (!c || c.kind !== 'piece') && !(c && c.lone === lone))
       return { kind: 'piece', counter: lone, value: null, start: pieces.length + 1, ceiling: ceilingFor(pieces, opponent(lone)), extra: false, draw: false, special: !!(c && c.special) };
     if (!c) return null; // board count: only on request
     if (mover === c.counter) {
