@@ -148,23 +148,48 @@
     return Math.max(0, VALUES[victim.piece] - exchange(after, square, opponent(side), depth + 1));
   }
 
-  // Opening shape (ทรงหมาก): take the centre with two pawns first, then bring the pieces up behind them, with the
-  // met always ending on จ3 (ง6 for red).
-  // White: บ.จ3-จ4, บ.ง3-ง4, ม.ช1-จ2, ม็.จ1-ฉ2-จ3, ค.ฉ1-ฉ2, ค.ค1-ง2-ง3, ม.ข1-ง2.
-  // Red:   บ.ง6-ง5, บ.จ6-จ5, ม.ข8-ง7, ม็.ง8-ค7-ง6, ค.ค8-ค7, ค.ฉ8-จ7-จ6, ม.ช8-จ7.
-  // Each step is [piece, from, to, final square of that piece's route]; a step is done once the piece stands on
-  // `to` or has already gone on to its final square.
+  // Opening shapes (ทรงหมาก). Each step is [piece, from, to, final square of that piece's route]; a step is done once
+  // the piece stands on `to` or has already gone on to its final square.
+  // centre: take the centre with two pawns first, then bring the pieces up behind them, the met ending on จ3 (ง6 red).
+  //   White: บ.จ3-จ4, บ.ง3-ง4, ม.ช1-จ2, ม็.จ1-ฉ2-จ3, ค.ฉ1-ฉ2, ค.ค1-ง2-ง3, ม.ข1-ง2.
+  //   Red:   บ.ง6-ง5, บ.จ6-จ5, ม.ข8-ง7, ม็.ง8-ค7-ง6, ค.ค8-ค7, ค.ฉ8-จ7-จ6, ม.ช8-จ7.
+  // flank: the pawns go up one file to the side (จ4 ฉ4), the met and a knight come up behind them, then the rest.
+  //   White: บ.จ3-จ4, บ.ฉ3-ฉ4, ม.ช1-ฉ3, ม็.จ1-ฉ2-จ3, ค.ฉ1-ฉ2, ค.ค1-ค2, ม.ข1-ง2.
+  //   Red:   บ.ง6-ง5, บ.ค6-ค5, ม.ข8-ค6, ม็.ง8-ค7-ง6, ค.ค8-ค7, ค.ฉ8-ฉ7, ม.ช8-จ7.
   var OPENING = {
     white: [['pawn', 'e3', 'e4'], ['pawn', 'd3', 'd4'], ['knight', 'g1', 'e2'], ['met', 'e1', 'f2', 'e3'], ['met', 'f2', 'e3'],
       ['khon', 'f1', 'f2'], ['khon', 'c1', 'd2', 'd3'], ['khon', 'd2', 'd3'], ['knight', 'b1', 'd2']],
     black: [['pawn', 'd6', 'd5'], ['pawn', 'e6', 'e5'], ['knight', 'b8', 'd7'], ['met', 'd8', 'c7', 'd6'], ['met', 'c7', 'd6'],
       ['khon', 'c8', 'c7'], ['khon', 'f8', 'e7', 'e6'], ['khon', 'e7', 'e6'], ['knight', 'g8', 'e7']]
   };
+  var OPENINGS = {
+    centre: OPENING,
+    flank: {
+      white: [['pawn', 'e3', 'e4'], ['pawn', 'f3', 'f4'], ['knight', 'g1', 'f3'], ['met', 'e1', 'f2', 'e3'], ['met', 'f2', 'e3'],
+        ['khon', 'f1', 'f2'], ['khon', 'c1', 'c2'], ['knight', 'b1', 'd2']],
+      black: [['pawn', 'd6', 'd5'], ['pawn', 'c6', 'c5'], ['knight', 'b8', 'c6'], ['met', 'd8', 'c7', 'd6'], ['met', 'c7', 'd6'],
+        ['khon', 'c8', 'c7'], ['khon', 'f8', 'f7'], ['knight', 'g8', 'e7']]
+    }
+  };
   function square(name) { return { r: 8 - Number(name[1]), c: 'abcdefgh'.indexOf(name[0]) }; }
-  // The opening moves that can be played now, in order. Steps already done or no longer possible are skipped.
-  function openingMoves(pieces, side) {
+  // Against the flank shape the other side may push a pawn up to stand in front of it (เบี้ยสูง: a white pawn on จ5
+  // facing red's ง5 ค5, or a red pawn on ง4 facing white's จ4 ฉ4). The answer comes before the rest of the shape: the
+  // khon to ฉ7 (ค2) first, then the pawn to ช5 (ข4), then that pawn takes the pawn on ฉ4 (ค5) when the exchange is even.
+  var FLANK_ANSWER = {
+    black: { pawn: 'e5', steps: [['khon', 'f8', 'f7'], ['pawn', 'g6', 'g5', 'f4'], ['pawn', 'g5', 'f4']] },
+    white: { pawn: 'd4', steps: [['khon', 'c1', 'c2'], ['pawn', 'b3', 'b4', 'c5'], ['pawn', 'b4', 'c5']] }
+  };
+  function shapeSteps(pieces, side, shape, answerOnly) {
+    var steps = answerOnly ? [] : (OPENINGS[shape] || OPENING)[side], answer = FLANK_ANSWER[side];
+    if (shape === 'flank' && pieces.some(function (p) { return p.side !== side && p.piece === 'pawn' && same(p.at, square(answer.pawn)); }))
+      steps = answer.steps.concat(steps);
+    return steps;
+  }
+  // The opening moves of `shape` (default centre) that can be played now, in order. Steps already done or no longer
+  // possible are skipped.
+  function openingMoves(pieces, side, shape, answerOnly) {
     var legal = R.legalMoves(pieces, side), out = [];
-    OPENING[side].forEach(function (step) {
+    shapeSteps(pieces, side, shape, answerOnly).forEach(function (step) {
       var piece = step[0], from = square(step[1]), to = square(step[2]);
       var targets = [to].concat(step[3] ? [square(step[3])] : []);
       if (pieces.some(function (p) { return p.side === side && p.piece === piece && targets.some(function (t) { return same(p.at, t); }); })) return;
@@ -177,7 +202,7 @@
     });
     return out;
   }
-  function openingMove(pieces, side) { return openingMoves(pieces, side)[0] || null; }
+  function openingMove(pieces, side, shape) { return openingMoves(pieces, side, shape)[0] || null; }
 
   // Positional terms: pieces toward the centre (ง4 จ4 ง5 จ5 most of all), pawns and khon moving forward,
   // the king kept at home.
@@ -196,7 +221,7 @@
 
   // Pick a move for `side`: mate at once, never allow a mate in one, weigh captures by the exchange that follows,
   // keep pieces from hanging, avoid a third repetition when ahead, and add a little variety so games differ.
-  // options.random: 0..1 (default Math.random).
+  // options.random: 0..1 (default Math.random); options.shape: the opening shape to follow (OPENINGS, default centre).
   function chooseMove(pieces, side, options) {
     options = options || {};
     var random = options.random || Math.random, enemy = opponent(side);
@@ -246,7 +271,7 @@
     // Opening: follow the shape while nothing is being exchanged and the king is not attacked. Take the first step
     // that is safe (the pawn or piece is not lost to an exchange); a step that is not safe yet waits.
     if (options.opening !== false && !R.inCheck(pieces, side) && !underAttack(pieces, side) && !scored.some(function (x) { return x.capture && x.score > 0.5; })) {
-      var steps = openingMoves(pieces, side);
+      var steps = openingMoves(pieces, side, options.shape, options.answerOnly);
       for (var i = 0; i < steps.length; i++) {
         var entry = scored.find(function (x) { return same(x.move.from, steps[i].from) && same(x.move.to, steps[i].to); });
         if (entry && entry.score > -0.5 && entry.score >= top - 0.6) return steps[i];
@@ -263,9 +288,11 @@
     scored.forEach(function (x) { var s = x.score + random() * 0.35; if (s > bestScore) { bestScore = s; best = x.move; } });
     return best;
   }
-  // The opening-shape move chooseMove would play now (centre pawns first), or null when the shape is done or has to
-  // wait; the hard AI plays these before handing the game to the engine.
-  function openingChoice(pieces, side) { return chooseMove(pieces, side, { openingOnly: true }); }
+  // The opening-shape move chooseMove would play now (the shape's pawns first), or null when the shape is done or has
+  // to wait; the engine AI plays these before handing the game to the engine.
+  function openingChoice(pieces, side, shape) { return chooseMove(pieces, side, { openingOnly: true, shape: shape }); }
+  // The advanced-pawn answer alone (FLANK_ANSWER), for the engine AI after it has left the opening shape.
+  function flankAnswer(pieces, side, shape) { return chooseMove(pieces, side, { openingOnly: true, answerOnly: true, shape: shape }); }
   // Can the opponent win material right now (a capture whose exchange pays)?
   function underAttack(pieces, side) {
     var enemy = opponent(side), seen = [];
@@ -277,5 +304,5 @@
     });
   }
 
-  return { canRequestBoardCount: canRequestBoardCount, requestBoardCount: requestBoardCount, canRequestSpecialCount: canRequestSpecialCount, requestSpecialCount: requestSpecialCount, quietPlies: quietPlies, pawnsLocked: pawnsLocked, LOCKED_PLIES: LOCKED_PLIES, SHUFFLES: SHUFFLES, shuffleMoves: shuffleMoves, material: material, VALUES: VALUES, OPENING: OPENING, openingMove: openingMove, openingMoves: openingMoves, openingChoice: openingChoice, ceilingFor: ceilingFor, nextCount: nextCount, countText: countText, exchange: exchange, chooseMove: chooseMove };
+  return { canRequestBoardCount: canRequestBoardCount, requestBoardCount: requestBoardCount, canRequestSpecialCount: canRequestSpecialCount, requestSpecialCount: requestSpecialCount, quietPlies: quietPlies, pawnsLocked: pawnsLocked, LOCKED_PLIES: LOCKED_PLIES, SHUFFLES: SHUFFLES, shuffleMoves: shuffleMoves, material: material, VALUES: VALUES, OPENING: OPENING, OPENINGS: OPENINGS, openingMove: openingMove, openingMoves: openingMoves, openingChoice: openingChoice, flankAnswer: flankAnswer, ceilingFor: ceilingFor, nextCount: nextCount, countText: countText, exchange: exchange, chooseMove: chooseMove };
 });

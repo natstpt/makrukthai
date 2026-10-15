@@ -202,6 +202,55 @@ assert(!R.isAttacked(R.applyMove(board('K:a1 R:d4 P:h3 k:h8 n:f5'), at(saved.sli
   eq(P.openingChoice(hung, 'white'), null, 'a capture to make: the engine takes over');
 }
 
+// The flank shape (บ.จ4 บ.ฉ4, then the met and a knight behind them): both sides play it move for move, and every
+// pairing of the two shapes gets through the opening without losing material.
+{
+  let ps = M.initial().pieces, side = 'white';
+  const played = [];
+  for (let i = 0; i < 16; i++) {
+    const m = P.chooseMove(ps, side, { random: fixed, shape: 'flank' });
+    played.push(key(m)); ps = R.applyMove(ps, m.from, m.to); side = side === 'white' ? 'black' : 'white';
+  }
+  eq(played, ['e3e4', 'd6d5', 'f3f4', 'c6c5', 'g1f3', 'b8c6', 'e1f2', 'd8c7', 'f2e3', 'c7d6', 'f1f2', 'c8c7', 'c1c2', 'f8f7', 'b1d2', 'g8e7'], 'flank shape for both sides');
+  eq(M.fen({ pieces: ps, turn: side }).split(' ')[0], 'r3k2r/2s1ns2/ppnmpppp/2pp4/4PP2/PPPPMNPP/2SN1S2/R2K3R', 'the position in the flank example picture');
+  eq(P.openingMove(ps, 'white', 'flank'), null, 'flank shape complete');
+  eq(key(P.openingChoice(M.initial().pieces, 'white', 'flank')), 'e3e4', 'engine AI opens the flank shape with บ.จ4');
+  for (const [ws, bs] of [['flank', 'centre'], ['centre', 'flank']]) {
+    let q = M.initial().pieces, s = 'white';
+    for (let i = 0; i < 20; i++) { const m = P.chooseMove(q, s, { random: fixed, shape: s === 'white' ? ws : bs }); q = R.applyMove(q, m.from, m.to); s = s === 'white' ? 'black' : 'white'; }
+    eq(P.material(q, 'white'), P.material(q, 'black'), ws + ' against ' + bs + ': material stays even');
+  }
+}
+
+// An advanced pawn against the flank shape (เบี้ยสูง): white pushes a supported pawn to จ5 on its 4th move. Red
+// answers ค.ฉ8-ฉ7, then บ.ช6-ช5, then บ.ช5×ฉ4, without losing material. The same for white against a red pawn on ง4:
+// ค.ค1-ค2, บ.ข3-ข4, บ.ข4×ค5.
+for (const [ai, push, answer] of [['black', 'e4e5', ['f8f7', 'g6g5', 'g5f4']], ['white', 'd5d4', ['c1c2', 'b3b4', 'b4c5']]]) {
+  let ps = M.initial().pieces, side = 'white', other = 0;
+  const aiMoves = [];
+  for (let i = 0; i < 24; i++) {
+    let m;
+    if (side !== ai) {
+      other++;
+      const p = R.legalMoves(ps, side).find(x => key(x) === push);
+      m = other >= 4 && p ? p : P.chooseMove(ps, side, { random: fixed, shape: 'flank' });
+    } else { m = P.chooseMove(ps, side, { random: fixed, shape: 'flank' }); aiMoves.push(key(m)); }
+    ps = R.applyMove(ps, m.from, m.to); side = side === 'white' ? 'black' : 'white';
+  }
+  const at0 = aiMoves.indexOf(answer[0]);
+  assert(at0 >= 0, ai + ' answers the advanced pawn with ' + answer[0] + ': ' + aiMoves.join(' ')); checks++;
+  eq(aiMoves.slice(at0, at0 + 3), answer, ai + ': khon first, then the pawn up, then it takes');
+  assert(P.material(ps, ai) >= P.material(ps, ai === 'white' ? 'black' : 'white'), ai + ' loses no material'); checks++;
+}
+
+// After the engine AI has left the shape, the advanced-pawn answer still comes first (flankAnswer), and only then.
+{
+  const advanced = M.parse('r1smksnr/8/ppn1pppp/2ppP3/5P2/PPPP1NPP/4M3/RNSK1S1R b - - 0 1').pieces;
+  eq(key(P.flankAnswer(advanced, 'black', 'flank')), 'f8f7', 'engine AI: the khon to ฉ7 first');
+  eq(P.flankAnswer(advanced, 'black', 'centre'), null, 'only against the flank shape');
+  eq(P.flankAnswer(M.initial().pieces, 'black', 'flank'), null, 'no advanced pawn: nothing to answer');
+}
+
 // Whole games: the computer plays both sides with counting; every game ends (mate or a draw) within the count limits.
 let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
 const endings = {};
