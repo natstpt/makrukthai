@@ -153,7 +153,8 @@
   // centre: take the centre with two pawns first, then bring the pieces up behind them, the met ending on จ3 (ง6 red).
   //   White: บ.จ3-จ4, บ.ง3-ง4, ม.ช1-จ2, ม็.จ1-ฉ2-จ3, ค.ฉ1-ฉ2, ค.ค1-ง2-ง3, ม.ข1-ง2.
   //   Red:   บ.ง6-ง5, บ.จ6-จ5, ม.ข8-ง7, ม็.ง8-ค7-ง6, ค.ค8-ค7, ค.ฉ8-จ7-จ6, ม.ช8-จ7.
-  // flank: the pawns go up one file to the side (จ4 ฉ4), the met and a knight come up behind them, then the rest.
+  // flank: the pawns go up one file to the side (จ4 ฉ4), the met and a knight come up behind them, then the rest. The
+  // game page gives it to the AI only as white; the red version stays for completeness and the tests.
   //   White: บ.จ3-จ4, บ.ฉ3-ฉ4, ม.ช1-ฉ3, ม็.จ1-ฉ2-จ3, ค.ฉ1-ฉ2, ค.ค1-ค2, ม.ข1-ง2.
   //   Red:   บ.ง6-ง5, บ.ค6-ค5, ม.ข8-ค6, ม็.ง8-ค7-ง6, ค.ค8-ค7, ค.ฉ8-ฉ7, ม.ช8-จ7.
   var OPENING = {
