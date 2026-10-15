@@ -135,11 +135,24 @@ eq(P.nextCount(null, board('K:e1 R:a1 P:c3 k:e8'), 'white'), null, 'no count wit
   // The pawn is promoted after the count began: the count carries on, it does not start again or switch.
   s = P.nextCount(P.nextCount(P.requestSpecialCount('white', free), free, 'white'), board('K:h1 k:a8 n:d3 b:e2 f:g3'), 'black');
   eq([s.kind, s.value], ['board', 1], 'no pawns left: the special count goes on');
-  // Both sides had pieces: a capture that leaves a lone king switches to the piece count.
+  // Both sides had pieces: a capture leaves a lone king but pawns are still on the board: the special count goes on.
   s = P.nextCount(P.requestSpecialCount('white', locked), locked, 'white');
   s = P.nextCount(s, board('K:e1 k:e8 n:a1 p:d5'), 'black');
-  eq([s.kind, s.counter, s.ceiling], ['piece', 'white', 64], 'lone king: switch to the piece count');
-  s = P.nextCount(s, board('K:e2 k:e8 n:a1 p:d5'), 'white'); eq(s.value, 5, 'piece count goes on with pawns left'); }
+  eq([s.kind, s.special, s.counter, s.value], ['board', true, 'white', 1], 'lone king with pawns left: the special count goes on');
+  s = P.nextCount(s, board('K:e2 k:e8 n:a1 p:d5'), 'white'); eq([s.kind, s.value], ['board', 2], 'special count keeps counting');
+  // With no pawns left, a capture that leaves a lone king switches to the piece count.
+  s = P.nextCount(P.requestSpecialCount('white', locked), locked, 'white');
+  s = P.nextCount(s, board('K:e1 k:e8 n:a1'), 'black');
+  eq([s.kind, s.counter], ['piece', 'white'], 'no pawns left: switch to the piece count');
+  // The reported game: red counts the special count; white's king takes red's last piece (pawn a4) and white's pawn
+  // a3 is still unpromoted, so red keeps counting (45, 46) instead of switching to the piece count.
+  { let g = Object.assign(P.requestSpecialCount('black', board('K:b4 R:g7 R:h7 P:a3 k:a8 p:a4')), { value: 45 });
+    g = P.nextCount(g, board('K:a4 R:g7 R:h7 P:a3 k:a8'), 'white');
+    eq([g.kind, g.special, g.counter, g.value], ['board', true, 'black', 45], 'lone king, a pawn left: no switch');
+    g = P.nextCount(g, board('K:a4 R:g7 R:h7 P:a3 k:b8'), 'black'); eq(g.value, 46, 'red says 46');
+    // Once the last pawn is gone (here promoted), the lone king switches to the piece count.
+    g = P.nextCount(g, board('K:a4 R:g7 R:h7 F:a3 k:b8'), 'white');
+    eq([g.kind, g.counter, g.ceiling], ['piece', 'black', 8], 'pawn gone: switch to the piece count'); } }
 
 // Repetition: a move that would bring a position back a third time counts as a draw for the computer.
 { const ps = board('K:a1 R:h1 k:a8 r:h8 P:c3 p:c6');
