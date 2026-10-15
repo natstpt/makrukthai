@@ -196,28 +196,105 @@
     },simple);
   });
   // Resign: the AI wins the game (counted as a finished game). Undo takes the resignation back.
-  // Once the game is over (resigned, mated or drawn) the same button reads เริ่มใหม่: it asks which side to play, then
-  // starts a new game from the opening position.
+  // Once the game is over (resigned, mated or drawn) the same button reads เริ่มใหม่ and opens the result again.
   $('resign').addEventListener('click',function(){
     if(!game||!game.ai||mode!=='play')return;
-    if(playStatus().state!=='playing'){$('newGameDialog').showModal();return;}
+    if(playStatus().state!=='playing'){showResult();return;}
     $('resignDialog').showModal();
   });
   $('resignCancel').onclick=function(){$('resignDialog').close();};
   $('resignConfirm').onclick=function(){
     $('resignDialog').close();
     if(!game||!game.ai||mode!=='play'||playStatus().state!=='playing')return;
-    cancelAi();hint=null;game.resigned=true;render();sound.playResult('failure');recordGame({winner:aiSide()});
+    cancelAi();hint=null;game.resigned=true;render();sound.playResult('failure');recordGame({winner:aiSide()});showResult();
   };
   $('newGameCancel').onclick=function(){$('newGameDialog').close();};
   function newGame(side){
-    $('newGameDialog').close();
+    $('newGameDialog').close();if($('resultDialog').open)$('resultDialog').close();stopReview();
     cancelAi();hint=null;game.human=side;game.bookDone=false;game.recorded=false;game.resigned=false;flipped=side==='black';
     try{var url=new URL(location.href);url.searchParams.set('side',side);window.history.replaceState(null,'',url);}catch(e){}
     state=M.initial();trial={state:clone(state),history:[],future:[]};history=[];future=[];moves=[];selected=null;last=null;startCount();render();scheduleAi();
   }
   $('newWhite').onclick=function(){newGame('white');};
   $('newBlack').onclick=function(){newGame('black');};
+
+  // Result of a game against the AI: who won and how, a word from the coach, and a game review. The review searches
+  // every position from the player's first move to the end with the engine (20 plies, at most REVIEW_TIME ms each)
+  // and rates each of the player's moves by how much it lost against the engine's best move:
+  // ดีเยี่ยม = the best move or within 0.3 pawn · ดี = within 1.2 pawns · ผิดพลาด = more.
+  var REVIEW_DEPTH=20,REVIEW_TIME=2500,review=null;
+  var RESULT_REASON={checkmate:'ด้วยการรุกจน',resign:'คุณยอมแพ้',stalemate:'อับ · ฝ่ายที่ต้องเดินไม่มีตาเดิน',draw:'เหลือขุนเปล่าทั้งสองฝ่าย',countdraw:'นับครบศักดิ์',repetition:'เดินซ้ำตำแหน่งเดิม 3 ครั้ง'};
+  function showResult(){
+    var status=playStatus();if(!game||!game.ai||status.state==='playing')return;
+    var won=status.winner===game.human,lost=!!status.winner&&!won,level={easy:'ง่าย',medium:'กลาง',hard:'ยาก'}[game.level];
+    $('resultTitle').textContent=won?'คุณชนะ!':lost?'AI ชนะ':'เสมอ';
+    $('resultTitle').className=won?'win':lost?'loss':'drawn';
+    $('resultReason').textContent=RESULT_REASON[status.state]||'';
+    $('resultSpeech').textContent=won?'เยี่ยมมาก! คุณชนะ AI ระดับ'+level+' ลองดูว่าตาไหนที่เดินได้ดีที่สุด แล้วลองระดับที่ยากขึ้น':
+      status.state==='resign'?'ยอมแพ้ไม่ใช่เรื่องผิด รู้ตัวว่าเสียเปรียบก็เป็นทักษะหนึ่ง ลองดูว่าเริ่มพลาดตั้งแต่ตาไหน เกมหน้าจะเตรียมตัวได้ดีขึ้น':
+      lost?'แพ้ไม่เป็นไร ทุกเกมคือบทเรียน ลองดูตาที่พลาด แล้วเกมหน้าจะเล่นได้ดีขึ้นแน่นอน':
+      'เสมอกับ AI ระดับ'+level+' ก็เก่งแล้ว ลองดูว่ามีตาไหนที่จะเล่นให้ชนะได้';
+    if(!review||review.length!==moves.length)startReview();else drawReview();
+    if(!$('resultDialog').open){
+      if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)$('resultDialog').showModal();
+      else setTimeout(function(){if(playStatus().state!=='playing'&&!$('resultDialog').open)$('resultDialog').showModal();},status.state==='resign'?0:700);
+    }
+  }
+  function stopReview(){if(review)review.stopped=true;review=null;}
+  function reviewValue(r){
+    if(!r||!r.score)return 0;
+    return r.score.mate!==undefined?(r.score.mate>0?10000-r.score.mate:-10000-r.score.mate):r.score.cp;
+  }
+  function startReview(){
+    stopReview();
+    var job={length:moves.length,fens:[M.fen(trial.state)].concat(moves.map(function(m){return m.fen;})),values:[],bests:[],rated:[],done:0,total:0,stopped:false,error:''};
+    review=job;
+    var mine=moves.map(function(m,i){return m.side===game.human?i:-1;}).filter(function(i){return i>=0;});
+    var need=[];mine.forEach(function(i){if(need.indexOf(i)<0)need.push(i);if(need.indexOf(i+1)<0)need.push(i+1);});
+    job.total=need.length;
+    if(!E||E.unsupported()||engine.state==='failed'){job.error='เครื่องนี้ใช้ AI วิเคราะห์เกมไม่ได้';drawReview();return;}
+    var rate=function(i){
+      var clamp=function(v){return Math.max(-1000,Math.min(1000,v));};
+      var loss=Math.max(0,clamp(job.values[i])-clamp(-job.values[i+1]));
+      var kind=job.bests[i]===moves[i].uci||loss<=30?'best':loss<=120?'good':'mistake';
+      var better=null;
+      if(kind==='mistake'&&job.bests[i]){try{better=N.formatMove(M.parse(job.fens[i]).pieces,square(job.bests[i],0),square(job.bests[i],2)).text;}catch(e){}}
+      job.rated.push({i:i,kind:kind,loss:loss,better:better});
+    };
+    var step=function(k){
+      if(job.stopped)return;
+      if(k>=need.length){drawReview();return;}
+      var at=need[k],parsed=M.parse(job.fens[at]),st=R.gameStatus(parsed.pieces,parsed.turn);
+      var after=function(value,best){
+        job.values[at]=value;job.bests[at]=best;job.done=k+1;
+        mine.forEach(function(i){if(job.values[i]!==undefined&&job.values[i+1]!==undefined&&!job.rated.some(function(r){return r.i===i;}))rate(i);});
+        drawReview();step(k+1);
+      };
+      if(st.state==='checkmate'){after(-10000,null);return;}
+      if(st.state!=='playing'){after(0,null);return;}
+      E.evaluate(job.fens[at],{depth:REVIEW_DEPTH,time:REVIEW_TIME}).then(function(r){if(!job.stopped)after(reviewValue(r),r.best);},function(){if(job.stopped)return;job.error='AI วิเคราะห์ไม่สำเร็จ';drawReview();});
+    };
+    drawReview();step(0);
+  }
+  function drawReview(){
+    var job=review;if(!job)return;
+    var countOf=function(kind){return job.rated.filter(function(r){return r.kind===kind;}).length;};
+    var finished=!job.error&&job.done>=job.total;
+    $('statBest').textContent=countOf('best');$('statGood').textContent=countOf('good');$('statMistake').textContent=countOf('mistake');
+    $('reviewProgress').hidden=finished&&!job.error;
+    $('reviewBar').style.width=(job.total?Math.round(job.done/job.total*100):100)+'%';
+    $('reviewText').textContent=job.error||(job.total?'AI กำลังวิเคราะห์ตาเดิน '+job.done+'/'+job.total+' ตำแหน่ง (ลึก '+REVIEW_DEPTH+' ชั้น)':'ยังไม่มีตาเดินของคุณให้วิเคราะห์');
+    var list=job.rated.filter(function(r){return r.kind==='mistake';}).sort(function(a,b){return a.i-b.i;});
+    $('reviewList').innerHTML=list.length?list.map(function(r){
+      var m=moves[r.i],no=Math.floor((r.i+(trial.state.turn==='white'?0:1))/2)+1;
+      return '<li><b>ตา '+no+'</b> คุณเดิน '+m.text+(r.better?' · ควรเดิน <strong>'+r.better+'</strong>':'')+' <em>(เสีย '+(r.loss/100).toFixed(1)+' เบี้ย)</em></li>';
+    }).join(''):(finished&&job.total?'<li class="none">ไม่มีตาที่ผิดพลาด เก่งมาก!</li>':'');
+    $('reviewBtn').disabled=!job.rated.length&&!finished;
+  }
+  $('reviewBtn').onclick=function(){var open=$('reviewList').hidden;$('reviewList').hidden=!open;$('reviewBtn').textContent=open?'ซ่อนรายละเอียด':'★ Game Review · ดูตาที่พลาด';};
+  $('resultClose').onclick=function(){$('resultDialog').close();};
+  $('resultNew').onclick=function(){$('resultDialog').close();$('newGameDialog').showModal();};
+  $('resultRematch').onclick=function(){newGame(game.human);};
   document.querySelectorAll('[data-assist]').forEach(function(box){
     box.checked=assist[box.dataset.assist];
     box.addEventListener('change',function(){assist[box.dataset.assist]=box.checked;try{localStorage.setItem('makrukAssist',JSON.stringify(assist));}catch(e){}drawAnalysis();scheduleFit();});
@@ -364,7 +441,7 @@
     moves.push(record);
     render();sound.queueMove({from:from,to:at,check:result.check,skipAnimation:true});sound.flush();if(!dragged)animateMove(from,at);
     if(result.state!=='playing')sound.playResult(result.state==='checkmate'?'complete':'draw');
-    if(result.state!=='playing')recordGame(result);
+    if(result.state!=='playing'){recordGame(result);showResult();}
     scheduleAi();
   }
   $('board').addEventListener('click',function(e){
@@ -483,7 +560,7 @@
     finally{button.disabled=false;button.removeAttribute('aria-busy');button.textContent='↗ แชร์ตำแหน่ง';}
   };
   function undo(){
-    cancelAi();
+    cancelAi();stopReview();if($('resultDialog').open)$('resultDialog').close();
     if(game&&game.resigned){game.resigned=false;render();scheduleAi();return;}
     var prev=history.pop();if(!prev)return;future.push(snapshot());restore(prev);if(aiTurn()&&history.length){prev=history.pop();future.push(snapshot());restore(prev);}scheduleAi();
   }

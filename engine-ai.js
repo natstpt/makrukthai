@@ -206,5 +206,33 @@
   }
   function stopAnalysis() { analysis.next = null; if (analysis.running && line && line.stops) line.post('stop'); }
 
-  root.MakrukEngine = { start: start, unsupported: unsupported, bestMove: bestMove, lastDepth: function () { return reached; }, analyse: analyse, stopAnalysis: stopAnalysis, tier: function () { return tier; }, ready: function () { return !!tier; } };
+  // Game review: the engine's best move and score for the side to move in fen, at full strength with one line,
+  // searching limits.depth plies but stopping itself after limits.time ms. Resolves {best: 'e3e4'|null,
+  // score: {cp}|{mate}|null, depth}. Queued with bestMove, so it never overlaps an AI move.
+  function evaluate(fen, limits) {
+    var searched, searchDone = new Promise(function (r) { searched = r; }), before = busy;
+    busy = searchDone;
+    return before.then(function () { return start(); }).then(function () {
+      return new Promise(function (resolve) {
+        if (skillLevel !== 20) { line.post('setoption name Skill Level value 20'); skillLevel = 20; }
+        if (analysis.multipv) { line.post('setoption name MultiPV value 1'); analysis.multipv = false; }
+        var out = { best: null, score: null, depth: 0 };
+        listener = function (text) {
+          if (text.indexOf('info') === 0 && text.indexOf(' score ') > 0 && text.indexOf('bound') < 0) {
+            var info = parseInfo(text);
+            if (info.score && info.depth >= out.depth) { out.score = info.score; out.depth = info.depth; }
+            return;
+          }
+          if (text.indexOf('bestmove') !== 0) return;
+          listener = null; clearTimeout(give); searched();
+          var m = text.split(/\s+/)[1]; out.best = m && m !== '(none)' ? m.slice(0, 4) : null; resolve(out);
+        };
+        var give = setTimeout(function () { listener = null; searched(); resolve(out); }, limits.time + 1500);
+        line.post('position fen ' + fen);
+        line.post('go depth ' + limits.depth + ' movetime ' + limits.time);
+      });
+    }, function (e) { searched(); throw e; });
+  }
+
+  root.MakrukEngine = { start: start, unsupported: unsupported, bestMove: bestMove, evaluate: evaluate, lastDepth: function () { return reached; }, analyse: analyse, stopAnalysis: stopAnalysis, tier: function () { return tier; }, ready: function () { return !!tier; } };
 })(window);
