@@ -14,9 +14,10 @@
   function sideName(side){return side==='white'?'ขาว':'แดง';}
   // Games opened from the lesson page's settings: editor.html?play=2 (two players on one device) or
   // ?play=ai&side=white|black&level=easy|medium|hard (the learner plays that side against the computer). Every level is
-  // Fairy-Stockfish (engine-ai.js) after the same opening shape; hard thinks up to 1 second a move (about 15 plies deep
-  // in the middle game), medium and easy search a fixed, shallower depth (AI_DEPTH) on the small lite engine. If no
-  // engine runs in this browser, the player in makruk-play.js plays instead (easy making a mistake now and then).
+  // Fairy-Stockfish (engine-ai.js) after the same opening shape, with the limits in AI_LIMITS: hard searches toward 20
+  // plies for at most 3 seconds a move, medium 5 plies and easy 1 ply with a low Skill Level (now and then a weaker
+  // move), both on the small lite engine. If no engine runs in this browser, the player in makruk-play.js plays instead
+  // (easy making a mistake now and then).
   var game=null;
   try{var playParams=new URLSearchParams(location.search);if(playParams.get('play')==='2')game={ai:false};else if(playParams.get('play')==='ai')game={ai:true,human:playParams.get('side')==='black'?'black':'white',level:['easy','hard'].indexOf(playParams.get('level'))>=0?playParams.get('level'):'medium',lesson:playParams.get('lesson')};}catch(e){}
   function aiSide(){return game&&game.ai?opponent(game.human):null;}
@@ -32,7 +33,7 @@
   function canAskSpecial(){return P.canRequestSpecialCount(state.pieces,count,moves,trial&&M.fen(trial.state));}
   function askCount(side){count=P.canRequestBoardCount(state.pieces,count)?P.requestBoardCount(side):P.requestSpecialCount(side,state.pieces);}
   var aiTimer=0,aiSearch=0,E=window.MakrukEngine,engine={state:'off',progress:0};
-  var AI_DEPTH={easy:1,medium:5};
+  var AI_LIMITS={easy:{depth:1,skill:3},medium:{depth:5},hard:{depth:20,time:3000}};
   function engineAi(){return !!game&&!!game.ai&&engine.state!=='failed';}
   function cancelAi(){clearTimeout(aiTimer);aiTimer=0;aiSearch++;}
   function moveKey(m){return 'abcdefgh'[m.from.c]+(8-m.from.r)+'abcdefgh'[m.to.c]+(8-m.to.r);}
@@ -68,7 +69,7 @@
       // The engine gets the moves since the last pawn move or capture (no position before it can come back), so it
       // sees the repetitions and never needs a promotion suffix.
       var since=moves.length;while(since>0&&moves[since-1].piece!=='pawn'&&!moves[since-1].capture)since--;
-      E.bestMove(since?moves[since-1].fen:M.fen(trial.state),moves.slice(since).map(function(m){return m.uci;}),AI_DEPTH[game.level]).then(function(key){
+      E.bestMove(since?moves[since-1].fen:M.fen(trial.state),moves.slice(since).map(function(m){return m.uci;}),AI_LIMITS[game.level]).then(function(key){
         if(token!==aiSearch||!aiTurn())return;
         var move=key&&R.legalMoves(state.pieces,state.turn).find(function(m){return moveKey(m)===key;});
         if(move)playMove(move.from,move.to);else easy();
@@ -234,7 +235,7 @@
     $('panelTitle').textContent=mode==='edit'?'จัดตำแหน่งหมาก':'ทดลองเดิน';
     $('topSide').textContent=flipped?'ฝ่ายขาว':'ฝ่ายแดง';$('bottomSide').textContent=flipped?'ฝ่ายแดง':'ฝ่ายขาว';
     $('topDot').classList.toggle('white',flipped);$('bottomDot').classList.toggle('white',!flipped);
-    $('modeLabel').textContent=mode==='edit'?'1 · ตั้งตำแหน่ง':analysis?'AI ระดับยาก'+(E&&E.tier()?' ('+(E.tier()==='lite'?'Lite':'Full')+')':''):game?(game.ai?'คุณเป็นฝ่าย'+sideName(game.human)+' · AI ระดับ'+({easy:'ง่าย',medium:'กลาง',hard:'ยาก'}[game.level])+(!engineAi()?' (Fallback)':game.level==='hard'&&E&&E.tier()?' ('+(E.tier()==='lite'?'Lite':'Full')+')':AI_DEPTH[game.level]?' (ลึก '+AI_DEPTH[game.level]+' ชั้น)':''):'เครื่องเดียวกัน'):'2 · ทดลองเดิน';document.querySelector('.brand h1').textContent=analysis?'ถอดหมาก':game?(game.ai?'เล่นกับ AI':'เล่น 2 คน'):'ตั้งหมาก';$('turn').value=state.turn;
+    $('modeLabel').textContent=mode==='edit'?'1 · ตั้งตำแหน่ง':analysis?'AI ระดับยาก'+(E&&E.tier()?' ('+(E.tier()==='lite'?'Lite':'Full')+')':''):game?(game.ai?'คุณเป็นฝ่าย'+sideName(game.human)+' · AI ระดับ'+({easy:'ง่าย',medium:'กลาง',hard:'ยาก'}[game.level])+(!engineAi()?' (Fallback)':game.level==='hard'?(E&&E.tier()?' ('+(E.tier()==='lite'?'Lite':'Full')+(E.lastDepth()?' · ลึก '+E.lastDepth()+' ชั้น':'')+')':''):' (ลึก '+AI_LIMITS[game.level].depth+' ชั้น'+(game.level==='easy'?' · พลาดบ้าง':'')+')'):'เครื่องเดียวกัน'):'2 · ทดลองเดิน';document.querySelector('.brand h1').textContent=analysis?'ถอดหมาก':game?(game.ai?'เล่นกับ AI':'เล่น 2 คน'):'ตั้งหมาก';$('turn').value=state.turn;
     document.querySelectorAll('[data-tool]').forEach(function(b){b.setAttribute('aria-pressed',String(tool===b.dataset.tool));});
     $('fen').value=M.fen(state);
     $('saveNote').textContent=storageOK?'เก็บตำแหน่งที่ตั้งไว้ให้อัตโนมัติในเครื่องนี้ (ไม่ทับด้วยตาที่ทดลองเดิน)':'เครื่องนี้เก็บอัตโนมัติไม่ได้ กรุณาคัดลอกรหัสไว้';
