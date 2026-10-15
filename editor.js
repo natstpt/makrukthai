@@ -70,6 +70,9 @@
     // Engine AI: the opening shape first (ง4 จ4 / ง5 จ5 pawns, then the pieces behind them); once it is done or has
     // to stop, the engine plays the rest of the game. Decided now, so an engine move does not wait the opening delay.
     var book=hard&&!game.bookDone&&P.openingChoice(state.pieces,state.turn,game.shape);
+    // The answer to an advanced pawn against the flank shape (makruk-play.js FLANK_ANSWER) is played even after the
+    // shape has handed over to the engine.
+    if(hard&&game.bookDone&&!book)book=P.flankAnswer(state.pieces,state.turn,game.shape);
     if(hard&&!book)game.bookDone=true;
     aiTimer=setTimeout(function(){
       aiTimer=0;if(token!==aiSearch||!aiTurn())return;
