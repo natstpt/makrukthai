@@ -5,11 +5,15 @@
 //!       to the repository). Materials: K then the pieces of white, v, K then red's: R rook, N knight, S khon,
 //!       M met or promoted pawn, e.g. KRMMvKR = king, rook and two promoted pawns against king and rook.
 //!       Finished tables are read back instead of rebuilt, so a stopped run goes on where it was.
+//!   makruk-tb export KRvKR [more …] [--out DIR] [--repo DIR]
+//!       Writes the tables (from DIR, building them first if needed) for the website into tablebase/rs/: white to
+//!       move only, split by the kings' squares when big, compressed (see export.rs).
 //!   makruk-tb check [--repo DIR] [--big DIR …]
 //!       Builds the site's existing tables again and compares every position (tablebase/krk.bin and the one- and
 //!       two-piece tables; --big adds a three-piece table folder made by scripts/build-big-tables.cjs).
 
 mod check;
+mod export;
 mod geom;
 mod layout;
 mod tables;
@@ -72,6 +76,18 @@ fn main() {
                 true
             });
         }
+        Some("export") if words.len() > 1 => {
+            // export KRvKR … : tables from DIR (tablebase-local) to the website's tablebase/rs/.
+            let root = repo.join("tablebase").join("rs");
+            let mut reg = Registry::new(&out, true);
+            for w in &words[1..] {
+                let mat = Material::parse(w).unwrap_or_else(|| panic!("cannot read the material {}", w));
+                let t = reg.get(&mat);
+                let (files, bytes) = export::export(&t, &root);
+                println!("{}: {} files, {:.1} MB in {}", t.lay.mat.name(), files, bytes as f64 / 1048576.0, root.join(t.lay.mat.name()).display());
+            }
+            export::index(&root);
+        }
         Some("check") => {
             let scratch = std::env::temp_dir().join(format!("makruk-tb-check-{}", std::process::id()));
             let mut reg = Registry::new(&scratch, false);
@@ -99,6 +115,7 @@ fn main() {
         }
         _ => {
             eprintln!("makruk-tb build KRMMvKR [more …] [--out DIR] [--threads N]");
+            eprintln!("makruk-tb export KRvKR [more …] [--out DIR] [--repo DIR]");
             eprintln!("makruk-tb check [--repo DIR] [--big DIR …]");
             std::process::exit(2);
         }

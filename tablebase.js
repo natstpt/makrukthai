@@ -201,7 +201,195 @@
     });
     return worst;
   }
+  // ---- Tables with pieces on both sides (tools/makruk-tb export → tablebase/rs/) ----
+  // Each keeps white to move only, in the colours where white has more (or stronger) pieces; with red to move the result
+  // comes from one move ahead. A value with the side to move: 0 draw, 1..127 it mates in n of its moves, 128 + n it is
+  // mated after n of the other side's moves. Big tables are split by the two kings' squares (`part` positions each);
+  // only the parts a position needs are fetched. A look-up that meets a missing part stops (RS_MISSING); while ensure()
+  // surveys a position (rsWant set) it notes the part and goes on, so one pass finds them all, then fetches them.
+  var RS_ORDER = 'RNSM', RS_LETTER = { rook: 'R', knight: 'N', khon: 'S', met: 'M', promoted: 'M' };
+  var rsList = null, rsListing = null, rsInfo = {}, rsParts = {}, rsBytes = 0, rsWant = null, RS_MISSING = { missing: true };
+  var RS_LIMIT = 96 << 20;
+  function rsBinom(n, k) { var r = 1; for (var i = 0; i < k; i++) r = r * (n - i) / (i + 1); return Math.round(r); }
+  function rsRanks(list) { return list.map(function (l) { return RS_ORDER.indexOf(l); }); }
+  function rsCanonical(w, b) {
+    if (w.length !== b.length) return w.length > b.length;
+    var x = rsRanks(w), y = rsRanks(b);
+    for (var i = 0; i < x.length; i++) if (x[i] !== y[i]) return x[i] < y[i];
+    return true;
+  }
+  // The table a position belongs to: {name, flip (colours swapped to read it)}, or null (pawns, or kings alone).
+  function rsKey(pieces) {
+    var others = pieces.filter(function (p) { return p.piece !== 'king'; });
+    if (!others.length || others.some(function (p) { return p.piece === 'pawn'; })) return null;
+    var sort = function (a, b) { return RS_ORDER.indexOf(a) - RS_ORDER.indexOf(b); };
+    var w = others.filter(function (p) { return p.side === 'white'; }).map(function (p) { return RS_LETTER[p.piece]; }).sort(sort);
+    var b = others.filter(function (p) { return p.side === 'black'; }).map(function (p) { return RS_LETTER[p.piece]; }).sort(sort);
+    var flip = !rsCanonical(w, b);
+    return { name: flip ? 'K' + b.join('') + 'vK' + w.join('') : 'K' + w.join('') + 'vK' + b.join(''), flip: flip };
+  }
+  function rsCovers(key) { return !!key && !!rsList && rsList.indexOf(key.name) >= 0; }
+  function rsNote(name, part) { if (!rsWant) throw RS_MISSING; rsWant.push({ name: name, part: part }); return 0; }
+  // The stored value (white to move in the table's colours).
+  function rsLookup(key, pieces) {
+    var info = rsInfo[key.name];
+    if (!info) return rsNote(key.name, null);
+    var ps = pieces.map(function (p) {
+      var side = key.flip ? (p.side === 'white' ? 'black' : 'white') : p.side;
+      return { side: side, letter: p.piece === 'king' ? 'K' : RS_LETTER[p.piece], s: (key.flip ? 7 - p.at.r : p.at.r) * 8 + p.at.c };
+    });
+    var wk = ps.find(function (p) { return p.letter === 'K' && p.side === 'white'; }).s;
+    var bk = ps.find(function (p) { return p.letter === 'K' && p.side === 'black'; }).s;
+    var best = Infinity;
+    info.symmetries.forEach(function (t) {
+      var f = TF[t], k = info.kidx[f[wk]];
+      if (k < 0) return;
+      var m = 0;
+      info.groups.forEach(function (g) {
+        var slot = info.slots[g.start];
+        var q = ps.filter(function (p) { return p.side === slot[0] && p.letter === slot[1]; }).map(function (p) { return f[p.s]; }).sort(function (a, b) { return a - b; });
+        var rank = 0; q.forEach(function (s, j) { rank += rsBinom(s, j + 1); });
+        m = m * g.size + rank;
+      });
+      var i = (k * 64 + f[bk]) * info.comb + m;
+      if (i < best) best = i;
+    });
+    var part = Math.floor(best / info.part);
+    if (info.zeroSet[part]) return 0;
+    var bytes = rsParts[key.name] && rsParts[key.name].get(part);
+    if (!(bytes instanceof Uint8Array)) return rsNote(key.name, part);
+    return bytes[best - part * info.part];
+  }
+  var other = function (s) { return s === 'white' ? 'black' : 'white'; };
+  // The result for the side to move: {res: 'win' | 'loss' | 'draw', n}, or null when no table covers the position.
+  function rsResult(pieces, stm) {
+    var key = rsKey(pieces);
+    if (!key) return pieces.every(function (p) { return p.piece === 'king'; }) ? { res: 'draw', n: 0 } : null;
+    if (rsCovers(key)) {
+      if ((stm === 'white') !== key.flip) {
+        var v = rsLookup(key, pieces);
+        return v === 0 ? { res: 'draw', n: 0 } : v < 128 ? { res: 'win', n: v } : { res: 'loss', n: v - 128 };
+      }
+      return rsFromMoves(pieces, stm);
+    }
+    // A king alone on one side: the tables loaded through load() / ensure().
+    var m = material(pieces);
+    if (m && !(m.big && !bigReady(m.big, pieces))) {
+      if (stm === m.side) { var s = strongToMove(pieces); return s === Infinity ? { res: 'draw', n: 0 } : { res: 'win', n: s }; }
+      var l = loneToMove(pieces, stm);
+      return l === Infinity ? { res: 'draw', n: 0 } : { res: 'loss', n: l };
+    }
+    if (need(pieces, true)) { if (!rsWant) throw RS_MISSING; rsWant.push({ pieces: pieces }); return { res: 'draw', n: 0 }; }
+    return null;
+  }
+  function rsFromMoves(pieces, stm) {
+    var st = R.gameStatus(pieces, stm);
+    if (st.state === 'checkmate') return { res: 'loss', n: 0 };
+    if (st.state !== 'playing') return { res: 'draw', n: 0 };
+    var win = Infinity, worst = 0, held = false, moves = R.legalMoves(pieces, stm);
+    for (var i = 0; i < moves.length; i++) {
+      var r = rsResult(R.applyMove(pieces, moves[i].from, moves[i].to), other(stm));
+      if (!r) return null;
+      if (r.res === 'loss') win = Math.min(win, r.n + 1); else if (r.res === 'win') worst = Math.max(worst, r.n); else held = true;
+    }
+    return win < Infinity ? { res: 'win', n: win } : held ? { res: 'draw', n: 0 } : { res: 'loss', n: worst };
+  }
+  // Every move of `side` with its result for `side`: win in n of its moves (this one included), loss after n of the
+  // other side's moves, or draw.
+  function rsOutcomes(pieces, side) {
+    var list = [], moves = R.legalMoves(pieces, side);
+    for (var i = 0; i < moves.length; i++) {
+      var after = R.applyMove(pieces, moves[i].from, moves[i].to), r = rsResult(after, other(side));
+      if (!r) return null;
+      list.push({ move: { from: moves[i].from, to: moves[i].to }, after: after, res: r.res === 'loss' ? 'win' : r.res === 'win' ? 'loss' : 'draw', n: r.res === 'loss' ? r.n + 1 : r.n });
+    }
+    return { two: true, moves: list };
+  }
+  // The table's move: the quickest mate, else (when every move loses) the longest defence. A drawn position gives
+  // null, so the engine plays it.
+  function rsBest(pieces, side) {
+    var o = rsOutcomes(pieces, side);
+    if (!o || !o.moves.length) return null;
+    var wins = o.moves.filter(function (x) { return x.res === 'win'; });
+    if (wins.length) { var w = wins.reduce(function (a, b) { return b.n < a.n ? b : a; }); return { move: w.move, mateIn: w.n }; }
+    if (o.moves.some(function (x) { return x.res === 'draw'; })) return null;
+    var l = o.moves.reduce(function (a, b) { return b.n > a.n ? b : a; });
+    return { move: l.move, mateIn: 0 };
+  }
+  function rsTry(f) {
+    try { return f(); } catch (e) { if (e === RS_MISSING) return null; throw e; }
+  }
+  function rsListingLoad() {
+    if (rsList) return Promise.resolve(rsList);
+    if (!rsListing) rsListing = fetch(base0 + 'rs/index.json').then(function (res) { return res.ok ? res.json() : []; }, function () { return []; })
+      .then(function (l) { rsList = Array.isArray(l) ? l : []; return rsList; }, function () { rsList = []; return rsList; });
+    return rsListing;
+  }
+  function rsSetInfo(name, info) {
+    info.kidx = []; for (var s = 0; s < 64; s++) info.kidx.push(info.kings.indexOf(s));
+    info.slots = info.white.map(function (k) { return ['white', k]; }).concat(info.black.map(function (k) { return ['black', k]; }));
+    info.zeroSet = {}; info.zero.forEach(function (z) { info.zeroSet[z] = true; });
+    rsInfo[name] = info;
+    if (!rsParts[name]) rsParts[name] = new Map();
+  }
+  // What a position still needs for the result of every move, with either side to move.
+  function rsProbe(pieces) {
+    rsWant = [];
+    try { ['white', 'black'].forEach(function (side) { rsOutcomes(pieces, side); }); } finally { var want = rsWant; rsWant = null; }
+    return want;
+  }
+  function rsNeed(pieces) {
+    if (typeof DecompressionStream !== 'function') return false;
+    var key = rsKey(pieces);
+    if (!key || pieces.length > 6) return false;
+    if (!rsList) return true;
+    if (!rsCovers(key)) return false;
+    return rsProbe(pieces).some(function (w) { return w.pieces || !rsFailed(w); });
+  }
+  var rsFailedParts = {};
+  function rsFailed(w) { return !!rsFailedParts[w.name + ':' + w.part]; }
+  function rsFetch(w) {
+    if (rsFailed(w)) return Promise.resolve(false);
+    if (w.part === null) {
+      if (rsInfo[w.name]) return Promise.resolve(true);
+      return fetch(base0 + 'rs/' + w.name + '/info.json').then(function (res) { if (!res.ok) throw Error(res.status); return res.json(); })
+        .then(function (info) { rsSetInfo(w.name, info); return true; }, function () { rsFailedParts[w.name + ':null'] = true; return false; });
+    }
+    var parts = rsParts[w.name], info = rsInfo[w.name];
+    if (parts.get(w.part) instanceof Uint8Array) return Promise.resolve(true);
+    if (!parts.get(w.part)) parts.set(w.part, fetchBytes(base0 + 'rs/' + w.name + '/' + (info.single ? 'all' : w.part) + '.bin', true)
+      .then(function (b) { parts.set(w.part, b); rsBytes += b.length; return true; }, function () { parts.delete(w.part); rsFailedParts[w.name + ':' + w.part] = true; return false; }));
+    return parts.get(w.part);
+  }
+  function rsEnsure(pieces) {
+    if (typeof DecompressionStream !== 'function' || !rsKey(pieces)) return Promise.resolve(false);
+    if (rsBytes > RS_LIMIT) { Object.keys(rsParts).forEach(function (n) { rsParts[n] = new Map(); }); rsBytes = 0; }
+    return rsListingLoad().then(function () {
+      if (!rsCovers(rsKey(pieces))) return false;
+      var round = function (left) {
+        var want = rsProbe(pieces).filter(function (w) { return w.pieces || !rsFailed(w); });
+        if (!want.length || !left) return !want.length;
+        var jobs = [], seen = {};
+        want.forEach(function (w) {
+          var id = w.pieces ? 'old:' + (kind(w.pieces) || {}).name : w.name + ':' + w.part;
+          if (seen[id]) return; seen[id] = true;
+          jobs.push(w.pieces ? ensure(w.pieces, true) : rsFetch(w));
+        });
+        return Promise.all(jobs).then(function () { return round(left - 1); });
+      };
+      return round(4);
+    });
+  }
+  // Node and tests: a table's info.json and its parts (decompressed), by part number.
+  function useRs(name, info, parts) {
+    if (!rsList) rsList = [];
+    if (rsList.indexOf(name) < 0) rsList.push(name);
+    rsSetInfo(name, info);
+    Object.keys(parts).forEach(function (k) { rsParts[name].set(Number(k), parts[k]); });
+  }
   function bestMove(pieces, side) {
+    var key = rsKey(pieces);
+    if (rsCovers(key)) return rsTry(function () { return rsBest(pieces, side); });
     var m = material(pieces);
     if (!m || (m.big && !bigReady(m.big, pieces))) return null;
     var moves = R.legalMoves(pieces, side), best = null;
@@ -223,7 +411,9 @@
   // Every legal move of side with what the table says follows: {move, n}. For the rook side n is the moves it still
   // needs after this one (0: this move mates); for the lone king, the moves the rook side needs from then on.
   // Infinity: no win (a draw, or the rook is taken). null when the table does not apply.
+  // Tables with pieces on both sides answer {two: true, moves: [{move, after, res, n}]} instead (rsOutcomes).
   function outcomes(pieces, side) {
+    if (rsCovers(rsKey(pieces))) return rsTry(function () { return rsOutcomes(pieces, side); });
     var m = material(pieces);
     if (!m || (m.big && !bigReady(m.big, pieces))) return null;
     return { strong: m.side, moves: R.legalMoves(pieces, side).map(function (mv) {
@@ -250,8 +440,9 @@
     return loading;
   }
   function use(bytes, bytes2) { table = bytes; if (bytes2) table2 = bytes2; }
-  // Does this position need a table that is not loaded yet (and could be)?
-  function need(pieces) {
+  // Does this position need a table that is not loaded yet (and could be)? (oldOnly: the lone-king tables only.)
+  function need(pieces, oldOnly) {
+    if (!oldOnly && rsNeed(pieces)) return true;
     var k = kind(pieces);
     if (k && typeof DecompressionStream !== 'function' && k.name !== 'rook') return false;
     if (k && k.big) {
@@ -265,7 +456,9 @@
     return !!k && k.tables.some(function (n) { return !loaded(n) && extra[n] !== false && (!isRookTable(n) || !loading); });
   }
   // Loads every table this position needs (the rook ones through load()); resolves true when they are all there.
-  function ensure(pieces) {
+  function ensure(pieces, oldOnly) {
+    // The two-sided tables first (their list says which there are), then the lone-king ones.
+    if (!oldOnly && rsKey(pieces)) return rsEnsure(pieces).then(function (ok) { return ok || ensure(pieces, true); });
     var k = kind(pieces);
     if (!k) return Promise.resolve(false);
     if (typeof DecompressionStream !== 'function' && k.tables.some(function (n) { return n !== 'rook'; })) return Promise.resolve(false);
@@ -288,5 +481,8 @@
     if (bigList.indexOf(name) < 0) bigList.push(name);
     bigInfo[name] = info; bigChunks[name] = chunks;
   }
-  return { load: load, use: use, need: need, ensure: ensure, useTable: useTable, useBig: useBig, NAMES: NAMES, ready: function () { return !!table; }, ready2: function () { return !!table2; }, bestMove: bestMove, outcomes: outcomes, value: function (pieces) { return strongToMove(pieces); } };
+  return { load: load, use: use, need: need, ensure: ensure, useTable: useTable, useBig: useBig, useRs: useRs,
+    result: function (pieces, stm) { return rsTry(function () { return rsResult(pieces, stm); }); },
+    // What a two-sided position still needs (for tests and debugging): [{name, part} | {pieces}].
+    wanted: function (pieces) { return rsProbe(pieces); }, NAMES: NAMES, ready: function () { return !!table; }, ready2: function () { return !!table2; }, bestMove: bestMove, outcomes: outcomes, value: function (pieces) { return strongToMove(pieces); } };
 });
