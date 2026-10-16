@@ -271,6 +271,7 @@ Workflow เผยแพร่ปัจจุบันเรียกชุด�
 | เรือ, เรือ 2 ลำ | `tablebase/krk.bin`, `krrk.bin` | `scripts/build-krk.cjs`, `build-krrk.cjs` |
 | หมาก 1–2 ตัวทุกชุด (เรือ ม้า โคน เบี้ยหงาย) | `tablebase/<ชื่อ>.bin` | `scripts/build-endgame-tables.cjs` (ราว 30 นาที) |
 | หมาก 3 ตัว เช่น เบี้ยหงาย 3, ม้า+เบี้ยหงาย 2 | `tablebase/<ชื่อ>/` และ `tablebase/big.json` | `scripts/build-big-tables.cjs` (สร้างเองบนคอมพิวเตอร์) |
+| ทั้งสองฝ่ายมีหมาก: ขุน+เรือ vs ขุน+เรือ, ขุน+เรือ vs ขุน+เม็ด, ขุน+เบี้ยหงาย 2 vs ขุน+เรือ, ขุน+เรือ+เบี้ยหงาย vs ขุน+เรือ และ ขุน+เรือ+เบี้ยหงาย 2 vs ขุน | `tablebase/rs/` | `tools/makruk-tb` (`export`) |
 
 ### สร้างตารางหมาก 3 ตัวเองบนคอมพิวเตอร์
 

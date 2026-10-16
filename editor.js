@@ -191,6 +191,7 @@
   function tableView(){
     var T=window.MakrukTablebase,o=T&&T.outcomes(state.pieces,state.turn);
     if(!o||playStatus().state!=='playing')return null;
+    if(o.two)return twoSidedView(o,T);
     var mover=state.turn,strong=mover===o.strong;
     var list=o.moves.map(function(x){
       var key=moveKey(x.move),c=P.nextCount(count,x.after,mover),out={move:x.move,key:key};
@@ -207,7 +208,27 @@
     var summary=!best?'':best.kind==='win'?rook+'ชนะ · รุกจนใน '+best.moves+' ตา':best.kind==='loss'?lone+'แพ้ใน '+best.moves+' ตา (ถ้า'+rook+'เดินดีที่สุด)':'เสมอ · '+(strong?rook+'รุกจนไม่ทันนับ':lone+'รอดได้');
     return {list:list,summary:summary,strong:strong};
   }
-  function tableScore(x,strong){return x.kind==='draw'?{cp:0}:{mate:strong?x.moves:-x.moves};}
+  // Pieces on both sides (tablebase/rs): either side may win. Each move: win (mate in n of the mover's moves, this one
+  // included), loss (mated after n of the other side's moves) or draw; a mate the count (นับศักดิ์) cuts off is a draw.
+  function twoSidedView(o,T){
+    var mover=state.turn,opp=opponent(mover);
+    var list=o.moves.map(function(x){
+      var key=moveKey(x.move),out={move:x.move,key:key};
+      if(x.res==='draw'){out.kind='draw';out.why='เสมอตามตาราง';return out;}
+      var winner=x.res==='win'?mover:opp,c=P.nextCount(count,x.after,mover);
+      var need=x.res==='win'?x.n-1:x.n,left=c&&c.counter!==winner?movesLeft(c,x.res==='win'):Infinity;
+      if(need>left){out.kind='draw';out.why='นับศักดิ์ครบก่อน (ต้องใช้ '+x.n+' ตา)';return out;}
+      out.kind=x.res;out.moves=x.n;return out;
+    });
+    var rank=function(x){return x.kind==='win'?x.moves:x.kind==='draw'?1000:2000-x.moves;};
+    list.sort(function(a,b){return rank(a)-rank(b);});
+    list.forEach(function(x){var reply=x.kind==='draw'?null:T.bestMove(R.applyMove(state.pieces,x.move.from,x.move.to),opp);x.reply=reply?moveKey(reply.move):null;});
+    var best=list[0];
+    var summary=!best?'':best.kind==='win'?sideName(mover)+'ชนะ · รุกจนใน '+best.moves+' ตา':best.kind==='loss'?sideName(mover)+'แพ้ใน '+best.moves+' ตา (ถ้า'+sideName(opp)+'เดินดีที่สุด)':'เสมอ · ทั้งสองฝ่ายเดินดีที่สุด';
+    return {list:list,summary:summary,strong:true};
+  }
+  // The mate score of a table row from the mover's side: a win counts up, a loss down.
+  function tableScore(x){return x.kind==='draw'?{cp:0}:{mate:x.kind==='win'?x.moves:-x.moves};}
   function tableLabel(x){return x.kind==='win'?'ชนะ '+x.moves:x.kind==='loss'?'แพ้ '+x.moves:'เสมอ';}
   function drawTableMoves(){
     var box=$('tableMoves'),tb=analysis&&mode==='play'?view.table:null;box.hidden=!tb;if(!tb)return;
