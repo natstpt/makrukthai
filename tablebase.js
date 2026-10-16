@@ -1,6 +1,10 @@
-/* Endgame tables against a lone king: king + rook (tablebase/krk.bin, scripts/build-krk.cjs) and king + two rooks
-   (tablebase/krrk.bin, compressed, scripts/build-krrk.cjs). For every position with the rooks' side to move: how many
-   of its moves the fastest mate takes against the best defence (a rook taken goes on in the king + rook table).
+/* Endgame tables against a lone king: king + rook (tablebase/krk.bin, scripts/build-krk.cjs), king + two rooks
+   (tablebase/krrk.bin, compressed, scripts/build-krrk.cjs), and king + one or two of knight, khon and met/promoted
+   pawn, or rook with one of them (tablebase/<pieces>.bin, compressed, scripts/build-endgame-tables.cjs; a met and a
+   promoted pawn move alike and share the tables). For every position with the strong side to move: how many of its
+   moves the fastest mate takes against the best defence (a piece taken goes on in the smaller table). The rook
+   tables load with load(); the others only when a game reaches them (need() / ensure()).
+   As before, for king + rook (or two rooks):
    bestMove(pieces, side) answers at once from the table, for either side:
    - the rook side plays the move that mates soonest against the best defence;
    - the lone king plays the move that holds out longest (taking the rook, or a draw, if it can).
@@ -12,7 +16,12 @@
   if (root) root.MakrukTablebase = tb;
 })(typeof window !== 'undefined' ? window : null, function (R) {
   'use strict';
-  var table = null, table2 = null, loading = null;
+  var table = null, table2 = null, loading = null, base0 = 'tablebase/';
+  // The other tables, by name (pieces in ORDER joined with '-'): bytes once loaded, a promise while loading, false if
+  // they could not be loaded.
+  var ORDER = ['rook', 'knight', 'khon', 'promoted'], extra = {}, fetching = {};
+  var NAMES = ['knight', 'khon', 'promoted', 'rook-knight', 'rook-khon', 'rook-promoted', 'knight-knight', 'knight-khon',
+    'knight-promoted', 'khon-khon', 'khon-promoted', 'promoted-promoted'];
   // a1 b1 c1 d1 b2 c2 d2 c3 d3 d4: where the tables keep the strong king.
   var TRI = [0, 1, 2, 3, 9, 10, 11, 18, 19, 27];
   function square(at) { return (7 - at.r) * 8 + at.c; }
@@ -50,10 +59,40 @@
     }
     return table2[best];
   }
+  // King + one or two pieces (no unpromoted pawn) against a lone king: {side, name, tables: the names it needs,
+  // pieces: [{type, at}] in ORDER}, or null.
+  function kind(pieces) {
+    if (pieces.length !== 3 && pieces.length !== 4) return null;
+    var kings = pieces.filter(function (p) { return p.piece === 'king'; });
+    if (kings.length !== 2) return null;
+    var others = pieces.filter(function (p) { return p.piece !== 'king'; });
+    if (others.some(function (p) { return p.side !== others[0].side || p.piece === 'pawn'; })) return null;
+    var list = others.map(function (p) { return { type: p.piece === 'met' ? 'promoted' : p.piece, at: p.at }; })
+      .sort(function (a, b) { return ORDER.indexOf(a.type) - ORDER.indexOf(b.type); });
+    var name = list.map(function (p) { return p.type; }).join('-');
+    var tables = [name].concat(list.length > 1 ? list.map(function (p) { return p.type; }) : []).filter(function (n, i, a) { return a.indexOf(n) === i; });
+    return { side: others[0].side, name: name, tables: tables, pieces: list };
+  }
+  function isRookTable(name) { return name === 'rook' || name === 'rook-rook'; }
+  function loaded(name) { return isRookTable(name) ? (name === 'rook' ? !!table : !!table2) : extra[name] instanceof Uint8Array; }
+  // Strong side to move in one of the other tables: its mate distance (0: no win). Squares r*8+c as makruk-rules.js,
+  // turned so the strong side is white (red's pieces: ranks flipped) and its king is on files ก–ง (mirrored).
+  function extraValue(k, pieces) {
+    var bytes = extra[k.name], red = k.side === 'black';
+    var wk = pieces.find(function (p) { return p.piece === 'king' && p.side === k.side; }).at;
+    var bk = pieces.find(function (p) { return p.piece === 'king' && p.side !== k.side; }).at;
+    var flip = wk.c > 3;
+    var s = function (at) { return (red ? 7 - at.r : at.r) * 8 + (flip ? 7 - at.c : at.c); };
+    var w = s(wk), i = ((w >> 3) * 4 + (w & 7)) * 64 + s(bk);
+    k.pieces.forEach(function (p) { i = i * 64 + s(p.at); });
+    return bytes[i];
+  }
   // The pieces as {strong side, wk, rooks, bk}, or null when they are not king + one or two rooks against a lone king
-  // (or that table is not loaded).
+  // (or that table is not loaded). Other tables: {side, extra: kind} when it and the smaller tables are loaded.
   function material(pieces) {
     if (pieces.length !== 3 && pieces.length !== 4) return null;
+    var k = kind(pieces);
+    if (k && !isRookTable(k.name)) return k.tables.every(loaded) ? { side: k.side, extra: k } : null;
     var rooks = pieces.filter(function (p) { return p.piece === 'rook'; });
     if (rooks.length !== pieces.length - 2 || (rooks.length === 2 && rooks[0].side !== rooks[1].side)) return null;
     if (rooks.length === 1 ? !table : !table2) return null;
@@ -66,6 +105,7 @@
   function strongToMove(pieces) {
     var m = material(pieces);
     if (!m) return Infinity;
+    if (m.extra) { var e = extraValue(m.extra, pieces); return e ? e : Infinity; }
     var v = m.rooks.length === 1 ? value(m.wk, m.rooks[0], m.bk) : value2(m.wk, m.rooks[0], m.rooks[1], m.bk);
     return v ? v : Infinity;
   }
@@ -82,7 +122,6 @@
     return worst;
   }
   function bestMove(pieces, side) {
-    if (!table) return null;
     var m = material(pieces);
     if (!m) return null;
     var moves = R.legalMoves(pieces, side), best = null;
@@ -105,7 +144,6 @@
   // needs after this one (0: this move mates); for the lone king, the moves the rook side needs from then on.
   // Infinity: no win (a draw, or the rook is taken). null when the table does not apply.
   function outcomes(pieces, side) {
-    if (!table) return null;
     var m = material(pieces);
     if (!m) return null;
     return { strong: m.side, moves: R.legalMoves(pieces, side).map(function (mv) {
@@ -123,7 +161,7 @@
     }).then(function (buf) { return new Uint8Array(buf); });
   }
   function load(base) {
-    base = base || 'tablebase/';
+    base = base || base0; base0 = base;
     if (!loading) loading = fetchBytes(base + 'krk.bin').then(function (bytes) {
       table = bytes;
       if (typeof DecompressionStream !== 'function') return true;
@@ -132,5 +170,25 @@
     return loading;
   }
   function use(bytes, bytes2) { table = bytes; if (bytes2) table2 = bytes2; }
-  return { load: load, use: use, ready: function () { return !!table; }, ready2: function () { return !!table2; }, bestMove: bestMove, outcomes: outcomes, value: function (pieces) { return strongToMove(pieces); } };
+  // Does this position need a table that is not loaded yet (and could be)?
+  function need(pieces) {
+    var k = kind(pieces);
+    if (k && typeof DecompressionStream !== 'function' && k.name !== 'rook') return false;
+    return !!k && k.tables.some(function (n) { return !loaded(n) && extra[n] !== false && (!isRookTable(n) || !loading); });
+  }
+  // Loads every table this position needs (the rook ones through load()); resolves true when they are all there.
+  function ensure(pieces) {
+    var k = kind(pieces);
+    if (!k) return Promise.resolve(false);
+    if (typeof DecompressionStream !== 'function' && k.tables.some(function (n) { return n !== 'rook'; })) return Promise.resolve(false);
+    return Promise.all(k.tables.map(function (n) {
+      if (isRookTable(n)) return load();
+      if (loaded(n) || extra[n] === false) return loaded(n);
+      if (!fetching[n]) fetching[n] = fetchBytes(base0 + n + '.bin', true).then(function (b) { extra[n] = b; return true; }, function () { extra[n] = false; return false; });
+      return fetching[n];
+    })).then(function () { return k.tables.every(loaded); });
+  }
+  // Node and tests: hand over a table's bytes (decompressed) by name.
+  function useTable(name, bytes) { extra[name] = bytes; }
+  return { load: load, use: use, need: need, ensure: ensure, useTable: useTable, NAMES: NAMES, ready: function () { return !!table; }, ready2: function () { return !!table2; }, bestMove: bestMove, outcomes: outcomes, value: function (pieces) { return strongToMove(pieces); } };
 });

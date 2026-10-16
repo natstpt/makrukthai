@@ -84,6 +84,10 @@
       var easy=function(){var move=P.chooseMove(state.pieces,state.turn,{count:count,repeats:repeats,shape:game.shape,mistakes:game.level==='easy'?0.35:0});if(move)playMove(move.from,move.to);};
       // King + rook against a lone king: the medium and hard AI play from the endgame table (tablebase.js) at once,
       // the rook side mating soonest, the lone king holding out longest. The easy AI keeps its own (fallible) play.
+      // Another endgame table this position needs (knight, khon, met …) loads first; the AI then moves from it.
+      if(game.level!=='easy'&&window.MakrukTablebase&&MakrukTablebase.need(state.pieces)){
+        MakrukTablebase.ensure(state.pieces).then(function(){if(token===aiSearch&&aiTurn())scheduleAi();});return;
+      }
       var table=game.level!=='easy'&&window.MakrukTablebase&&MakrukTablebase.bestMove(state.pieces,state.turn);
       if(table){playMove(table.move.from,table.move.to);return;}
       if(!hard){easy();return;}
@@ -185,12 +189,12 @@
     return Math.max(0,c.ceiling-said+(loneNext?1:2));
   }
   function tableView(){
-    var T=window.MakrukTablebase,o=T&&T.ready()&&T.outcomes(state.pieces,state.turn);
+    var T=window.MakrukTablebase,o=T&&T.outcomes(state.pieces,state.turn);
     if(!o||playStatus().state!=='playing')return null;
     var mover=state.turn,strong=mover===o.strong;
     var list=o.moves.map(function(x){
       var key=moveKey(x.move),c=P.nextCount(count,x.after,mover),out={move:x.move,key:key};
-      if(x.n===Infinity){out.kind='draw';out.why=strong?'เสียเรือหรืออับ':'กินเรือหรือหนีได้';return out;}
+      if(x.n===Infinity){out.kind='draw';out.why=strong?'เสียหมากหรืออับ':'กินหมากหรือหนีได้';return out;}
       var need=strong?x.n:x.n,left=movesLeft(c,strong);
       if(strong&&x.n===0){out.kind='win';out.moves=1;return out;}
       if(need>left){out.kind='draw';out.why='นับศักดิ์ครบก่อน (ต้องใช้ '+(strong?need+1:need)+' ตา)';return out;}
@@ -226,6 +230,7 @@
       view.prev=view.fen?{line:view.lines[0],turn:view.turn,moves:view.moves}:null;
       view.fen=fen;view.turn=state.turn;view.moves=moves.length;view.lines=[];view.depth=0;view.done=false;
       view.table=tableView();
+      if(!view.table&&window.MakrukTablebase&&MakrukTablebase.need(state.pieces))MakrukTablebase.ensure(state.pieces).then(function(ok){if(ok&&view.fen===fen){view.fen=null;render();}});
       if(view.table){
         if(E)E.stopAnalysis();view.error='';view.done=true;
         view.lines=view.table.list.slice(0,2).map(function(x){return {score:tableScore(x,view.table.strong),pv:x.reply?[x.key,x.reply]:[x.key]};});
@@ -260,6 +265,7 @@
     var simple=function(){found(P.chooseMove(state.pieces,state.turn,{count:count}));};
     var table=window.MakrukTablebase&&MakrukTablebase.bestMove(state.pieces,state.turn);
     if(table){found(table.move);return;}
+    if(window.MakrukTablebase&&MakrukTablebase.need(state.pieces))MakrukTablebase.ensure(state.pieces);
     if(!engineAi()||engine.state!=='ready'){simple();return;}
     var since=moves.length;while(since>0&&moves[since-1].piece!=='pawn'&&!moves[since-1].capture)since--;
     E.bestMove(since?moves[since-1].fen:M.fen(trial.state),moves.slice(since).map(function(m){return m.uci;}),{depth:16,time:1500}).then(function(key){
