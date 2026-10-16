@@ -273,14 +273,14 @@
     baseRender();
     document.body.classList.toggle('analysisMode',analysis&&mode==='play');$('assistOptions').hidden=!analysis;$('analyse').hidden=analysis||mode!=='play';
     if(analysis)updateAnalysis();
-    else $('arrowLayer').innerHTML=hintNow()&&hint.stage>1?arrow(moveKey(hint.move),'rgba(76,160,58,.9)'):'';
+    else if(!reviewing)$('arrowLayer').innerHTML=hintNow()&&hint.stage>1?arrow(moveKey(hint.move),'rgba(76,160,58,.9)'):'';
   };
   // Hint (games against the AI, on the player's turn): the first tap marks the piece the AI would move, the next tap
   // adds an arrow to its square. The engine searches the player's side up to depth 16 (1.5 s at most); without it the
   // player in makruk-play.js suggests. A move, an undo or a new game clears it.
   var hint=null;
   function hintNow(){return !!hint&&!!hint.move&&hint.fen===M.fen(state);}
-  function canHint(){return !!game&&!!game.ai&&mode==='play'&&!aiTurn()&&playStatus().state==='playing';}
+  function canHint(){return !!game&&!!game.ai&&mode==='play'&&!reviewing&&!aiTurn()&&playStatus().state==='playing';}
   $('hint').addEventListener('click',function(){
     if(!canHint())return;
     var fen=M.fen(state);
@@ -362,7 +362,7 @@
       else setTimeout(function(){if(playStatus().state!=='playing'&&!$('resultDialog').open)$('resultDialog').showModal();},status.state==='resign'?0:700);
     }
   }
-  function stopReview(){if(review)review.stopped=true;review=null;}
+  function stopReview(){if(review)review.stopped=true;review=null;if(reviewing){reviewing=false;document.body.classList.remove('reviewMode');$('gameReview').hidden=true;$('analysisPanel').hidden=true;$('arrowLayer').innerHTML='';}}
   function reviewValue(r){
     if(!r||!r.score)return 0;
     return r.score.mate!==undefined?(r.score.mate>0?10000-r.score.mate:-10000-r.score.mate):r.score.cp;
@@ -382,25 +382,27 @@
     if(!played)return false;
     var kind=score(played)===score(best)?'best':played.res===best.res?'good':'mistake',better=null;
     if(kind==='mistake'){try{better=N.formatMove(M.parse(job.fens[i]).pieces,best.move.from,best.move.to).text;}catch(e){}}
-    job.rated.push({i:i,kind:kind,loss:0,better:better,note:kind==='mistake'?'ตารางท้ายเกม: '+TABLE_WORD[best.res]+' → '+TABLE_WORD[played.res]:''});
+    job.rated.push({i:i,kind:kind,loss:0,better:better,bestKey:kind==='best'?null:moveKey(best.move),note:kind==='mistake'?'ตารางท้ายเกม: '+TABLE_WORD[best.res]+' → '+TABLE_WORD[played.res]:''});
+    job.vals[i]=score(best);job.vals[i+1]=-score(played);
     return true;
   }
   function startReview(){
     stopReview();
-    var line=fullLine().slice(),job={length:line.length,line:line,fens:[M.fen(trial.state)].concat(line.map(function(m){return m.fen;})),rated:[],done:0,total:0,stopped:false,error:''};
+    var line=fullLine().slice(),job={length:line.length,line:line,fens:[M.fen(trial.state)].concat(line.map(function(m){return m.fen;})),rated:[],forced:{},vals:{},done:0,total:0,stopped:false,error:''};
     review=job;
     var mine=line.map(function(m,i){return m.side===game.human?i:-1;}).filter(function(i){return i>=0;});
     job.total=mine.length;
     var T=window.MakrukTablebase,queue=[];
+    var terminal=function(at){var p=M.parse(job.fens[at]),st=R.gameStatus(p.pieces,p.turn);return st.state==='checkmate'?-10000:st.state!=='playing'?0:null;};
+    job.fens.forEach(function(f,at){var t=terminal(at);if(t!==null)job.vals[at]=t;});
     mine.forEach(function(i){
       var parsed=M.parse(job.fens[i]);
-      if(R.legalMoves(parsed.pieces,parsed.turn).length<=1){job.done++;return;} // no choice: not rated
+      if(R.legalMoves(parsed.pieces,parsed.turn).length<=1){job.forced[i]=true;job.done++;return;} // no choice: not rated
       var o=T&&T.outcomes(parsed.pieces,parsed.turn);
       if(o&&o.moves.length&&rateFromTable(job,i,o)){job.done++;return;}
       queue.push(i);
     });
     var known=function(at){return reviewCache.has(job.fens[at]);};
-    var terminal=function(at){var p=M.parse(job.fens[at]),st=R.gameStatus(p.pieces,p.turn);return st.state==='checkmate'?-10000:st.state!=='playing'?0:null;};
     if(queue.length&&(!E||E.unsupported()||engine.state==='failed')){job.error='เครื่องนี้ใช้ AI วิเคราะห์เกมไม่ได้ (ให้คะแนนเฉพาะตาที่ตารางท้ายเกมรู้ผล)';drawReview();return;}
     // Time for each search still to make: the budget shared over what is missing (the position after a move only
     // counts when the move was not the known best).
@@ -408,7 +410,7 @@
     var limits={depth:reviewDepth(),time:Math.max(100,Math.min(600,Math.round(REVIEW_BUDGET/Math.max(1,missing))))};
     job.depth=limits.depth;
     var value=function(at){
-      var t=terminal(at);if(t!==null)return Promise.resolve({value:t,best:null});
+      if(job.vals[at]!==undefined&&terminal(at)!==null)return Promise.resolve({value:job.vals[at],best:null});
       if(known(at))return Promise.resolve(reviewCache.get(job.fens[at]));
       return E.evaluate(job.fens[at],limits).then(function(r){keepReview(job.fens[at],r);return reviewCache.get(job.fens[at])||{value:reviewValue(r),best:r.best};});
     };
@@ -419,13 +421,16 @@
       var i=queue[k];
       value(i).then(function(a){
         if(job.stopped)return;
-        if(a.best===line[i].uci){job.rated.push({i:i,kind:'best',loss:0,better:null});job.done++;drawReview();step(k+1);return;}
+        job.vals[i]=a.value;
+        // The engine's own move: the position after it is worth what this one was (seen from the other side).
+        if(a.best===line[i].uci){if(job.vals[i+1]===undefined&&!known(i+1))job.vals[i+1]=-a.value;job.rated.push({i:i,kind:'best',loss:0,better:null});job.done++;drawReview();step(k+1);return;}
         return value(i+1).then(function(b){
           if(job.stopped)return;
+          job.vals[i+1]=b.value;
           var loss=Math.max(0,clamp(a.value)-clamp(-b.value));
           var kind=loss<=30?'best':loss<=120?'good':'mistake',better=null;
           if(kind==='mistake'&&a.best){try{better=N.formatMove(M.parse(job.fens[i]).pieces,square(a.best,0),square(a.best,2)).text;}catch(e){}}
-          job.rated.push({i:i,kind:kind,loss:loss,better:better});job.done++;drawReview();step(k+1);
+          job.rated.push({i:i,kind:kind,loss:loss,better:better,bestKey:kind==='best'?null:a.best});job.done++;drawReview();step(k+1);
         });
       }).catch(function(){if(job.stopped)return;job.error='AI วิเคราะห์ไม่สำเร็จ';drawReview();});
     };
@@ -439,14 +444,84 @@
     $('reviewProgress').hidden=finished&&!job.error;
     $('reviewBar').style.width=(job.total?Math.round(job.done/job.total*100):100)+'%';
     $('reviewText').textContent=job.error||(job.total?'AI กำลังวิเคราะห์ตาเดิน '+job.done+'/'+job.total+' ตา (ลึก '+(job.depth||reviewDepth())+' ชั้น)':'ยังไม่มีตาเดินของคุณให้วิเคราะห์');
-    var list=job.rated.filter(function(r){return r.kind==='mistake';}).sort(function(a,b){return a.i-b.i;});
-    $('reviewList').innerHTML=list.length?list.map(function(r){
-      var m=job.line[r.i],no=Math.floor((r.i+(trial.state.turn==='white'?0:1))/2)+1;
-      return '<li><b>ตา '+no+'</b> คุณเดิน '+m.text+(r.better?' · ควรเดิน <strong>'+r.better+'</strong>':'')+' <em>('+(r.note||'เสีย '+(r.loss/100).toFixed(1)+' เบี้ย')+')</em></li>';
-    }).join(''):(finished&&job.total?'<li class="none">ไม่มีตาที่ผิดพลาด เก่งมาก!</li>':'');
-    $('reviewBtn').disabled=!job.rated.length&&!finished;
+    $('reviewBtn').disabled=!job.line.length;
+    if(reviewing){renderMoves();drawGameReview();}
   }
-  $('reviewBtn').onclick=function(){var open=$('reviewList').hidden;$('reviewList').hidden=!open;$('reviewBtn').textContent=open?'ซ่อนรายละเอียด':'★ Game Review · ดูตาที่พลาด';};
+
+  // Game Review screen (★ Game Review in the result): the game is stepped through on the board (ย้อนกลับ / เดินหน้า,
+  // the buttons under the graph, the move record, or a tap on the graph), with an evaluation bar for the position,
+  // a graph of who was better over the whole game, the rating of each of the player's moves in the record and what
+  // the coach says about the move just played (the better move as a green arrow after a mistake).
+  var reviewing=false;
+  var KIND_TEXT={best:'★ ดีเยี่ยม',good:'👍 ดี',mistake:'? ผิดพลาด'};
+  function ratingOf(i){return review&&review.rated.find(function(r){return r.i===i;});}
+  // Each position's evaluation for white (cp, a mate as ±10000 less its moves); a position not searched keeps the one
+  // before it.
+  function reviewEvals(){
+    var job=review,out=[],prev=0;
+    job.fens.forEach(function(f,at){
+      var v=job.vals[at];if(v===undefined){var c=reviewCache.get(f);if(c)v=c.value;}
+      if(v===undefined){out.push({v:prev,known:false});return;}
+      var w=f.split(' ')[1]==='w'?v:-v;prev=w;out.push({v:w,known:true});
+    });
+    return out;
+  }
+  function evalLabel(v){return Math.abs(v)>=9000?(v>0?'+':'-')+'M'+(10000-Math.abs(v)):(v>=0?'+':'')+(v/100).toFixed(1);}
+  function evalHeight(v){return Math.abs(v)>=9000?(v>0?1:-1):Math.tanh(v/400);}
+  function openReview(ply){
+    if(!review||review.length!==fullLine().length)startReview();
+    if($('resultDialog').open)$('resultDialog').close();
+    cancelAi();reviewing=true;document.body.classList.add('reviewMode');$('gameReview').hidden=false;
+    jumpTo(ply===undefined?0:ply);
+  }
+  function closeReview(){var end=fullLine().length;stopReviewView();jumpTo(end);}
+  function stopReviewView(){reviewing=false;document.body.classList.remove('reviewMode');$('gameReview').hidden=true;$('analysisPanel').hidden=true;$('arrowLayer').innerHTML='';render();}
+  function drawGameReview(){
+    var job=review;if(!reviewing||!job)return;
+    var line=fullLine(),n=moves.length,total=line.length,evals=reviewEvals(),now=evals[Math.min(n,evals.length-1)];
+    message('');
+    $('modeLabel').textContent='Game Review';
+    // Evaluation bar (the analysis bar, without engine lines) and the rating of the move just played.
+    $('analysisPanel').hidden=false;$('evalBar').hidden=false;$('engineLines').hidden=true;
+    var fill=50+50*evalHeight(now.v);$('evalFill').style.width=fill+'%';
+    $('evalText').textContent=now.known?evalLabel(now.v)+' · '+(Math.abs(now.v)<50?'สูสี':now.v>0?'ขาวได้เปรียบ':'แดงได้เปรียบ'):'…';
+    var r=n>0&&ratingOf(n-1),rating=$('moveRating');
+    rating.hidden=!r;if(r){rating.textContent=KIND_TEXT[r.kind];rating.className='moveRating'+(r.kind==='mistake'?' bad':' good');}
+    $('arrowLayer').innerHTML=r&&r.kind==='mistake'&&r.bestKey?arrow(r.bestKey,'rgba(87,190,90,.9)',true):'';
+    // What the coach says about the move just played.
+    var say;
+    if(!n)say='มาดูเกมนี้กัน! กด ▶ เพื่อดูทีละตา แตะตาในบันทึก หรือแตะบนกราฟเพื่อไปตานั้น';
+    else{
+      var m=line[n-1],no=Math.floor((n-1+(trial.state.turn==='white'?0:1))/2)+1,head='ตา '+no+' ';
+      if(m.side!==game.human)say=head+'AI เดิน '+m.text;
+      else if(r)say=head+'คุณเดิน '+m.text+' · '+(r.kind==='best'?'ดีเยี่ยม! เป็นตาที่ดีที่สุดหรือใกล้เคียง':r.kind==='good'?'ดี เสียไปเล็กน้อย'+(r.loss?' ('+(r.loss/100).toFixed(1)+' เบี้ย)':''):'ผิดพลาด '+(r.note||'เสียไป '+(r.loss/100).toFixed(1)+' เบี้ย')+(r.better?' · ควรเดิน '+r.better+' (ลูกศรสีเขียว)':''));
+      else if(job.forced[n-1])say=head+'คุณเดิน '+m.text+' · มีทางเดินทางเดียว';
+      else say=head+'คุณเดิน '+m.text+' · '+(job.error||'AI กำลังวิเคราะห์ตานี้…');
+    }
+    $('grSpeech').textContent=say;
+    var count=function(kind){return job.rated.filter(function(x){return x.kind===kind;}).length;};
+    $('grStats').innerHTML='<span class="grChip best">★ '+count('best')+'</span><span class="grChip good">👍 '+count('good')+'</span><span class="grChip mistake">? '+count('mistake')+'</span>'+(job.done<job.total&&!job.error?'<span class="grBusy">วิเคราะห์ '+job.done+'/'+job.total+'</span>':'');
+    // The graph: white's share from the bottom, the mistakes as orange dots, the shown position as a line.
+    var x=function(k){return total?k/total*100:0;},y=function(v){return 50-48*evalHeight(v);};
+    $('grPath').setAttribute('d','M0,100 '+evals.map(function(e,k){return 'L'+x(k).toFixed(2)+','+y(e.v).toFixed(2);}).join(' ')+' L100,100 Z');
+    $('grMarks').innerHTML=job.rated.filter(function(q){return q.kind==='mistake';}).map(function(q){var e=evals[q.i+1];return '<circle cx="'+x(q.i+1)+'%" cy="'+y(e.v)+'%" r="4"/>';}).join('')+
+      '<line class="grNow" x1="'+x(n)+'%" x2="'+x(n)+'%" y1="0" y2="100%"/>';
+    $('grFirst').disabled=$('grPrev').disabled=n<=0;$('grNext').disabled=$('grLast').disabled=n>=total;
+    $('grMistake').disabled=!job.rated.some(function(q){return q.kind==='mistake';});
+  }
+  function reviewStep(d){jumpTo(Math.max(0,Math.min(fullLine().length,moves.length+d)));}
+  $('grFirst').onclick=function(){jumpTo(0);};$('grLast').onclick=function(){jumpTo(fullLine().length);};
+  repeatButton($('grPrev'),function(){reviewStep(-1);});repeatButton($('grNext'),function(){reviewStep(1);});
+  // The next mistake after the shown position (from the first one again after the last).
+  $('grMistake').onclick=function(){
+    var list=review.rated.filter(function(q){return q.kind==='mistake';}).map(function(q){return q.i+1;}).sort(function(a,b){return a-b;});
+    var next=list.find(function(p){return p>moves.length;});if(next===undefined)next=list[0];if(next!==undefined)jumpTo(next);
+  };
+  $('grClose').onclick=closeReview;
+  $('grGraph').addEventListener('click',function(e){var box=$('grGraph').getBoundingClientRect(),total=fullLine().length;jumpTo(Math.max(0,Math.min(total,Math.round((e.clientX-box.left)/box.width*total))));});
+  $('grGraph').addEventListener('keydown',function(e){if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();reviewStep(e.key==='ArrowLeft'?-1:1);}});
+  $('reviewBtn').onclick=function(){openReview(0);};
+  $('openReview').onclick=function(){openReview(0);};
   $('resultClose').onclick=function(){$('resultDialog').close();};
   $('resultNew').onclick=function(){$('resultDialog').close();$('newGameDialog').showModal();};
   $('resultRematch').onclick=function(){newGame(game.human);};
@@ -537,7 +612,8 @@
       $('instruction').textContent=status.state==='playing'?(status.check?'รุก! ต้องเดินให้ขุนพ้นจากการรุก':'ตาฝ่าย'+sideName(state.turn)+' ลากหรือแตะหมากไปช่องที่มีจุด'):'จบตำแหน่งนี้แล้ว ย้อนกลับเพื่อทดลองทางอื่นได้';
       message((hint&&!hint.move&&hint.fen===M.fen(state)&&status.state==='playing'?'กำลังหาคำใบ้…':status.state==='resign'?'คุณยอมแพ้ — ฝ่าย'+sideName(status.winner)+'ชนะ · กดย้อนกลับเพื่อเล่นต่อ':status.state==='checkmate'?'รุกจน — ฝ่าย'+sideName(status.winner)+'ชนะ':status.state==='stalemate'?'เสมอเพราะอับ — ไม่มีตาเดินและขุนไม่ถูกรุก':status.state==='draw'?'เสมอ — เหลือขุนทั้งสองฝ่าย':status.state==='countdraw'?'เสมอ — นับครบตามกติกาแล้วยังไม่รุกจน':status.state==='repetition'?'เสมอ — ตำแหน่งเดิมเกิดขึ้นครบ 3 ครั้ง':status.check?'ขุน'+sideName(state.turn)+'กำลังถูกรุก':engine.reason?'AI ระดับยากใช้ไม่ได้: '+engine.reason:'')+(game&&game.lesson&&status.state!=='playing'?' · กด “← บทเรียน” เพื่อกลับไปผ่านบท':''),!!engine.reason&&!status.check);
     }
-    renderMoves();scheduleFit();
+    $('openReview').hidden=!aiGame||reviewing||status.state==='playing'||!review;
+    renderMoves();if(reviewing)drawGameReview();scheduleFit();
   }
   function renderMoves(){
     var body=$('moveList');body.replaceChildren();
@@ -559,6 +635,8 @@
           wrap.appendChild(img);wrap.appendChild(text);td.appendChild(wrap);
           td.title=sideName(side)+' '+names[move.piece]+' '+move.text+(move.promotion?' · '+move.promotionNote:'');
           if(move.promotion){var note=document.createElement('small');note.className='promotionNote';note.textContent='หงายเบี้ย';td.appendChild(note);}
+          var rated=reviewing&&ratingOf(entry.index);
+          if(rated){var badge=document.createElement('span');badge.className='rateBadge '+rated.kind;badge.textContent=rated.kind==='best'?'★':rated.kind==='good'?'👍':'?';badge.title=KIND_TEXT[rated.kind];wrap.insertBefore(badge,wrap.firstChild);}
           td.dataset.ply=entry.index+1;td.tabIndex=0;td.classList.add('movePick');
           if(entry.index===current){td.classList.add('latestMove');td.setAttribute('aria-current','true');}
           else if(entry.index>current)td.classList.add('laterMove');
@@ -616,6 +694,7 @@
       if(!selected){if(p){selected=at;render();}return;}
       editMove(selected,at);return;
     }
+    if(reviewing)return;
     if(playStatus().state!=='playing'){message('ตำแหน่งนี้จบแล้ว กดย้อนกลับ หรือกลับไปตั้งหมาก');return;}
     if(aiTurn()){message(future.length?'ตอนนี้ย้อนดูตาเดินอยู่ กดเดินหน้า หรือแตะตาเดินในบันทึกเพื่อไปต่อ':'รอ AI เดินก่อนนะ');return;}
     if(p&&p.side===state.turn){selected=same(selected,at)?null:at;render();return;}
@@ -630,7 +709,7 @@
   $('board').addEventListener('pointerdown',function(e){
     var sq=e.target.closest('.square');if(!sq)return;
     var at={r:Number(sq.dataset.r),c:Number(sq.dataset.c)},p=pieceAt(at);if(!p)return;
-    if(mode==='play'&&(aiTurn()||p.side!==state.turn||playStatus().state!=='playing'))return;
+    if(mode==='play'&&(reviewing||aiTurn()||p.side!==state.turn||playStatus().state!=='playing'))return;
     beginDrag(e,{from:at,piece:p});
   });
   function startDrag(){
@@ -725,11 +804,12 @@
   // the game (tapping a move in the record). Going back past the AI's move leaves it to move: it waits until the
   // game is at its last position again.
   function undo(){
+    if(reviewing){reviewStep(-1);return;}
     cancelAi();if($('resultDialog').open)$('resultDialog').close();
     if(game&&game.resigned){game.resigned=false;render();scheduleAi();return;}
     var prev=history.pop();if(!prev)return;future.push(snapshot());restore(prev);scheduleAi();
   }
-  function redo(){cancelAi();var next=future.pop();if(!next)return;history.push(snapshot());restore(next);scheduleAi();}
+  function redo(){if(reviewing){reviewStep(1);return;}cancelAi();var next=future.pop();if(!next)return;history.push(snapshot());restore(next);scheduleAi();}
   function jumpTo(n){
     cancelAi();
     while(moves.length>n&&history.length){future.push(snapshot());restore(history.pop());}
@@ -754,11 +834,11 @@
   var pickMove=function(e){var td=e.target.closest('td.movePick');if(!td||mode!=='play')return;if(e.type==='keydown'&&e.key!=='Enter'&&e.key!==' ')return;e.preventDefault();jumpTo(Number(td.dataset.ply));};
   $('moveList').addEventListener('click',pickMove);$('moveList').addEventListener('keydown',pickMove);
   $('start').onclick=function(){var error=M.validate(state);if(error){message(error,true);sound.playResult('failure');return;}save();trial={state:clone(state),history:history.slice(),future:future.slice()};mode='play';history=[];future=[];moves=[];selected=null;last=null;startCount();render();};
-  $('restart').onclick=function(){cancelAi();hint=null;pickShape();if(game){game.bookDone=false;game.recorded=false;game.resigned=false;}remember();state=clone(trial.state);moves=[];selected=null;last=null;startCount();render();$('optionsDialog').close();scheduleAi();};
+  $('restart').onclick=function(){cancelAi();stopReview();hint=null;pickShape();if(game){game.bookDone=false;game.recorded=false;game.resigned=false;}remember();state=clone(trial.state);moves=[];selected=null;last=null;startCount();render();$('optionsDialog').close();scheduleAi();};
   $('edit').onclick=function(){cancelAi();game=null;count=null;mode='edit';state=clone(trial.state);history=trial.history;future=trial.future;trial=null;moves=[];selected=null;last=null;render();};
   $('load').onclick=function(){if(mode!=='edit')return;try{var next=M.parse($('fen').value);remember();state=next;changed();$('optionsDialog').close();message('เปิดตำแหน่งแล้ว'+(M.validate(state)?' — '+M.validate(state):''));}catch(e){$('saveNote').textContent=e.message;}};
   $('copy').onclick=async function(){try{await navigator.clipboard.writeText($('fen').value);$('saveNote').textContent='คัดลอกรหัสแล้ว';}catch(e){$('fen').focus();$('fen').select();$('saveNote').textContent='เลือกข้อความแล้ว กรุณาคัดลอกด้วยเมนูของเครื่อง';}};
-  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('exportDialog').open&&!$('optionsDialog').open){if(drag)return;selected=null;tool='move';render();}});
+  document.addEventListener('keydown',function(e){if(reviewing&&(e.key==='ArrowLeft'||e.key==='ArrowRight')&&!/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)&&!document.querySelector('dialog[open]')){e.preventDefault();reviewStep(e.key==='ArrowLeft'?-1:1);return;}if(reviewing&&e.key==='Escape'&&!document.querySelector('dialog[open]')){closeReview();return;}if(e.key==='Escape'&&!$('exportDialog').open&&!$('optionsDialog').open){if(drag)return;selected=null;tool='move';render();}});
   $('options').onclick=function(){$('optionsDialog').showModal();};
   $('closeOptions').onclick=function(){$('optionsDialog').close();};
   $('optionsDialog').addEventListener('close',function(){$('options').focus();});
