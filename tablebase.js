@@ -83,6 +83,18 @@
     });
     return best ? { move: { from: best.move.from, to: best.move.to }, mateIn: best.left === Infinity ? 0 : best.left } : null;
   }
+  // Every legal move of side with what the table says follows: {move, n}. For the rook side n is the moves it still
+  // needs after this one (0: this move mates); for the lone king, the moves the rook side needs from then on.
+  // Infinity: no win (a draw, or the rook is taken). null when the table does not apply.
+  function outcomes(pieces, side) {
+    if (!table) return null;
+    var m = material(pieces);
+    if (!m) return null;
+    return { strong: m.side, moves: R.legalMoves(pieces, side).map(function (mv) {
+      var after = R.applyMove(pieces, mv.from, mv.to);
+      return { move: { from: mv.from, to: mv.to }, after: after, n: side === m.side ? loneToMove(after, side === 'white' ? 'black' : 'white') : strongToMove(after) };
+    }) };
+  }
   // Loads the table once (the browser fetches it; Node passes the bytes to use()).
   function load(url) {
     if (table) return Promise.resolve(true);
@@ -93,5 +105,5 @@
     return loading;
   }
   function use(bytes) { table = bytes; }
-  return { load: load, use: use, ready: function () { return !!table; }, bestMove: bestMove, value: function (pieces) { return strongToMove(pieces); } };
+  return { load: load, use: use, ready: function () { return !!table; }, bestMove: bestMove, outcomes: outcomes, value: function (pieces) { return strongToMove(pieces); } };
 });

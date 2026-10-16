@@ -148,7 +148,7 @@
     return loss<=0.3?'✓ ตาดี (Good)':loss<=1?'?! ไม่แม่น (Inaccuracy) · เสียไป '+loss.toFixed(1):loss<=2.5?'? พลาด (Mistake) · เสียไป '+loss.toFixed(1):'?? พลาดหนัก (Blunder) · เสียไป '+Math.min(loss,99).toFixed(1);
   }
   function drawAnalysis(){
-    var on=analysis&&mode==='play',lines=view.lines,top=lines[0];
+    var on=analysis&&mode==='play',lines=view.lines,top=lines[0];drawTableMoves();
     $('analysisPanel').hidden=!on;$('bestMove').hidden=!on;$('bestMove').disabled=!top;
     $('arrowLayer').innerHTML='';
     if(!on)return;
@@ -156,14 +156,14 @@
     $('modeLabel').textContent='AI ระดับยาก'+(E&&E.tier()?' ('+(E.tier()==='lite'?'Lite':'Full')+')':'');
     var v=top?whiteValue(top.score,state.turn):0;
     $('evalFill').style.width=(top?(top.score.mate!==undefined?(v>0?100:0):50+50*Math.tanh(v/4)):50)+'%';
-    $('evalText').textContent=top?scoreText(top.score,state.turn)+' · ลึก '+view.depth:(view.error||'AI กำลังคิด…');
+    $('evalText').textContent=view.table?view.table.summary+' (ตาราง)':top?scoreText(top.score,state.turn)+' · ลึก '+view.depth:(view.error||'AI กำลังคิด…');
     var list=$('engineLines');list.replaceChildren();
     if(view.error){var err=document.createElement('li');err.className='lineError';err.textContent=view.error;list.appendChild(err);}
     // Always two rows (empty while the AI thinks), so the panel keeps its height and the board never jumps.
     if(!view.error)[0,1].forEach(function(i){
       var l=lines[i],li=document.createElement('li'),b=document.createElement('button');b.type='button';b.disabled=!l;
       b.innerHTML='<span class="lineScore"></span><span class="linePv"></span>';
-      b.firstChild.textContent=l?scoreText(l.score,state.turn):'…';b.lastChild.textContent=l?pvText(l.pv,8):'';
+      b.firstChild.textContent=l?(view.table?tableLabel(view.table.list[i]):scoreText(l.score,state.turn)):'…';b.lastChild.textContent=l?pvText(l.pv,8):'';
       if(l)b.addEventListener('click',function(){var m=l.pv[0];if(m)playMove(square(m,0),square(m,2));});
       li.appendChild(b);list.appendChild(li);
     });
@@ -174,6 +174,50 @@
     rating.hidden=!feedback;rating.textContent=feedback.replace(/ · เสียไป .*/,'');rating.title=feedback;
     rating.className='moveRating'+(/พลาดหนัก|Mistake|พลาด/.test(feedback)?' bad':/ไม่แม่น/.test(feedback)?' warn':' good');
   }
+  // King + rook against a lone king: the endgame table (tablebase.js) gives every move's result at once, and the
+  // count (ศักดิ์หมาก) decides whether a mate comes in time: a mate that needs more moves than the count leaves is a
+  // draw. Each move: {move, key, kind: 'win'|'loss'|'draw', moves (the rook side's moves to mate, this one included
+  // when it moves), why}.
+  // Rook moves the count still allows from count c, with the lone king to move (loneNext) or the rook side to move.
+  function movesLeft(c,loneNext){
+    if(!c)return Infinity;if(c.draw)return 0;
+    var said=c.value===null?c.start:c.value+1;
+    return Math.max(0,c.ceiling-said+(loneNext?1:2));
+  }
+  function tableView(){
+    var T=window.MakrukTablebase,o=T&&T.ready()&&T.outcomes(state.pieces,state.turn);
+    if(!o||playStatus().state!=='playing')return null;
+    var mover=state.turn,strong=mover===o.strong;
+    var list=o.moves.map(function(x){
+      var key=moveKey(x.move),c=P.nextCount(count,x.after,mover),out={move:x.move,key:key};
+      if(x.n===Infinity){out.kind='draw';out.why=strong?'เสียเรือหรืออับ':'กินเรือหรือหนีได้';return out;}
+      var need=strong?x.n:x.n,left=movesLeft(c,strong);
+      if(strong&&x.n===0){out.kind='win';out.moves=1;return out;}
+      if(need>left){out.kind='draw';out.why='นับศักดิ์ครบก่อน (ต้องใช้ '+(strong?need+1:need)+' ตา)';return out;}
+      out.kind=strong?'win':'loss';out.moves=strong?need+1:need;return out;
+    });
+    var rank=function(x){return strong?(x.kind==='win'?x.moves:1000):(x.kind==='draw'?-1000:-x.moves);};
+    list.sort(function(a,b){return rank(a)-rank(b);});
+    list.forEach(function(x){var reply=x.kind==='draw'?null:T.bestMove(R.applyMove(state.pieces,x.move.from,x.move.to),opponent(mover));x.reply=reply?moveKey(reply.move):null;});
+    var best=list[0],rook=sideName(o.strong),lone=sideName(opponent(o.strong));
+    var summary=!best?'':best.kind==='win'?rook+'ชนะ · รุกจนใน '+best.moves+' ตา':best.kind==='loss'?lone+'แพ้ใน '+best.moves+' ตา (ถ้า'+rook+'เดินดีที่สุด)':'เสมอ · '+(strong?rook+'รุกจนไม่ทันนับ':lone+'รอดได้');
+    return {list:list,summary:summary,strong:strong};
+  }
+  function tableScore(x,strong){return x.kind==='draw'?{cp:0}:{mate:strong?x.moves:-x.moves};}
+  function tableLabel(x){return x.kind==='win'?'ชนะ '+x.moves:x.kind==='loss'?'แพ้ '+x.moves:'เสมอ';}
+  function drawTableMoves(){
+    var box=$('tableMoves'),tb=analysis&&mode==='play'?view.table:null;box.hidden=!tb;if(!tb)return;
+    $('tableSummary').textContent='ตารางปลายกระดาน · '+tb.summary+' · ดูผลทุกตาเดิน ('+tb.list.length+')';
+    var ol=$('tableList');ol.replaceChildren();
+    tb.list.forEach(function(x){
+      var li=document.createElement('li'),b=document.createElement('button');b.type='button';b.className='tableMove '+x.kind;
+      b.innerHTML='<span class="tableKind"></span><span class="tableText"></span>';
+      b.firstChild.textContent=tableLabel(x);
+      b.lastChild.textContent=pvText([x.key],1)+(x.kind==='draw'?' · '+x.why:x.kind==='win'?' · รุกจนใน '+x.moves+' ตา':' · โดนรุกจนใน '+x.moves+' ตา');
+      b.addEventListener('click',function(){playMove(x.move.from,x.move.to);});
+      li.appendChild(b);ol.appendChild(li);
+    });
+  }
   function updateAnalysis(){
     if(!analysis)return;
     if(mode!=='play'){if(E)E.stopAnalysis();view.fen=null;drawAnalysis();return;}
@@ -181,9 +225,14 @@
     if(fen!==view.fen){
       view.prev=view.fen?{line:view.lines[0],turn:view.turn,moves:view.moves}:null;
       view.fen=fen;view.turn=state.turn;view.moves=moves.length;view.lines=[];view.depth=0;view.done=false;
-      if(playStatus().state!=='playing'){if(E)E.stopAnalysis();}
+      view.table=tableView();
+      if(view.table){
+        if(E)E.stopAnalysis();view.error='';view.done=true;
+        view.lines=view.table.list.slice(0,2).map(function(x){return {score:tableScore(x,view.table.strong),pv:x.reply?[x.key,x.reply]:[x.key]};});
+      }
+      else if(playStatus().state!=='playing'){if(E)E.stopAnalysis();}
       else if(!E){view.error='เปิด AI ไม่ได้';}
-      else E.analyse(fen,function(u){if(view.fen!==fen)return;view.lines=u.lines;view.depth=u.depth;view.done=u.done;drawAnalysis();})
+      else E.analyse(fen,function(u){if(view.fen!==fen||view.table)return;view.lines=u.lines;view.depth=u.depth;view.done=u.done;drawAnalysis();})
         .catch(function(e){view.error='AI ใช้ไม่ได้: '+((e&&e.reason)||'เบราว์เซอร์นี้ยังไม่รองรับ');drawAnalysis();});
     }
     drawAnalysis();
@@ -675,6 +724,8 @@
     document.body.classList.add('aiGame');$('boardTools').hidden=false;$('boardTools').append($('options'),$('flip'));
     loadEngine();if(window.MakrukTablebase)MakrukTablebase.load();
   }
+  // ถอดหมาก: the endgame table answers king + rook against king positions (see tableView).
+  if(analysis&&window.MakrukTablebase)MakrukTablebase.load().then(function(ok){if(ok){view.fen=null;render();}});
   render();if(notice)message(notice,notice!=='เปิดตำแหน่งจากลิงก์แชร์แล้ว');
   // The board shows, and the AI starts, once every piece picture is loaded (piece-colors.js), at most 2.5 s.
   document.body.classList.add('piecesLoading');
