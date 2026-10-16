@@ -55,6 +55,8 @@ impl Registry {
             fs::write(&files[1], &t.v[1]).expect("cannot write the table");
             t
         };
+        let about = self.dir.join(format!("{}.json", name));
+        if !about.exists() { fs::write(&about, describe(&table)).expect("cannot write the table's description"); }
         let t = Arc::new(table);
         self.tables.insert(name, t.clone());
         t
@@ -351,6 +353,18 @@ pub fn build(reg: &Registry, lay: Layout) -> Table {
     }
     if reg.log { eprintln!("{}: done in {:.1} min", name, t0.elapsed().as_secs_f64() / 60.0); }
     Table { lay, v: [w, b] }
+}
+
+/// <name>.json next to the table: how it numbers positions (for readers in other languages) and what it holds.
+pub fn describe(t: &Table) -> String {
+    let (won, lost, longest) = stats(t);
+    let side = |v: &Vec<crate::geom::Kind>| v.iter().map(|k| format!("\"{}\"", k.letter())).collect::<Vec<_>>().join(",");
+    let groups = t.lay.groups.iter().map(|g| format!("{{\"start\":{},\"count\":{},\"size\":{}}}", g.start, g.count, g.size)).collect::<Vec<_>>().join(",");
+    let kings = t.lay.kings.iter().map(|k| k.to_string()).collect::<Vec<_>>().join(",");
+    let sym = t.lay.sym.iter().map(|k| k.to_string()).collect::<Vec<_>>().join(",");
+    format!("{{\"name\":\"{}\",\"white\":[{}],\"black\":[{}],\"positions\":{},\"symmetries\":[{}],\"kings\":[{}],\"comb\":{},\"groups\":[{}],\"files\":[\"{}.w.bin\",\"{}.b.bin\"],\"wins\":{},\"losses\":{},\"longest\":{}}}
+",
+        t.lay.mat.name(), side(&t.lay.mat.w), side(&t.lay.mat.b), t.lay.n, sym, kings, t.lay.comb, groups, t.lay.mat.name(), t.lay.mat.name(), won, lost, longest)
 }
 
 /// Counts for the report: wins and losses with each side to move, and the longest mate.
