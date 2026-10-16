@@ -1,31 +1,39 @@
 'use strict';
-// King + rook against a lone king (tablebase.js, tablebase/krk.bin): the table matches a fresh build, agrees with
-// the makruk rules (makruk-rules.js) on sampled positions, and table play mates in exactly the moves it says.
+// King + rook, and king + two rooks, against a lone king (tablebase.js, tablebase/krk.bin and krrk.bin): each table
+// matches a fresh build, agrees with the makruk rules (makruk-rules.js) on sampled positions, and table play mates in
+// exactly the moves it says.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const R = require('../makruk-rules.js');
 const T = require('../tablebase.js');
 const B = require('../scripts/build-krk.cjs');
+const B2 = require('../scripts/build-krrk.cjs');
+const zlib = require('node:zlib');
 
 const bytes = new Uint8Array(fs.readFileSync(path.join(__dirname, '..', 'tablebase', 'krk.bin')));
 const fresh = B.build();
 assert.deepEqual(bytes, fresh.bytes, 'tablebase/krk.bin is up to date (node scripts/build-krk.cjs)');
 assert.equal(fresh.longest, 16, 'longest king + rook mate is 16 moves');
-T.use(bytes);
+const bytes2 = new Uint8Array(zlib.inflateRawSync(fs.readFileSync(path.join(__dirname, '..', 'tablebase', 'krrk.bin'))));
+const fresh2 = B2.build();
+assert.deepEqual(bytes2, fresh2.bytes, 'tablebase/krrk.bin is up to date (node scripts/build-krrk.cjs)');
+assert.equal(fresh2.longest, 7, 'longest king + two rooks mate is 7 moves');
+T.use(bytes, bytes2);
 
 const at = s => ({ r: 8 - Number(s[1]), c: 'abcdefgh'.indexOf(s[0]) });
 const other = s => s === 'white' ? 'black' : 'white';
 let seed = 7;
-const rand = n => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed % n; };
+const rand = n => { seed = (Math.imul(seed, 1103515245) + 12345) >>> 0; return (seed >>> 8) % n; };
 const sq = i => ({ r: i >> 3, c: i & 7 });
-// A legal position with the rook side (white or red) to move.
-function randomPosition() {
+// A legal position with the rook side (white or red) to move: one rook, or two.
+function randomPosition(rooks) {
   for (;;) {
-    const [a, b, c] = [rand(64), rand(64), rand(64)];
-    if (a === b || a === c || b === c) continue;
+    const [a, b, c, d] = [rand(64), rand(64), rand(64), rand(64)];
+    if (new Set(rooks === 2 ? [a, b, c, d] : [a, b, c]).size !== (rooks === 2 ? 4 : 3)) continue;
     const side = rand(2) ? 'white' : 'black';
     const ps = [{ piece: 'king', side, at: sq(a) }, { piece: 'rook', side, at: sq(b) }, { piece: 'king', side: other(side), at: sq(c) }];
+    if (rooks === 2) ps.push({ piece: 'rook', side, at: sq(d) });
     if (Math.max(Math.abs(sq(a).r - sq(c).r), Math.abs(sq(a).c - sq(c).c)) <= 1) continue;
     if (R.inCheck(ps, other(side))) continue;
     return { ps, side };
@@ -39,8 +47,8 @@ function loneLeft(ps, lone) {
   return Math.max(...R.legalMoves(ps, lone).map(m => T.value(R.applyMove(ps, m.from, m.to))));
 }
 let checked = 0, wins = 0;
-for (let i = 0; i < 1500; i++) {
-  const { ps, side } = randomPosition(), v = T.value(ps);
+for (let i = 0; i < 3000; i++) {
+  const { ps, side } = randomPosition(i % 2 ? 2 : 1), v = T.value(ps);
   const best = Math.min(...R.legalMoves(ps, side).map(m => loneLeft(R.applyMove(ps, m.from, m.to), other(side))));
   // The table's distance is one more than the best the rules allow after the rook side's move (Infinity: no win).
   assert.equal(v, best === Infinity ? Infinity : best + 1, 'position ' + JSON.stringify(ps) + ' ' + side);
@@ -62,9 +70,11 @@ function playOut(ps, side) {
 }
 const pictured = playOut([{ piece: 'king', side: 'white', at: at('a1') }, { piece: 'rook', side: 'white', at: at('d4') }, { piece: 'king', side: 'black', at: at('e6') }], 'white');
 assert.deepEqual(pictured, { start: 14, moves: 14, state: 'checkmate' }, 'ขุน ก1 เรือ ง4 against ขุน จ6: mate in 14');
+assert.deepEqual(playOut([{ piece: 'king', side: 'white', at: at('c2') }, { piece: 'rook', side: 'white', at: at('a1') }, { piece: 'rook', side: 'white', at: at('b1') }, { piece: 'king', side: 'black', at: at('e4') }], 'white'),
+  { start: 5, moves: 5, state: 'checkmate' }, 'ขุน ค2 เรือ ก1 ข1 against ขุน จ4: mate in 5');
 let played = 0;
-for (let i = 0; i < 150; i++) {
-  const { ps, side } = randomPosition();
+for (let i = 0; i < 300; i++) {
+  const { ps, side } = randomPosition(i % 2 ? 2 : 1);
   if (T.value(ps) === Infinity) continue;
   const r = playOut(ps, side);
   assert.equal(r.state, 'checkmate'); assert.equal(r.moves, r.start, 'mates in the moves the table gives');
@@ -72,4 +82,4 @@ for (let i = 0; i < 150; i++) {
 }
 // Not king + rook against king: no table move.
 assert.equal(T.bestMove([{ piece: 'king', side: 'white', at: at('a1') }, { piece: 'met', side: 'white', at: at('d4') }, { piece: 'king', side: 'black', at: at('e6') }], 'white'), null);
-console.log('KRK table verified: ' + fresh.won + ' wins, longest 16; ' + checked + ' positions agree with the rules (' + wins + ' wins); ' + played + ' games mate on time.');
+console.log('KRK table: ' + fresh.won + ' wins, longest 16; KRRK: ' + fresh2.won + ' wins, longest 7; ' + checked + ' positions agree with the rules (' + wins + ' wins); ' + played + ' games mate on time.');

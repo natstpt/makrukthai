@@ -85,7 +85,7 @@ const out = new Uint8Array(TRI.length * 4096);
 TRI.forEach((wk, t) => { for (let wr = 0; wr < 64; wr++) for (let bk = 0; bk < 64; bk++) out[t * 4096 + wr * 64 + bk] = A[idx(wk, wr, bk)]; });
 let won = 0, longest = 0;
 for (let i = 0; i < N; i++) if (A[i]) { won++; longest = Math.max(longest, A[i]); }
-return { bytes: out, won, longest };
+return { bytes: out, won, longest, full: A };
 }
 if (require.main === module) {
   const { bytes, won, longest } = build();
