@@ -1,2 +1,6 @@
 # Raw tables kept between runs of scripts/build-big-tables.cjs
 tablebase-cache/
+# Six-piece and other local endgame tables (tools/makruk-tb), kept on this computer only
+tablebase-local/
+# Rust build output
+tools/makruk-tb/target/
