@@ -148,12 +148,16 @@
       return new Promise(function (resolve) {
         var skill = limits.skill === undefined ? 20 : limits.skill, time = limits.time || (limits.depth ? 0 : line.think);
         if (skill !== skillLevel) { line.post('setoption name Skill Level value ' + skill); skillLevel = skill; }
-        reached = 0;
+        reached = 0; last = { score: null, depth: 0, best: null, fen: fen, moves: moves || [] };
         listener = function (text) {
-          if (text.indexOf('info depth ') === 0) { reached = Math.max(reached, +text.split(/\s+/)[2] || 0); return; }
+          if (text.indexOf('info depth ') === 0) {
+            reached = Math.max(reached, +text.split(/\s+/)[2] || 0);
+            if (text.indexOf(' score ') > 0 && text.indexOf('bound') < 0) { var info = parseInfo(text); if (info.score && info.depth >= last.depth) { last.score = info.score; last.depth = info.depth; } }
+            return;
+          }
           if (text.indexOf('bestmove') !== 0) return;
           listener = null; clearTimeout(give); searched();
-          var m = text.split(/\s+/)[1]; resolve(m && m !== '(none)' ? m.slice(0, 4) : null);
+          var m = text.split(/\s+/)[1]; last.best = m && m !== '(none)' ? m.slice(0, 4) : null; resolve(last.best);
         };
         // Given up a little after the engine's own limit (3 s for a depth search without a time).
         var give = setTimeout(function () { resolve(null); }, (time || 3000) + 500);
@@ -212,10 +216,15 @@
   // Game review: the engine's best move and score for the side to move in fen, at full strength with one line,
   // searching limits.depth plies but stopping itself after limits.time ms. Resolves {best: 'e3e4'|null,
   // score: {cp}|{mate}|null, depth}. Queued with bestMove, so it never overlaps an AI move.
+  // The last bestMove search: {score, depth, best, fen, moves} (score from the side to move), for the game review.
+  var last = null, evaluating = false;
+  // Ends an evaluate() at once (the full build; the lite one cannot be stopped and finishes its short search).
+  function stopSearch() { if (evaluating && line && line.stops) line.post('stop'); }
   function evaluate(fen, limits) {
-    var searched, searchDone = new Promise(function (r) { searched = r; }), before = busy;
+    var searched, searchDone = new Promise(function (r) { searched = function () { evaluating = false; r(); }; }), before = busy;
     busy = searchDone;
     return before.then(function () { return start(); }).then(function () {
+      evaluating = true;
       return new Promise(function (resolve) {
         if (skillLevel !== 20) { line.post('setoption name Skill Level value 20'); skillLevel = 20; }
         if (analysis.multipv) { line.post('setoption name MultiPV value 1'); analysis.multipv = false; }
@@ -237,5 +246,5 @@
     }, function (e) { searched(); throw e; });
   }
 
-  root.MakrukEngine = { start: start, unsupported: unsupported, bestMove: bestMove, evaluate: evaluate, lastDepth: function () { return reached; }, analyse: analyse, stopAnalysis: stopAnalysis, tier: function () { return tier; }, ready: function () { return !!tier; } };
+  root.MakrukEngine = { start: start, unsupported: unsupported, bestMove: bestMove, evaluate: evaluate, stopSearch: stopSearch, lastSearch: function () { return last; }, lastDepth: function () { return reached; }, analyse: analyse, stopAnalysis: stopAnalysis, tier: function () { return tier; }, ready: function () { return !!tier; } };
 })(window);
