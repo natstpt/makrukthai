@@ -130,3 +130,36 @@ pub fn consistent(reg: &mut Registry, mat: &Material) -> u64 {
         checked
     }).sum()
 }
+
+/// Like consistent(), on `count` positions drawn at random (for tables too big to go through whole), with the
+/// tables already in the registry (opened, not built). Returns the positions checked.
+pub fn sample(reg: &Registry, mat: &Material, count: u64, seed: u64) -> u64 {
+    let canon = if mat.canonical() { mat.clone() } else { mat.flipped() };
+    let t = reg.tables.get(&canon.name()).unwrap_or_else(|| panic!("table {} is not in the folder", canon.name())).clone();
+    let lay = &t.lay;
+    (0..count).into_par_iter().map(|k| {
+        // splitmix64: a position number from the sample number.
+        let mut z = seed.wrapping_add(k.wrapping_mul(0x9E3779B97F4A7C15));
+        z = (z ^ (z >> 30)).wrapping_mul(0xBF58476D1CE4E5B9); z = (z ^ (z >> 27)).wrapping_mul(0x94D049BB133111EB); z ^= z >> 31;
+        let i = z % lay.n;
+        let p = lay.decode(&reg.cb, i);
+        let b = Board { geo: &reg.geo, lay, p, n: lay.slots.len() };
+        let mut checked = 0u64;
+        for stm in 0..2 {
+            if !b.legal(stm) { continue; }
+            let (mut best_win, mut worst_loss, mut all_lose) = (u8::MAX, 0u8, true);
+            let moves = for_moves(reg, lay, &p, stm, |c| {
+                let x = match c { Child::Same(k) => t.v[1 - stm][k as usize], Child::Capture(x) => x };
+                if is_loss(x) { best_win = best_win.min(x - 128 + 1); }
+                if is_win(x) { worst_loss = worst_loss.max(x); } else { all_lose = false; }
+                true
+            });
+            let want = if moves == 0 { if b.in_check(stm) { loss(0) } else { DRAW } }
+                else if best_win != u8::MAX { win(best_win) } else if all_lose { loss(worst_loss) } else { DRAW };
+            let got = t.v[stm][i as usize];
+            assert_eq!(got, want, "{} index {} side {}: {} in the table, {} from its moves (kings {:?} pieces {:?})", canon.name(), i, stm, got, want, p.k, &p.sq[..lay.slots.len()]);
+            checked += 1;
+        }
+        checked
+    }).sum()
+}

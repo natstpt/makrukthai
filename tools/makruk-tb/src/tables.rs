@@ -15,10 +15,22 @@ use std::sync::atomic::{AtomicU64, AtomicU8, Ordering::Relaxed};
 use std::sync::Arc;
 use std::time::Instant;
 
+/// A table's bytes: built here, or a finished file mapped from disk (the system reads only the pages used).
+pub enum Data { Owned(Vec<u8>), Mapped(memmap2::Mmap) }
+impl std::ops::Deref for Data {
+    type Target = [u8];
+    fn deref(&self) -> &[u8] { match self { Data::Owned(v) => v, Data::Mapped(m) => m } }
+}
+fn map(path: &Path) -> Data {
+    let f = fs::File::open(path).unwrap_or_else(|e| panic!("{}: {}", path.display(), e));
+    // SAFETY: the tables are written once and only read afterwards.
+    Data::Mapped(unsafe { memmap2::Mmap::map(&f) }.unwrap_or_else(|e| panic!("{}: {}", path.display(), e)))
+}
+
 pub struct Table {
     pub lay: Layout,
     /// Final values by side to move [white, red].
-    pub v: [Vec<u8>; 2],
+    pub v: [Data; 2],
 }
 
 pub struct Registry {
@@ -46,13 +58,13 @@ impl Registry {
         let files = [self.dir.join(format!("{}.w.bin", name)), self.dir.join(format!("{}.b.bin", name))];
         let table = if files.iter().all(|f| fs::metadata(f).map(|m| m.len() == lay.n).unwrap_or(false)) {
             if self.log { eprintln!("{}: read from {}", name, self.dir.display()); }
-            Table { v: [fs::read(&files[0]).unwrap(), fs::read(&files[1]).unwrap()], lay }
+            Table { v: [map(&files[0]), map(&files[1])], lay }
         } else {
             for sub in subs(&mat) { if sub.count() > 0 { self.get(&sub); } }
             let t = build(self, lay);
             fs::create_dir_all(&self.dir).expect("cannot create the output folder");
-            fs::write(&files[0], &t.v[0]).expect("cannot write the table");
-            fs::write(&files[1], &t.v[1]).expect("cannot write the table");
+            fs::write(&files[0], &*t.v[0]).expect("cannot write the table");
+            fs::write(&files[1], &*t.v[1]).expect("cannot write the table");
             t
         };
         let about = self.dir.join(format!("{}.json", name));
@@ -60,6 +72,29 @@ impl Registry {
         let t = Arc::new(table);
         self.tables.insert(name, t.clone());
         t
+    }
+
+    /// The table for `mat` if its files are in the folder (never builds): for the server.
+    pub fn open(&mut self, mat: &Material) -> Option<Arc<Table>> {
+        let mat = if mat.canonical() { mat.clone() } else { mat.flipped() };
+        let name = mat.name();
+        if let Some(t) = self.tables.get(&name) { return Some(t.clone()); }
+        let lay = Layout::new(&mat, &self.cb);
+        let files = [self.dir.join(format!("{}.w.bin", name)), self.dir.join(format!("{}.b.bin", name))];
+        if !files.iter().all(|f| fs::metadata(f).map(|m| m.len() == lay.n).unwrap_or(false)) { return None; }
+        let t = Arc::new(Table { v: [map(&files[0]), map(&files[1])], lay });
+        self.tables.insert(name, t.clone());
+        Some(t)
+    }
+    /// Like value(), but None when the position's table is not open (or it has a piece no table keeps).
+    pub fn try_value(&self, kings: [u8; 2], pieces: &[Piece], stm: usize) -> Option<u8> {
+        if pieces.is_empty() { return Some(DRAW); }
+        let w: Vec<Kind> = pieces.iter().filter(|p| p.0 == WHITE).map(|p| p.1).collect();
+        let b: Vec<Kind> = pieces.iter().filter(|p| p.0 == BLACK).map(|p| p.1).collect();
+        let mat = Material::new(w, b);
+        let canon = if mat.canonical() { mat } else { mat.flipped() };
+        if !self.tables.contains_key(&canon.name()) { return None; }
+        Some(self.value(kings, pieces, stm))
     }
 
     /// Value with `stm` to move of any position whose table is loaded (kings [white, red], pieces any order).
@@ -352,7 +387,7 @@ pub fn build(reg: &Registry, lay: Layout) -> Table {
         for (i, x) in copies { side[i as usize] = x; }
     }
     if reg.log { eprintln!("{}: done in {:.1} min", name, t0.elapsed().as_secs_f64() / 60.0); }
-    Table { lay, v: [w, b] }
+    Table { lay, v: [Data::Owned(w), Data::Owned(b)] }
 }
 
 /// <name>.json next to the table: how it numbers positions (for readers in other languages) and what it holds.
@@ -370,6 +405,6 @@ pub fn describe(t: &Table) -> String {
 /// Counts for the report: wins and losses with each side to move, and the longest mate.
 pub fn stats(t: &Table) -> (u64, u64, u8) {
     let (mut won, mut lost, mut longest) = (0u64, 0u64, 0u8);
-    for side in &t.v { for &x in side { if is_win(x) { won += 1; longest = longest.max(x); } else if is_loss(x) { lost += 1; } } }
+    for side in &t.v { for &x in side.iter() { if is_win(x) { won += 1; longest = longest.max(x); } else if is_loss(x) { lost += 1; } } }
     (won, lost, longest)
 }

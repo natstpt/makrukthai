@@ -387,11 +387,95 @@
     rsSetInfo(name, info);
     Object.keys(parts).forEach(function (k) { rsParts[name].set(Number(k), parts[k]); });
   }
+  // ---- Bigger tables from this computer (tools/makruk-tb serve, http://127.0.0.1:8765) ----
+  // Only when the page itself is opened from this computer (localhost / 127.0.0.1). /status is asked once; a position
+  // that neither the web tables nor the lone-king tables cover, and whose table the server has, is asked with
+  // /probe?fen=… and the answer (every move's result for the mover) is kept by position. No server: nothing changes.
+  var LOCAL = { base: 'http://127.0.0.1:8765', on: false, tables: [], answers: new Map(), asking: new Map(), status: null };
+  try { LOCAL.on = typeof location === 'object' && /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname); } catch (e) {}
+  var FEN_LETTER = { king: 'k', rook: 'r', knight: 'n', khon: 's', met: 'm', promoted: 'm~', pawn: 'p' };
+  function fenOf(pieces, stm) {
+    var rows = [];
+    for (var r = 0; r < 8; r++) {
+      var row = '', empty = 0;
+      for (var c = 0; c < 8; c++) {
+        var p = pieces.find(function (x) { return x.at.r === r && x.at.c === c; });
+        if (!p) { empty++; continue; }
+        if (empty) { row += empty; empty = 0; }
+        var l = FEN_LETTER[p.piece];
+        row += p.side === 'white' ? l.charAt(0).toUpperCase() + l.slice(1) : l;
+      }
+      rows.push(row + (empty || ''));
+    }
+    return rows.join('/') + ' ' + (stm === 'white' ? 'w' : 'b') + ' - - 0 1';
+  }
+  // Is this a position for the local server (not covered by the web's own tables)?
+  function localCandidate(pieces) {
+    if (!LOCAL.on || LOCAL.status === false) return false;
+    var key = rsKey(pieces);
+    if (!key || rsCovers(key) || material(pieces) || need(pieces, true)) return false;
+    return LOCAL.status === null || LOCAL.tables.indexOf(key.name) >= 0;
+  }
+  function localStatus() {
+    if (LOCAL.status !== null) return Promise.resolve(LOCAL.status);
+    if (!LOCAL.asking.has('status')) {
+      var ctl = typeof AbortController === 'function' ? new AbortController() : null;
+      var timer = ctl ? setTimeout(function () { ctl.abort(); }, 800) : 0;
+      LOCAL.asking.set('status', fetch(LOCAL.base + '/status', ctl ? { signal: ctl.signal } : undefined)
+        .then(function (res) { return res.ok ? res.json() : null; })
+        .then(function (s) { LOCAL.status = !!(s && s.ok); LOCAL.tables = (s && s.tables) || []; return LOCAL.status; },
+          function () { LOCAL.status = false; return false; })
+        .then(function (ok) { clearTimeout(timer); return ok; }));
+    }
+    return LOCAL.asking.get('status');
+  }
+  function localAsk(pieces, stm) {
+    var fen = fenOf(pieces, stm);
+    if (LOCAL.answers.has(fen)) return Promise.resolve(true);
+    if (!LOCAL.asking.has(fen)) LOCAL.asking.set(fen, fetch(LOCAL.base + '/probe?fen=' + encodeURIComponent(fen))
+      .then(function (res) { return res.json(); })
+      .then(function (a) { LOCAL.answers.set(fen, a); LOCAL.asking.delete(fen); return true; },
+        function () { LOCAL.asking.delete(fen); return false; }));
+    return LOCAL.asking.get(fen);
+  }
+  function localNeed(pieces, stm) {
+    if (!localCandidate(pieces)) return false;
+    if (LOCAL.status === null) return true;
+    return (stm ? [stm] : ['white', 'black']).some(function (s) { return !LOCAL.answers.has(fenOf(pieces, s)); });
+  }
+  function localEnsure(pieces, stm) {
+    if (!localCandidate(pieces)) return Promise.resolve(false);
+    return localStatus().then(function (ok) {
+      if (!ok || !localCandidate(pieces)) return false;
+      return Promise.all((stm ? [stm] : ['white', 'black']).map(function (s) { return localAsk(pieces, s); }))
+        .then(function (all) { return all.every(Boolean); });
+    });
+  }
+  function localOutcomes(pieces, side) {
+    var a = LOCAL.on && LOCAL.answers.get(fenOf(pieces, side));
+    if (!a || !a.covered) return null;
+    return { two: true, local: true, moves: a.moves.map(function (x) {
+      var from = { r: x.from[0], c: x.from[1] }, to = { r: x.to[0], c: x.to[1] };
+      return { move: { from: from, to: to }, after: R.applyMove(pieces, from, to), res: x.res, n: x.n };
+    }) };
+  }
+  function localBest(pieces, side) {
+    var o = localOutcomes(pieces, side);
+    if (!o || !o.moves.length) return null;
+    var wins = o.moves.filter(function (x) { return x.res === 'win'; });
+    if (wins.length) { var w = wins.reduce(function (a, b) { return b.n < a.n ? b : a; }); return { move: w.move, mateIn: w.n }; }
+    if (o.moves.some(function (x) { return x.res === 'draw'; })) return null;
+    var l = o.moves.reduce(function (a, b) { return b.n > a.n ? b : a; });
+    return { move: l.move, mateIn: 0 };
+  }
+  // Node and tests: turn the local server on (as if the page were opened from this computer).
+  function useLocal(base) { LOCAL.on = true; if (base) LOCAL.base = base; LOCAL.status = null; LOCAL.tables = []; LOCAL.answers = new Map(); LOCAL.asking = new Map(); }
   function bestMove(pieces, side) {
     var key = rsKey(pieces);
     if (rsCovers(key)) return rsTry(function () { return rsBest(pieces, side); });
     var m = material(pieces);
-    if (!m || (m.big && !bigReady(m.big, pieces))) return null;
+    if (!m) return localBest(pieces, side);
+    if (m.big && !bigReady(m.big, pieces)) return null;
     var moves = R.legalMoves(pieces, side), best = null;
     if (side === m.side) {
       moves.forEach(function (mv) {
@@ -415,7 +499,8 @@
   function outcomes(pieces, side) {
     if (rsCovers(rsKey(pieces))) return rsTry(function () { return rsOutcomes(pieces, side); });
     var m = material(pieces);
-    if (!m || (m.big && !bigReady(m.big, pieces))) return null;
+    if (!m) return localOutcomes(pieces, side);
+    if (m.big && !bigReady(m.big, pieces)) return null;
     return { strong: m.side, moves: R.legalMoves(pieces, side).map(function (mv) {
       var after = R.applyMove(pieces, mv.from, mv.to);
       return { move: { from: mv.from, to: mv.to }, after: after, n: side === m.side ? loneToMove(after, side === 'white' ? 'black' : 'white') : strongToMove(after) };
@@ -440,9 +525,10 @@
     return loading;
   }
   function use(bytes, bytes2) { table = bytes; if (bytes2) table2 = bytes2; }
-  // Does this position need a table that is not loaded yet (and could be)? (oldOnly: the lone-king tables only.)
-  function need(pieces, oldOnly) {
-    if (!oldOnly && rsNeed(pieces)) return true;
+  // Does this position need a table that is not loaded yet (and could be)? (oldOnly: the lone-king tables only;
+  // stm: the side to move, for the local server's answers.)
+  function need(pieces, oldOnly, stm) {
+    if (!oldOnly && (rsNeed(pieces) || localNeed(pieces, stm))) return true;
     var k = kind(pieces);
     if (k && typeof DecompressionStream !== 'function' && k.name !== 'rook') return false;
     if (k && k.big) {
@@ -456,9 +542,10 @@
     return !!k && k.tables.some(function (n) { return !loaded(n) && extra[n] !== false && (!isRookTable(n) || !loading); });
   }
   // Loads every table this position needs (the rook ones through load()); resolves true when they are all there.
-  function ensure(pieces, oldOnly) {
-    // The two-sided tables first (their list says which there are), then the lone-king ones.
-    if (!oldOnly && rsKey(pieces)) return rsEnsure(pieces).then(function (ok) { return ok || ensure(pieces, true); });
+  function ensure(pieces, oldOnly, stm) {
+    // The two-sided tables first (their list says which there are), then the lone-king ones, then the local server.
+    if (!oldOnly && rsKey(pieces)) return rsEnsure(pieces).then(function (ok) { return ok || ensure(pieces, true); })
+      .then(function (ok) { return ok || localEnsure(pieces, stm); });
     var k = kind(pieces);
     if (!k) return Promise.resolve(false);
     if (typeof DecompressionStream !== 'function' && k.tables.some(function (n) { return n !== 'rook'; })) return Promise.resolve(false);
@@ -481,7 +568,7 @@
     if (bigList.indexOf(name) < 0) bigList.push(name);
     bigInfo[name] = info; bigChunks[name] = chunks;
   }
-  return { load: load, use: use, need: need, ensure: ensure, useTable: useTable, useBig: useBig, useRs: useRs,
+  return { load: load, use: use, need: need, ensure: ensure, useTable: useTable, useBig: useBig, useRs: useRs, useLocal: useLocal, fenOf: fenOf,
     result: function (pieces, stm) { return rsTry(function () { return rsResult(pieces, stm); }); },
     // What a two-sided position still needs (for tests and debugging): [{name, part} | {pieces}].
     wanted: function (pieces) { return rsProbe(pieces); }, NAMES: NAMES, ready: function () { return !!table; }, ready2: function () { return !!table2; }, bestMove: bestMove, outcomes: outcomes, value: function (pieces) { return strongToMove(pieces); } };

@@ -25,7 +25,13 @@ const tables = new Map();
 function table(name) {
   if (tables.has(name)) return tables.get(name);
   const info = JSON.parse(fs.readFileSync(path.join(DIR, name + '.json'), 'utf8'));
-  info.v = info.files.map(f => fs.readFileSync(path.join(DIR, f)));
+  // Files over 1 GB (the six-piece tables) are read a byte at a time from disk instead of into memory.
+  info.v = info.files.map(f => {
+    const file = path.join(DIR, f);
+    if (fs.statSync(file).size < 1 << 30) return fs.readFileSync(file);
+    const fd = fs.openSync(file, 'r'), one = Buffer.alloc(1);
+    return { at: i => { fs.readSync(fd, one, 0, 1, i); return one[0]; } };
+  });
   info.kidx = Array(64).fill(-1); info.kings.forEach((s, i) => { info.kidx[s] = i; });
   info.slots = info.white.map(k => ['white', k]).concat(info.black.map(k => ['black', k]));
   tables.set(name, info);
@@ -68,7 +74,8 @@ function value(pieces, stm) {
     best = Math.min(best, (k * 64 + f[bk]) * t.comb + m);
   }
   const side = flip ? (stm === 'white' ? 1 : 0) : (stm === 'white' ? 0 : 1);
-  return t.v[side][best];
+  const v = t.v[side];
+  return v.at ? v.at(best) : v[best];
 }
 const isWin = x => x >= 1 && x <= 127, isLoss = x => x >= 128 && x <= 253;
 const other = s => s === 'white' ? 'black' : 'white';
