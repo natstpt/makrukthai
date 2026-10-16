@@ -134,3 +134,21 @@ body.aiGame .playerBar.topBar{display:flex;height:32px;min-height:32px;padding:0
 
 .moveTable td.movePick{cursor:pointer}.moveTable td.movePick:focus-visible{outline:2px solid #e4cd92;outline-offset:-2px}.moveTable td.laterMove{opacity:.45}
 .tableMoves{margin:0 0 6px;border:1px solid #6a5a3a;border-radius:10px;background:#2f281e}.tableMoves summary{padding:8px 10px;font-size:14px;font-weight:700;color:#ead295;cursor:pointer;line-height:1.4}.tableList{list-style:none;margin:0;padding:0 6px 6px;max-height:220px;overflow:auto}.tableList li{margin:2px 0}.tableMove{width:100%;display:flex;align-items:center;gap:8px;min-height:34px;padding:4px 6px;border:0;border-radius:8px;background:transparent;color:#f2f0ec;text-align:left;font-size:13px;cursor:pointer}.tableMove:hover{background:#3a3226}.tableKind{flex:none;min-width:58px;padding:2px 6px;border-radius:6px;font-weight:800;text-align:center;color:#fff}.tableMove.win .tableKind{background:#3f9a4b}.tableMove.loss .tableKind{background:#c9483a}.tableMove.draw .tableKind{background:#6d6455}.tableText{flex:1;min-width:0}
+/* Game Review screen: coach line, the whole-game graph and its buttons above the move record; the dock is hidden
+   (the panel has the buttons) and the move record carries each rated move's badge. */
+.gameReview{flex:none;display:flex;flex-direction:column;gap:6px;margin:0 0 6px;padding:8px;border:1px solid #4a3f30;border-radius:12px;background:#2f281e}
+.grHead{display:flex;align-items:center;gap:8px;min-height:32px}.grHead h3{margin:0;font-size:15px;color:#9fd86b;white-space:nowrap}
+.grStats{display:flex;flex-wrap:wrap;align-items:center;gap:4px;flex:1;min-width:0;font-size:12px}.grChip{padding:1px 7px;border-radius:9px;font-weight:800;background:#3a3125}.grChip.best{color:#9fd86b}.grChip.good{color:#d6e48f}.grChip.mistake{color:#ffb070}.grBusy{color:#cfc6b6}
+.grClose{flex:none;width:36px;height:36px;min-height:36px;padding:0;border:0;border-radius:9px;background:transparent;color:#cfc6b6;font-size:24px;line-height:1}
+.grCoach{display:flex;align-items:center;gap:8px}.grCoach img{width:44px;height:44px;flex:none;border-radius:50%;object-fit:cover;background:#3a3125}
+.grCoach p{position:relative;flex:1;margin:0;padding:7px 10px;min-height:44px;border-radius:12px;background:#f7f1e3;color:#2a2116;font-size:14px;line-height:1.4}.grCoach p::before{content:"";position:absolute;left:-7px;top:50%;margin-top:-7px;border:7px solid transparent;border-right-color:#f7f1e3;border-left:0}
+.grGraph{position:relative;height:64px;border-radius:7px;overflow:hidden;background:#3d362c;cursor:pointer;touch-action:manipulation}.grGraph:focus-visible{outline:2px solid #e4cd92}
+.grGraph svg{position:absolute;inset:0;width:100%;height:100%}.grArea path{fill:#f2ebd7}.grArea line{stroke:#8f8370;stroke-width:1;vector-effect:non-scaling-stroke;stroke-dasharray:3 3}
+.grMarks circle{fill:#e3893a;stroke:#2f281e;stroke-width:1.5}.grMarks .grNow{stroke:#4aa3df;stroke-width:2}
+.grNav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) minmax(0,1.6fr);gap:4px}.grNav button{min-height:40px;padding:4px;display:grid;place-items:center;font-weight:800;font-size:13px}.grNav svg{width:20px;height:20px;fill:currentColor}
+.grMistake{color:#ffb070}
+.rateBadge{flex:none;display:inline-grid;place-items:center;width:18px;height:18px;margin-right:2px;border-radius:50%;font-size:10px;font-weight:900;color:#fff;line-height:1}.rateBadge.best{background:#3f9a4b}.rateBadge.good{background:#7a9a3f}.rateBadge.mistake{background:#e3893a}
+.openReview{margin-left:auto;min-height:34px;padding:4px 10px;border:0;border-radius:9px;background:#6fae3e;color:#fff;font-size:13px;font-weight:800}
+body.reviewMode .actionDock,body.reviewMode #requestCount{display:none!important}
+@media(max-width:900px) and (orientation:portrait), (max-width:599px){body.reviewMode main{--tools-reserve:330px}.grGraph{height:48px}.grCoach img{width:36px;height:36px}.grCoach p{font-size:13px;min-height:36px;padding:5px 9px}.grNav button{min-height:36px}}
+body.reviewMode .evalText{padding:0 7px;border-radius:6px;background:#262018d9;color:#f2ebd7;text-shadow:none;line-height:18px}
