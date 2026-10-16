@@ -66,8 +66,10 @@
   });
   function scheduleAi(){
     cancelAi();
-    // While an earlier position of the game is on the board (moves to go forward to), the AI waits.
-    if(!aiTurn()||future.length||playStatus().state!=='playing')return;
+    // While an earlier position of the game is on the board (moves to go forward to), the AI waits. On the player's
+    // turn the engine searches the position for the game review; on the AI's turn that search stops at once.
+    if(!aiTurn()||future.length||playStatus().state!=='playing'){ponder();return;}
+    if(pondering&&E&&E.stopSearch)E.stopSearch();
     var token=aiSearch,hard=engineAi();
     // Engine AI: the opening shape first (ง4 จ4 / ง5 จ5 pawns, then the pieces behind them); once it is done or has
     // to stop, the engine plays the rest of the game. Decided now, so an engine move does not wait the opening delay.
@@ -95,7 +97,9 @@
       // The engine gets the moves since the last pawn move or capture (no position before it can come back), so it
       // sees the repetitions and never needs a promotion suffix.
       var since=moves.length;while(since>0&&moves[since-1].piece!=='pawn'&&!moves[since-1].capture)since--;
+      var searched=M.fen(state);
       E.bestMove(since?moves[since-1].fen:M.fen(trial.state),moves.slice(since).map(function(m){return m.uci;}),AI_LIMITS[game.level]).then(function(key){
+        keepAiSearch(searched);
         if(token!==aiSearch||!aiTurn())return;
         var move=key&&R.legalMoves(state.pieces,state.turn).find(function(m){return moveKey(m)===key;});
         if(move)playMove(move.from,move.to);else easy();
@@ -318,12 +322,30 @@
   $('newWhite').onclick=function(){newGame('white');};
   $('newBlack').onclick=function(){newGame('black');};
 
-  // Result of a game against the AI: who won and how, a word from the coach, and a game review. The review searches
-  // every position from the player's first move to the end with the engine (20 plies, at most REVIEW_TIME ms each)
-  // and rates each of the player's moves by how much it lost against the engine's best move:
-  // ดีเยี่ยม = the best move or within 0.3 pawn · ดี = within 1.2 pawns · ผิดพลาด = more.
-  var REVIEW_DEPTH=20,REVIEW_TIME=2500,review=null;
+  // Result of a game against the AI: who won and how, a word from the coach, and a game review that rates each of the
+  // player's moves by how much it lost against the best move: ดีเยี่ยม = the best move or within 0.3 pawn ·
+  // ดี = within 1.2 pawns · ผิดพลาด = more. To be quick on any device:
+  //   - while the game goes on, the player's positions are searched in the background on the player's turn
+  //     (PONDER limits) and the AI's own searches are kept (reviewCache, by position), so most are known at the end;
+  //   - a move with no other choice is not rated; an endgame table position is rated from the table, exactly;
+  //   - the position after a move is searched only when the move was not the engine's best;
+  //   - what is still missing shares about REVIEW_BUDGET ms (each search 0.1–0.6 s, REVIEW_DEPTH plies at most).
+  var REVIEW_BUDGET=20000,review=null,reviewCache=new Map(),pondering=null;
   var RESULT_REASON={checkmate:'ด้วยการรุกจน',resign:'คุณยอมแพ้',stalemate:'อับ · ฝ่ายที่ต้องเดินไม่มีตาเดิน',draw:'เหลือขุนเปล่าทั้งสองฝ่าย',countdraw:'นับครบศักดิ์',repetition:'เดินซ้ำตำแหน่งเดิม 3 ครั้ง'};
+  function liteEngine(){return !!E&&E.tier()==='lite';}
+  function reviewDepth(){return liteEngine()?10:14;}
+  var PONDER={full:{depth:14,time:500},lite:{depth:10,time:300}};
+  function keepReview(fen,r){if(r&&r.score&&(r.depth||0)>=6&&!reviewCache.has(fen))reviewCache.set(fen,{value:reviewValue(r),best:r.best||null,depth:r.depth||0});}
+  // On the player's turn the engine is free: search this position for the review (stopped when the player moves).
+  function ponder(){
+    if(!game||!game.ai||mode!=='play'||aiTurn()||future.length||playStatus().state!=='playing'||!engineAi()||engine.state!=='ready'||!E.evaluate)return;
+    var fen=M.fen(state);
+    if(reviewCache.has(fen)||pondering===fen)return;
+    pondering=fen;
+    E.evaluate(fen,PONDER[liteEngine()?'lite':'full']).then(function(r){if(pondering===fen)pondering=null;keepReview(fen,r);},function(){if(pondering===fen)pondering=null;});
+  }
+  // The AI's own search of the position it moved from (deep enough to be worth keeping).
+  function keepAiSearch(fen){var s=E&&E.lastSearch&&E.lastSearch();if(s&&s.score&&s.depth>=8)keepReview(fen,s);}
   function showResult(){
     var status=playStatus();if(!game||!game.ai||status.state==='playing')return;
     var won=status.winner===game.human,lost=!!status.winner&&!won,level={easy:'ง่าย',medium:'กลาง',hard:'ยาก'}[game.level];
@@ -345,34 +367,67 @@
     if(!r||!r.score)return 0;
     return r.score.mate!==undefined?(r.score.mate>0?10000-r.score.mate:-10000-r.score.mate):r.score.cp;
   }
+  // A move rated from an endgame table: the best result there was against the one the move kept.
+  var TABLE_WORD={win:'ชนะ',draw:'เสมอ',loss:'แพ้'};
+  function rateFromTable(job,i,o){
+    var side=job.line[i].side;
+    var results=o.moves.map(function(x){
+      if(o.two)return {move:x.move,res:x.res,n:x.n};
+      if(x.n===Infinity)return {move:x.move,res:'draw',n:0};
+      return side===o.strong?{move:x.move,res:'win',n:x.n+1}:{move:x.move,res:'loss',n:x.n};
+    });
+    var score=function(r){return r.res==='win'?10000-r.n:r.res==='loss'?-10000+r.n:0;};
+    var best=results.reduce(function(a,b){return score(b)>score(a)?b:a;});
+    var m=job.line[i],played=results.find(function(r){return moveKey(r.move)===m.uci;});
+    if(!played)return false;
+    var kind=score(played)===score(best)?'best':played.res===best.res?'good':'mistake',better=null;
+    if(kind==='mistake'){try{better=N.formatMove(M.parse(job.fens[i]).pieces,best.move.from,best.move.to).text;}catch(e){}}
+    job.rated.push({i:i,kind:kind,loss:0,better:better,note:kind==='mistake'?'ตารางท้ายเกม: '+TABLE_WORD[best.res]+' → '+TABLE_WORD[played.res]:''});
+    return true;
+  }
   function startReview(){
     stopReview();
-    var line=fullLine().slice(),job={length:line.length,line:line,fens:[M.fen(trial.state)].concat(line.map(function(m){return m.fen;})),values:[],bests:[],rated:[],done:0,total:0,stopped:false,error:''};
+    var line=fullLine().slice(),job={length:line.length,line:line,fens:[M.fen(trial.state)].concat(line.map(function(m){return m.fen;})),rated:[],done:0,total:0,stopped:false,error:''};
     review=job;
     var mine=line.map(function(m,i){return m.side===game.human?i:-1;}).filter(function(i){return i>=0;});
-    var need=[];mine.forEach(function(i){if(need.indexOf(i)<0)need.push(i);if(need.indexOf(i+1)<0)need.push(i+1);});
-    job.total=need.length;
-    if(!E||E.unsupported()||engine.state==='failed'){job.error='เครื่องนี้ใช้ AI วิเคราะห์เกมไม่ได้';drawReview();return;}
-    var rate=function(i){
-      var clamp=function(v){return Math.max(-1000,Math.min(1000,v));};
-      var loss=Math.max(0,clamp(job.values[i])-clamp(-job.values[i+1]));
-      var kind=job.bests[i]===line[i].uci||loss<=30?'best':loss<=120?'good':'mistake';
-      var better=null;
-      if(kind==='mistake'&&job.bests[i]){try{better=N.formatMove(M.parse(job.fens[i]).pieces,square(job.bests[i],0),square(job.bests[i],2)).text;}catch(e){}}
-      job.rated.push({i:i,kind:kind,loss:loss,better:better});
+    job.total=mine.length;
+    var T=window.MakrukTablebase,queue=[];
+    mine.forEach(function(i){
+      var parsed=M.parse(job.fens[i]);
+      if(R.legalMoves(parsed.pieces,parsed.turn).length<=1){job.done++;return;} // no choice: not rated
+      var o=T&&T.outcomes(parsed.pieces,parsed.turn);
+      if(o&&o.moves.length&&rateFromTable(job,i,o)){job.done++;return;}
+      queue.push(i);
+    });
+    var known=function(at){return reviewCache.has(job.fens[at]);};
+    var terminal=function(at){var p=M.parse(job.fens[at]),st=R.gameStatus(p.pieces,p.turn);return st.state==='checkmate'?-10000:st.state!=='playing'?0:null;};
+    if(queue.length&&(!E||E.unsupported()||engine.state==='failed')){job.error='เครื่องนี้ใช้ AI วิเคราะห์เกมไม่ได้ (ให้คะแนนเฉพาะตาที่ตารางท้ายเกมรู้ผล)';drawReview();return;}
+    // Time for each search still to make: the budget shared over what is missing (the position after a move only
+    // counts when the move was not the known best).
+    var missing=queue.reduce(function(n,i){var c=reviewCache.get(job.fens[i]);return n+(c?0:1)+(c&&c.best===line[i].uci||known(i+1)?0:1);},0);
+    var limits={depth:reviewDepth(),time:Math.max(100,Math.min(600,Math.round(REVIEW_BUDGET/Math.max(1,missing))))};
+    job.depth=limits.depth;
+    var value=function(at){
+      var t=terminal(at);if(t!==null)return Promise.resolve({value:t,best:null});
+      if(known(at))return Promise.resolve(reviewCache.get(job.fens[at]));
+      return E.evaluate(job.fens[at],limits).then(function(r){keepReview(job.fens[at],r);return reviewCache.get(job.fens[at])||{value:reviewValue(r),best:r.best};});
     };
+    var clamp=function(v){return Math.max(-1000,Math.min(1000,v));};
     var step=function(k){
       if(job.stopped)return;
-      if(k>=need.length){drawReview();return;}
-      var at=need[k],parsed=M.parse(job.fens[at]),st=R.gameStatus(parsed.pieces,parsed.turn);
-      var after=function(value,best){
-        job.values[at]=value;job.bests[at]=best;job.done=k+1;
-        mine.forEach(function(i){if(job.values[i]!==undefined&&job.values[i+1]!==undefined&&!job.rated.some(function(r){return r.i===i;}))rate(i);});
-        drawReview();step(k+1);
-      };
-      if(st.state==='checkmate'){after(-10000,null);return;}
-      if(st.state!=='playing'){after(0,null);return;}
-      E.evaluate(job.fens[at],{depth:REVIEW_DEPTH,time:REVIEW_TIME}).then(function(r){if(!job.stopped)after(reviewValue(r),r.best);},function(){if(job.stopped)return;job.error='AI วิเคราะห์ไม่สำเร็จ';drawReview();});
+      if(k>=queue.length){drawReview();return;}
+      var i=queue[k];
+      value(i).then(function(a){
+        if(job.stopped)return;
+        if(a.best===line[i].uci){job.rated.push({i:i,kind:'best',loss:0,better:null});job.done++;drawReview();step(k+1);return;}
+        return value(i+1).then(function(b){
+          if(job.stopped)return;
+          var loss=Math.max(0,clamp(a.value)-clamp(-b.value));
+          var kind=loss<=30?'best':loss<=120?'good':'mistake',better=null;
+          if(kind==='mistake'&&a.best){try{better=N.formatMove(M.parse(job.fens[i]).pieces,square(a.best,0),square(a.best,2)).text;}catch(e){}}
+          job.rated.push({i:i,kind:kind,loss:loss,better:better});job.done++;drawReview();step(k+1);
+        });
+      }).catch(function(){if(job.stopped)return;job.error='AI วิเคราะห์ไม่สำเร็จ';drawReview();});
     };
     drawReview();step(0);
   }
@@ -383,11 +438,11 @@
     $('statBest').textContent=countOf('best');$('statGood').textContent=countOf('good');$('statMistake').textContent=countOf('mistake');
     $('reviewProgress').hidden=finished&&!job.error;
     $('reviewBar').style.width=(job.total?Math.round(job.done/job.total*100):100)+'%';
-    $('reviewText').textContent=job.error||(job.total?'AI กำลังวิเคราะห์ตาเดิน '+job.done+'/'+job.total+' ตำแหน่ง (ลึก '+REVIEW_DEPTH+' ชั้น)':'ยังไม่มีตาเดินของคุณให้วิเคราะห์');
+    $('reviewText').textContent=job.error||(job.total?'AI กำลังวิเคราะห์ตาเดิน '+job.done+'/'+job.total+' ตา (ลึก '+(job.depth||reviewDepth())+' ชั้น)':'ยังไม่มีตาเดินของคุณให้วิเคราะห์');
     var list=job.rated.filter(function(r){return r.kind==='mistake';}).sort(function(a,b){return a.i-b.i;});
     $('reviewList').innerHTML=list.length?list.map(function(r){
       var m=job.line[r.i],no=Math.floor((r.i+(trial.state.turn==='white'?0:1))/2)+1;
-      return '<li><b>ตา '+no+'</b> คุณเดิน '+m.text+(r.better?' · ควรเดิน <strong>'+r.better+'</strong>':'')+' <em>(เสีย '+(r.loss/100).toFixed(1)+' เบี้ย)</em></li>';
+      return '<li><b>ตา '+no+'</b> คุณเดิน '+m.text+(r.better?' · ควรเดิน <strong>'+r.better+'</strong>':'')+' <em>('+(r.note||'เสีย '+(r.loss/100).toFixed(1)+' เบี้ย')+')</em></li>';
     }).join(''):(finished&&job.total?'<li class="none">ไม่มีตาที่ผิดพลาด เก่งมาก!</li>':'');
     $('reviewBtn').disabled=!job.rated.length&&!finished;
   }
