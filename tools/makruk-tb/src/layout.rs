@@ -162,13 +162,19 @@ impl Layout {
     }
 }
 
-/// Values, one byte with the side to move: 0 a draw, 1..=127 it mates in that many of its moves, 128 + n it is mated
-/// after n of the other side's moves (128: mated now). While building, UNKNOWN and ILLEGAL are used too.
+/// Values, one byte with the side to move: 0 a draw, 1..=124 it mates in that many of its moves, 128 + n it is mated
+/// after n of the other side's moves (128: mated now). LONG (125, and 128 + 125) is a mate of 125 moves or more: it is
+/// still a win or a loss, but the moves are not counted (under the counting rules such a mate is a draw anyway).
+/// While building, UNKNOWN and ILLEGAL are used too.
 pub const DRAW: u8 = 0;
 pub const UNKNOWN: u8 = 255;
 pub const ILLEGAL: u8 = 254;
-pub const MAX_DTM: u8 = 125;
-#[inline] pub fn win(n: u8) -> u8 { n }
-#[inline] pub fn loss(n: u8) -> u8 { 128 + n }
-#[inline] pub fn is_win(v: u8) -> bool { (1..=127).contains(&v) }
-#[inline] pub fn is_loss(v: u8) -> bool { (128..=128 + MAX_DTM).contains(&v) }
+/// The longest mate counted exactly (124; a self-test lowers it to try the long-mate pass on small tables).
+static CAP: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(124);
+pub fn set_cap(n: u8) { CAP.store(n, std::sync::atomic::Ordering::Relaxed); }
+#[inline] pub fn max_dtm() -> u8 { CAP.load(std::sync::atomic::Ordering::Relaxed) }
+#[inline] pub fn long() -> u8 { max_dtm() + 1 }
+#[inline] pub fn win(n: u8) -> u8 { n.min(long()) }
+#[inline] pub fn loss(n: u8) -> u8 { 128 + n.min(long()) }
+#[inline] pub fn is_win(v: u8) -> bool { v >= 1 && v <= long() }
+#[inline] pub fn is_loss(v: u8) -> bool { v >= 128 && v <= 128 + long() }

@@ -292,7 +292,8 @@
       if (!r) return null;
       if (r.res === 'loss') win = Math.min(win, r.n + 1); else if (r.res === 'win') worst = Math.max(worst, r.n); else held = true;
     }
-    return win < Infinity ? { res: 'win', n: win } : held ? { res: 'draw', n: 0 } : { res: 'loss', n: worst };
+    // 125: a mate of 125 moves or more (the tables do not count longer ones).
+    return win < Infinity ? { res: 'win', n: Math.min(win, 125) } : held ? { res: 'draw', n: 0 } : { res: 'loss', n: Math.min(worst, 125) };
   }
   // Every move of `side` with its result for `side`: win in n of its moves (this one included), loss after n of the
   // other side's moves, or draw.
@@ -332,10 +333,10 @@
     rsInfo[name] = info;
     if (!rsParts[name]) rsParts[name] = new Map();
   }
-  // What a position still needs for the result of every move, with either side to move.
+  // What a position still needs for its result and every move's, with either side to move.
   function rsProbe(pieces) {
     rsWant = [];
-    try { ['white', 'black'].forEach(function (side) { rsOutcomes(pieces, side); }); } finally { var want = rsWant; rsWant = null; }
+    try { ['white', 'black'].forEach(function (side) { rsResult(pieces, side); rsOutcomes(pieces, side); }); } finally { var want = rsWant; rsWant = null; }
     return want;
   }
   function rsNeed(pieces) {
@@ -381,12 +382,15 @@
     });
   }
   // Node and tests: a table's info.json and its parts (decompressed), by part number.
+  // Each call starts the table's parts afresh; useRsPart adds one more (tests that load parts as they need them).
   function useRs(name, info, parts) {
     if (!rsList) rsList = [];
     if (rsList.indexOf(name) < 0) rsList.push(name);
     rsSetInfo(name, info);
+    rsParts[name] = new Map();
     Object.keys(parts).forEach(function (k) { rsParts[name].set(Number(k), parts[k]); });
   }
+  function useRsPart(name, k, bytes) { rsParts[name].set(Number(k), bytes); }
   // ---- Bigger tables from this computer (tools/makruk-tb serve, http://127.0.0.1:8765) ----
   // Only when the page itself is opened from this computer (localhost / 127.0.0.1). /status is asked once; a position
   // that neither the web tables nor the lone-king tables cover, and whose table the server has, is asked with
@@ -568,7 +572,7 @@
     if (bigList.indexOf(name) < 0) bigList.push(name);
     bigInfo[name] = info; bigChunks[name] = chunks;
   }
-  return { load: load, use: use, need: need, ensure: ensure, useTable: useTable, useBig: useBig, useRs: useRs, useLocal: useLocal, fenOf: fenOf,
+  return { load: load, use: use, need: need, ensure: ensure, useTable: useTable, useBig: useBig, useRs: useRs, useRsPart: useRsPart, useLocal: useLocal, fenOf: fenOf,
     result: function (pieces, stm) { return rsTry(function () { return rsResult(pieces, stm); }); },
     // What a two-sided position still needs (for tests and debugging): [{name, part} | {pieces}].
     wanted: function (pieces) { return rsProbe(pieces); }, NAMES: NAMES, ready: function () { return !!table; }, ready2: function () { return !!table2; }, bestMove: bestMove, outcomes: outcomes, value: function (pieces) { return strongToMove(pieces); } };

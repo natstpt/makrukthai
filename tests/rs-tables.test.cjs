@@ -14,8 +14,10 @@ const dir = path.join(__dirname, '..', 'tablebase');
 const open = f => new Uint8Array(zlib.inflateRawSync(fs.readFileSync(f)));
 T.use(new Uint8Array(fs.readFileSync(path.join(dir, 'krk.bin'))), open(path.join(dir, 'krrk.bin')));
 for (const name of T.NAMES) T.useTable(name, open(path.join(dir, name + '.bin')));
-const names = JSON.parse(fs.readFileSync(path.join(dir, 'rs', 'index.json'), 'utf8'));
-assert.deepEqual(names, ['KMMvKR', 'KRMMvK', 'KRMvKR', 'KRvKM', 'KRvKR']);
+// The tables with pieces on both sides, and KRMMvK (the five-piece lone-king ones have tests/rs5-tables.test.cjs).
+const names = ['KMMvKR', 'KRMMvK', 'KRMvKR', 'KRvKM', 'KRvKR'];
+const listed = JSON.parse(fs.readFileSync(path.join(dir, 'rs', 'index.json'), 'utf8'));
+assert(names.every(n => listed.includes(n)), 'index.json lists them');
 const info = {};
 for (const name of names) {
   const i = JSON.parse(fs.readFileSync(path.join(dir, 'rs', name, 'info.json'), 'utf8')), parts = {};
@@ -56,7 +58,7 @@ function fromMoves(ps, stm) {
     assert(r, 'every move is covered by a table');
     if (r.res === 'loss') win = Math.min(win, r.n + 1); else if (r.res === 'win') worst = Math.max(worst, r.n); else held = true;
   }
-  return win < Infinity ? { res: 'win', n: win } : held ? { res: 'draw', n: 0 } : { res: 'loss', n: worst };
+  return win < Infinity ? { res: 'win', n: Math.min(win, 125) } : held ? { res: 'draw', n: 0 } : { res: 'loss', n: Math.min(worst, 125) };
 }
 const summary = [];
 for (const name of names) {

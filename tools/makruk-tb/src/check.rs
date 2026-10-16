@@ -163,3 +163,33 @@ pub fn sample(reg: &Registry, mat: &Material, count: u64, seed: u64) -> u64 {
         checked
     }).sum()
 }
+
+/// Checks the pass for mates longer than the exact cap: builds `mat` (and its smaller tables) twice in scratch folders,
+/// as usual and with mates counted only up to `cap` moves. Every position must be the same win, loss or draw, with the
+/// same moves when they are within `cap` (and "long" beyond). Returns (positions compared, positions beyond the cap).
+pub fn long_selftest(mat: &Material, cap: u8) -> (u64, u64) {
+    let base = std::env::temp_dir().join(format!("makruk-tb-long-{}", std::process::id()));
+    set_cap(124);
+    let full = Registry::new(&base.join("full"), false).get_owned(mat);
+    set_cap(cap);
+    let short = Registry::new(&base.join("cap"), false).get_owned(mat);
+    set_cap(124);
+    let class = |x: u8, long: u8| if x >= 1 && x <= long { 1 } else if x >= 128 && x <= 128 + long { 2 } else { 0 };
+    let (mut n, mut beyond) = (0u64, 0u64);
+    for stm in 0..2 {
+        for (i, (&x, &y)) in full.v[stm].iter().zip(short.v[stm].iter()).enumerate() {
+            let (cx, cy) = (class(x, 125), class(y, cap + 1));
+            assert_eq!(cx, cy, "{} index {} side {}: {} built as usual, {} with the cap at {}", mat.name(), i, stm, x, y, cap);
+            let moves = if cx == 1 { x } else if cx == 2 { x - 128 } else { 0 };
+            if cx != 0 && moves > cap {
+                beyond += 1;
+                assert_eq!(y, if cx == 1 { cap + 1 } else { 128 + cap + 1 }, "{} index {}: a long mate is kept as long", mat.name(), i);
+            } else {
+                assert_eq!(x, y, "{} index {} side {}: same moves within the cap", mat.name(), i, stm);
+            }
+            n += 1;
+        }
+    }
+    let _ = std::fs::remove_dir_all(&base);
+    (n, beyond)
+}
