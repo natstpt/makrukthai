@@ -8,14 +8,19 @@
 //!   makruk-tb export KRvKR [more …] [--out DIR] [--repo DIR]
 //!       Writes the tables (from DIR, building them first if needed) for the website into tablebase/rs/: white to
 //!       move only, split by the kings' squares when big, compressed (see export.rs).
+//!   makruk-tb serve [--port 8765] [--out DIR]
+//!       Answers the website (opened from localhost) about the tables in DIR, at http://127.0.0.1:8765 (serve.rs).
 //!   makruk-tb check [--repo DIR] [--big DIR …]
 //!       Builds the site's existing tables again and compares every position (tablebase/krk.bin and the one- and
 //!       two-piece tables; --big adds a three-piece table folder made by scripts/build-big-tables.cjs).
+//!   makruk-tb check KRMMvKR [--sample 1000000] [--out DIR]
+//!       A table already built: that many random positions against their moves (for tables too big to check whole).
 
 mod check;
 mod export;
 mod geom;
 mod layout;
+mod serve;
 mod tables;
 
 use layout::Material;
@@ -34,6 +39,8 @@ fn main() {
     let mut out = repo_root().join("tablebase-local");
     let mut repo = repo_root();
     let mut threads = 0usize;
+    let mut port = serve::PORT;
+    let mut sample = 1_000_000u64;
     let mut words = Vec::new();
     let mut bigs = Vec::new();
     let mut i = 0;
@@ -42,6 +49,8 @@ fn main() {
             "--out" => { i += 1; out = PathBuf::from(&args[i]); }
             "--repo" => { i += 1; repo = PathBuf::from(&args[i]); }
             "--threads" => { i += 1; threads = args[i].parse().expect("--threads takes a number"); }
+            "--port" => { i += 1; port = args[i].parse().expect("--port takes a number"); }
+            "--sample" => { i += 1; sample = args[i].parse().expect("--sample takes a number"); }
             "--big" => { i += 1; bigs.push(PathBuf::from(&args[i])); }
             w => words.push(w.to_string()),
         }
@@ -88,6 +97,17 @@ fn main() {
             }
             export::index(&root);
         }
+        Some("serve") => serve::serve(&out, port),
+        Some("check") if words.len() > 1 => {
+            // check KRMMvKR … --sample N: a table already built (in DIR), N random positions against their moves.
+            let reg = serve::open_all(&out);
+            for w in &words[1..] {
+                let t = Instant::now();
+                let mat = Material::parse(w).unwrap_or_else(|| panic!("cannot read the material {}", w));
+                let n = check::sample(&reg, &mat, sample, 2026);
+                println!("{}: {} positions agree with their moves ({:.1} s)", mat.name(), n, t.elapsed().as_secs_f64());
+            }
+        }
         Some("check") => {
             let scratch = std::env::temp_dir().join(format!("makruk-tb-check-{}", std::process::id()));
             let mut reg = Registry::new(&scratch, false);
@@ -116,6 +136,7 @@ fn main() {
         _ => {
             eprintln!("makruk-tb build KRMMvKR [more …] [--out DIR] [--threads N]");
             eprintln!("makruk-tb export KRvKR [more …] [--out DIR] [--repo DIR]");
+            eprintln!("makruk-tb serve [--port 8765] [--out DIR]");
             eprintln!("makruk-tb check [--repo DIR] [--big DIR …]");
             std::process::exit(2);
         }

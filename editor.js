@@ -85,8 +85,8 @@
       // King + rook against a lone king: the medium and hard AI play from the endgame table (tablebase.js) at once,
       // the rook side mating soonest, the lone king holding out longest. The easy AI keeps its own (fallible) play.
       // Another endgame table this position needs (knight, khon, met …) loads first; the AI then moves from it.
-      if(game.level!=='easy'&&window.MakrukTablebase&&MakrukTablebase.need(state.pieces)){
-        MakrukTablebase.ensure(state.pieces).then(function(){if(token===aiSearch&&aiTurn())scheduleAi();});return;
+      if(game.level!=='easy'&&window.MakrukTablebase&&MakrukTablebase.need(state.pieces,false,state.turn)){
+        MakrukTablebase.ensure(state.pieces,false,state.turn).then(function(){if(token===aiSearch&&aiTurn())scheduleAi();});return;
       }
       var table=game.level!=='easy'&&window.MakrukTablebase&&MakrukTablebase.bestMove(state.pieces,state.turn);
       if(table){playMove(table.move.from,table.move.to);return;}
@@ -160,7 +160,7 @@
     $('modeLabel').textContent='AI ระดับยาก'+(E&&E.tier()?' ('+(E.tier()==='lite'?'Lite':'Full')+')':'');
     var v=top?whiteValue(top.score,state.turn):0;
     $('evalFill').style.width=(top?(top.score.mate!==undefined?(v>0?100:0):50+50*Math.tanh(v/4)):50)+'%';
-    $('evalText').textContent=view.table?view.table.summary+' (ตาราง)':top?scoreText(top.score,state.turn)+' · ลึก '+view.depth:(view.error||'AI กำลังคิด…');
+    $('evalText').textContent=view.table?view.table.summary+(view.table.local?' (ตาราง local)':' (ตาราง)'):top?scoreText(top.score,state.turn)+' · ลึก '+view.depth:(view.error||'AI กำลังคิด…');
     var list=$('engineLines');list.replaceChildren();
     if(view.error){var err=document.createElement('li');err.className='lineError';err.textContent=view.error;list.appendChild(err);}
     // Always two rows (empty while the AI thinks), so the panel keeps its height and the board never jumps.
@@ -225,7 +225,7 @@
     list.forEach(function(x){var reply=x.kind==='draw'?null:T.bestMove(R.applyMove(state.pieces,x.move.from,x.move.to),opp);x.reply=reply?moveKey(reply.move):null;});
     var best=list[0];
     var summary=!best?'':best.kind==='win'?sideName(mover)+'ชนะ · รุกจนใน '+best.moves+' ตา':best.kind==='loss'?sideName(mover)+'แพ้ใน '+best.moves+' ตา (ถ้า'+sideName(opp)+'เดินดีที่สุด)':'เสมอ · ทั้งสองฝ่ายเดินดีที่สุด';
-    return {list:list,summary:summary,strong:true};
+    return {list:list,summary:summary,strong:true,local:!!o.local};
   }
   // The mate score of a table row from the mover's side: a win counts up, a loss down.
   function tableScore(x){return x.kind==='draw'?{cp:0}:{mate:x.kind==='win'?x.moves:-x.moves};}
@@ -251,7 +251,7 @@
       view.prev=view.fen?{line:view.lines[0],turn:view.turn,moves:view.moves}:null;
       view.fen=fen;view.turn=state.turn;view.moves=moves.length;view.lines=[];view.depth=0;view.done=false;
       view.table=tableView();
-      if(!view.table&&window.MakrukTablebase&&MakrukTablebase.need(state.pieces))MakrukTablebase.ensure(state.pieces).then(function(ok){if(ok&&view.fen===fen){view.fen=null;render();}});
+      if(!view.table&&window.MakrukTablebase&&MakrukTablebase.need(state.pieces,false,state.turn))MakrukTablebase.ensure(state.pieces,false,state.turn).then(function(ok){if(ok&&view.fen===fen){view.fen=null;render();}});
       if(view.table){
         if(E)E.stopAnalysis();view.error='';view.done=true;
         view.lines=view.table.list.slice(0,2).map(function(x){return {score:tableScore(x,view.table.strong),pv:x.reply?[x.key,x.reply]:[x.key]};});
@@ -286,7 +286,7 @@
     var simple=function(){found(P.chooseMove(state.pieces,state.turn,{count:count}));};
     var table=window.MakrukTablebase&&MakrukTablebase.bestMove(state.pieces,state.turn);
     if(table){found(table.move);return;}
-    if(window.MakrukTablebase&&MakrukTablebase.need(state.pieces))MakrukTablebase.ensure(state.pieces);
+    if(window.MakrukTablebase&&MakrukTablebase.need(state.pieces,false,state.turn))MakrukTablebase.ensure(state.pieces,false,state.turn);
     if(!engineAi()||engine.state!=='ready'){simple();return;}
     var since=moves.length;while(since>0&&moves[since-1].piece!=='pawn'&&!moves[since-1].capture)since--;
     E.bestMove(since?moves[since-1].fen:M.fen(trial.state),moves.slice(since).map(function(m){return m.uci;}),{depth:16,time:1500}).then(function(key){
