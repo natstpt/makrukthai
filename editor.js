@@ -164,16 +164,29 @@
     $('modeLabel').textContent='AI ระดับยาก'+(E&&E.tier()?' ('+(E.tier()==='lite'?'Lite':'Full')+')':'');
     var v=top?whiteValue(top.score,state.turn):0;
     $('evalFill').style.width=(top?(top.score.mate!==undefined?(v>0?100:0):50+50*Math.tanh(v/4)):50)+'%';
-    $('evalText').textContent=view.table?view.table.summary+(view.table.local?' (ตาราง local)':' (ตาราง)'):top?scoreText(top.score,state.turn)+' · ลึก '+view.depth:(view.error||'AI กำลังคิด…');
-    var list=$('engineLines');list.replaceChildren();
-    if(view.error){var err=document.createElement('li');err.className='lineError';err.textContent=view.error;list.appendChild(err);}
+    $('evalText').textContent=view.table?view.table.summary+(view.table.local?' (ตาราง local)':' (ตาราง)'):top?scoreText(top.score,state.turn)+' · ลึก '+view.depth:(view.error||(engine.progress>0&&engine.progress<100?'กำลังโหลด AI ระดับยาก (Full) '+engine.progress+'%':'AI กำลังคิด…'));
+    var list=$('engineLines');list.replaceChildren();list.classList.toggle('tableChips',!!view.table);
+    // With an endgame table: every move as a chip in one row that scrolls sideways (best first), no second list.
+    if(view.table)view.table.list.forEach(function(x,i){
+      var li=document.createElement('li'),b=document.createElement('button');b.type='button';b.className='tableChip '+x.kind+(i===0?' best':'');
+      b.innerHTML='<b></b><span></span>';b.firstChild.textContent=chipLabel(x);b.lastChild.textContent=pvText([x.key],1).replace(/^\d+(\.|…)\s*/,'');
+      b.title=x.kind==='draw'?x.why:x.kind==='win'?'รุกจนใน '+x.moves+' ตา':'โดนรุกจนใน '+x.moves+' ตา';
+      b.addEventListener('click',function(){playMove(x.move.from,x.move.to);});
+      li.appendChild(b);list.appendChild(li);
+    });
+    else if(view.error){var err=document.createElement('li');err.className='lineError';err.textContent=view.error;list.appendChild(err);}
     // Always two rows (empty while the AI thinks), so the panel keeps its height and the board never jumps.
-    if(!view.error)[0,1].forEach(function(i){
+    if(!view.error&&!view.table)[0,1].forEach(function(i){
       var l=lines[i],li=document.createElement('li'),b=document.createElement('button');b.type='button';b.disabled=!l;
       b.innerHTML='<span class="lineScore"></span><span class="linePv"></span>';
       b.firstChild.textContent=l?(view.table?tableLabel(view.table.list[i]):scoreText(l.score,state.turn)):'…';b.lastChild.textContent=l?pvText(l.pv,8):'';
       if(l)b.addEventListener('click',function(){var m=l.pv[0];if(m)playMove(square(m,0),square(m,2));});
       li.appendChild(b);list.appendChild(li);
+    });
+    // A selected piece: each of its squares shows what the table says (ชนะ / แพ้ in N, or =).
+    if(view.table&&selected)view.table.list.forEach(function(x){
+      if(!same(x.move.from,selected))return;var el=squareEl(x.move.to);if(!el)return;
+      var tag=document.createElement('span');tag.className='tbBadge '+x.kind;tag.textContent=x.kind==='draw'?'=':(x.kind==='win'?'+':'-')+x.moves;el.appendChild(tag);
     });
     if(top&&assist.arrows&&top.pv[0])$('arrowLayer').innerHTML+=arrow(top.pv[0],'rgba(74,163,223,.88)');
     if(top&&assist.threats&&top.pv[1])$('arrowLayer').innerHTML+=arrow(top.pv[1],'rgba(216,52,44,.8)',true);
@@ -209,7 +222,7 @@
     list.sort(function(a,b){return rank(a)-rank(b);});
     list.forEach(function(x){var reply=x.kind==='draw'?null:T.bestMove(R.applyMove(state.pieces,x.move.from,x.move.to),opponent(mover));x.reply=reply?moveKey(reply.move):null;});
     var best=list[0],rook=sideName(o.strong),lone=sideName(opponent(o.strong));
-    var summary=!best?'':best.kind==='win'?rook+'ชนะ · รุกจนใน '+best.moves+' ตา':best.kind==='loss'?lone+'แพ้ใน '+best.moves+' ตา (ถ้า'+rook+'เดินดีที่สุด)':'เสมอ · '+(strong?rook+'รุกจนไม่ทันนับ':lone+'รอดได้');
+    var summary=!best?'':best.kind==='win'?rook+'ชนะ · รุกจนใน '+best.moves+' ตา':best.kind==='loss'?lone+'แพ้ใน '+best.moves+' ตา (ถ้า'+rook+'เดินดีที่สุด)':'เสมอ · '+(strong?(list.some(function(x){return /นับ/.test(x.why||'');})?rook+'รุกจนไม่ทันนับ':rook+'ไล่ไม่จน'):lone+'รอดได้');
     return {list:list,summary:summary,strong:strong};
   }
   // Pieces on both sides (tablebase/rs): either side may win. Each move: win (mate in n of the mover's moves, this one
@@ -233,9 +246,11 @@
   }
   // The mate score of a table row from the mover's side: a win counts up, a loss down.
   function tableScore(x){return x.kind==='draw'?{cp:0}:{mate:x.kind==='win'?x.moves:-x.moves};}
+  function chipLabel(x){return x.kind==='win'?'ชนะ '+x.moves:x.kind==='loss'?'แพ้ '+x.moves:/นับ/.test(x.why||'')?'เสมอ·นับ':'เสมอ';}
   function tableLabel(x){return x.kind==='win'?'ชนะ '+x.moves:x.kind==='loss'?'แพ้ '+x.moves:'เสมอ';}
   function drawTableMoves(){
-    var box=$('tableMoves'),tb=analysis&&mode==='play'?view.table:null;box.hidden=!tb;if(!tb)return;
+    // The chips above the board list every move now; this list stays hidden (kept for wide screens if wanted).
+    var box=$('tableMoves');box.hidden=true;return;
     $('tableSummary').textContent='ตารางปลายกระดาน · '+tb.summary+' · ดูผลทุกตาเดิน ('+tb.list.length+')';
     var ol=$('tableList');ol.replaceChildren();
     tb.list.forEach(function(x){
@@ -872,6 +887,9 @@
     // ถอดหมาก starts moving at once, from the shared position (#fen=) or the opening position.
     var hasFen=false;try{hasFen=new URLSearchParams(location.hash.slice(1)).has('fen');}catch(e){}
     if(!hasFen)state=M.initial();
+    // The same full engine as on a computer, phones included (engine-ai.js preferFull); the network file (48 MB) shows
+    // its download in the evaluation bar.
+    if(E&&E.preferFull)E.preferFull(function(f){var pct=Math.floor(f*100);if(pct!==engine.progress){engine.progress=pct;if(!view.lines.length)drawAnalysis();}});
     notice='';trial={state:clone(state),history:[],future:[]};mode='play';history=[];future=[];moves=[];selected=null;last=null;startCount();
   }
   if(game){

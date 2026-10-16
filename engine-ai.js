@@ -120,14 +120,31 @@
   // Starts the engine once (later calls share the promise) and resolves with 'full' or 'lite'. The full build may
   // reload the page once to become cross-origin isolated; if it fails, the lite build is used instead.
   // preferLite: use the lite build even where the full one could run (the easy and medium AI search shallowly).
+  // ถอดหมาก asks for the full build on phones too (preferFull): it is the same engine as on a computer. If the page
+  // died while the full build was starting on this device (out of memory), later visits use the lite build.
+  var fullAnyway = false, defaultProgress = null;
+  function preferFull(onProgress) { fullAnyway = true; defaultProgress = onProgress || null; }
+  function fullCrashed() {
+    try {
+      if (localStorage.getItem('makrukFullTrying')) { localStorage.removeItem('makrukFullTrying'); localStorage.setItem('makrukFullFailed', '1'); }
+      return localStorage.getItem('makrukFullFailed') === '1';
+    } catch (e) { return false; }
+  }
+  function fullAllowed() {
+    if (fullWanted()) return true;
+    return fullAnyway && 'serviceWorker' in navigator && simdSupported() && !fullCrashed();
+  }
   function start(onProgress, preferLite) {
     if (starting) return starting;
+    onProgress = onProgress || defaultProgress;
     var why = unsupported();
     if (why) { starting = Promise.reject(fail(why)); starting.catch(function () {}); return starting; }
     var lite = function () { listener = null; return startLite().then(function () { tier = 'lite'; return tier; }); };
-    starting = preferLite || !fullWanted() ? lite() : ensureIsolation().then(function (isolated) {
+    var mark = function (on) { try { if (on) localStorage.setItem('makrukFullTrying', '1'); else localStorage.removeItem('makrukFullTrying'); } catch (e) {} };
+    starting = preferLite || !fullAllowed() ? lite() : ensureIsolation().then(function (isolated) {
       if (!isolated || typeof SharedArrayBuffer !== 'function') return lite();
-      return startFull(onProgress).then(function () { tier = 'full'; return tier; }, lite);
+      mark(true);
+      return startFull(onProgress).then(function () { mark(false); tier = 'full'; return tier; }, function () { mark(false); return lite(); });
     });
     starting.catch(function () {});
     return starting;
@@ -246,5 +263,5 @@
     }, function (e) { searched(); throw e; });
   }
 
-  root.MakrukEngine = { start: start, unsupported: unsupported, bestMove: bestMove, evaluate: evaluate, stopSearch: stopSearch, lastSearch: function () { return last; }, lastDepth: function () { return reached; }, analyse: analyse, stopAnalysis: stopAnalysis, tier: function () { return tier; }, ready: function () { return !!tier; } };
+  root.MakrukEngine = { start: start, preferFull: preferFull, unsupported: unsupported, bestMove: bestMove, evaluate: evaluate, stopSearch: stopSearch, lastSearch: function () { return last; }, lastDepth: function () { return reached; }, analyse: analyse, stopAnalysis: stopAnalysis, tier: function () { return tier; }, ready: function () { return !!tier; } };
 })(window);
