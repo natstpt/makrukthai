@@ -74,6 +74,9 @@ impl Registry {
         t
     }
 
+    /// Like get(), but the registry is consumed: for a one-off build (the self-test).
+    pub fn get_owned(mut self, mat: &Material) -> Arc<Table> { self.get(mat) }
+
     /// The table for `mat` if its files are in the folder (never builds): for the server.
     pub fn open(&mut self, mat: &Material) -> Option<Arc<Table>> {
         let mat = if mat.canonical() { mat.clone() } else { mat.flipped() };
@@ -365,7 +368,7 @@ pub fn build(reg: &Registry, lay: Layout) -> Table {
         let (a, b) = (wins.load(Relaxed), losses.load(Relaxed));
         if reg.log { eprintln!("  layer {}: {} wins, {} losses, {:.1} min", layer, a, b, t0.elapsed().as_secs_f64() / 60.0); }
         if a == 0 && b == 0 && layer as u64 > far.load(Relaxed) { break; }
-        if layer >= MAX_DTM { eprintln!("{}: stopped at {} moves (the most a byte keeps)", name, MAX_DTM); break; }
+        if layer >= max_dtm() { long_mates(reg, &lay, &v, &name, t0); break; }
         layer += 1;
     }
     let [w, b] = v;
@@ -388,6 +391,73 @@ pub fn build(reg: &Registry, lay: Layout) -> Table {
     }
     if reg.log { eprintln!("{}: done in {:.1} min", name, t0.elapsed().as_secs_f64() / 60.0); }
     Table { lay, v: [Data::Owned(w), Data::Owned(b)] }
+}
+
+/// Mates longer than max_dtm() moves: still found (win or loss), kept as long(). Losses newly known make the positions one
+/// move back wins; wins newly known make them loss candidates, checked forward; until nothing more is found. Which
+/// positions are new is kept in two bit sets a side.
+fn long_mates(reg: &Registry, lay: &Layout, v: &[Vec<AtomicU8>; 2], name: &str, t0: Instant) {
+    let n = lay.n;
+    let words = ((n + 63) / 64) as usize;
+    let bits = || (0..words).map(|_| AtomicU64::new(0)).collect::<Vec<_>>();
+    let set = |b: &Vec<AtomicU64>, i: u64| { b[(i / 64) as usize].fetch_or(1 << (i % 64), Relaxed); };
+    let each = |b: &Vec<AtomicU64>, f: &(dyn Fn(u64) + Sync)| {
+        b.par_iter().enumerate().for_each(|(w, x)| {
+            let mut m = x.load(Relaxed);
+            while m != 0 { let t = m.trailing_zeros() as u64; m &= m - 1; f(w as u64 * 64 + t); }
+        });
+    };
+    // Start from the losses of the last counted layer, and the long wins and losses set up from captures.
+    let mut lost = [bits(), bits()];
+    let mut first = [bits(), bits()];
+    let chunks = (n + CHUNK - 1) / CHUNK;
+    for stm in 0..2 {
+        (0..chunks).into_par_iter().for_each(|ch| {
+            for i in ch * CHUNK..((ch + 1) * CHUNK).min(n) {
+                let x = v[stm][i as usize].load(Relaxed);
+                if x == loss(max_dtm()) || x == loss(long()) { set(&lost[stm], i); }
+                if x == long() { set(&first[stm], i); }
+            }
+        });
+    }
+    let mut round = 0;
+    loop {
+        round += 1;
+        let (wins, losses) = (AtomicU64::new(0), AtomicU64::new(0));
+        let won = std::mem::replace(&mut first, [bits(), bits()]);
+        for stm in 0..2 {
+            let back = &v[1 - stm];
+            each(&lost[stm], &|i| {
+                let p = lay.decode(&reg.cb, i);
+                for_unmoves(reg, lay, &p, 1 - stm, |j| {
+                    if back[j as usize].compare_exchange(UNKNOWN, long(), Relaxed, Relaxed).is_ok() { set(&won[1 - stm], j); wins.fetch_add(1, Relaxed); }
+                });
+            });
+        }
+        let next = [bits(), bits()];
+        for stm in 0..2 {
+            let mover = 1 - stm;
+            each(&won[stm], &|i| {
+                let p = lay.decode(&reg.cb, i);
+                for_unmoves(reg, lay, &p, mover, |j| {
+                    if v[mover][j as usize].load(Relaxed) != UNKNOWN { return; }
+                    let q = lay.decode(&reg.cb, j);
+                    let mut ok = true;
+                    for_moves(reg, lay, &q, mover, |c| {
+                        let x = match c { Child::Same(k) => v[stm][k as usize].load(Relaxed), Child::Capture(x) => x };
+                        if !is_win(x) { ok = false; return false; }
+                        true
+                    });
+                    if ok && v[mover][j as usize].compare_exchange(UNKNOWN, loss(long()), Relaxed, Relaxed).is_ok() { set(&next[mover], j); losses.fetch_add(1, Relaxed); }
+                });
+            });
+        }
+        let (a, b) = (wins.load(Relaxed), losses.load(Relaxed));
+        if reg.log { eprintln!("  beyond {} moves, round {}: {} wins, {} losses, {:.1} min", max_dtm(), round, a, b, t0.elapsed().as_secs_f64() / 60.0); }
+        if a == 0 && b == 0 { break; }
+        lost = next;
+    }
+    if reg.log { eprintln!("{}: mates of {} moves or more are kept as {} (win or loss, moves not counted)", name, long(), long()); }
 }
 
 /// <name>.json next to the table: how it numbers positions (for readers in other languages) and what it holds.

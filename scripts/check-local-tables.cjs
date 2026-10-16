@@ -91,7 +91,8 @@ function fromMoves(pieces, stm) {
     if (isLoss(x)) bestWin = Math.min(bestWin, x - 128 + 1);
     if (isWin(x)) worst = Math.max(worst, x); else allLose = false;
   }
-  return bestWin < Infinity ? bestWin : allLose ? 128 + worst : 0;
+  // 125 is "125 moves or more" (the tables do not count longer mates).
+  return bestWin < Infinity ? Math.min(bestWin, 125) : allLose ? 128 + Math.min(worst, 125) : 0;
 }
 
 let seed = 2026;

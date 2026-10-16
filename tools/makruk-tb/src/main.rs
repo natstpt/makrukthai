@@ -5,9 +5,11 @@
 //!       to the repository). Materials: K then the pieces of white, v, K then red's: R rook, N knight, S khon,
 //!       M met or promoted pawn, e.g. KRMMvKR = king, rook and two promoted pawns against king and rook.
 //!       Finished tables are read back instead of rebuilt, so a stopped run goes on where it was.
-//!   makruk-tb export KRvKR [more …] [--out DIR] [--repo DIR]
-//!       Writes the tables (from DIR, building them first if needed) for the website into tablebase/rs/: white to
-//!       move only, split by the kings' squares when big, compressed (see export.rs).
+//!   makruk-tb export KRvKR [more …] [--out DIR] [--repo DIR] [--to DIR] [--sample N] [--drop-raw]
+//!       Writes the tables (from DIR, building them first if needed) for the website into tablebase/rs/ (or --to):
+//!       white to move only, split by the kings' squares when big, compressed (see export.rs). --sample checks N
+//!       random positions first; --drop-raw deletes the raw files afterwards (keeps disk use low; the local server
+//!       reads the exported form too).
 //!   makruk-tb serve [--port 8765] [--out DIR]
 //!       Answers the website (opened from localhost) about the tables in DIR, at http://127.0.0.1:8765 (serve.rs).
 //!   makruk-tb check [--repo DIR] [--big DIR …]
@@ -41,6 +43,8 @@ fn main() {
     let mut threads = 0usize;
     let mut port = serve::PORT;
     let mut sample = 1_000_000u64;
+    let mut to: Option<PathBuf> = None;
+    let (mut drop_raw, mut check_first) = (false, 0u64);
     let mut words = Vec::new();
     let mut bigs = Vec::new();
     let mut i = 0;
@@ -50,7 +54,9 @@ fn main() {
             "--repo" => { i += 1; repo = PathBuf::from(&args[i]); }
             "--threads" => { i += 1; threads = args[i].parse().expect("--threads takes a number"); }
             "--port" => { i += 1; port = args[i].parse().expect("--port takes a number"); }
-            "--sample" => { i += 1; sample = args[i].parse().expect("--sample takes a number"); }
+            "--sample" => { i += 1; sample = args[i].parse().expect("--sample takes a number"); check_first = sample; }
+            "--to" => { i += 1; to = Some(PathBuf::from(&args[i])); }
+            "--drop-raw" => drop_raw = true,
             "--big" => { i += 1; bigs.push(PathBuf::from(&args[i])); }
             w => words.push(w.to_string()),
         }
@@ -86,18 +92,38 @@ fn main() {
             });
         }
         Some("export") if words.len() > 1 => {
-            // export KRvKR … : tables from DIR (tablebase-local) to the website's tablebase/rs/.
-            let root = repo.join("tablebase").join("rs");
+            // export KRvKR … : tables from DIR (tablebase-local, built first if needed) to the website's tablebase/rs/
+            // (or --to another folder, e.g. tablebase-local/packed for the local server). --sample N checks N random
+            // positions first; --drop-raw then deletes the table's raw files (not for a table others capture into).
+            let root = to.clone().unwrap_or_else(|| repo.join("tablebase").join("rs"));
             let mut reg = Registry::new(&out, true);
             for w in &words[1..] {
                 let mat = Material::parse(w).unwrap_or_else(|| panic!("cannot read the material {}", w));
                 let t = reg.get(&mat);
+                let name = t.lay.mat.name();
+                if check_first > 0 {
+                    let n = check::sample(&reg, &mat, check_first, 2026);
+                    println!("{}: {} random positions agree with their moves", name, n);
+                }
                 let (files, bytes) = export::export(&t, &root);
-                println!("{}: {} files, {:.1} MB in {}", t.lay.mat.name(), files, bytes as f64 / 1048576.0, root.join(t.lay.mat.name()).display());
+                println!("{}: {} files, {:.1} MB in {}", name, files, bytes as f64 / 1048576.0, root.join(&name).display());
+                if drop_raw {
+                    drop(t);
+                    reg.tables.remove(&name);
+                    for ext in ["w.bin", "b.bin", "json"] { let _ = std::fs::remove_file(out.join(format!("{}.{}", name, ext))); }
+                }
             }
             export::index(&root);
         }
         Some("serve") => serve::serve(&out, port),
+        Some("selftest") => {
+            // The long-mate pass, tried on small tables with the exact count cut to 8 moves.
+            for name in ["KRvKM", "KNvKM", "KMMvKR"] {
+                let t = Instant::now();
+                let (n, beyond) = check::long_selftest(&Material::parse(name).unwrap(), 8);
+                println!("{}: {} positions the same with the cap at 8 ({} of them beyond it) ({:.1} s)", name, n, beyond, t.elapsed().as_secs_f64());
+            }
+        }
         Some("check") if words.len() > 1 => {
             // check KRMMvKR … --sample N: a table already built (in DIR), N random positions against their moves.
             let reg = serve::open_all(&out);
@@ -135,7 +161,7 @@ fn main() {
         }
         _ => {
             eprintln!("makruk-tb build KRMMvKR [more …] [--out DIR] [--threads N]");
-            eprintln!("makruk-tb export KRvKR [more …] [--out DIR] [--repo DIR]");
+            eprintln!("makruk-tb export KRvKR [more …] [--out DIR] [--repo DIR] [--to DIR] [--sample N] [--drop-raw]");
             eprintln!("makruk-tb serve [--port 8765] [--out DIR]");
             eprintln!("makruk-tb check [--repo DIR] [--big DIR …]");
             std::process::exit(2);
