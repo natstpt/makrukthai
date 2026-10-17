@@ -168,7 +168,9 @@
         reached = 0; last = { score: null, depth: 0, best: null, fen: fen, moves: moves || [] };
         listener = function (text) {
           if (text.indexOf('info depth ') === 0) {
-            reached = Math.max(reached, +text.split(/\s+/)[2] || 0);
+            var d = +text.split(/\s+/)[2] || 0;
+            if (d > reached && limits.onDepth) try { limits.onDepth(d); } catch (err) {}
+            reached = Math.max(reached, d);
             if (text.indexOf(' score ') > 0 && text.indexOf('bound') < 0) { var info = parseInfo(text); if (info.score && info.depth >= last.depth) { last.score = info.score; last.depth = info.depth; } }
             return;
           }
