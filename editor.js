@@ -76,8 +76,9 @@
     else if(status&&status.state!=='playing')text='เกมจบแล้ว · กดเริ่มใหม่เพื่อเล่นอีกเกม';
     else if(future.length)text='กำลังย้อนดูตาเดิน';
     else text='ถึงตาคุณเดิน · คุณเป็นฝ่าย'+sideName(game.human);
-    // Game over (and its review): the bar gives way to a large เริ่มเกมใหม่ button at the top.
-    var over=!!status&&status.state!=='playing'||reviewing;bar.hidden=over;$('topNewGame').hidden=!over;
+    // Game over: a small เริ่มเกมใหม่ button beside the title (it keeps its place while hidden); in the review the
+    // coach takes the bar's place.
+    var over=!!status&&status.state!=='playing'||reviewing;bar.hidden=reviewing;$('topNewGame').style.visibility=over?'visible':'hidden';
     $('thinkFill').style.width=Math.round(pct*100)+'%';$('thinkText').textContent=text;bar.classList.toggle('busy',busy);bar.classList.toggle('done',pct>=1);bar.classList.toggle('idle',!busy&&pct<1);
   }
   function moveKey(m){return 'abcdefgh'[m.from.c]+(8-m.from.r)+'abcdefgh'[m.to.c]+(8-m.to.r);}
@@ -537,7 +538,8 @@
     // the board with just its number (like the board apps), so the board stays as large as in the game.
     var coach=$('gameReview').querySelector('.grCoach');
     if(!coachHome){coachHome=document.createComment('grCoach');coach.before(coachHome);}
-    document.querySelector('.boardArea').prepend(coach);$('evalV').hidden=false;
+    // On the /ai page it takes the progress bar's place in the header, which keeps one height, so the board never moves.
+    if(game&&game.standalone)$('thinkBar').after(coach);else document.querySelector('.boardArea').prepend(coach);$('evalV').hidden=false;
     jumpTo(ply===undefined?0:ply);
   }
   function closeReview(){var end=fullLine().length;stopReviewView();jumpTo(end);}
@@ -558,7 +560,7 @@
     $('arrowLayer').innerHTML=r&&r.kind==='mistake'&&r.bestKey?arrow(r.bestKey,'rgba(87,190,90,.9)',true):'';
     // What the coach says about the move just played.
     var say;
-    if(!n)say='มาดูเกมนี้กัน! กด ▶ เพื่อดูทีละตา แตะตาในบันทึก หรือแตะบนกราฟเพื่อไปตานั้น';
+    if(!n)say=game.standalone?'มาดูเกมนี้กัน! กด ▶ เพื่อดูทีละตา':'มาดูเกมนี้กัน! กด ▶ เพื่อดูทีละตา แตะตาในบันทึก หรือแตะบนกราฟเพื่อไปตานั้น';
     else{
       var m=line[n-1],no=Math.floor((n-1+(trial.state.turn==='white'?0:1))/2)+1,head='ตา '+no+' ';
       if(m.side!==game.human)say=head+'AI เดิน '+m.text;
@@ -930,13 +932,19 @@
 
   var fitFrame=0;
   function scheduleFit(){if(fitFrame)return;fitFrame=requestAnimationFrame(function(){fitFrame=0;fitWorkspace();});}
+  var STANDALONE_RESERVE=230;
   function fitWorkspace(){
     var main=document.querySelector('main'),panel=document.querySelector('.controlPanel'),dock=document.querySelector('.actionDock');
     var style=getComputedStyle(main),gap=parseFloat(style.rowGap)||0;
     var available=main.clientHeight-parseFloat(style.paddingTop)-parseFloat(style.paddingBottom)-dock.offsetHeight-gap;
     var stacked=getComputedStyle(document.body).getPropertyValue('--stacked').trim()==='1';
     var boardArea=document.querySelector('.boardArea'),size;
-    if(stacked){
+    // /ai: one board size for the whole page (the game, its end and the review), from the window alone, with a gutter
+    // on the left for the review's evaluation bar, so the board never resizes or jumps.
+    if(stacked&&game&&game.standalone){
+      var head=document.querySelector('.pageHeader').offsetHeight;
+      size=Math.min(main.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight)-26,window.innerHeight-head-STANDALONE_RESERVE);
+    }else if(stacked){
       var feedback=document.querySelector('.positionFeedback').offsetHeight;
       var tools=parseFloat(getComputedStyle(main).getPropertyValue('--tools-reserve'))||112;
       var panelHeight=($('analysisPanel').hidden||reviewing?0:$('analysisPanel').offsetHeight+6)+(reviewing?document.querySelector('.grCoach').offsetHeight+6:0)+(document.body.classList.contains('aiGame')?document.querySelector('.topBar').offsetHeight:0);
