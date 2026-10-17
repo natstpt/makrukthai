@@ -422,7 +422,7 @@
       else setTimeout(function(){if(playStatus().state!=='playing'&&!$('resultDialog').open)$('resultDialog').showModal();},status.state==='resign'?0:700);
     }
   }
-  function stopReview(){if(review)review.stopped=true;review=null;if(reviewing){if(panelHome)panelHome.after($('analysisPanel'));reviewing=false;document.body.classList.remove('reviewMode');$('gameReview').hidden=true;$('analysisPanel').hidden=true;$('arrowLayer').innerHTML='';}}
+  function stopReview(){if(review)review.stopped=true;review=null;if(reviewing){putCoachBack();reviewing=false;document.body.classList.remove('reviewMode');$('gameReview').hidden=true;$('analysisPanel').hidden=true;$('arrowLayer').innerHTML='';}}
   function reviewValue(r){
     if(!r||!r.score)return 0;
     return r.score.mate!==undefined?(r.score.mate>0?10000-r.score.mate:-10000-r.score.mate):r.score.cp;
@@ -533,23 +533,26 @@
     if(!review||review.length!==fullLine().length)startReview();
     if($('resultDialog').open)$('resultDialog').close();
     cancelAi();reviewing=true;document.body.classList.add('reviewMode');$('gameReview').hidden=false;
-    // The evaluation bar moves into the review panel below the board, so the board keeps its playing size.
-    if(!panelHome){panelHome=document.createComment('analysisPanel');$('analysisPanel').before(panelHome);}
-    $('gameReview').querySelector('.grHead').after($('analysisPanel'));
+    // The coach's words go to the top, above the board, in large type; the evaluation is a thin upright bar beside
+    // the board with just its number (like the board apps), so the board stays as large as in the game.
+    var coach=$('gameReview').querySelector('.grCoach');
+    if(!coachHome){coachHome=document.createComment('grCoach');coach.before(coachHome);}
+    document.querySelector('.boardArea').prepend(coach);$('evalV').hidden=false;
     jumpTo(ply===undefined?0:ply);
   }
   function closeReview(){var end=fullLine().length;stopReviewView();jumpTo(end);}
-  var panelHome=null;
-  function stopReviewView(){if(panelHome)panelHome.after($('analysisPanel'));reviewing=false;document.body.classList.remove('reviewMode');$('gameReview').hidden=true;$('analysisPanel').hidden=true;$('arrowLayer').innerHTML='';render();}
+  var coachHome=null;
+  function putCoachBack(){if(coachHome)coachHome.after(document.querySelector('.grCoach'));$('evalV').hidden=true;}
+  function stopReviewView(){putCoachBack();reviewing=false;document.body.classList.remove('reviewMode');$('gameReview').hidden=true;$('analysisPanel').hidden=true;$('arrowLayer').innerHTML='';render();}
   function drawGameReview(){
     var job=review;if(!reviewing||!job)return;
     var line=fullLine(),n=moves.length,total=line.length,evals=reviewEvals(),now=evals[Math.min(n,evals.length-1)];
     message('');
     $('modeLabel').textContent='Game Review';
     // Evaluation bar (the analysis bar, without engine lines) and the rating of the move just played.
-    $('analysisPanel').hidden=false;$('evalBar').hidden=false;$('engineLines').hidden=true;
-    var fill=50+50*evalHeight(now.v);$('evalFill').style.width=fill+'%';
-    $('evalText').textContent=now.known?evalLabel(now.v)+' · '+(Math.abs(now.v)<50?'สูสี':now.v>0?'ขาวได้เปรียบ':'แดงได้เปรียบ'):'…';
+    $('analysisPanel').hidden=true;
+    var share=50+50*evalHeight(now.v);$('evalVFill').style.height=share+'%';$('evalV').classList.toggle('flipped',flipped);
+    $('evalVText').textContent=now.known?evalLabel(now.v).replace(/^\+/,''):'…';$('evalV').classList.toggle('redAhead',now.known&&now.v<0);
     var r=n>0&&ratingOf(n-1),rating=$('moveRating');
     rating.hidden=!r;if(r){rating.textContent=KIND_TEXT[r.kind];rating.className='moveRating'+(r.kind==='mistake'?' bad':' good');}
     $('arrowLayer').innerHTML=r&&r.kind==='mistake'&&r.bestKey?arrow(r.bestKey,'rgba(87,190,90,.9)',true):'';
@@ -936,9 +939,11 @@
     if(stacked){
       var feedback=document.querySelector('.positionFeedback').offsetHeight;
       var tools=parseFloat(getComputedStyle(main).getPropertyValue('--tools-reserve'))||112;
-      var panelHeight=($('analysisPanel').hidden||reviewing?0:$('analysisPanel').offsetHeight+6)+(document.body.classList.contains('aiGame')?document.querySelector('.topBar').offsetHeight:0);
+      var panelHeight=($('analysisPanel').hidden||reviewing?0:$('analysisPanel').offsetHeight+6)+(reviewing?document.querySelector('.grCoach').offsetHeight+6:0)+(document.body.classList.contains('aiGame')?document.querySelector('.topBar').offsetHeight:0);
       // ถอดหมาก uses the lesson page's board size (16 px from each side) and leaves the move record what is left.
       if(analysis&&mode==='play')size=Math.min(window.innerWidth-32,available-panelHeight-feedback-gap-72);
+      // Game Review: below the board only the review panel and a few lines of the record, so the board takes the rest.
+      else if(reviewing)size=Math.min(main.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight)-26,available-feedback-gap-panelHeight-$('gameReview').offsetHeight-document.querySelector('.topBar').offsetHeight-90);
       else size=Math.min(main.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight),available-tools-feedback-gap-8-panelHeight);
     }else{size=Math.min(boardArea.clientWidth,available-44-($('analysisPanel').hidden?0:$('analysisPanel').offsetHeight+6));}
     main.style.setProperty('--board-size',Math.max(80,Math.floor(size))+'px');
@@ -948,7 +953,7 @@
   document.addEventListener('touchmove',function(e){if(e.touches.length>1)e.preventDefault();},{passive:false});
   window.addEventListener('resize',scheduleFit);
   if(window.visualViewport)window.visualViewport.addEventListener('resize',scheduleFit);
-  if(window.ResizeObserver){var fitObserver=new ResizeObserver(scheduleFit);['.pageHeader','.actionDock','#editTools','.positionFeedback','#analysisPanel','#gameReview'].forEach(function(selector){fitObserver.observe(document.querySelector(selector));});}
+  if(window.ResizeObserver){var fitObserver=new ResizeObserver(scheduleFit);['.pageHeader','.actionDock','#editTools','.positionFeedback','#analysisPanel','#gameReview','.grCoach'].forEach(function(selector){fitObserver.observe(document.querySelector(selector));});}
 
   if(analysis&&!game){
     // ถอดหมาก starts moving at once, from the shared position (#fen=) or the opening position.
