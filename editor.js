@@ -39,6 +39,14 @@
   function askCount(side){count=P.canRequestBoardCount(state.pieces,count)?P.requestBoardCount(side):P.requestSpecialCount(side,state.pieces);}
   var aiTimer=0,aiSearch=0,E=window.MakrukEngine,engine={state:'off',progress:0};
   var AI_LIMITS={easy:{depth:1,skill:3},medium:{depth:5},hard:{depth:20,time:3000}};
+  // The hard AI's first 20 moves search the full 20 plies, however long that takes (given up only after 2 minutes);
+  // from its 21st move on, AI_LIMITS (at most 3 seconds a move).
+  var HARD_FULL_DEPTH_MOVES=20;
+  function aiLimits(){
+    if(game.level!=='hard')return AI_LIMITS[game.level];
+    var played=moves.filter(function(m){return m.side===aiSide();}).length;
+    return played<HARD_FULL_DEPTH_MOVES?{depth:20,wait:120000}:AI_LIMITS.hard;
+  }
   function engineAi(){return !!game&&!!game.ai&&engine.state!=='failed';}
   function cancelAi(){clearTimeout(aiTimer);aiTimer=0;aiSearch++;}
   function moveKey(m){return 'abcdefgh'[m.from.c]+(8-m.from.r)+'abcdefgh'[m.to.c]+(8-m.to.r);}
@@ -98,7 +106,7 @@
       // sees the repetitions and never needs a promotion suffix.
       var since=moves.length;while(since>0&&moves[since-1].piece!=='pawn'&&!moves[since-1].capture)since--;
       var searched=M.fen(state);
-      E.bestMove(since?moves[since-1].fen:M.fen(trial.state),moves.slice(since).map(function(m){return m.uci;}),AI_LIMITS[game.level]).then(function(key){
+      E.bestMove(since?moves[since-1].fen:M.fen(trial.state),moves.slice(since).map(function(m){return m.uci;}),aiLimits()).then(function(key){
         keepAiSearch(searched);
         if(token!==aiSearch||!aiTurn())return;
         var move=key&&R.legalMoves(state.pieces,state.turn).find(function(m){return moveKey(m)===key;});
