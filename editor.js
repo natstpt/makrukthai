@@ -286,7 +286,7 @@
   var baseRender=render;
   render=function(){
     baseRender();
-    document.body.classList.toggle('analysisMode',analysis&&mode==='play');$('assistOptions').hidden=!analysis;$('analyse').hidden=analysis||mode!=='play';
+    document.body.classList.toggle('analysisMode',analysis&&mode==='play');$('assistOptions').hidden=!analysis;$('analyse').hidden=analysis||mode!=='play'||!!(game&&game.ai);
     if(analysis)updateAnalysis();
     else if(!reviewing)$('arrowLayer').innerHTML=hintNow()&&hint.stage>1?arrow(moveKey(hint.move),'rgba(76,160,58,.9)'):'';
   };
