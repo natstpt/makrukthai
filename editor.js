@@ -52,7 +52,32 @@
     return played<HARD_FULL_DEPTH_MOVES?{depth:20,wait:120000}:AI_LIMITS.hard;
   }
   function engineAi(){return !!game&&!!game.ai&&engine.state!=='failed';}
-  function cancelAi(){clearTimeout(aiTimer);aiTimer=0;aiSearch++;}
+  function cancelAi(){clearTimeout(aiTimer);aiTimer=0;aiSearch++;think=null;}
+  // The stand-alone page's thinking bar (ai/): while the AI searches, how far it has got, 0 to 100%. The depth reached
+  // counts by the work each ply takes (about 1.5 times the one before), and between two plies the bar moves on with
+  // the time the next one should take, so it never stands still; a search with a time limit also moves with the clock.
+  var think=null,THINK_GROWTH=1.5;
+  function thinkWork(d){return (Math.pow(THINK_GROWTH,d)-1)/(THINK_GROWTH-1);}
+  function thinkPercent(t,now){
+    var elapsed=now-t.start;
+    if(t.quick)return Math.min(1,elapsed/t.quick);
+    var d=t.depth,base=thinkWork(d)/thinkWork(t.target),step=(thinkWork(d+1)-thinkWork(d))/thinkWork(t.target);
+    var since=now-(t.at[d]||t.start),expect=Math.max(80,((t.at[d]||t.start)-(t.at[d-1]||t.start))*THINK_GROWTH);
+    var p=Math.min(0.99,base+step*Math.min(0.95,since/expect));
+    if(t.time)p=Math.max(p,Math.min(0.99,elapsed/t.time));
+    return p;
+  }
+  function drawThink(){
+    var bar=$('thinkBar');if(!bar||!game||!game.standalone)return;
+    var now=Date.now(),pct=0,text='',status=mode==='play'?playStatus():null,busy=false;
+    if(engine.state==='loading'&&aiTurn()){pct=(engine.progress||0)/100;text='กำลังโหลด AI ระดับยาก '+(engine.progress||0)+'%';busy=true;}
+    else if(think&&think.done&&now-think.done<700){pct=1;text='AI เดินแล้ว · 100%';}
+    else if(think&&!think.done){pct=thinkPercent(think,now);text='AI กำลังคิด… '+Math.round(pct*100)+'%';busy=true;}
+    else if(status&&status.state!=='playing')text='เกมจบแล้ว · กดเริ่มใหม่เพื่อเล่นอีกเกม';
+    else if(future.length)text='กำลังย้อนดูตาเดิน';
+    else text='ถึงตาคุณเดิน · คุณเป็นฝ่าย'+sideName(game.human);
+    $('thinkFill').style.width=Math.round(pct*100)+'%';$('thinkText').textContent=text;bar.classList.toggle('busy',busy);bar.classList.toggle('done',pct>=1);bar.classList.toggle('idle',!busy&&pct<1);
+  }
   function moveKey(m){return 'abcdefgh'[m.from.c]+(8-m.from.r)+'abcdefgh'[m.to.c]+(8-m.to.r);}
   // The engine loads once: for the hard AI the full engine (48 MB the first time) on strong computers, the lite one
   // (1.4 MB) on phones and light browsers; easy and medium always use the lite one (engine-ai.js). If neither can run
@@ -90,6 +115,8 @@
     // shape has handed over to the engine.
     if(hard&&game.bookDone&&!book)book=P.flankAnswer(state.pieces,state.turn,game.shape);
     if(hard&&!book)game.bookDone=true;
+    var delay=hard?(book||game.level!=='hard'?500:100):700;
+    think={start:Date.now(),depth:0,at:{},target:20,quick:book||!hard?delay:0,time:0};
     aiTimer=setTimeout(function(){
       aiTimer=0;if(token!==aiSearch||!aiTurn())return;
       // The AI asks for the ordinary board count when it is behind; the special count is for the player only.
@@ -103,20 +130,22 @@
         MakrukTablebase.ensure(state.pieces,false,state.turn).then(function(){if(token===aiSearch&&aiTurn())scheduleAi();});return;
       }
       var table=game.level!=='easy'&&window.MakrukTablebase&&MakrukTablebase.bestMove(state.pieces,state.turn);
-      if(table){playMove(table.move.from,table.move.to);return;}
+      if(table){if(think)think.quick=1;playMove(table.move.from,table.move.to);return;}
       if(!hard){easy();return;}
       if(book){playMove(book.from,book.to);return;}
       // The engine gets the moves since the last pawn move or capture (no position before it can come back), so it
       // sees the repetitions and never needs a promotion suffix.
       var since=moves.length;while(since>0&&moves[since-1].piece!=='pawn'&&!moves[since-1].capture)since--;
-      var searched=M.fen(state);
-      E.bestMove(since?moves[since-1].fen:M.fen(trial.state),moves.slice(since).map(function(m){return m.uci;}),aiLimits()).then(function(key){
+      var searched=M.fen(state),limits=Object.assign({},aiLimits()),mine=think;
+      if(mine){mine.target=limits.depth||20;mine.time=limits.time||0;mine.start=Date.now();}
+      limits.onDepth=function(d){if(mine&&think===mine){mine.depth=d;mine.at[d]=Date.now();}};
+      E.bestMove(since?moves[since-1].fen:M.fen(trial.state),moves.slice(since).map(function(m){return m.uci;}),limits).then(function(key){
         keepAiSearch(searched);
         if(token!==aiSearch||!aiTurn())return;
         var move=key&&R.legalMoves(state.pieces,state.turn).find(function(m){return moveKey(m)===key;});
         if(move)playMove(move.from,move.to);else easy();
       },function(){if(token===aiSearch&&aiTurn())easy();});
-    },hard?(book||game.level!=='hard'?500:100):700);
+    },delay);
   }
   // A finished game against the AI is counted for its level (makrukAiGames), once per game; the play-the-computer
   // lessons (ai-lessons.js) pass after one.
@@ -619,7 +648,7 @@
     $('topSide').textContent=flipped?'ฝ่ายขาว':'ฝ่ายแดง';$('bottomSide').textContent=flipped?'ฝ่ายแดง':'ฝ่ายขาว';
     $('topDot').classList.toggle('white',flipped);$('bottomDot').classList.toggle('white',!flipped);
     $('modeLabel').textContent=mode==='edit'?'1 · ตั้งตำแหน่ง':analysis?'AI ระดับยาก'+(E&&E.tier()?' ('+(E.tier()==='lite'?'Lite':'Full')+')':''):game?(game.ai?'คุณเป็นฝ่าย'+sideName(game.human)+' · AI ระดับ'+(!engineAi()?'ง่าย'+(game.level==='easy'?'':' (สำรอง)'):({easy:'ง่าย',medium:'กลาง',hard:'ยาก'}[game.level])+' (คิดลึก '+(game.level==='hard'&&E&&E.lastDepth()||AI_LIMITS[game.level].depth)+' ชั้น)'):'เครื่องเดียวกัน'):'2 · ทดลองเดิน';document.querySelector('.brand h1').textContent=analysis?'ถอดหมาก':game?(game.ai?'เล่นกับ AI':'เล่น 2 คน'):'ตั้งหมาก';
-    if(game&&game.standalone){document.querySelector('.brand h1').textContent='เล่นกับ AI ระดับยาก'+(engineAi()?' (คิดลึก '+(E&&E.lastDepth()||AI_LIMITS.hard.depth)+' ชั้น)':' (สำรอง)');$('modeLabel').textContent='คุณเป็นฝ่าย'+sideName(game.human);}$('turn').value=state.turn;
+    if(game&&game.standalone){document.querySelector('.brand h1').textContent='เล่นกับ AI ระดับยาก';$('modeLabel').hidden=true;drawThink();}$('turn').value=state.turn;
     document.querySelectorAll('[data-tool]').forEach(function(b){b.setAttribute('aria-pressed',String(tool===b.dataset.tool));});
     $('fen').value=M.fen(state);
     $('saveNote').textContent=storageOK?'เก็บตำแหน่งที่ตั้งไว้ให้อัตโนมัติในเครื่องนี้ (ไม่ทับด้วยตาที่ทดลองเดิน)':'เครื่องนี้เก็บอัตโนมัติไม่ได้ กรุณาคัดลอกรหัสไว้';
@@ -704,7 +733,7 @@
   function playMove(from,at,dragged){
     if(!R.legalDestinations(state.pieces,from).some(function(to){return same(to,at);})){message('เดินช่องนี้ไม่ได้ ลองเลือกช่องที่มีจุดสีเขียว',true);sound.playResult('failure');return;}
     remember();var record=N.formatMove(state.pieces,from,at);
-    var mover=state.turn;state.pieces=R.applyMove(state.pieces,from,at);state.turn=opponent(state.turn);count=P.nextCount(count,state.pieces,mover);last={from:from,to:at};selected=null;
+    var mover=state.turn;if(think&&!think.done&&game&&game.ai&&mover===aiSide())think.done=Date.now();state.pieces=R.applyMove(state.pieces,from,at);state.turn=opponent(state.turn);count=P.nextCount(count,state.pieces,mover);last={from:from,to:at};selected=null;
     record.fen=M.fen(state);record.uci=moveKey({from:from,to:at});
     var result=playStatus();
     moves.push(record);
@@ -913,7 +942,7 @@
     var body=$('restart').parentNode;body.insertBefore($('restart'),body.firstChild);
     trial={state:clone(state),history:[],future:[]};mode='play';history=[];future=[];moves=[];selected=null;last=null;startCount();
   }
-  if(standalone)document.body.classList.add('standalonePage');
+  if(standalone){document.body.classList.add('standalonePage');$('thinkBar').hidden=false;setInterval(drawThink,100);}
   if(game&&game.ai){
     // ตัวเลือก and พลิก become small icons at the top right above the board; the dock keeps ย้อนกลับ, เดินหน้า, คำใบ้, ยอมแพ้.
     document.body.classList.add('aiGame');$('boardTools').hidden=false;$('boardTools').append($('options'),$('flip'));
