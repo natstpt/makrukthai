@@ -76,6 +76,8 @@
     else if(status&&status.state!=='playing')text='เกมจบแล้ว · กดเริ่มใหม่เพื่อเล่นอีกเกม';
     else if(future.length)text='กำลังย้อนดูตาเดิน';
     else text='ถึงตาคุณเดิน · คุณเป็นฝ่าย'+sideName(game.human);
+    // Game over (and its review): the bar gives way to a large เริ่มเกมใหม่ button at the top.
+    var over=!!status&&status.state!=='playing'||reviewing;bar.hidden=over;$('topNewGame').hidden=!over;
     $('thinkFill').style.width=Math.round(pct*100)+'%';$('thinkText').textContent=text;bar.classList.toggle('busy',busy);bar.classList.toggle('done',pct>=1);bar.classList.toggle('idle',!busy&&pct<1);
   }
   function moveKey(m){return 'abcdefgh'[m.from.c]+(8-m.from.r)+'abcdefgh'[m.to.c]+(8-m.to.r);}
@@ -376,6 +378,7 @@
     state=M.initial();trial={state:clone(state),history:[],future:[]};history=[];future=[];moves=[];selected=null;last=null;startCount();render();scheduleAi();
   }
   $('newGameBtn').onclick=function(){$('newGameDialog').showModal();};
+  $('topNewGame').onclick=function(){$('newGameDialog').showModal();};
   $('newWhite').onclick=function(){newGame('white');};
   $('newBlack').onclick=function(){newGame('black');};
 
