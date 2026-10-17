@@ -176,8 +176,9 @@
           listener = null; clearTimeout(give); searched();
           var m = text.split(/\s+/)[1]; last.best = m && m !== '(none)' ? m.slice(0, 4) : null; resolve(last.best);
         };
-        // Given up a little after the engine's own limit (3 s for a depth search without a time).
-        var give = setTimeout(function () { resolve(null); }, (time || 3000) + 500);
+        // Given up a little after the engine's own limit (3 s for a depth search without a time; limits.wait for a
+        // search that must reach its depth whatever it takes).
+        var give = setTimeout(function () { resolve(null); }, limits.wait || (time || 3000) + 500);
         line.post('position fen ' + fen + (moves && moves.length ? ' moves ' + moves.join(' ') : ''));
         line.post('go' + (limits.depth ? ' depth ' + limits.depth : '') + (time ? ' movetime ' + time : ''));
       });
