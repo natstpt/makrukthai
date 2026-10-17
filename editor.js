@@ -809,8 +809,10 @@
   $('flip').onclick=function(){flipped=!flipped;render();};
   var exportURL=null,notationURL=null;
   var shareTabs=[['tabNotation','shareNotationPanel'],['tabImage','shareImagePanel'],['tabEmbed','shareEmbedPanel']];
+  // Games against the AI share the record and a picture only: no ฝังบนเว็บ (embed) tab.
+  if(game&&game.ai){$('tabEmbed').hidden=true;$('shareEmbedPanel').hidden=true;shareTabs.pop();}
   function selectShareTab(id){shareTabs.forEach(function(pair){var active=pair[0]===id;$(pair[0]).setAttribute('aria-selected',String(active));$(pair[0]).tabIndex=active?0:-1;$(pair[1]).hidden=!active;});}
-  shareTabs.forEach(function(pair,index){$(pair[0]).onclick=function(){selectShareTab(pair[0]);};$(pair[0]).onkeydown=function(e){var next=e.key==='ArrowRight'?(index+1)%3:e.key==='ArrowLeft'?(index+2)%3:e.key==='Home'?0:e.key==='End'?2:null;if(next!==null){e.preventDefault();selectShareTab(shareTabs[next][0]);$(shareTabs[next][0]).focus();}};});
+  shareTabs.forEach(function(pair,index){$(pair[0]).onclick=function(){selectShareTab(pair[0]);};$(pair[0]).onkeydown=function(e){var n=shareTabs.length,next=e.key==='ArrowRight'?(index+1)%n:e.key==='ArrowLeft'?(index+n-1)%n:e.key==='Home'?0:e.key==='End'?n-1:null;if(next!==null){e.preventDefault();selectShareTab(shareTabs[next][0]);$(shareTabs[next][0]).focus();}};});
   document.querySelectorAll('[data-copy-share]').forEach(function(button){button.onclick=async function(){var field=$(button.dataset.copyShare);try{await navigator.clipboard.writeText(field.value);$('shareNotice').textContent='คัดลอกแล้ว';}catch(e){field.focus();field.select();$('shareNotice').textContent='เลือกข้อความแล้ว กรุณากดคัดลอกบนเครื่อง';}};});
   function prepareShare(){
     var url=new URL(location.href);url.search='';url.hash=new URLSearchParams({fen:M.fen(state),flip:flipped?'1':'0'}).toString();
