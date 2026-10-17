@@ -19,7 +19,11 @@
   // move), both on the small lite engine. If no engine runs in this browser, the player in makruk-play.js plays instead
   // (easy making a mistake now and then).
   var game=null;
-  try{var playParams=new URLSearchParams(location.search);if(playParams.get('play')==='2')game={ai:false};else if(playParams.get('play')==='ai')game={ai:true,human:playParams.get('side')==='black'?'black':'white',level:['easy','hard'].indexOf(playParams.get('level'))>=0?playParams.get('level'):'medium',lesson:playParams.get('lesson')};}catch(e){}
+  // The stand-alone test page (ai/index.html, made by scripts/build-ai-page.cjs): the hard AI only, outside the
+  // lessons — no way back to them, no hint (a เริ่มใหม่ button instead), the level and side in large type.
+  var standalone=window.MAKRUK_PAGE==='ai';
+  if(standalone){var aiParams={};try{aiParams=new URLSearchParams(location.search);}catch(e){}game={ai:true,human:aiParams.get&&aiParams.get('side')==='black'?'black':'white',level:'hard',standalone:true};}
+  else try{var playParams=new URLSearchParams(location.search);if(playParams.get('play')==='2')game={ai:false};else if(playParams.get('play')==='ai')game={ai:true,human:playParams.get('side')==='black'?'black':'white',level:['easy','hard'].indexOf(playParams.get('level'))>=0?playParams.get('level'):'medium',lesson:playParams.get('lesson')};}catch(e){}
   function aiSide(){return game&&game.ai?opponent(game.human):null;}
   // The AI's opening shape (makruk-play.js OPENINGS): as red always the centre shape ง5 จ5 (the flank shape would
   // leave red to deal with an advanced pawn on จ5); as white, each game picks at random between the centre shape ง4 จ4
@@ -342,6 +346,7 @@
     try{var url=new URL(location.href);url.searchParams.set('side',side);window.history.replaceState(null,'',url);}catch(e){}
     state=M.initial();trial={state:clone(state),history:[],future:[]};history=[];future=[];moves=[];selected=null;last=null;startCount();render();scheduleAi();
   }
+  $('newGameBtn').onclick=function(){$('newGameDialog').showModal();};
   $('newWhite').onclick=function(){newGame('white');};
   $('newBlack').onclick=function(){newGame('black');};
 
@@ -607,13 +612,14 @@
     }
     ['redPalette','whitePalette','editTools'].forEach(function(id){$(id).hidden=mode!=='edit';});
     $('playTools').hidden=mode!=='play';$('load').disabled=mode!=='edit';$('undo').disabled=!history.length&&!(game&&game.resigned);$('redo').disabled=!future.length;
-    var aiGame=!!game&&!!game.ai&&mode==='play';$('hint').hidden=$('resign').hidden=!aiGame;
+    var aiGame=!!game&&!!game.ai&&mode==='play';$('hint').hidden=$('resign').hidden=!aiGame;if(game&&game.standalone){$('hint').hidden=true;$('newGameBtn').hidden=!aiGame;}
     $('hint').disabled=!canHint();$('resign').disabled=!aiGame;var over=aiGame&&status.state!=='playing';$('resign').classList.toggle('newGame',over);$('resignLabel').textContent=over?'เริ่มใหม่':'ยอมแพ้';$('resign').title=over?'เริ่มเกมใหม่ เลือกสีหมาก':'ยอมแพ้เกมนี้';
     $('emptyMoves').hidden=moves.length>0;
     $('panelTitle').textContent=mode==='edit'?'จัดตำแหน่งหมาก':'ทดลองเดิน';
     $('topSide').textContent=flipped?'ฝ่ายขาว':'ฝ่ายแดง';$('bottomSide').textContent=flipped?'ฝ่ายแดง':'ฝ่ายขาว';
     $('topDot').classList.toggle('white',flipped);$('bottomDot').classList.toggle('white',!flipped);
-    $('modeLabel').textContent=mode==='edit'?'1 · ตั้งตำแหน่ง':analysis?'AI ระดับยาก'+(E&&E.tier()?' ('+(E.tier()==='lite'?'Lite':'Full')+')':''):game?(game.ai?'คุณเป็นฝ่าย'+sideName(game.human)+' · AI ระดับ'+(!engineAi()?'ง่าย'+(game.level==='easy'?'':' (สำรอง)'):({easy:'ง่าย',medium:'กลาง',hard:'ยาก'}[game.level])+' (คิดลึก '+(game.level==='hard'&&E&&E.lastDepth()||AI_LIMITS[game.level].depth)+' ชั้น)'):'เครื่องเดียวกัน'):'2 · ทดลองเดิน';document.querySelector('.brand h1').textContent=analysis?'ถอดหมาก':game?(game.ai?'เล่นกับ AI':'เล่น 2 คน'):'ตั้งหมาก';$('turn').value=state.turn;
+    $('modeLabel').textContent=mode==='edit'?'1 · ตั้งตำแหน่ง':analysis?'AI ระดับยาก'+(E&&E.tier()?' ('+(E.tier()==='lite'?'Lite':'Full')+')':''):game?(game.ai?'คุณเป็นฝ่าย'+sideName(game.human)+' · AI ระดับ'+(!engineAi()?'ง่าย'+(game.level==='easy'?'':' (สำรอง)'):({easy:'ง่าย',medium:'กลาง',hard:'ยาก'}[game.level])+' (คิดลึก '+(game.level==='hard'&&E&&E.lastDepth()||AI_LIMITS[game.level].depth)+' ชั้น)'):'เครื่องเดียวกัน'):'2 · ทดลองเดิน';document.querySelector('.brand h1').textContent=analysis?'ถอดหมาก':game?(game.ai?'เล่นกับ AI':'เล่น 2 คน'):'ตั้งหมาก';
+    if(game&&game.standalone){document.querySelector('.brand h1').textContent='เล่นกับ AI ระดับยาก'+(engineAi()?' (คิดลึก '+(E&&E.lastDepth()||AI_LIMITS.hard.depth)+' ชั้น)':' (สำรอง)');$('modeLabel').textContent='คุณเป็นฝ่าย'+sideName(game.human);}$('turn').value=state.turn;
     document.querySelectorAll('[data-tool]').forEach(function(b){b.setAttribute('aria-pressed',String(tool===b.dataset.tool));});
     $('fen').value=M.fen(state);
     $('saveNote').textContent=storageOK?'เก็บตำแหน่งที่ตั้งไว้ให้อัตโนมัติในเครื่องนี้ (ไม่ทับด้วยตาที่ทดลองเดิน)':'เครื่องนี้เก็บอัตโนมัติไม่ได้ กรุณาคัดลอกรหัสไว้';
@@ -907,6 +913,7 @@
     var body=$('restart').parentNode;body.insertBefore($('restart'),body.firstChild);
     trial={state:clone(state),history:[],future:[]};mode='play';history=[];future=[];moves=[];selected=null;last=null;startCount();
   }
+  if(standalone)document.body.classList.add('standalonePage');
   if(game&&game.ai){
     // ตัวเลือก and พลิก become small icons at the top right above the board; the dock keeps ย้อนกลับ, เดินหน้า, คำใบ้, ยอมแพ้.
     document.body.classList.add('aiGame');$('boardTools').hidden=false;$('boardTools').append($('options'),$('flip'));
