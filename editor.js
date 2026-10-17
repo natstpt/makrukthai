@@ -577,6 +577,10 @@
     }catch(e){}
     return out;
   }
+  // Praise for a best move, in a few wordings so the review reads naturally (chosen by the move, so stepping back and
+  // forth shows the same words).
+  var BEST_SAY=['ดีเยี่ยม! เลือกตาได้ดีมาก','เก่งมาก! ตานี้เดินได้แม่นยำ','ยอดเยี่ยม! อ่านเกมได้ขาดจริง ๆ','สุดยอด! ตาแบบนี้แหละที่มือโปรเลือก','เยี่ยมไปเลย! เดินได้ถูกจังหวะ รักษาความได้เปรียบไว้ได้'];
+  var BEST_HEAD=['ดีเยี่ยม! ','เก่งมาก! ','ยอดเยี่ยม! ','สุดยอด! ','เยี่ยมไปเลย! '];
   function drawGameReview(){
     var job=review;if(!reviewing||!job)return;
     var line=fullLine(),n=moves.length,total=line.length,evals=reviewEvals(),now=evals[Math.min(n,evals.length-1)];
@@ -598,7 +602,7 @@
       var m=line[n-1],no=Math.floor((n-1+(trial.state.turn==='white'?0:1))/2)+1,head='ตา '+no+' ';
       // On /ai only the player's moves are explained (the steps skip the AI's); its last move just ends the game.
       if(m.side!==game.human)say=game.standalone?'ตำแหน่งสุดท้ายของเกม · AI เดิน '+m.text:head+'AI เดิน '+m.text;
-      else if(r)say=head+'คุณเดิน '+m.text+' · '+(r.kind==='best'?'ดีเยี่ยม! '+(why.good||'เป็นตาที่ดีที่สุดหรือใกล้เคียง'):r.kind==='good'?'ดี'+(why.good?' '+why.good:'')+' แต่เสียความได้เปรียบไปเล็กน้อย'+(r.loss?' ('+(r.loss/100).toFixed(1)+' คะแนน)':''):'ผิดพลาด '+(r.note||(r.loss>=1500?'เสียความได้เปรียบไปมาก':'เสียความได้เปรียบไป '+(r.loss/100).toFixed(1)+' คะแนน'))+(why.threat?' · '+why.threat:'')+(r.better?' · ควรเดิน '+r.better+(why.better?' '+why.better:'')+' (ลูกศรเขียว)':''));
+      else if(r)say=head+'คุณเดิน '+m.text+' · '+(r.kind==='best'?(why.good?BEST_HEAD[(n-1)%BEST_HEAD.length]+why.good:BEST_SAY[Math.floor((n-1)/2)%BEST_SAY.length]):r.kind==='good'?'ดี'+(why.good?' '+why.good:'')+' แต่เสียความได้เปรียบไปเล็กน้อย'+(r.loss?' ('+(r.loss/100).toFixed(1)+' คะแนน)':''):'ผิดพลาด '+(r.note||(r.loss>=1500?'เสียความได้เปรียบไปมาก':'เสียความได้เปรียบไป '+(r.loss/100).toFixed(1)+' คะแนน'))+(why.threat?' · '+why.threat:'')+(r.better?' · ควรเดิน '+r.better+(why.better?' '+why.better:'')+' (ลูกศรเขียว)':''));
       else if(job.forced[n-1])say=head+'คุณเดิน '+m.text+' · มีทางเดินทางเดียว';
       else say=head+'คุณเดิน '+m.text+' · '+(job.error||'AI กำลังวิเคราะห์ตานี้…');
     }
