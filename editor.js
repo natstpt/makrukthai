@@ -422,7 +422,7 @@
       else setTimeout(function(){if(playStatus().state!=='playing'&&!$('resultDialog').open)$('resultDialog').showModal();},status.state==='resign'?0:700);
     }
   }
-  function stopReview(){if(review)review.stopped=true;review=null;if(reviewing){reviewing=false;document.body.classList.remove('reviewMode');$('gameReview').hidden=true;$('analysisPanel').hidden=true;$('arrowLayer').innerHTML='';}}
+  function stopReview(){if(review)review.stopped=true;review=null;if(reviewing){if(panelHome)panelHome.after($('analysisPanel'));reviewing=false;document.body.classList.remove('reviewMode');$('gameReview').hidden=true;$('analysisPanel').hidden=true;$('arrowLayer').innerHTML='';}}
   function reviewValue(r){
     if(!r||!r.score)return 0;
     return r.score.mate!==undefined?(r.score.mate>0?10000-r.score.mate:-10000-r.score.mate):r.score.cp;
@@ -505,6 +505,7 @@
     $('reviewBar').style.width=(job.total?Math.round(job.done/job.total*100):100)+'%';
     $('reviewText').textContent=job.error||(job.total?'AI กำลังวิเคราะห์ตาเดิน '+job.done+'/'+job.total+' ตา (ลึก '+(job.depth||reviewDepth())+' ชั้น)':'ยังไม่มีตาเดินของคุณให้วิเคราะห์');
     $('reviewBtn').disabled=!job.line.length;
+    drawResultGraph();
     if(reviewing){renderMoves();drawGameReview();}
   }
 
@@ -532,10 +533,14 @@
     if(!review||review.length!==fullLine().length)startReview();
     if($('resultDialog').open)$('resultDialog').close();
     cancelAi();reviewing=true;document.body.classList.add('reviewMode');$('gameReview').hidden=false;
+    // The evaluation bar moves into the review panel below the board, so the board keeps its playing size.
+    if(!panelHome){panelHome=document.createComment('analysisPanel');$('analysisPanel').before(panelHome);}
+    $('gameReview').querySelector('.grHead').after($('analysisPanel'));
     jumpTo(ply===undefined?0:ply);
   }
   function closeReview(){var end=fullLine().length;stopReviewView();jumpTo(end);}
-  function stopReviewView(){reviewing=false;document.body.classList.remove('reviewMode');$('gameReview').hidden=true;$('analysisPanel').hidden=true;$('arrowLayer').innerHTML='';render();}
+  var panelHome=null;
+  function stopReviewView(){if(panelHome)panelHome.after($('analysisPanel'));reviewing=false;document.body.classList.remove('reviewMode');$('gameReview').hidden=true;$('analysisPanel').hidden=true;$('arrowLayer').innerHTML='';render();}
   function drawGameReview(){
     var job=review;if(!reviewing||!job)return;
     var line=fullLine(),n=moves.length,total=line.length,evals=reviewEvals(),now=evals[Math.min(n,evals.length-1)];
@@ -569,6 +574,20 @@
     $('grFirst').disabled=$('grPrev').disabled=n<=0;$('grNext').disabled=$('grLast').disabled=n>=total;
     $('grMistake').disabled=!job.rated.some(function(q){return q.kind==='mistake';});
   }
+  // The same graph in the result (with the counts): the whole game, the mistakes as dots; a tap opens the review there.
+  function drawResultGraph(){
+    var job=review;if(!job)return;
+    var total=job.line.length,evals=reviewEvals(),x=function(k){return total?k/total*100:0;},y=function(v){return 50-48*evalHeight(v);};
+    $('rdGraph').hidden=!total;
+    $('rdPath').setAttribute('d','M0,100 '+evals.map(function(e,k){return 'L'+x(k).toFixed(2)+','+y(e.v).toFixed(2);}).join(' ')+' L100,100 Z');
+    $('rdMarks').innerHTML=job.rated.filter(function(q){return q.kind==='mistake';}).map(function(q){var e=evals[q.i+1];return '<circle cx="'+x(q.i+1)+'%" cy="'+y(e.v)+'%" r="4"/>';}).join('');
+  }
+  $('rdGraph').addEventListener('click',function(e){var box=$('rdGraph').getBoundingClientRect(),total=review?review.line.length:0;openReview(Math.max(0,Math.min(total,Math.round((e.clientX-box.left)/box.width*total))));});
+  // In the review the graph stays folded away (the board as large as in the game); the กราฟ button shows it.
+  var showGraph=false;try{showGraph=localStorage.getItem('makrukReviewGraph')==='1';}catch(e){}
+  function applyGraph(){$('gameReview').classList.toggle('graphHidden',!showGraph);$('grGraphToggle').setAttribute('aria-pressed',String(showGraph));scheduleFit();}
+  $('grGraphToggle').onclick=function(){showGraph=!showGraph;try{localStorage.setItem('makrukReviewGraph',showGraph?'1':'0');}catch(e){}applyGraph();};
+  applyGraph();
   function reviewStep(d){jumpTo(Math.max(0,Math.min(fullLine().length,moves.length+d)));}
   $('grFirst').onclick=function(){jumpTo(0);};$('grLast').onclick=function(){jumpTo(fullLine().length);};
   repeatButton($('grPrev'),function(){reviewStep(-1);});repeatButton($('grNext'),function(){reviewStep(1);});
@@ -917,7 +936,7 @@
     if(stacked){
       var feedback=document.querySelector('.positionFeedback').offsetHeight;
       var tools=parseFloat(getComputedStyle(main).getPropertyValue('--tools-reserve'))||112;
-      var panelHeight=($('analysisPanel').hidden?0:$('analysisPanel').offsetHeight+6)+(document.body.classList.contains('aiGame')?document.querySelector('.topBar').offsetHeight:0);
+      var panelHeight=($('analysisPanel').hidden||reviewing?0:$('analysisPanel').offsetHeight+6)+(document.body.classList.contains('aiGame')?document.querySelector('.topBar').offsetHeight:0);
       // ถอดหมาก uses the lesson page's board size (16 px from each side) and leaves the move record what is left.
       if(analysis&&mode==='play')size=Math.min(window.innerWidth-32,available-panelHeight-feedback-gap-72);
       else size=Math.min(main.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight),available-tools-feedback-gap-8-panelHeight);
@@ -929,7 +948,7 @@
   document.addEventListener('touchmove',function(e){if(e.touches.length>1)e.preventDefault();},{passive:false});
   window.addEventListener('resize',scheduleFit);
   if(window.visualViewport)window.visualViewport.addEventListener('resize',scheduleFit);
-  if(window.ResizeObserver){var fitObserver=new ResizeObserver(scheduleFit);['.pageHeader','.actionDock','#editTools','.positionFeedback','#analysisPanel'].forEach(function(selector){fitObserver.observe(document.querySelector(selector));});}
+  if(window.ResizeObserver){var fitObserver=new ResizeObserver(scheduleFit);['.pageHeader','.actionDock','#editTools','.positionFeedback','#analysisPanel','#gameReview'].forEach(function(selector){fitObserver.observe(document.querySelector(selector));});}
 
   if(analysis&&!game){
     // ถอดหมาก starts moving at once, from the shared position (#fen=) or the opening position.
