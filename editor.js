@@ -558,13 +558,14 @@
     var r=n>0&&ratingOf(n-1),rating=$('moveRating');
     rating.hidden=!r;if(r){rating.textContent=KIND_TEXT[r.kind];rating.className='moveRating'+(r.kind==='mistake'?' bad':' good');}
     $('arrowLayer').innerHTML=r&&r.kind==='mistake'&&r.bestKey?arrow(r.bestKey,'rgba(87,190,90,.9)',true):'';
-    // What the coach says about the move just played.
+    // What the coach says about the move just played. A loss is in คะแนน (the evaluation bar's unit), not เบี้ย, since
+    // the move may cost any piece or just position.
     var say;
     if(!n)say=game.standalone?'มาดูเกมนี้กัน! กด ▶ เพื่อดูทีละตา':'มาดูเกมนี้กัน! กด ▶ เพื่อดูทีละตา แตะตาในบันทึก หรือแตะบนกราฟเพื่อไปตานั้น';
     else{
       var m=line[n-1],no=Math.floor((n-1+(trial.state.turn==='white'?0:1))/2)+1,head='ตา '+no+' ';
       if(m.side!==game.human)say=head+'AI เดิน '+m.text;
-      else if(r)say=head+'คุณเดิน '+m.text+' · '+(r.kind==='best'?'ดีเยี่ยม! เป็นตาที่ดีที่สุดหรือใกล้เคียง':r.kind==='good'?'ดี เสียไปเล็กน้อย'+(r.loss?' ('+(r.loss/100).toFixed(1)+' เบี้ย)':''):'ผิดพลาด '+(r.note||'เสียไป '+(r.loss/100).toFixed(1)+' เบี้ย')+(r.better?' · ควรเดิน '+r.better+' (ลูกศรสีเขียว)':''));
+      else if(r)say=head+'คุณเดิน '+m.text+' · '+(r.kind==='best'?'ดีเยี่ยม! เป็นตาที่ดีที่สุดหรือใกล้เคียง':r.kind==='good'?'ดี เสียความได้เปรียบไปเล็กน้อย'+(r.loss?' ('+(r.loss/100).toFixed(1)+' คะแนน)':''):'ผิดพลาด '+(r.note||(r.loss>=1500?'เสียความได้เปรียบไปมาก':'เสียความได้เปรียบไป '+(r.loss/100).toFixed(1)+' คะแนน'))+(r.better?' · ควรเดิน '+r.better+' (ลูกศรสีเขียว)':''));
       else if(job.forced[n-1])say=head+'คุณเดิน '+m.text+' · มีทางเดินทางเดียว';
       else say=head+'คุณเดิน '+m.text+' · '+(job.error||'AI กำลังวิเคราะห์ตานี้…');
     }
