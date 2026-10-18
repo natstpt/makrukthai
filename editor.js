@@ -548,7 +548,7 @@
   function stopReviewView(){putCoachBack();reviewing=false;document.body.classList.remove('reviewMode');$('gameReview').hidden=true;$('analysisPanel').hidden=true;$('arrowLayer').innerHTML='';render();}
   // Why a move of the player's was good or not, from the board itself: what it took, a check, a piece it saved, and
   // after a mistake the opponent's strongest reply (the threat, a red arrow) and what the better move did.
-  function explainMove(job,i,r){
+  function explainMove(job,i,r,fallback){
     var out={good:'',threat:'',better:'',threatKey:null},m=job.line[i],me=m.side,them=me==='white'?'black':'white';
     var at=function(pieces,s){return pieces.find(function(p){return same(p.at,s);});};
     var facts=function(pieces,key){
@@ -563,14 +563,14 @@
         if(!f.took&&f.mover.piece!=='king'&&R.isAttacked(before,f.from,them)&&!R.isAttacked(f.after,f.to,them))bits.push('พา'+names[f.mover.piece]+'หนีจากการถูกโจมตี');
       }
       out.good=bits.join(' และ ');
-      if(!r||r.kind==='best')return out;
-      var c=reviewCache.get(job.fens[i+1]),key=c&&c.best;
+      if(!r||r.kind==='best'&&!fallback)return out;
+      var c=reviewCache.get(job.fens[i+1]),key=c&&c.best||fallback;
       if(key){
         var t=facts(f.after,key),word=t.mate?'รุกจน':t.took?'กิน'+names[t.took.piece]+'ของคุณ':t.check?'รุกขุน':'';
         out.threatKey=key;
-        out.threat=word?'ระวัง! AI จะเดิน '+N.formatMove(f.after,t.from,t.to).text+' '+word+' (ลูกศรแดง)':'AI จะได้เปรียบด้วย '+N.formatMove(f.after,t.from,t.to).text+' (ลูกศรแดง)';
+        out.threat=word?'ระวัง! AI จะเดิน '+N.formatMove(f.after,t.from,t.to).text+' '+word+' (ลูกศรแดง)':(r.kind==='mistake'?'AI จะได้เปรียบด้วย ':'AI น่าจะตอบด้วย ')+N.formatMove(f.after,t.from,t.to).text+' (ลูกศรแดง)';
       }
-      if(r.bestKey){
+      if(r.kind!=='best'&&r.bestKey){
         var b=facts(before,r.bestKey);
         out.better=b.mate?'รุกจนได้':b.took?'กิน'+names[b.took.piece]+'ได้':b.check?'รุกขุน':key&&same(b.from,square(key,2))?'พา'+names[b.mover.piece]+'หนี':'';
       }
@@ -581,6 +581,32 @@
   // forth shows the same words).
   var BEST_SAY=['ดีเยี่ยม! เลือกแต้มได้ดีมาก','เก่งมาก! ตานี้เดินได้แม่นยำ','ยอดเยี่ยม! อ่านเกมได้ขาดจริง ๆ','สุดยอด! แต้มแบบนี้แหละที่เซียนเลือก','เยี่ยมไปเลย! เดินได้ถูกจังหวะ รักษาความได้เปรียบไว้ได้'];
   var BEST_HEAD=['ดีเยี่ยม! ','เก่งมาก! ','ยอดเยี่ยม! ','สุดยอด! ','เยี่ยมไปเลย! '];
+  var reviewShow={at:-1,threat:false,best:false};
+  // /ai: the game's moves in one row (ตาเลข, then white's and red's move); the shown one is marked and kept in view, a
+  // tap goes to it.
+  function drawMoveStrip(line,n,job){
+    var box=$('grMoves'),first=trial.state.turn,html='';
+    line.forEach(function(m,k){
+      var no=Math.floor((k+(first==='white'?0:1))/2)+1,q=ratingOf(k);
+      if(m.side==='white'||k===0)html+='<span class="grNo">'+no+'.</span>';
+      html+='<button type="button" data-ply="'+(k+1)+'" class="grMv'+(k+1===n?' now':'')+(m.side===game.human?' mine':'')+(q?' '+q.kind:'')+'">'+m.text.replace(/ /g,'')+'</button>';
+    });
+    if(box.dataset.html!==html){box.innerHTML=html;box.dataset.html=html;}
+    var cur=box.querySelector('.now');
+    if(cur)box.scrollLeft=Math.max(0,cur.offsetLeft-box.clientWidth/2+cur.offsetWidth/2);else if(!n)box.scrollLeft=0;
+    $('grStripPrev').disabled=n<=0;$('grStripNext').disabled=n>=line.length;
+  }
+  // ถัดไป: the next of the player's moves where the game turned: a mistake, or the evaluation swinging by 1.5 points or
+  // more over that move and the reply before it (from the first again after the last).
+  function keyMoments(){
+    var job=review,line=fullLine(),evals=reviewEvals(),c=function(v){return Math.max(-1000,Math.min(1000,v));},out=[];
+    line.forEach(function(m,k){
+      if(m.side!==game.human)return;
+      var p=k+1,q=ratingOf(k),swing=Math.abs(c(evals[Math.min(p,evals.length-1)].v)-c(evals[Math.max(0,p-2)].v));
+      if(q&&q.kind==='mistake'||swing>=150)out.push(p);
+    });
+    return out;
+  }
   function drawGameReview(){
     var job=review;if(!reviewing||!job)return;
     var line=fullLine(),n=moves.length,total=line.length,evals=reviewEvals(),now=evals[Math.min(n,evals.length-1)];
@@ -592,21 +618,42 @@
     $('evalVText').textContent=now.known?evalLabel(now.v).replace(/^\+/,''):'…';$('evalV').classList.toggle('redAhead',now.known&&now.v<0);
     var r=n>0&&ratingOf(n-1),rating=$('moveRating');
     rating.hidden=!r;if(r){rating.textContent=KIND_TEXT[r.kind];rating.className='moveRating'+(r.kind==='mistake'?' bad':' good');}
-    var why=n>0&&line[n-1].side===game.human?explainMove(job,n-1,r):null;
-    $('arrowLayer').innerHTML=(why&&why.threatKey?arrow(why.threatKey,'rgba(222,62,48,.92)',false):'')+(r&&r.kind==='mistake'&&r.bestKey?arrow(r.bestKey,'rgba(87,190,90,.9)',true):'');
+    var mine=n>0&&line[n-1].side===game.human,solo=game.standalone;
+    var why=mine?explainMove(job,n-1,r,solo&&n<total?line[n].uci:null):null;
+    if(solo){
+      // /ai: the arrows wait for ดูภัย (the AI's strongest reply, else its real one) and แต้มดี (the better move), so
+      // the player can think first; both close again on another position.
+      if(reviewShow.at!==n)reviewShow={at:n,threat:false,best:false};
+      var arrows='';
+      if(reviewShow.threat&&why&&why.threatKey)arrows+=arrow(why.threatKey,'rgba(222,62,48,.92)',false);
+      if(reviewShow.best&&r&&r.kind!=='best'&&r.bestKey)arrows+=arrow(r.bestKey,'rgba(87,190,90,.9)',true);
+      $('arrowLayer').innerHTML=arrows;
+      $('grThreat').disabled=!mine||!why||!why.threatKey;$('grBest').disabled=!mine||!r;
+      $('grThreat').setAttribute('aria-pressed',String(reviewShow.threat));$('grBest').setAttribute('aria-pressed',String(reviewShow.best));
+    }else $('arrowLayer').innerHTML=(why&&why.threatKey?arrow(why.threatKey,'rgba(222,62,48,.92)',false):'')+(r&&r.kind==='mistake'&&r.bestKey?arrow(r.bestKey,'rgba(87,190,90,.9)',true):'');
     // What the coach says about the move just played. A loss is in คะแนน (the evaluation bar's unit), not เบี้ย, since
     // the move may cost any piece or just position.
     var say;
-    if(!n)say=game.standalone?'มาดูเกมนี้กัน! กด ▶ เพื่อดูทีละตาของคุณ':'มาดูเกมนี้กัน! กด ▶ เพื่อดูทีละตา แตะตาในบันทึก หรือแตะบนกราฟเพื่อไปตานั้น';
+    if(!n)say=game.standalone?'มาดูเกมนี้กัน! กด › เพื่อดูทีละตาของคุณ หรือ ถัดไป เพื่อไปจุดที่เกมเปลี่ยน':'มาดูเกมนี้กัน! กด ▶ เพื่อดูทีละตา แตะตาในบันทึก หรือแตะบนกราฟเพื่อไปตานั้น';
     else{
       var m=line[n-1],no=Math.floor((n-1+(trial.state.turn==='white'?0:1))/2)+1,head='ตา '+no+' ';
       // On /ai only the player's moves are explained (the steps skip the AI's); its last move just ends the game.
-      if(m.side!==game.human)say=game.standalone?'ตำแหน่งสุดท้ายของเกม · AI เดิน '+m.text:head+'AI เดิน '+m.text;
+      if(m.side!==game.human)say=game.standalone&&n===total?'ตำแหน่งสุดท้ายของเกม · AI เดิน '+m.text:head+'AI เดิน '+m.text;
       else if(r)say=head+'คุณเดิน '+m.text+' · '+(r.kind==='best'?(why.good?BEST_HEAD[(n-1)%BEST_HEAD.length]+why.good:BEST_SAY[Math.floor((n-1)/2)%BEST_SAY.length]):r.kind==='good'?'ดี'+(why.good?' '+why.good:'')+' แต่เสียความได้เปรียบไปเล็กน้อย'+(r.loss?' ('+(r.loss/100).toFixed(1)+' คะแนน)':''):'ผิดพลาด '+(r.note||(r.loss>=1500?'เสียความได้เปรียบไปมาก':'เสียความได้เปรียบไป '+(r.loss/100).toFixed(1)+' คะแนน'))+(why.threat?' · '+why.threat:'')+(r.better?' · ควรเดิน '+r.better+(why.better?' '+why.better:'')+' (ลูกศรเขียว)':''));
       else if(job.forced[n-1])say=head+'คุณเดิน '+m.text+' · มีทางเดินทางเดียว';
       else say=head+'คุณเดิน '+m.text+' · '+(job.error||'AI กำลังวิเคราะห์ตานี้…');
     }
+    if(solo&&mine&&r){
+      // /ai: the verdict first; the reasons come with ดูภัย and แต้มดี.
+      if(r.kind==='mistake')say=head+'คุณเดิน '+m.text+' · ผิดพลาด '+(r.note||(r.loss>=1500?'เสียความได้เปรียบไปมาก':'เสียความได้เปรียบไป '+(r.loss/100).toFixed(1)+' คะแนน'));
+      var extra=[];
+      if(reviewShow.threat&&why.threat)extra.push(why.threat);
+      if(reviewShow.best)extra.push(r.kind==='best'?'แต้มที่คุณเดินนี่แหละคือแต้มที่ดีที่สุด':r.better?'แต้มที่ดีกว่าคือ '+r.better+(why.better?' '+why.better:'')+' (ลูกศรเขียว)':'ยังไม่มีแต้มที่ดีกว่าให้ดู');
+      if(extra.length)say=head+'คุณเดิน '+m.text+' · '+extra.join(' · ');
+      else if(r.kind==='mistake')say+=' · ลองกด ดูภัย หรือ แต้มดี';
+    }
     $('grSpeech').textContent=say;
+    if(solo)drawMoveStrip(line,n,job);
     var count=function(kind){return job.rated.filter(function(x){return x.kind===kind;}).length;};
     $('grStats').innerHTML='<span class="grChip best">★ '+count('best')+'</span><span class="grChip good">👍 '+count('good')+'</span><span class="grChip mistake">? '+count('mistake')+'</span>'+(job.done<job.total&&!job.error?'<span class="grBusy">วิเคราะห์ '+job.done+'/'+job.total+'</span>':'');
     // The graph: white's share from the bottom, the mistakes as orange dots, the shown position as a line.
@@ -646,6 +693,15 @@
     var next=list.find(function(p){return p>moves.length;});if(next===undefined)next=list[0];if(next!==undefined)jumpTo(next);
   };
   $('grClose').onclick=closeReview;
+  repeatButton($('grStripPrev'),function(){reviewStep(-1);});repeatButton($('grStripNext'),function(){reviewStep(1);});
+  $('grMoves').addEventListener('click',function(e){var b=e.target.closest('[data-ply]');if(b)jumpTo(Number(b.dataset.ply));});
+  $('grThreat').onclick=function(){reviewShow.threat=!reviewShow.threat;drawGameReview();};
+  $('grBest').onclick=function(){reviewShow.best=!reviewShow.best;drawGameReview();};
+  $('grKey').onclick=function(){
+    var list=keyMoments(),n=moves.length,next=list.find(function(p){return p>n;});
+    if(next===undefined)next=list[0];
+    if(next===undefined||next===n)reviewStep(1);else jumpTo(next);
+  };
   $('grGraph').addEventListener('click',function(e){var box=$('grGraph').getBoundingClientRect(),total=fullLine().length;jumpTo(Math.max(0,Math.min(total,Math.round((e.clientX-box.left)/box.width*total))));});
   $('grGraph').addEventListener('keydown',function(e){if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();reviewStep(e.key==='ArrowLeft'?-1:1);}});
   $('reviewBtn').onclick=function(){openReview(0);};
