@@ -1152,6 +1152,8 @@
   // ถอดหมาก: the endgame table answers king + rook against king positions (see tableView).
   if(analysis&&window.MakrukTablebase)MakrukTablebase.load().then(function(ok){if(ok){view.fen=null;render();}});
   render();if(notice)message(notice,notice!=='เปิดตำแหน่งจากลิงก์แชร์แล้ว');
+  // The page shows once laid out for what it is (until then the set-up page's own markup would flash; editor.css).
+  document.body.classList.add('ready');
   // The board shows, and the AI starts, once every piece picture is loaded (piece-colors.js), at most 2.5 s.
   document.body.classList.add('piecesLoading');
   Promise.race([window.MakrukPieceColors.ready,new Promise(function(r){setTimeout(r,2500);})]).then(function(){document.body.classList.remove('piecesLoading');scheduleAi();});
