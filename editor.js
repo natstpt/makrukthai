@@ -611,7 +611,7 @@
     var job=review;if(!reviewing||!job)return;
     var line=fullLine(),n=moves.length,total=line.length,evals=reviewEvals(),now=evals[Math.min(n,evals.length-1)];
     message('');
-    $('modeLabel').textContent='Game Review';
+    $('modeLabel').textContent='วิเคราะห์การเดิน';
     // Evaluation bar (the analysis bar, without engine lines) and the rating of the move just played.
     $('analysisPanel').hidden=true;
     var share=50+50*evalHeight(now.v);$('evalVFill').style.height=share+'%';$('evalV').classList.toggle('flipped',flipped);
