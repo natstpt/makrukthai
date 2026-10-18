@@ -584,8 +584,9 @@
   var reviewShow={at:-1,threat:false,best:false};
   // /ai: the game's moves in one row (ตาเลข, then white's and red's move); the shown one is marked and kept in view, a
   // tap goes to it.
-  function drawMoveStrip(line,n,job){
-    var box=$('grMoves'),first=trial.state.turn,html='';
+  function drawMoveStrip(line,n,job,ids){
+    ids=ids||['grMoves','grStripPrev','grStripNext'];
+    var box=$(ids[0]),first=trial.state.turn,html='';
     line.forEach(function(m,k){
       var no=Math.floor((k+(first==='white'?0:1))/2)+1,q=ratingOf(k);
       if(m.side==='white'||k===0)html+='<span class="grNo">'+no+'.</span>';
@@ -594,7 +595,7 @@
     if(box.dataset.html!==html){box.innerHTML=html;box.dataset.html=html;}
     var cur=box.querySelector('.now');
     if(cur)box.scrollLeft=Math.max(0,cur.offsetLeft-box.clientWidth/2+cur.offsetWidth/2);else if(!n)box.scrollLeft=0;
-    $('grStripPrev').disabled=n<=0;$('grStripNext').disabled=n>=line.length;
+    $(ids[1]).disabled=n<=0;$(ids[2]).disabled=n>=line.length;
   }
   // ถัดไป: the next of the player's moves where the game turned: a mistake, or the evaluation swinging by 1.5 points or
   // more over that move and the reply before it (from the first again after the last).
@@ -695,6 +696,8 @@
   $('grClose').onclick=closeReview;
   repeatButton($('grStripPrev'),function(){reviewStep(-1);});repeatButton($('grStripNext'),function(){reviewStep(1);});
   $('grMoves').addEventListener('click',function(e){var b=e.target.closest('[data-ply]');if(b)jumpTo(Number(b.dataset.ply));});
+  repeatButton($('psPrev'),function(){jumpTo(Math.max(0,moves.length-1));});repeatButton($('psNext'),function(){jumpTo(Math.min(fullLine().length,moves.length+1));});
+  $('psMoves').addEventListener('click',function(e){var b=e.target.closest('[data-ply]');if(b)jumpTo(Number(b.dataset.ply));});
   $('grThreat').onclick=function(){reviewShow.threat=!reviewShow.threat;drawGameReview();};
   $('grBest').onclick=function(){reviewShow.best=!reviewShow.best;drawGameReview();};
   $('grKey').onclick=function(){
@@ -800,7 +803,9 @@
     $('openReview').hidden=!aiGame||reviewing||status.state==='playing'||!review;
     renderMoves();if(reviewing)drawGameReview();scheduleFit();
   }
-  function renderMoves(){
+  // /ai during the game: the record in the same sliding row as in วิเคราะห์การเดิน (‹ › one move back or on).
+  function drawPlayStrip(){if(game&&game.standalone&&!reviewing&&trial)drawMoveStrip(fullLine(),moves.length,null,['psMoves','psPrev','psNext']);}
+  function renderMoves(){drawPlayStrip();
     var body=$('moveList');body.replaceChildren();
     var rows=[],line=fullLine(),current=moves.length-1;
     line.forEach(function(move,index){
