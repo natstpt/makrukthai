@@ -566,9 +566,11 @@
       if(!r||r.kind==='best'&&!fallback)return out;
       var c=reviewCache.get(job.fens[i+1]),key=c&&c.best||fallback;
       if(key){
-        var t=facts(f.after,key),word=t.mate?'รุกจน':t.took?'กิน'+names[t.took.piece]+'ของคุณ':t.check?'รุกขุน':'';
+        // Plain words for children and beginners: "ของเรา", the AI's piece by its square, the arrow to look at.
+        var t=facts(f.after,key),text=N.formatMove(f.after,t.from,t.to).text,piece=text.split(/ [-×] /)[0];
         out.threatKey=key;
-        out.threat=word?'ระวัง! AI จะเดิน '+N.formatMove(f.after,t.from,t.to).text+' '+word+' (ลูกศรแดง)':(r.kind==='mistake'?'AI จะได้เปรียบด้วย ':'AI น่าจะตอบด้วย ')+N.formatMove(f.after,t.from,t.to).text+' (ลูกศรแดง)';
+        out.threat=t.mate?'ระวัง! AI จะเดิน '+text+' รุกจน (ดูลูกศรแดง)':t.took?'ระวัง! AI จะเอา '+piece+' กิน'+names[t.took.piece]+'ของเรา (ดูลูกศรแดง)':t.check?'ระวัง! AI จะเดิน '+text+' รุกขุนของเรา (ดูลูกศรแดง)':
+          r.kind==='mistake'?'AI จะเดิน '+text+' แล้วได้เปรียบ (ดูลูกศรแดง)':'AI น่าจะเดิน '+text+' ต่อ (ดูลูกศรแดง)';
       }
       if(r.kind!=='best'&&r.bestKey){
         var b=facts(before,r.bestKey);
@@ -622,7 +624,7 @@
     var mine=n>0&&line[n-1].side===game.human,solo=game.standalone;
     var why=mine?explainMove(job,n-1,r,solo&&n<total?line[n].uci:null):null;
     if(solo){
-      // /ai: the arrows wait for ดูภัย (the AI's strongest reply, else its real one) and แต้มดี (the better move), so
+      // /ai: the arrows wait for "AI จะเดินอะไร" (the AI's strongest reply, else its real one) and "ควรเดินแต้มไหน" (the better move), so
       // the player can think first; both close again on another position.
       if(reviewShow.at!==n)reviewShow={at:n,threat:false,best:false};
       var arrows='';
@@ -645,13 +647,13 @@
       else say=head+'คุณเดิน '+m.text+' · '+(job.error||'AI กำลังวิเคราะห์ตานี้…');
     }
     if(solo&&mine&&r){
-      // /ai: the verdict first; the reasons come with ดูภัย and แต้มดี.
-      if(r.kind==='mistake')say=head+'คุณเดิน '+m.text+' · ผิดพลาด '+(r.note||(r.loss>=1500?'เสียความได้เปรียบไปมาก':'เสียความได้เปรียบไป '+(r.loss/100).toFixed(1)+' คะแนน'));
+      // /ai: the verdict first; the reasons come with the two buttons.
+      if(r.kind==='mistake')say=head+'คุณเดิน '+m.text+' · '+(r.note||(r.loss>=1500?'ตานี้พลาด เสียเปรียบไปมาก':(r.loss<300?'ตานี้พลาดไปนิด':'ตานี้พลาด')+' เสียไป '+(r.loss/100).toFixed(1)+' คะแนน'));
       var extra=[];
       if(reviewShow.threat&&why.threat)extra.push(why.threat);
-      if(reviewShow.best)extra.push(r.kind==='best'?'แต้มที่คุณเดินนี่แหละคือแต้มที่ดีที่สุด':r.better?'แต้มที่ดีกว่าคือ '+r.better+(why.better?' '+why.better:'')+' (ลูกศรเขียว)':'ยังไม่มีแต้มที่ดีกว่าให้ดู');
+      if(reviewShow.best)extra.push(r.kind==='best'?'ตานี้เดินดีที่สุดแล้ว เก่งมาก!':r.better?'ถ้าเดิน '+r.better+' จะดีกว่านะ'+(why.better?' '+why.better:'')+' (ดูลูกศรเขียว)':'ยังไม่มีแต้มที่ดีกว่าให้ดู');
       if(extra.length)say=head+'คุณเดิน '+m.text+' · '+extra.join(' · ');
-      else if(r.kind==='mistake')say+=' · ลองกด ดูภัย หรือ แต้มดี';
+      else if(r.kind==='mistake')say+=' · ลองกด "AI จะเดินอะไร" หรือ "ควรเดินแต้มไหน" ดูนะ';
     }
     $('grSpeech').textContent=say;
     if(solo)drawMoveStrip(line,n,job);
