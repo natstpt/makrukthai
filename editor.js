@@ -706,6 +706,8 @@
     var list=keyMoments(),n=moves.length,next=list.find(function(p){return p>n;});
     if(next===undefined)next=list[0];
     if(next===undefined||next===n)reviewStep(1);else jumpTo(next);
+    // At a turning point both arrows show at once: the danger (red) and the better move (green).
+    reviewShow={at:moves.length,threat:true,best:true};drawGameReview();
   };
   $('grGraph').addEventListener('click',function(e){var box=$('grGraph').getBoundingClientRect(),total=fullLine().length;jumpTo(Math.max(0,Math.min(total,Math.round((e.clientX-box.left)/box.width*total))));});
   $('grGraph').addEventListener('keydown',function(e){if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();reviewStep(e.key==='ArrowLeft'?-1:1);}});
