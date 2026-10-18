@@ -624,7 +624,7 @@
     var mine=n>0&&line[n-1].side===game.human,solo=game.standalone;
     var why=mine?explainMove(job,n-1,r,solo&&n<total?line[n].uci:null):null;
     if(solo){
-      // /ai: the arrows wait for "AI จะเดินอะไร" (the AI's strongest reply, else its real one) and "ควรเดินแต้มไหน" (the better move), so
+      // /ai: the arrows wait for อันตราย (the AI's strongest reply, else its real one) and การเดินที่ดี (the better move), so
       // the player can think first; both close again on another position.
       if(reviewShow.at!==n)reviewShow={at:n,threat:false,best:false};
       var arrows='';
@@ -653,7 +653,7 @@
       if(reviewShow.threat&&why.threat)extra.push(why.threat);
       if(reviewShow.best)extra.push(r.kind==='best'?'ตานี้เดินดีที่สุดแล้ว เก่งมาก!':r.better?'ถ้าเดิน '+r.better+' จะดีกว่านะ'+(why.better?' '+why.better:'')+' (ดูลูกศรเขียว)':'ยังไม่มีแต้มที่ดีกว่าให้ดู');
       if(extra.length)say=head+'คุณเดิน '+m.text+' · '+extra.join(' · ');
-      else if(r.kind==='mistake')say+=' · ลองกด "AI จะเดินอะไร" หรือ "ควรเดินแต้มไหน" ดูนะ';
+      else if(r.kind==='mistake')say+=' · ลองกด "อันตราย" หรือ "การเดินที่ดี" ดูนะ';
     }
     $('grSpeech').textContent=say;
     if(solo)drawMoveStrip(line,n,job);
