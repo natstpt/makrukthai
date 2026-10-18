@@ -63,6 +63,9 @@ jobs:
       - name: Verify play-the-computer lessons
         run: node tests/ai-lessons.test.cjs
 
+      - name: Verify the game review grades
+        run: node tests/review-grades.test.cjs
+
       - name: Build the stand-alone AI page from editor.html
         run: node scripts/build-ai-page.cjs && node tests/ai-page.test.cjs
 
