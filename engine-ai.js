@@ -165,6 +165,7 @@
       return new Promise(function (resolve) {
         var skill = limits.skill === undefined ? 20 : limits.skill, time = limits.time || (limits.depth ? 0 : line.think);
         if (skill !== skillLevel) { line.post('setoption name Skill Level value ' + skill); skillLevel = skill; }
+        lines(1);
         reached = 0; last = { score: null, depth: 0, best: null, fen: fen, moves: moves || [] };
         listener = function (text) {
           if (text.indexOf('info depth ') === 0) {
@@ -191,7 +192,10 @@
   // with each new depth; a line is {score: {cp}|{mate}, pv: ['e3e4', …]} from the side to move. A new call replaces
   // the running search: the full build is stopped at once, the lite one (which cannot be stopped) finishes first.
   // The full build searches 4 s, the lite one 1.5 s; stop() ends the analysis.
-  var analysis = { running: false, next: null, multipv: false };
+  var analysis = { running: false, next: null };
+  // How many lines the engine searches (MultiPV), set only when it changes.
+  var multipv = 1;
+  function lines(n) { if (multipv !== n) { line.post('setoption name MultiPV value ' + n); multipv = n; } }
   function parseInfo(text) {
     var t = text.split(/\s+/), info = {}, i;
     for (i = 1; i < t.length; i++) {
@@ -220,7 +224,7 @@
         runAnalysis();
       }
     };
-    if (!analysis.multipv) { line.post('setoption name MultiPV value 2'); analysis.multipv = true; }
+    lines(2);
     line.post('position fen ' + job.fen);
     line.post('go movetime ' + (line.stops ? 4000 : 1500));
   }
@@ -236,6 +240,7 @@
   // Game review: the engine's best move and score for the side to move in fen, at full strength with one line,
   // searching limits.depth plies but stopping itself after limits.time ms. Resolves {best: 'e3e4'|null,
   // score: {cp}|{mate}|null, depth}. Queued with bestMove, so it never overlaps an AI move.
+  // limits.multipv 2 also searches the second best move: second is its score (null when there is only one move).
   // The last bestMove search: {score, depth, best, fen, moves} (score from the side to move), for the game review.
   var last = null, evaluating = false;
   // Ends an evaluate() at once (the full build; the lite one cannot be stopped and finishes its short search).
@@ -247,12 +252,15 @@
       evaluating = true;
       return new Promise(function (resolve) {
         if (skillLevel !== 20) { line.post('setoption name Skill Level value 20'); skillLevel = 20; }
-        if (analysis.multipv) { line.post('setoption name MultiPV value 1'); analysis.multipv = false; }
-        var out = { best: null, score: null, depth: 0 };
+        var two = limits.multipv === 2;
+        lines(two ? 2 : 1);
+        var out = { best: null, score: null, depth: 0 }, secondDepth = 0;
+        if (two) out.second = null;
         listener = function (text) {
           if (text.indexOf('info') === 0 && text.indexOf(' score ') > 0 && text.indexOf('bound') < 0) {
             var info = parseInfo(text);
-            if (info.score && info.depth >= out.depth) { out.score = info.score; out.depth = info.depth; }
+            if (info.score && info.multipv === 2) { if (info.depth >= secondDepth) { out.second = info.score; secondDepth = info.depth; } }
+            else if (info.score && info.depth >= out.depth) { out.score = info.score; out.depth = info.depth; }
             return;
           }
           if (text.indexOf('bestmove') !== 0) return;

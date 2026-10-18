@@ -1,6 +1,6 @@
 (function(){
   'use strict';
-  var M=window.MakrukEditor,R=window.MakrukRules,P=window.MakrukPlay,N=window.MakrukNotation,$=function(id){return document.getElementById(id);};
+  var M=window.MakrukEditor,R=window.MakrukRules,P=window.MakrukPlay,N=window.MakrukNotation,G=window.MakrukGrades,$=function(id){return document.getElementById(id);};
   var names={king:'ขุน',khon:'โคน',met:'เม็ด',knight:'ม้า',rook:'เรือ',pawn:'เบี้ย',promoted:'เบี้ยหงาย'};
   var icons={king:'K',khon:'B',met:'Q',knight:'N',rook:'R',pawn:'P',promoted:'F'};
   var files=['ก','ข','ค','ง','จ','ฉ','ช','ญ'];
@@ -396,7 +396,13 @@
   function liteEngine(){return !!E&&E.tier()==='lite';}
   function reviewDepth(){return liteEngine()?10:14;}
   var PONDER={full:{depth:14,time:500},lite:{depth:10,time:300}};
-  function keepReview(fen,r){if(r&&r.score&&(r.depth||0)>=6&&!reviewCache.has(fen))reviewCache.set(fen,{value:reviewValue(r),best:r.best||null,depth:r.depth||0});}
+  // A search kept for the review: value and best move (and the second best move's value, from a two-line search; a
+  // two-line search replaces a one-line one).
+  function keepReview(fen,r){
+    if(!r||!r.score||(r.depth||0)<6)return;
+    var old=reviewCache.get(fen);if(old&&(r.second===undefined||old.second!==undefined))return;
+    reviewCache.set(fen,{value:reviewValue(r),best:r.best||null,depth:r.depth||0,second:r.second===undefined?undefined:r.second?reviewValue({score:r.second}):null});
+  }
   // On the player's turn the engine is free: search this position for the review (stopped when the player moves).
   function ponder(){
     if(!game||!game.ai||mode!=='play'||aiTurn()||future.length||playStatus().state!=='playing'||!engineAi()||engine.state!=='ready'||!E.evaluate)return;
@@ -428,7 +434,8 @@
     if(!r||!r.score)return 0;
     return r.score.mate!==undefined?(r.score.mate>0?10000-r.score.mate:-10000-r.score.mate):r.score.cp;
   }
-  // A move rated from an endgame table: the best result there was against the one the move kept.
+  // A move rated from an endgame table: the best result there was against the one the move kept (graded on the
+  // table's own scores, a win or loss as a mate in its moves).
   var TABLE_WORD={win:'ชนะ',draw:'เสมอ',loss:'แพ้'};
   function rateFromTable(job,i,o){
     var side=job.line[i].side;
@@ -441,70 +448,84 @@
     var best=results.reduce(function(a,b){return score(b)>score(a)?b:a;});
     var m=job.line[i],played=results.find(function(r){return moveKey(r.move)===m.uci;});
     if(!played)return false;
-    var kind=score(played)===score(best)?'best':played.res===best.res?'good':'mistake',better=null;
-    if(kind==='mistake'){try{better=N.formatMove(M.parse(job.fens[i]).pieces,best.move.from,best.move.to).text;}catch(e){}}
-    job.rated.push({i:i,kind:kind,loss:0,better:better,bestKey:kind==='best'?null:moveKey(best.move),note:kind==='mistake'?'ตารางท้ายเกม: '+TABLE_WORD[best.res]+' → '+TABLE_WORD[played.res]:''});
+    var kind=score(played)===score(best)?'best':played.res===best.res?'good':played.res==='loss'?'blunder':'mistake',better=null;
+    if(!G.isTop(kind)){try{better=N.formatMove(M.parse(job.fens[i]).pieces,best.move.from,best.move.to).text;}catch(e){}}
+    job.rated.push({i:i,kind:kind,loss:0,before:score(best),after:score(played),ai:side!==game.human,better:better,bestKey:G.isTop(kind)?null:moveKey(best.move),
+      note:G.isBad(kind)?'ตารางท้ายเกม: '+TABLE_WORD[best.res]+' → '+TABLE_WORD[played.res]:''});
     job.vals[i]=score(best);job.vals[i+1]=-score(played);
     return true;
   }
+  // วิเคราะห์การเดิน: every position of the game is searched once (one line; two for the positions the player moved
+  // from, so แต้มเด็ด can see whether the move was the only one), and each move of either side is graded
+  // (review-grades.js) as soon as the positions before and after it are known.
   function startReview(){
     stopReview();
-    var line=fullLine().slice(),job={length:line.length,line:line,fens:[M.fen(trial.state)].concat(line.map(function(m){return m.fen;})),rated:[],forced:{},vals:{},done:0,total:0,stopped:false,error:''};
+    var line=fullLine().slice(),job={length:line.length,line:line,fens:[M.fen(trial.state)].concat(line.map(function(m){return m.fen;})),rated:[],forced:{},vals:{},seconds:{},done:0,total:0,stopped:false,error:''};
     review=job;
-    var mine=line.map(function(m,i){return m.side===game.human?i:-1;}).filter(function(i){return i>=0;});
-    job.total=mine.length;
-    var T=window.MakrukTablebase,queue=[];
+    var T=window.MakrukTablebase,need={},two={},graded={};
     var terminal=function(at){var p=M.parse(job.fens[at]),st=R.gameStatus(p.pieces,p.turn);return st.state==='checkmate'?-10000:st.state!=='playing'?0:null;};
     job.fens.forEach(function(f,at){var t=terminal(at);if(t!==null)job.vals[at]=t;});
-    mine.forEach(function(i){
+    line.forEach(function(m,i){
       var parsed=M.parse(job.fens[i]);
-      if(R.legalMoves(parsed.pieces,parsed.turn).length<=1){job.forced[i]=true;job.done++;return;} // no choice: not rated
+      // No choice: not graded.
+      if(R.legalMoves(parsed.pieces,parsed.turn).length<=1){job.forced[i]=true;graded[i]=true;return;}
       var o=T&&T.outcomes(parsed.pieces,parsed.turn);
-      if(o&&o.moves.length&&rateFromTable(job,i,o)){job.done++;return;}
-      queue.push(i);
+      if(o&&o.moves.length&&rateFromTable(job,i,o)){graded[i]=true;return;}
+      need[i]=true;need[i+1]=true;if(m.side===game.human)two[i]=true;
     });
-    var known=function(at){return reviewCache.has(job.fens[at]);};
+    var queue=Object.keys(need).map(Number).filter(function(at){return job.vals[at]===undefined;}).sort(function(a,b){return a-b;});
+    job.total=queue.length;
+    var cached=function(at){var c=reviewCache.get(job.fens[at]);return c&&(!two[at]||c.second!==undefined)?c:null;};
     if(queue.length&&(!E||E.unsupported()||engine.state==='failed')){job.error='เครื่องนี้ใช้ AI วิเคราะห์เกมไม่ได้ (ให้คะแนนเฉพาะตาที่ตารางท้ายเกมรู้ผล)';drawReview();return;}
-    // Time for each search still to make: the budget shared over what is missing (the position after a move only
-    // counts when the move was not the known best).
-    var missing=queue.reduce(function(n,i){var c=reviewCache.get(job.fens[i]);return n+(c?0:1)+(c&&c.best===line[i].uci||known(i+1)?0:1);},0);
-    var limits={depth:reviewDepth(),time:Math.max(100,Math.min(600,Math.round(REVIEW_BUDGET/Math.max(1,missing))))};
-    job.depth=limits.depth;
+    // Time for each search still to make: the budget shared over what is missing (a two-line search a third more).
+    var missing=queue.reduce(function(n,at){return n+(cached(at)?0:two[at]?1.3:1);},0);
+    var time=Math.max(100,Math.min(600,Math.round(REVIEW_BUDGET/Math.max(1,missing))));
+    job.depth=reviewDepth();
     var value=function(at){
-      if(job.vals[at]!==undefined&&terminal(at)!==null)return Promise.resolve({value:job.vals[at],best:null});
-      if(known(at))return Promise.resolve(reviewCache.get(job.fens[at]));
-      return E.evaluate(job.fens[at],limits).then(function(r){keepReview(job.fens[at],r);return reviewCache.get(job.fens[at])||{value:reviewValue(r),best:r.best};});
+      var c=cached(at);if(c)return Promise.resolve(c);
+      return E.evaluate(job.fens[at],{depth:job.depth,time:two[at]?Math.round(time*1.3):time,multipv:two[at]?2:1}).then(function(r){
+        keepReview(job.fens[at],r);return cached(at)||{value:reviewValue(r),best:r.best,second:r.second?reviewValue({score:r.second}):null};
+      });
     };
-    var clamp=function(v){return Math.max(-1000,Math.min(1000,v));};
+    // Grades every move whose two positions are known, in order (พลาดโอกาส looks at the move before).
+    var grade=function(){
+      line.forEach(function(m,i){
+        if(graded[i]||job.vals[i]===undefined||job.vals[i+1]===undefined)return;
+        graded[i]=true;
+        var before=job.vals[i],after=-job.vals[i+1],mine=m.side===game.human,prev=job.rated.find(function(q){return q.i===i-1;}),pieces=M.parse(job.fens[i]).pieces;
+        var c=reviewCache.get(job.fens[i]),best=c&&c.best,sac=false;
+        try{sac=G.sacrifice(R,pieces,square(m.uci,0),square(m.uci,2));}catch(e){}
+        var kind=G.classify({before:before,after:after,second:mine?job.seconds[i]:null,sacrifice:sac,prevLoss:prev?Math.max(0,prev.before-prev.after):0});
+        if(best===m.uci&&!G.isTop(kind))kind='best';
+        var better=null,bestKey=G.isTop(kind)||!best||best===m.uci?null:best;
+        if(bestKey){try{better=N.formatMove(pieces,square(bestKey,0),square(bestKey,2)).text;}catch(e){}}
+        job.rated.push({i:i,kind:kind,loss:Math.max(0,Math.min(1000,before)-Math.max(-1000,after)),before:before,after:after,ai:!mine,better:better,bestKey:bestKey});
+      });
+      job.rated.sort(function(a,b){return a.i-b.i;});
+    };
+    grade();
     var step=function(k){
       if(job.stopped)return;
-      if(k>=queue.length){drawReview();return;}
-      var i=queue[k];
-      value(i).then(function(a){
+      if(k>=queue.length){grade();drawReview();return;}
+      var at=queue[k];
+      // Already known from the move before (the engine's own move keeps the value, seen from the other side).
+      if(job.vals[at]!==undefined&&!two[at]){job.done++;step(k+1);return;}
+      value(at).then(function(a){
         if(job.stopped)return;
-        job.vals[i]=a.value;
-        // The engine's own move: the position after it is worth what this one was (seen from the other side).
-        if(a.best===line[i].uci){if(job.vals[i+1]===undefined&&!known(i+1))job.vals[i+1]=-a.value;job.rated.push({i:i,kind:'best',loss:0,better:null});job.done++;drawReview();step(k+1);return;}
-        return value(i+1).then(function(b){
-          if(job.stopped)return;
-          job.vals[i+1]=b.value;
-          var loss=Math.max(0,clamp(a.value)-clamp(-b.value));
-          var kind=loss<=30?'best':loss<=120?'good':'mistake',better=null;
-          if(kind==='mistake'&&a.best){try{better=N.formatMove(M.parse(job.fens[i]).pieces,square(a.best,0),square(a.best,2)).text;}catch(e){}}
-          job.rated.push({i:i,kind:kind,loss:loss,better:better,bestKey:kind==='best'?null:a.best});job.done++;drawReview();step(k+1);
-        });
+        job.vals[at]=a.value;if(two[at])job.seconds[at]=a.second;
+        if(at<line.length&&a.best===line[at].uci&&job.vals[at+1]===undefined&&terminal(at+1)===null&&!two[at+1]&&!cached(at+1))job.vals[at+1]=-a.value;
+        job.done++;grade();drawReview();step(k+1);
       }).catch(function(){if(job.stopped)return;job.error='AI วิเคราะห์ไม่สำเร็จ';drawReview();});
     };
     drawReview();step(0);
   }
   function drawReview(){
     var job=review;if(!job)return;
-    var countOf=function(kind){return job.rated.filter(function(r){return r.kind===kind;}).length;};
     var finished=!job.error&&job.done>=job.total;
-    $('statBest').textContent=countOf('best');$('statGood').textContent=countOf('good');$('statMistake').textContent=countOf('mistake');
+    $('gradeTable').innerHTML=gradeTableHtml(job);if($('gradeDialog').open)$('gradeTable2').innerHTML=gradeTableHtml(job);
     $('reviewProgress').hidden=finished&&!job.error;
     $('reviewBar').style.width=(job.total?Math.round(job.done/job.total*100):100)+'%';
-    $('reviewText').textContent=job.error||(job.total?'AI กำลังวิเคราะห์ตาเดิน '+job.done+'/'+job.total+' ตา (ลึก '+(job.depth||reviewDepth())+' ชั้น)':'ยังไม่มีตาเดินของคุณให้วิเคราะห์');
+    $('reviewText').textContent=job.error||(job.total?'AI กำลังวิเคราะห์ '+Math.round(job.done/job.total*100)+'% (ลึก '+(job.depth||reviewDepth())+' ชั้น)':job.line.length?'วิเคราะห์ครบแล้ว':'ยังไม่มีตาเดินให้วิเคราะห์');
     $('reviewBtn').disabled=!job.line.length;
     drawResultGraph();
     if(reviewing){renderMoves();drawGameReview();}
@@ -515,8 +536,9 @@
   // a graph of who was better over the whole game, the rating of each of the player's moves in the record and what
   // the coach says about the move just played (the better move as a green arrow after a mistake).
   var reviewing=false;
-  var KIND_TEXT={best:'★ ดีเยี่ยม',good:'👍 ดี',mistake:'? ผิดพลาด'};
-  function ratingOf(i){return review&&review.rated.find(function(r){return r.i===i;});}
+  // The grade of the player's move at ply i (the AI's moves are graded too, for the summary).
+  function ratingOf(i){return review&&review.rated.find(function(r){return r.i===i&&!r.ai;});}
+  function gradeIcon(kind){return '<i class="gi g-'+kind+'" aria-hidden="true">'+G.INFO[kind].icon+'</i>';}
   // Each position's evaluation for white (cp, a mate as ±10000 less its moves); a position not searched keeps the one
   // before it.
   function reviewEvals(){
@@ -563,16 +585,16 @@
         if(!f.took&&f.mover.piece!=='king'&&R.isAttacked(before,f.from,them)&&!R.isAttacked(f.after,f.to,them))bits.push('พา'+names[f.mover.piece]+'หนีจากการถูกโจมตี');
       }
       out.good=bits.join(' และ ');
-      if(!r||r.kind==='best'&&!fallback)return out;
+      if(!r||G.isTop(r.kind)&&!fallback)return out;
       var c=reviewCache.get(job.fens[i+1]),key=c&&c.best||fallback;
       if(key){
         // Plain words for children and beginners: "ของเรา", the AI's piece by its square, the arrow to look at.
         var t=facts(f.after,key),text=N.formatMove(f.after,t.from,t.to).text,piece=text.split(/ [-×] /)[0];
         out.threatKey=key;
         out.threat=t.mate?'ระวัง! AI จะเดิน '+text+' รุกจน (ดูลูกศรแดง)':t.took?'ระวัง! AI จะเอา '+piece+' กิน'+names[t.took.piece]+'ของเรา (ดูลูกศรแดง)':t.check?'ระวัง! AI จะเดิน '+text+' รุกขุนของเรา (ดูลูกศรแดง)':
-          r.kind==='mistake'?'AI จะเดิน '+text+' แล้วได้เปรียบ (ดูลูกศรแดง)':'AI น่าจะเดิน '+text+' ต่อ (ดูลูกศรแดง)';
+          G.isBad(r.kind)?'AI จะเดิน '+text+' แล้วได้เปรียบ (ดูลูกศรแดง)':'AI น่าจะเดิน '+text+' ต่อ (ดูลูกศรแดง)';
       }
-      if(r.kind!=='best'&&r.bestKey){
+      if(!G.isTop(r.kind)&&r.bestKey){
         var b=facts(before,r.bestKey);
         out.better=b.mate?'รุกจนได้':b.took?'กิน'+names[b.took.piece]+'ได้':b.check?'รุกขุน':key&&same(b.from,square(key,2))?'พา'+names[b.mover.piece]+'หนี':'';
       }
@@ -592,24 +614,58 @@
     line.forEach(function(m,k){
       var no=Math.floor((k+(first==='white'?0:1))/2)+1,q=ratingOf(k);
       if(m.side==='white'||k===0)html+='<span class="grNo">'+no+'.</span>';
-      html+='<button type="button" data-ply="'+(k+1)+'" class="grMv'+(k+1===n?' now':'')+(m.side===game.human?' mine':'')+(q?' '+q.kind:'')+'">'+m.text.replace(/ /g,'')+'</button>';
+      html+='<button type="button" data-ply="'+(k+1)+'" class="grMv'+(k+1===n?' now':'')+(m.side===game.human?' mine':'')+(q?' g-'+q.kind:'')+'">'+(q?gradeIcon(q.kind):'')+m.text.replace(/ /g,'')+'</button>';
     });
     if(box.dataset.html!==html){box.innerHTML=html;box.dataset.html=html;}
     var cur=box.querySelector('.now');
     if(cur)box.scrollLeft=Math.max(0,cur.offsetLeft-box.clientWidth/2+cur.offsetWidth/2);else if(!n)box.scrollLeft=0;
     $(ids[1]).disabled=n<=0;$(ids[2]).disabled=n>=line.length;
   }
-  // ถัดไป: the next of the player's moves where the game turned: a mistake, or the evaluation swinging by 1.5 points or
-  // more over that move and the reply before it (from the first again after the last).
+  // ถัดไป: the next of the player's moves where the game turned: พลาด, พลาดโอกาส, พลาดหนัก, แต้มเซียน or แต้มเด็ด, or the
+  // evaluation swinging by 1.5 points or more over that move and the reply before it (from the first again after the last).
   function keyMoments(){
     var job=review,line=fullLine(),evals=reviewEvals(),c=function(v){return Math.max(-1000,Math.min(1000,v));},out=[];
     line.forEach(function(m,k){
       if(m.side!==game.human)return;
       var p=k+1,q=ratingOf(k),swing=Math.abs(c(evals[Math.min(p,evals.length-1)].v)-c(evals[Math.max(0,p-2)].v));
-      if(q&&q.kind==='mistake'||swing>=150)out.push(p);
+      if(q&&(G.isBad(q.kind)||q.kind==='brilliant'||q.kind==='great')||swing>=150)out.push(p);
     });
     return out;
   }
+  // What the coach says about a graded move of the player's (plain words for children and beginners; a loss in คะแนน,
+  // the evaluation bar's unit).
+  function verdict(r,why,n){
+    var pts=(r.loss/100).toFixed(1)+' คะแนน',big=r.loss>=1000;
+    if(r.kind==='brilliant')return 'แต้มเซียน! ยอมให้ AI กินหมาก แต่ได้เปรียบกว่าเดิม';
+    if(r.kind==='great')return 'แต้มเด็ด! เป็นตาเดียวที่รักษาเกมไว้ได้'+(why.good?' · '+why.good:'');
+    if(r.kind==='best')return why.good?BEST_HEAD[(n-1)%BEST_HEAD.length]+why.good:BEST_SAY[Math.floor((n-1)/2)%BEST_SAY.length];
+    if(r.kind==='excellent')return 'ดีมาก! '+(why.good||'เกือบเท่าแต้มที่ดีที่สุด');
+    if(r.kind==='good')return 'ดี'+(why.good?' '+why.good:'')+' แต่ยังมีแต้มที่ดีกว่านิดหน่อย';
+    if(r.kind==='inaccuracy')return 'ยังไม่แม่นนิดหน่อย เสียไป '+pts;
+    if(r.kind==='mistake')return r.note||'ตานี้พลาด เสียไป '+pts;
+    if(r.kind==='miss')return 'พลาดโอกาส! AI เพิ่งเดินพลาด แต่ตานี้ยังไม่ได้เอาคืน'+(big?'':' (เสียไป '+pts+')');
+    return r.note||(big?'พลาดหนัก! เสียเปรียบไปมาก':'พลาดหนัก! เสียไป '+pts);
+  }
+  // The summary of the game: each side's accuracy, then how many moves of each grade (the player's, then the AI's);
+  // a grade the player has opens the review at the first such move.
+  function gradeTableHtml(job){
+    var mine=job.rated.filter(function(q){return !q.ai;}),ai=job.rated.filter(function(q){return q.ai;});
+    var acc=function(list){var a=G.accuracy(list);return a===null?'–':a.toFixed(1);},count=function(list,k){return list.filter(function(q){return q.kind===k;}).length;};
+    var html='<div class="gtRow gtHead"><span></span><b>คุณ</b><span></span><b>AI</b></div><div class="gtRow gtAcc"><span>ความแม่นยำ</span><b class="gtBox you">'+acc(mine)+'</b><span></span><b class="gtBox ai">'+acc(ai)+'</b></div>';
+    G.KINDS.forEach(function(k){
+      var c=count(mine,k);
+      html+='<button type="button" class="gtRow g-'+k+'" data-kind="'+k+'"'+(c?'':' disabled')+'><span class="gtName">'+G.INFO[k].name+'</span><b>'+c+'</b>'+gradeIcon(k)+'<b>'+count(ai,k)+'</b></button>';
+    });
+    return html;
+  }
+  function openGrade(kind){
+    var q=review&&review.rated.find(function(x){return !x.ai&&x.kind===kind;});if(!q)return;
+    if($('gradeDialog').open)$('gradeDialog').close();
+    if(reviewing)jumpTo(q.i+1);else openReview(q.i+1);
+  }
+  ['gradeTable','gradeTable2'].forEach(function(id){$(id).addEventListener('click',function(e){var b=e.target.closest('[data-kind]');if(b)openGrade(b.dataset.kind);});});
+  $('grSummary').onclick=function(){if(review){$('gradeTable2').innerHTML=gradeTableHtml(review);$('gradeDialog').showModal();}};
+  $('gradeClose').onclick=function(){$('gradeDialog').close();};
   function drawGameReview(){
     var job=review;if(!reviewing||!job)return;
     var line=fullLine(),n=moves.length,total=line.length,evals=reviewEvals(),now=evals[Math.min(n,evals.length-1)];
@@ -620,7 +676,7 @@
     var share=50+50*evalHeight(now.v);$('evalVFill').style.height=share+'%';$('evalV').classList.toggle('flipped',flipped);
     $('evalVText').textContent=now.known?evalLabel(now.v).replace(/^\+/,''):'…';$('evalV').classList.toggle('redAhead',now.known&&now.v<0);
     var r=n>0&&ratingOf(n-1),rating=$('moveRating');
-    rating.hidden=!r;if(r){rating.textContent=KIND_TEXT[r.kind];rating.className='moveRating'+(r.kind==='mistake'?' bad':' good');}
+    rating.hidden=!r;if(r){rating.textContent=G.INFO[r.kind].icon+' '+G.INFO[r.kind].name;rating.className='moveRating'+(G.isBad(r.kind)?' bad':' good');}
     var mine=n>0&&line[n-1].side===game.human,solo=game.standalone;
     var why=mine?explainMove(job,n-1,r,solo&&n<total?line[n].uci:null):null;
     if(solo){
@@ -629,11 +685,11 @@
       if(reviewShow.at!==n)reviewShow={at:n,threat:false,best:false};
       var arrows='';
       if(reviewShow.threat&&why&&why.threatKey)arrows+=arrow(why.threatKey,'rgba(222,62,48,.92)',false);
-      if(reviewShow.best&&r&&r.kind!=='best'&&r.bestKey)arrows+=arrow(r.bestKey,'rgba(87,190,90,.9)',true);
+      if(reviewShow.best&&r&&!G.isTop(r.kind)&&r.bestKey)arrows+=arrow(r.bestKey,'rgba(87,190,90,.9)',true);
       $('arrowLayer').innerHTML=arrows;
       $('grThreat').disabled=!mine||!why||!why.threatKey;$('grBest').disabled=!mine||!r;
       $('grThreat').setAttribute('aria-pressed',String(reviewShow.threat));$('grBest').setAttribute('aria-pressed',String(reviewShow.best));
-    }else $('arrowLayer').innerHTML=(why&&why.threatKey?arrow(why.threatKey,'rgba(222,62,48,.92)',false):'')+(r&&r.kind==='mistake'&&r.bestKey?arrow(r.bestKey,'rgba(87,190,90,.9)',true):'');
+    }else $('arrowLayer').innerHTML=(why&&why.threatKey?arrow(why.threatKey,'rgba(222,62,48,.92)',false):'')+(r&&G.isBad(r.kind)&&r.bestKey?arrow(r.bestKey,'rgba(87,190,90,.9)',true):'');
     // What the coach says about the move just played. A loss is in คะแนน (the evaluation bar's unit), not เบี้ย, since
     // the move may cost any piece or just position.
     var say;
@@ -642,30 +698,29 @@
       var m=line[n-1],no=Math.floor((n-1+(trial.state.turn==='white'?0:1))/2)+1,head='ตา '+no+' ';
       // On /ai only the player's moves are explained (the steps skip the AI's); its last move just ends the game.
       if(m.side!==game.human)say=game.standalone&&n===total?'ตำแหน่งสุดท้ายของเกม · AI เดิน '+m.text:head+'AI เดิน '+m.text;
-      else if(r)say=head+'คุณเดิน '+m.text+' · '+(r.kind==='best'?(why.good?BEST_HEAD[(n-1)%BEST_HEAD.length]+why.good:BEST_SAY[Math.floor((n-1)/2)%BEST_SAY.length]):r.kind==='good'?'ดี'+(why.good?' '+why.good:'')+' แต่เสียความได้เปรียบไปเล็กน้อย'+(r.loss?' ('+(r.loss/100).toFixed(1)+' คะแนน)':''):'ผิดพลาด '+(r.note||(r.loss>=1500?'เสียความได้เปรียบไปมาก':'เสียความได้เปรียบไป '+(r.loss/100).toFixed(1)+' คะแนน'))+(why.threat?' · '+why.threat:'')+(r.better?' · ควรเดิน '+r.better+(why.better?' '+why.better:'')+' (ลูกศรเขียว)':''));
+      else if(r)say=head+'คุณเดิน '+m.text+' · '+verdict(r,why,n)+(!solo&&G.isBad(r.kind)?(why.threat?' · '+why.threat:'')+(r.better?' · ควรเดิน '+r.better+(why.better?' '+why.better:'')+' (ลูกศรเขียว)':''):'');
       else if(job.forced[n-1])say=head+'คุณเดิน '+m.text+' · มีทางเดินทางเดียว';
       else say=head+'คุณเดิน '+m.text+' · '+(job.error||'AI กำลังวิเคราะห์ตานี้…');
     }
     if(solo&&mine&&r){
       // /ai: the verdict first; the reasons come with the two buttons.
-      if(r.kind==='mistake')say=head+'คุณเดิน '+m.text+' · '+(r.note||(r.loss>=1500?'ตานี้พลาด เสียเปรียบไปมาก':(r.loss<300?'ตานี้พลาดไปนิด':'ตานี้พลาด')+' เสียไป '+(r.loss/100).toFixed(1)+' คะแนน'));
       var extra=[];
       if(reviewShow.threat&&why.threat)extra.push(why.threat);
-      if(reviewShow.best)extra.push(r.kind==='best'?'ตานี้เดินดีที่สุดแล้ว เก่งมาก!':r.better?'ถ้าเดิน '+r.better+' จะดีกว่านะ'+(why.better?' '+why.better:'')+' (ดูลูกศรเขียว)':'ยังไม่มีแต้มที่ดีกว่าให้ดู');
+      if(reviewShow.best)extra.push(G.isTop(r.kind)?'ตานี้เดินดีที่สุดแล้ว เก่งมาก!':r.better?'ถ้าเดิน '+r.better+' จะดีกว่านะ'+(why.better?' '+why.better:'')+' (ดูลูกศรเขียว)':'ยังไม่มีแต้มที่ดีกว่าให้ดู');
       if(extra.length)say=head+'คุณเดิน '+m.text+' · '+extra.join(' · ');
-      else if(r.kind==='mistake')say+=' · ลองกด "อันตราย" หรือ "การเดินที่ดี" ดูนะ';
+      else if(G.isBad(r.kind)||r.kind==='inaccuracy')say+=' · ลองกด "อันตราย" หรือ "การเดินที่ดี" ดูนะ';
     }
     $('grSpeech').textContent=say;
     if(solo)drawMoveStrip(line,n,job);
-    var count=function(kind){return job.rated.filter(function(x){return x.kind===kind;}).length;};
-    $('grStats').innerHTML='<span class="grChip best">★ '+count('best')+'</span><span class="grChip good">👍 '+count('good')+'</span><span class="grChip mistake">? '+count('mistake')+'</span>'+(job.done<job.total&&!job.error?'<span class="grBusy">วิเคราะห์ '+job.done+'/'+job.total+'</span>':'');
+    var mineRated=job.rated.filter(function(x){return !x.ai;}),count=function(test){return mineRated.filter(function(x){return test(x.kind);}).length;};
+    $('grStats').innerHTML='<span class="grChip best">★ '+count(G.isTop)+'</span><span class="grChip good">👍 '+count(function(k){return k==='excellent'||k==='good'||k==='inaccuracy';})+'</span><span class="grChip mistake">? '+count(G.isBad)+'</span>'+(job.done<job.total&&!job.error?'<span class="grBusy">วิเคราะห์ '+job.done+'/'+job.total+'</span>':'');
     // The graph: white's share from the bottom, the mistakes as orange dots, the shown position as a line.
     var x=function(k){return total?k/total*100:0;},y=function(v){return 50-48*evalHeight(v);};
     $('grPath').setAttribute('d','M0,100 '+evals.map(function(e,k){return 'L'+x(k).toFixed(2)+','+y(e.v).toFixed(2);}).join(' ')+' L100,100 Z');
-    $('grMarks').innerHTML=job.rated.filter(function(q){return q.kind==='mistake';}).map(function(q){var e=evals[q.i+1];return '<circle cx="'+x(q.i+1)+'%" cy="'+y(e.v)+'%" r="4"/>';}).join('')+
+    $('grMarks').innerHTML=job.rated.filter(function(q){return !q.ai&&G.isBad(q.kind);}).map(function(q){var e=evals[q.i+1];return '<circle cx="'+x(q.i+1)+'%" cy="'+y(e.v)+'%" r="4"/>';}).join('')+
       '<line class="grNow" x1="'+x(n)+'%" x2="'+x(n)+'%" y1="0" y2="100%"/>';
     $('grFirst').disabled=$('grPrev').disabled=n<=0;$('grNext').disabled=$('grLast').disabled=n>=total;
-    $('grMistake').disabled=!job.rated.some(function(q){return q.kind==='mistake';});
+    $('grMistake').disabled=!job.rated.some(function(q){return !q.ai&&G.isBad(q.kind);});
   }
   // The same graph in the result (with the counts): the whole game, the mistakes as dots; a tap opens the review there.
   function drawResultGraph(){
@@ -673,7 +728,7 @@
     var total=job.line.length,evals=reviewEvals(),x=function(k){return total?k/total*100:0;},y=function(v){return 50-48*evalHeight(v);};
     $('rdGraph').hidden=!total;
     $('rdPath').setAttribute('d','M0,100 '+evals.map(function(e,k){return 'L'+x(k).toFixed(2)+','+y(e.v).toFixed(2);}).join(' ')+' L100,100 Z');
-    $('rdMarks').innerHTML=job.rated.filter(function(q){return q.kind==='mistake';}).map(function(q){var e=evals[q.i+1];return '<circle cx="'+x(q.i+1)+'%" cy="'+y(e.v)+'%" r="4"/>';}).join('');
+    $('rdMarks').innerHTML=job.rated.filter(function(q){return !q.ai&&G.isBad(q.kind);}).map(function(q){var e=evals[q.i+1];return '<circle cx="'+x(q.i+1)+'%" cy="'+y(e.v)+'%" r="4"/>';}).join('');
   }
   $('rdGraph').addEventListener('click',function(e){var box=$('rdGraph').getBoundingClientRect(),total=review?review.line.length:0;openReview(Math.max(0,Math.min(total,Math.round((e.clientX-box.left)/box.width*total))));});
   // In the review the graph stays folded away (the board as large as in the game); the กราฟ button shows it.
@@ -692,7 +747,7 @@
   repeatButton($('grPrev'),function(){reviewStep(-1);});repeatButton($('grNext'),function(){reviewStep(1);});
   // The next mistake after the shown position (from the first one again after the last).
   $('grMistake').onclick=function(){
-    var list=review.rated.filter(function(q){return q.kind==='mistake';}).map(function(q){return q.i+1;}).sort(function(a,b){return a-b;});
+    var list=review.rated.filter(function(q){return !q.ai&&G.isBad(q.kind);}).map(function(q){return q.i+1;}).sort(function(a,b){return a-b;});
     var next=list.find(function(p){return p>moves.length;});if(next===undefined)next=list[0];if(next!==undefined)jumpTo(next);
   };
   $('grClose').onclick=closeReview;
@@ -830,7 +885,7 @@
           td.title=sideName(side)+' '+names[move.piece]+' '+move.text+(move.promotion?' · '+move.promotionNote:'');
           if(move.promotion){var note=document.createElement('small');note.className='promotionNote';note.textContent='หงายเบี้ย';td.appendChild(note);}
           var rated=reviewing&&ratingOf(entry.index);
-          if(rated){var badge=document.createElement('span');badge.className='rateBadge '+rated.kind;badge.textContent=rated.kind==='best'?'★':rated.kind==='good'?'👍':'?';badge.title=KIND_TEXT[rated.kind];wrap.insertBefore(badge,wrap.firstChild);}
+          if(rated){var badge=document.createElement('span');badge.className='rateBadge g-'+rated.kind;badge.textContent=G.INFO[rated.kind].icon;badge.title=G.INFO[rated.kind].name;wrap.insertBefore(badge,wrap.firstChild);}
           td.dataset.ply=entry.index+1;td.tabIndex=0;td.classList.add('movePick');
           if(entry.index===current){td.classList.add('latestMove');td.setAttribute('aria-current','true');}
           else if(entry.index>current)td.classList.add('laterMove');
