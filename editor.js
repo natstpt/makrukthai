@@ -839,10 +839,12 @@
     $('hint').disabled=!canHint();$('resign').disabled=!aiGame;var over=aiGame&&status.state!=='playing';$('resign').classList.toggle('newGame',over);$('resignLabel').textContent=over?'เริ่มใหม่':'ยอมแพ้';$('resign').title=over?'เริ่มเกมใหม่ เลือกสีหมาก':'ยอมแพ้เกมนี้';
     $('emptyMoves').hidden=moves.length>0;
     $('panelTitle').textContent=mode==='edit'?'จัดตำแหน่งหมาก':'ทดลองเดิน';
-    $('topSide').textContent=flipped?'ฝ่ายขาว':'ฝ่ายแดง';$('bottomSide').textContent=flipped?'ฝ่ายแดง':'ฝ่ายขาว';
+    // /ai has no page title: the player bars say who plays which side, e.g. ฝ่ายแดง (AI ระดับเซียน) · ฝ่ายขาว (คุณ).
+    var barName=function(side){return 'ฝ่าย'+(side==='white'?'ขาว':'แดง')+(game&&game.standalone?(side===game.human?' (คุณ)':' (AI ระดับเซียน)'):'');};
+    $('topSide').textContent=barName(flipped?'white':'black');$('bottomSide').textContent=barName(flipped?'black':'white');
     $('topDot').classList.toggle('white',flipped);$('bottomDot').classList.toggle('white',!flipped);
-    $('modeLabel').textContent=mode==='edit'?'1 · ตั้งตำแหน่ง':analysis?'AI ระดับยาก'+(E&&E.tier()?' ('+(E.tier()==='lite'?'Lite':'Full')+')':''):game?(game.ai?'คุณเป็นฝ่าย'+sideName(game.human)+' · AI ระดับ'+(!engineAi()?'ง่าย'+(game.level==='easy'?'':' (สำรอง)'):({easy:'ง่าย',medium:'กลาง',hard:'ยาก'}[game.level])+' (คิดลึก '+(game.level==='hard'&&E&&E.lastDepth()||AI_LIMITS[game.level].depth)+' ชั้น)'):'เครื่องเดียวกัน'):'2 · ทดลองเดิน';document.querySelector('.brand h1').textContent=analysis?'ถอดหมาก':game?(game.ai?'เล่นกับ AI':'เล่น 2 คน'):'ตั้งหมาก';
-    if(game&&game.standalone){document.querySelector('.brand h1').textContent='เล่นกับ AI ระดับยาก';$('modeLabel').hidden=true;drawThink();}$('turn').value=state.turn;
+    $('modeLabel').textContent=mode==='edit'?'1 · ตั้งตำแหน่ง':analysis?'AI ระดับยาก'+(E&&E.tier()?' ('+(E.tier()==='lite'?'Lite':'Full')+')':''):game?(game.ai?'คุณเป็นฝ่าย'+sideName(game.human)+' · AI ระดับ'+(!engineAi()?'ง่าย'+(game.level==='easy'?'':' (สำรอง)'):({easy:'ง่าย',medium:'กลาง',hard:'ยาก'}[game.level])+' (คิดลึก '+(game.level==='hard'&&E&&E.lastDepth()||AI_LIMITS[game.level].depth)+' ชั้น)'):'เครื่องเดียวกัน'):'2 · ทดลองเดิน';var title=document.querySelector('.brand h1');if(title)title.textContent=analysis?'ถอดหมาก':game?(game.ai?'เล่นกับ AI':'เล่น 2 คน'):'ตั้งหมาก';
+    if(game&&game.standalone){$('modeLabel').hidden=true;drawThink();}$('turn').value=state.turn;
     document.querySelectorAll('[data-tool]').forEach(function(b){b.setAttribute('aria-pressed',String(tool===b.dataset.tool));});
     $('fen').value=M.fen(state);
     $('saveNote').textContent=storageOK?'เก็บตำแหน่งที่ตั้งไว้ให้อัตโนมัติในเครื่องนี้ (ไม่ทับด้วยตาที่ทดลองเดิน)':'เครื่องนี้เก็บอัตโนมัติไม่ได้ กรุณาคัดลอกรหัสไว้';
