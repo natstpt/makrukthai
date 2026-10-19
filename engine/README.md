@@ -1,6 +1,6 @@
-# เครื่องยนต์ AI ระดับยาก (Fairy-Stockfish + NNUE หมากรุกไทย)
+# เครื่องยนต์ AI ระดับเซียน (Fairy-Stockfish + NNUE หมากรุกไทย)
 
-ไฟล์ในโฟลเดอร์นี้ใช้กับ AI ระดับยากในหน้าเล่นกับ AI (`engine-ai.js` เรียกใช้ และ `coi-sw.js` เปิดให้ใช้ SharedArrayBuffer บน GitHub Pages)
+ไฟล์ในโฟลเดอร์นี้ใช้กับ AI ระดับเซียนในหน้าเล่นกับ AI (`engine-ai.js` เรียกใช้ และ `coi-sw.js` เปิดให้ใช้ SharedArrayBuffer บน GitHub Pages)
 
 | ไฟล์ | ที่มา |
 |---|---|
@@ -28,5 +28,5 @@ go movetime 1000
 ## ข้อควรรู้ก่อนเชื่อมกับเว็บ
 
 - รุ่น WASM นี้ใช้หลายเธรด จึงต้องมี `SharedArrayBuffer` ซึ่งเบราว์เซอร์เปิดให้เฉพาะหน้าที่เป็น cross-origin isolated (header COOP/COEP) GitHub Pages ตั้ง header เองไม่ได้ จึงต้องใช้ service worker ช่วย เช่น coi-serviceworker
-- ไฟล์ NNUE ใหญ่ 47.7 MB ควรโหลดเฉพาะตอนเลือก AI ระดับยาก และเก็บไว้ในแคชของเบราว์เซอร์
+- ไฟล์ NNUE ใหญ่ 47.7 MB ควรโหลดเฉพาะตอนเลือก AI ระดับเซียน และเก็บไว้ในแคชของเบราว์เซอร์
 - Fairy-Stockfish ใช้สัญญาอนุญาต GPL-3.0 ต้องเก็บ `Copying.txt` และ `AUTHORS` ไว้คู่กัน และบอกแหล่งซอร์สโค้ดตามตารางด้านบน

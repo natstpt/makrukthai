@@ -1,5 +1,5 @@
 'use strict';
-// Endgame tables for a king with one or two of knight, khon, met/promoted pawn (and rook with one of them) against a
+// Endgame tables for a king with one or two of knight, khon, met/promoted pawn, pawn (and rook with one of them) against a
 // lone king (tablebase/<pieces>.bin, scripts/build-endgame-tables.cjs, read by tablebase.js): on sampled positions,
 // with white or red as the strong side, each table agrees with the makruk rules one move on, a met reads like a
 // promoted pawn, and table play mates in exactly the moves it gives.
@@ -36,6 +36,8 @@ function randomPosition(name) {
     const side = rand(2) ? 'white' : 'black';
     const ps = [{ piece: 'king', side, at: sq(squares[0]) }, { piece: 'king', side: other(side), at: sq(squares[1]) }];
     types.forEach((t, k) => ps.push({ piece: t, side, at: sq(squares[k + 2]) }));
+    // A pawn stands where it can (white's on ranks 1–5, red's on ranks 4–8): further on it is promoted.
+    if (ps.some(p => p.piece === 'pawn' && (side === 'white' ? p.at.r <= 2 : p.at.r >= 5))) continue;
     if (Math.max(Math.abs(ps[0].at.r - ps[1].at.r), Math.abs(ps[0].at.c - ps[1].at.c)) <= 1) continue;
     if (R.inCheck(ps, other(side))) continue;
     return { ps, side };
@@ -64,9 +66,19 @@ for (const name of T.NAMES) {
   const met = ps.map(p => p.piece === 'promoted' ? { ...p, piece: 'met' } : p);
   assert.equal(T.value(met), T.value(ps), 'met and promoted pawn share the table');
 }
+// Two pawns (ฉ5 ช5) and the king on ฉ7 against the king on ญ7, white to move: ฉ6 (promoted) ข.ญ8, ม็.ช7+ ข.ญ7, ช6 (promoted)
+// mate — the pawn table finds the mate in 3 through both promotions.
+{
+  const at = s => ({ r: 8 - Number(s[1]), c: 'abcdefgh'.indexOf(s[0]) });
+  const ps = [{ piece: 'king', side: 'white', at: at('f7') }, { piece: 'pawn', side: 'white', at: at('f5') },
+    { piece: 'pawn', side: 'white', at: at('g5') }, { piece: 'king', side: 'black', at: at('h7') }];
+  assert.equal(T.value(ps), 3, 'two pawns mate in 3');
+  const red = ps.map(p => ({ ...p, side: other(p.side), at: { r: 7 - p.at.r, c: p.at.c } }));
+  assert.equal(T.value(red), 3, 'the same for red (ranks turned)');
+}
 // Table play from both sides mates in exactly the moves the table gives.
 let played = 0;
-for (const name of ['rook-khon', 'khon-promoted', 'promoted-promoted', 'knight-khon']) {
+for (const name of ['rook-khon', 'khon-promoted', 'promoted-promoted', 'knight-khon', 'rook-pawn', 'khon-pawn']) {
   for (let i = 0; i < 40; i++) {
     const { ps, side } = randomPosition(name), start = T.value(ps);
     if (start === Infinity) continue;

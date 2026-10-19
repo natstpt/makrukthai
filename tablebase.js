@@ -19,9 +19,11 @@
   var table = null, table2 = null, loading = null, base0 = 'tablebase/';
   // The other tables, by name (pieces in ORDER joined with '-'): bytes once loaded, a promise while loading, false if
   // they could not be loaded.
-  var ORDER = ['rook', 'knight', 'khon', 'promoted'], extra = {}, fetching = {};
+  // Pawn tables (เบี้ยคว่ำ, white's on ranks 1–5): a pawn reaching rank 6 goes on in the table with it promoted.
+  var ORDER = ['rook', 'knight', 'khon', 'promoted', 'pawn'], extra = {}, fetching = {};
   var NAMES = ['knight', 'khon', 'promoted', 'rook-knight', 'rook-khon', 'rook-promoted', 'knight-knight', 'knight-khon',
-    'knight-promoted', 'khon-khon', 'khon-promoted', 'promoted-promoted'];
+    'knight-promoted', 'khon-khon', 'khon-promoted', 'promoted-promoted',
+    'pawn', 'rook-pawn', 'knight-pawn', 'khon-pawn', 'promoted-pawn', 'pawn-pawn'];
   // a1 b1 c1 d1 b2 c2 d2 c3 d3 d4: where the tables keep the strong king.
   var TRI = [0, 1, 2, 3, 9, 10, 11, 18, 19, 27];
   function square(at) { return (7 - at.r) * 8 + at.c; }
@@ -59,24 +61,36 @@
     }
     return table2[best];
   }
-  // King + one or two pieces (no unpromoted pawn) against a lone king: {side, name, tables: the names it needs,
-  // pieces: [{type, at}] in ORDER}, or null.
+  // King + one or two pieces against a lone king: {side, name, tables: the names it needs (with a pawn, also the
+  // tables after it promotes), pieces: [{type, at}] in ORDER}, or null. Three pieces with a pawn have no table.
   function kind(pieces) {
     if (pieces.length < 3 || pieces.length > 5) return null;
     var kings = pieces.filter(function (p) { return p.piece === 'king'; });
     if (kings.length !== 2) return null;
     var others = pieces.filter(function (p) { return p.piece !== 'king'; });
-    if (others.some(function (p) { return p.side !== others[0].side || p.piece === 'pawn'; })) return null;
+    if (others.some(function (p) { return p.side !== others[0].side; })) return null;
     var list = others.map(function (p) { return { type: p.piece === 'met' ? 'promoted' : p.piece, at: p.at }; })
       .sort(function (a, b) { return ORDER.indexOf(a.type) - ORDER.indexOf(b.type); });
     var name = list.map(function (p) { return p.type; }).join('-');
     var types = list.map(function (p) { return p.type; }), uniq = function (n, i, a) { return a.indexOf(n) === i; };
+    if (list.length > 2 && types.indexOf('pawn') >= 0) return null;
     if (list.length === 3 || (bigList && bigList.indexOf(name) >= 0)) {
       // A bigger table (scripts/build-big-tables.cjs); a piece taken goes on in the two-piece tables.
       var pairs = list.map(function (_, j) { return types.filter(function (_, k) { return k !== j; }).join('-'); }).filter(function (n) { return n; }).filter(uniq);
       return { side: others[0].side, name: name, big: true, tables: pairs.concat(types).filter(uniq), pieces: list };
     }
-    var tables = [name].concat(list.length > 1 ? types : []).filter(uniq);
+    var tables = [name].concat(list.length > 1 ? types : []);
+    // A pawn's promotion, and what follows a capture after it: those tables too (the moves read two plies ahead).
+    for (var t = 0; t < tables.length; t++) {
+      var parts = tables[t].split('-');
+      parts.forEach(function (x, j) {
+        if (x !== 'pawn') return;
+        var up = parts.map(function (y, i) { return i === j ? 'promoted' : y; }).sort(function (a, b) { return ORDER.indexOf(a) - ORDER.indexOf(b); });
+        tables.push(up.join('-'));
+        if (up.length > 1) up.forEach(function (y) { tables.push(y); });
+      });
+    }
+    tables = tables.filter(uniq);
     return { side: others[0].side, name: name, tables: tables, pieces: list };
   }
   // Bigger tables: tablebase/big.json lists the ones built; each is tablebase/<name>/info.json plus one file per square
@@ -533,9 +547,9 @@
   // stm: the side to move, for the local server's answers.)
   function need(pieces, oldOnly, stm) {
     if (!oldOnly && (rsNeed(pieces) || localNeed(pieces, stm))) return true;
-    // The two-sided tables have this position (all their parts loaded, rsNeed above): nothing more to load, even if an
-    // older one-sided table could also hold it (it is never loaded then, so asking for it again and again would loop).
-    if (!oldOnly && rsList && rsKey(pieces) && rsCovers(rsKey(pieces)) && pieces.length <= 6) return false;
+    // A position the two-sided tables cover is read from them only: ensure() then never loads the lone-king tables
+    // (or their list), so asking about those would say "needed" for ever and the AI would wait for ever.
+    if (!oldOnly && typeof DecompressionStream === 'function' && rsCovers(rsKey(pieces))) return false;
     var k = kind(pieces);
     if (k && typeof DecompressionStream !== 'function' && k.name !== 'rook') return false;
     if (k && k.big) {
