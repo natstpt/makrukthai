@@ -770,7 +770,7 @@
           <button type="button" class="colorOption" data-colors="red" role="radio"><span class="pair"><img src="assets/pieces/makruk/ada/wK.svg" alt=""><img src="assets/pieces/makruk/ada/rK.svg" alt=""></span>ขาว–แดง</button>
           <button type="button" class="colorOption" data-colors="black" role="radio"><span class="pair"><img src="assets/pieces/makruk/ada/wK.svg" alt=""><img src="assets/pieces/makruk/ada/bK.svg" alt=""></span>ขาว–ดำ</button>
         </div>
-        <div class="aiChoice" id="aiChoice" hidden><p>ระดับ AI</p><div class="aiLevels" role="group" aria-label="ระดับ AI"><button type="button" class="aiLevel" data-level="easy" aria-pressed="true">ง่าย<small>ลึก 1 ชั้น · พลาดบ้าง</small></button><button type="button" class="aiLevel" data-level="medium" aria-pressed="false">กลาง<small>คิดลึก 5 ชั้น</small></button><button type="button" class="aiLevel" data-level="hard" aria-pressed="false">ยาก<small>ลึก ~20 ชั้น · ~48 MB</small></button></div><p>เลือกฝ่ายที่จะเล่นกับ AI</p><div><a class="aiSide white" href="editor.html?play=ai&amp;side=white"><span class="sideDot"></span>ฝ่ายขาว<small>เดินก่อน</small></a><a class="aiSide black" href="editor.html?play=ai&amp;side=black"><span class="sideDot"></span>ฝ่ายแดง<small>AI เดินก่อน</small></a></div></div>
+        <div class="aiChoice" id="aiChoice" hidden><p>ระดับ AI</p><div class="aiLevels" role="group" aria-label="ระดับ AI"><button type="button" class="aiLevel" data-level="easy" aria-pressed="true">ง่าย<small>ลึก 1 ชั้น · พลาดบ้าง</small></button><button type="button" class="aiLevel" data-level="medium" aria-pressed="false">กลาง<small>คิดลึก 5 ชั้น</small></button><button type="button" class="aiLevel" data-level="hard" aria-pressed="false">เซียน<small>ลึก ~20 ชั้น · ~48 MB</small></button></div><p>เลือกฝ่ายที่จะเล่นกับ AI</p><div><a class="aiSide white" href="editor.html?play=ai&amp;side=white"><span class="sideDot"></span>ฝ่ายขาว<small>เดินก่อน</small></a><a class="aiSide black" href="editor.html?play=ai&amp;side=black"><span class="sideDot"></span>ฝ่ายแดง<small>AI เดินก่อน</small></a></div></div>
         <div id="boardSettings"></div>
         <div id="menuHidden" hidden></div>
       </section>
@@ -825,7 +825,7 @@
 <script src="puzzle-trees.js?v=20261012-puzzles"></script>
 <script src="tactics-lessons.js?v=20261015-pawns"></script>
 <script src="tactic-trees.js?v=20261015-pawns"></script>
-<script src="ai-lessons.js?v=20261015-limits"></script>
+<script src="ai-lessons.js?v=20261020-sian"></script>
 <script src="chase-trees.js?v=20261013-chase"></script>
 <script src="learning-design.js?v=20261015-pawns"></script>
 <script src="practice-sets.js?v=20261011-tap"></script>
@@ -876,7 +876,7 @@
     var items=[
       {icon:'two',label:'เล่น 2 คน',title:'เล่น 2 คนในเครื่องเดียวกัน · เริ่มจากตำแหน่งเริ่มเกม',href:'editor.html?play=2'},
       {icon:'ai',label:'เล่นกับ AI',title:'เล่นกับ AI · เลือกฝ่ายขาวหรือฝ่ายแดง',aiChoice:true},
-      {icon:'analysis',label:'ถอดหมาก',title:'ถอดหมาก · ให้ AI ระดับยากวิเคราะห์ตำแหน่ง',href:'editor.html?analysis=1'},
+      {icon:'analysis',label:'ถอดหมาก',title:'ถอดหมาก · ให้ AI ระดับเซียนวิเคราะห์ตำแหน่ง',href:'editor.html?analysis=1'},
       {icon:'editor',label:'ตั้งหมาก',title:'ตั้งหมากเพื่อสอน · วางหมากและทดลองเดิน',href:'editor.html'},
       {icon:'music',label:'เพลง',title:'เปิดหรือปิดเพลงคลอ',target:'musicBtn',toggle:true},
       {icon:'effects',label:'เสียง',title:'เปิดหรือปิดเสียงเอฟเฟกต์',target:'effectsBtn',toggle:true},
@@ -1819,7 +1819,7 @@
   function coachSay(text,kind){mobileSpeechEl.textContent=text;mobileSpeechEl.classList.toggle('sayError',kind==='error');mobileSpeechEl.classList.toggle('saySuccess',kind==='success');}
   // Play-the-computer lessons (ai-lessons.js): a button opens the AI page at the lesson's level; the AI page records
   // finished games (makrukAiGames), and one finished game passes the lesson.
-  var AI_NAMES={easy:'ง่าย',medium:'กลาง',hard:'ยาก'};
+  var AI_NAMES={easy:'ง่าย',medium:'กลาง',hard:'เซียน'};
   // Moving on to a play-the-computer lesson (บทถัดไป or the lesson menu) opens its game at once; coming back from the
   // game page shows the lesson's play step with the result.
   function launchAiGame(){

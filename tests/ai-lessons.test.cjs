@@ -11,7 +11,7 @@ vm.createContext(ctx);
 vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'ai-lessons.js'), 'utf8'), ctx);
 const lessons = JSON.parse(JSON.stringify(ctx.window.buildAiLessons()));
 assert.deepEqual(lessons.map(l => [l.id, l.aiLevel, l.title]), [
-  ['ai-easy', 'easy', 'เล่นกับ AI (ง่าย)'], ['ai-medium', 'medium', 'เล่นกับ AI (กลาง)'], ['ai-hard', 'hard', 'เล่นกับ AI (ยาก)']]);
+  ['ai-easy', 'easy', 'เล่นกับ AI (ง่าย)'], ['ai-medium', 'medium', 'เล่นกับ AI (กลาง)'], ['ai-hard', 'hard', 'เล่นกับ AI (เซียน)']]);
 const order = fs.readFileSync(path.join(__dirname, '..', 'learning-design.js'), 'utf8');
 assert(/'ai-easy','ai-medium','ai-hard','finish'\]/.test(order), 'AI lessons come just before เล่นจริง');
 for (const l of lessons) {
