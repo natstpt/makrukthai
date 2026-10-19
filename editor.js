@@ -42,44 +42,48 @@
   function canAskSpecial(){return P.canRequestSpecialCount(state.pieces,count,moves,trial&&M.fen(trial.state));}
   function askCount(side){count=P.canRequestBoardCount(state.pieces,count)?P.requestBoardCount(side):P.requestSpecialCount(side,state.pieces);}
   var aiTimer=0,aiSearch=0,E=window.MakrukEngine,engine={state:'off',progress:0};
-  var AI_LIMITS={easy:{depth:1,skill:3},medium:{depth:5},hard:{depth:20,time:3000}};
-  // The hard AI's first 20 moves search the full 20 plies, however long that takes (given up only after 2 minutes);
-  // from its 21st move on, AI_LIMITS (at most 3 seconds a move).
-  var HARD_FULL_DEPTH_MOVES=20;
+  var AI_LIMITS={easy:{depth:1,skill:3},medium:{depth:5},hard:{depth:20,time:1800}};
+  // The hard AI's first 15 moves search 17 plies, stopping after a minute at most (a slow phone); from its 16th move
+  // on, AI_LIMITS (under 2 seconds a move).
+  var HARD_OPENING_MOVES=15;
   function aiLimits(){
     if(game.level!=='hard')return AI_LIMITS[game.level];
     var played=moves.filter(function(m){return m.side===aiSide();}).length;
-    return played<HARD_FULL_DEPTH_MOVES?{depth:20,wait:120000}:AI_LIMITS.hard;
+    return played<HARD_OPENING_MOVES?{depth:17,time:60000,wait:62000}:AI_LIMITS.hard;
   }
   function engineAi(){return !!game&&!!game.ai&&engine.state!=='failed';}
   function cancelAi(){clearTimeout(aiTimer);aiTimer=0;aiSearch++;think=null;}
-  // The stand-alone page's thinking bar (ai/): while the AI searches, how far it has got, 0 to 100%. The depth reached
-  // counts by the work each ply takes (about 1.5 times the one before), and between two plies the bar moves on with
-  // the time the next one should take, so it never stands still; a search with a time limit also moves with the clock.
-  var think=null,THINK_GROWTH=1.5;
-  function thinkWork(d){return (Math.pow(THINK_GROWTH,d)-1)/(THINK_GROWTH-1);}
+  // The stand-alone page's thinking bar (ai/): while the AI searches, how far it has got, 0 to 100%. The search's
+  // total time is estimated from this machine's own times: each ply takes the last one's time times how much the
+  // last plies grew (measured, so a slow phone gets a slow bar rather than one stuck at 99%); the estimate is capped by
+  // the search's time limit, and the bar only moves forward.
+  var think=null;
   function thinkPercent(t,now){
     var elapsed=now-t.start;
     if(t.quick)return Math.min(1,elapsed/t.quick);
-    var d=t.depth,base=thinkWork(d)/thinkWork(t.target),step=(thinkWork(d+1)-thinkWork(d))/thinkWork(t.target);
-    var since=now-(t.at[d]||t.start),expect=Math.max(80,((t.at[d]||t.start)-(t.at[d-1]||t.start))*THINK_GROWTH);
-    var p=Math.min(0.99,base+step*Math.min(0.95,since/expect));
-    if(t.time)p=Math.max(p,Math.min(0.99,elapsed/t.time));
-    return p;
+    var d=t.depth,at=function(k){return k<=0?t.start:t.at[k]||t.start;};
+    var last=Math.max(5,at(d)-at(d-1)),before=at(d-1)-at(d-2),grow=d>=3&&before>4?Math.max(1.3,Math.min(4,last/before)):2;
+    t.grow=t.grow?t.grow*0.6+grow*0.4:grow;
+    var total=at(d)-t.start,dt=last;
+    for(var k=d+1;k<=t.target;k++){dt*=t.grow;total+=dt;if(total>36e5)break;}
+    if(t.time)total=Math.min(total,t.time);
+    var p=Math.min(0.999,elapsed/Math.max(total,elapsed*1.05,1));
+    t.shown=Math.max(t.shown||0,p);
+    return t.shown;
   }
   function drawThink(){
     var bar=$('thinkBar');if(!bar||!game||!game.standalone)return;
     var now=Date.now(),pct=0,text='',status=mode==='play'?playStatus():null,busy=false;
     if(engine.state==='loading'&&aiTurn()){pct=(engine.progress||0)/100;text='กำลังโหลด AI ระดับยาก '+(engine.progress||0)+'%';busy=true;}
     else if(think&&think.done&&now-think.done<700){pct=1;text='AI เดินแล้ว · 100%';}
-    else if(think&&!think.done){pct=thinkPercent(think,now);text='AI กำลังคิด… '+Math.round(pct*100)+'%';busy=true;}
+    else if(think&&!think.done){pct=thinkPercent(think,now);text='AI กำลังคิด… '+(pct*100).toFixed(1)+'%';busy=true;}
     else if(status&&status.state!=='playing')text='เกมจบแล้ว · กดเริ่มใหม่เพื่อเล่นอีกเกม';
     else if(future.length)text='กำลังย้อนดูตาเดิน';
     else text='ถึงตาคุณเดิน · คุณเป็นฝ่าย'+sideName(game.human);
     // Game over: a small เริ่มเกมใหม่ button beside the title (it keeps its place while hidden); in the review the
     // coach takes the bar's place.
     var over=!!status&&status.state!=='playing'||reviewing;bar.hidden=reviewing;$('topNewGame').style.visibility=over?'visible':'hidden';
-    $('thinkFill').style.width=Math.round(pct*100)+'%';$('thinkText').textContent=text;bar.classList.toggle('busy',busy);bar.classList.toggle('done',pct>=1);bar.classList.toggle('idle',!busy&&pct<1);
+    $('thinkFill').style.width=(pct*100).toFixed(1)+'%';$('thinkText').textContent=text;bar.classList.toggle('busy',busy);bar.classList.toggle('done',pct>=1);bar.classList.toggle('idle',!busy&&pct<1);
   }
   function moveKey(m){return 'abcdefgh'[m.from.c]+(8-m.from.r)+'abcdefgh'[m.to.c]+(8-m.to.r);}
   // The engine loads once: for the hard AI the full engine (48 MB the first time) on strong computers, the lite one
@@ -129,8 +133,11 @@
       // King + rook against a lone king: the medium and hard AI play from the endgame table (tablebase.js) at once,
       // the rook side mating soonest, the lone king holding out longest. The easy AI keeps its own (fallible) play.
       // Another endgame table this position needs (knight, khon, met …) loads first; the AI then moves from it.
-      if(game.level!=='easy'&&window.MakrukTablebase&&MakrukTablebase.need(state.pieces,false,state.turn)){
-        MakrukTablebase.ensure(state.pieces,false,state.turn).then(function(){if(token===aiSearch&&aiTurn())scheduleAi();});return;
+      // Loaded once per position: should the tables still not have it after that, the AI plays on without them.
+      var here=M.fen(state);
+      if(game.level!=='easy'&&window.MakrukTablebase&&game.tableTried!==here&&MakrukTablebase.need(state.pieces,false,state.turn)){
+        game.tableTried=here;
+        MakrukTablebase.ensure(state.pieces,false,state.turn).then(function(){if(token===aiSearch&&aiTurn())scheduleAi();},function(){if(token===aiSearch&&aiTurn())scheduleAi();});return;
       }
       var table=game.level!=='easy'&&window.MakrukTablebase&&MakrukTablebase.bestMove(state.pieces,state.turn);
       if(table){if(think)think.quick=1;playMove(table.move.from,table.move.to);return;}

@@ -63,6 +63,9 @@ jobs:
       - name: Verify play-the-computer lessons
         run: node tests/ai-lessons.test.cjs
 
+      - name: Verify the endgame tables never ask to load forever
+        run: node tests/tablebase-need.test.cjs
+
       - name: Verify the game review grades
         run: node tests/review-grades.test.cjs
 

@@ -533,6 +533,9 @@
   // stm: the side to move, for the local server's answers.)
   function need(pieces, oldOnly, stm) {
     if (!oldOnly && (rsNeed(pieces) || localNeed(pieces, stm))) return true;
+    // The two-sided tables have this position (all their parts loaded, rsNeed above): nothing more to load, even if an
+    // older one-sided table could also hold it (it is never loaded then, so asking for it again and again would loop).
+    if (!oldOnly && rsList && rsKey(pieces) && rsCovers(rsKey(pieces)) && pieces.length <= 6) return false;
     var k = kind(pieces);
     if (k && typeof DecompressionStream !== 'function' && k.name !== 'rook') return false;
     if (k && k.big) {
