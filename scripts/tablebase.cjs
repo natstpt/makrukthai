@@ -1,6 +1,8 @@
 'use strict';
 // Endgame tablebase for the long chases (ไล่ยาว): white king plus one or two pieces against the lone red king.
-// Squares are r*8+c with the same r/c as makruk-rules.js (r 0 = rank 8). White pieces: rook, khon, knight, promoted.
+// Squares are r*8+c with the same r/c as makruk-rules.js (r 0 = rank 8). White pieces: rook, khon, knight, promoted,
+// pawn (เบี้ยคว่ำ: steps forward towards rank 8 onto an empty square, attacks the two squares diagonally ahead, and
+// on reaching rank 6 (r 2) becomes a promoted pawn: that move is looked up in the table with the pawn promoted).
 // wtm[i] = n > 0: white to move mates in n white moves; 0 = no forced mate (draw or illegal).
 // btm[i] = n + 1: red to move, white mates in n more white moves (1 = red is already mated); 0 = no forced mate.
 // Captures by the red king are looked up in the table for the smaller piece set.
@@ -21,7 +23,13 @@ const DIAG = stepTable([[-1, -1], [-1, 1], [1, -1], [1, 1]]);
 // White khon: four diagonals and one step forward (towards rank 8, r - 1).
 const KHON = stepTable([[-1, -1], [-1, 1], [1, -1], [1, 1], [-1, 0]]);
 const KNIGHT = stepTable([[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]]);
-const STEPS = { khon: KHON, knight: KNIGHT, promoted: DIAG };
+// White pawn: the squares it attacks (diagonally ahead).
+const PAWN = stepTable([[-1, -1], [-1, 1]]);
+const STEPS = { khon: KHON, knight: KNIGHT, promoted: DIAG, pawn: PAWN };
+// Piece order inside a table's name and index (as scripts/build-endgame-tables.cjs and tablebase.js).
+const ORDER = ['rook', 'knight', 'khon', 'promoted', 'pawn'];
+// A white pawn stands on ranks 1–5 (r 3..7): on rank 6 it has already been promoted.
+const pawnSquare = s => (s >> 3) >= 3;
 const ROOK_DIRS = [[-1, 0], [1, 0], [0, -1], [0, 1]];
 const adjacent = (a, b) => Math.max(Math.abs((a >> 3) - (b >> 3)), Math.abs((a & 7) - (b & 7))) === 1;
 
@@ -42,6 +50,12 @@ function build(types, cache = new Map()) {
   const files = CACHE_DIR && ['wtm', 'btm'].map(ext => path.join(CACHE_DIR, name + '.' + ext));
   const stored = files && files.every(f => fs.existsSync(f));
   const sub = types.map((_, j) => n > 1 ? build(types.filter((__, k) => k !== j), cache) : null);
+  // A pawn of the table promoting: the table with it as a promoted pawn, and where its pieces go in that table's order.
+  const promotion = types.map((t, j) => {
+    if (t !== 'pawn') return null;
+    const order = types.map((u, k) => ({ type: k === j ? 'promoted' : u, k })).sort((a, b) => ORDER.indexOf(a.type) - ORDER.indexOf(b.type));
+    return { table: build(order.map(o => o.type), cache), from: order.map(o => o.k) };
+  });
   const index = (wk, bk, ps) => ps.reduce((i, p) => i * N + p, wk * N + bk);
   const decode = i => { const ps = []; for (let k = 0; k < n; k++) { ps.unshift(i % N); i = Math.floor(i / N); } return { bk: i % N, wk: Math.floor(i / N), ps }; };
   // Red king on `s` (with white piece `skip` captured, or -1) is attacked by white?
@@ -52,7 +66,7 @@ function build(types, cache = new Map()) {
   }
   function legal(wk, bk, ps) {
     const all = [wk, bk, ...ps];
-    return new Set(all).size === all.length && !adjacent(wk, bk);
+    return new Set(all).size === all.length && !adjacent(wk, bk) && ps.every((p, k) => types[k] !== 'pawn' || pawnSquare(p));
   }
   // White moves: [pieceIndex (-1 king), to].
   function whiteMoves(wk, bk, ps) {
@@ -67,7 +81,8 @@ function build(types, cache = new Map()) {
             out.push([k, to]);
           }
         }
-      } else for (const to of STEPS[types[k]][p]) if (!occupied(to)) out.push([k, to]);
+      } else if (types[k] === 'pawn') { if (p >= 8 && !occupied(p - 8)) out.push([k, p - 8]); }
+      else for (const to of STEPS[types[k]][p]) if (!occupied(to)) out.push([k, to]);
     });
     return out;
   }
@@ -103,8 +118,11 @@ function build(types, cache = new Map()) {
       if (valid[i] !== 1 || wtm[i]) continue;
       const d = decode(i);
       for (const [k, to] of whiteMoves(d.wk, d.bk, d.ps)) {
-        const next = k < 0 ? index(to, d.bk, d.ps) : index(d.wk, d.bk, d.ps.map((p, j) => j === k ? to : p));
-        if (btm[next] === depth) { wtm[i] = depth; changed++; break; }
+        const moved = k < 0 ? d.ps : d.ps.map((p, j) => j === k ? to : p);
+        let v;
+        if (k >= 0 && promotion[k] && !pawnSquare(to)) { const pr = promotion[k]; v = pr.table.btm[pr.table.index(d.wk, d.bk, pr.from.map(j => moved[j]))]; }
+        else v = btm[k < 0 ? index(to, d.bk, d.ps) : index(d.wk, d.bk, moved)];
+        if (v === depth) { wtm[i] = depth; changed++; break; }
       }
     }
     for (let i = 0; i < size; i++) {
@@ -128,4 +146,4 @@ function build(types, cache = new Map()) {
   return table;
 }
 
-module.exports = { build, KING, sq };
+module.exports = { build, KING, sq, ORDER };

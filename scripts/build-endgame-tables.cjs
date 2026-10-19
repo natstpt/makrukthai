@@ -1,7 +1,8 @@
 'use strict';
 // Builds the endgame tables for a king with one or two pieces against a lone king, for every mix of rook (เรือ),
 // knight (ม้า), khon (โคน) and met/promoted pawn (เม็ด/เบี้ยหงาย, which move alike) that the rook tables
-// (krk.bin, krrk.bin) do not cover. The retrograde analysis is scripts/tablebase.cjs (the strong side as white, its
+// (krk.bin, krrk.bin) do not cover, and a pawn (เบี้ยคว่ำ) alone, with another pawn, or with one of those pieces (its
+// promotion goes on in the table with a promoted pawn). The retrograde analysis is scripts/tablebase.cjs (the strong side as white, its
 // khon stepping forward towards rank 8); each table keeps, for the strong side to move, how many of its moves the
 // fastest mate takes against the best defence (0: no forced mate).
 // Squares are r*8+c as in makruk-rules.js (r 0 = rank 8). The table keeps the strong king on files ก–ง (c < 4); a
@@ -16,11 +17,12 @@ const path = require('node:path');
 const zlib = require('node:zlib');
 const { build } = require('./tablebase.cjs');
 
-const ORDER = ['rook', 'knight', 'khon', 'promoted'];
+const ORDER = ['rook', 'knight', 'khon', 'promoted', 'pawn'];
 const TABLES = [['knight'], ['khon'], ['promoted'],
   ['rook', 'knight'], ['rook', 'khon'], ['rook', 'promoted'],
   ['knight', 'knight'], ['knight', 'khon'], ['knight', 'promoted'],
-  ['khon', 'khon'], ['khon', 'promoted'], ['promoted', 'promoted']];
+  ['khon', 'khon'], ['khon', 'promoted'], ['promoted', 'promoted'],
+  ['pawn'], ['rook', 'pawn'], ['knight', 'pawn'], ['khon', 'pawn'], ['promoted', 'pawn'], ['pawn', 'pawn']];
 const nameOf = types => types.join('-');
 
 // The strong side's table, folded to the strong king on files ก–ง.
