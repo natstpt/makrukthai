@@ -104,6 +104,7 @@
     if(!P.canRequestBoardCount(state.pieces,count)&&!canAskSpecial())return;
     remember();askCount(state.turn);render();
   });
+  var tableTried=null;
   function scheduleAi(){
     cancelAi();
     // While an earlier position of the game is on the board (moves to go forward to), the AI waits. On the player's
@@ -129,8 +130,12 @@
       // King + rook against a lone king: the medium and hard AI play from the endgame table (tablebase.js) at once,
       // the rook side mating soonest, the lone king holding out longest. The easy AI keeps its own (fallible) play.
       // Another endgame table this position needs (knight, khon, met …) loads first; the AI then moves from it.
-      if(game.level!=='easy'&&window.MakrukTablebase&&MakrukTablebase.need(state.pieces,false,state.turn)){
-        MakrukTablebase.ensure(state.pieces,false,state.turn).then(function(){if(token===aiSearch&&aiTurn())scheduleAi();});return;
+      // Loaded once per position: if the tables still say they are needed afterwards (a fetch failed …), the AI goes on
+      // without them instead of asking again and again.
+      var fen=M.fen(state);
+      if(game.level!=='easy'&&window.MakrukTablebase&&tableTried!==fen&&MakrukTablebase.need(state.pieces,false,state.turn)){
+        tableTried=fen;
+        MakrukTablebase.ensure(state.pieces,false,state.turn).then(function(){if(token===aiSearch&&aiTurn())scheduleAi();},function(){if(token===aiSearch&&aiTurn())scheduleAi();});return;
       }
       var table=game.level!=='easy'&&window.MakrukTablebase&&MakrukTablebase.bestMove(state.pieces,state.turn);
       if(table){if(think)think.quick=1;playMove(table.move.from,table.move.to);return;}

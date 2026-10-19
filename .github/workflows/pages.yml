@@ -66,6 +66,9 @@ jobs:
       - name: Verify the game review grades
         run: node tests/review-grades.test.cjs
 
+      - name: Verify five-piece table positions load once
+        run: node tests/table-need.test.cjs
+
       - name: Build the stand-alone AI page from editor.html
         run: node scripts/build-ai-page.cjs && node tests/ai-page.test.cjs
 

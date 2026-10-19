@@ -533,6 +533,9 @@
   // stm: the side to move, for the local server's answers.)
   function need(pieces, oldOnly, stm) {
     if (!oldOnly && (rsNeed(pieces) || localNeed(pieces, stm))) return true;
+    // A position the two-sided tables cover is read from them only: ensure() then never loads the lone-king tables
+    // (or their list), so asking about those would say "needed" for ever and the AI would wait for ever.
+    if (!oldOnly && typeof DecompressionStream === 'function' && rsCovers(rsKey(pieces))) return false;
     var k = kind(pieces);
     if (k && typeof DecompressionStream !== 'function' && k.name !== 'rook') return false;
     if (k && k.big) {
