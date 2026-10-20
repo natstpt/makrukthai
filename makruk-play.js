@@ -330,8 +330,10 @@
   // (ม.ข8-ง7 guards จ5, ม.ช8-จ7 guards ง5); any other group waits for the one before it.
   // Every move it looks at the opponent first: in check, attacked, or with a capture to make, the engine answers that
   // move freely ({free}) and the plan goes on next move. A quiet move with no safe step goes to the engine without a
-  // king move or a flank pawn push ({moves}). {move}: the step to play; {moves} also for a choice of khon steps; null
-  // once the plan is done or cannot go on.
+  // king move or a flank pawn push ({moves}). {move}: the step to play, which the caller has the engine check first
+  // (a threat a move further on: played only when about as good as the engine's best, else the engine's move this
+  // time), except the centre pawns and an edge pawn's answer ({move, sure}); {moves} also for a choice of khon steps;
+  // null once the plan is done or cannot go on.
   var PLANS = {
     black: {
       centre: { groups: [
@@ -380,7 +382,7 @@
     for (var e = 0; e < PLANS[side].edges.length; e++) {
       var edge = PLANS[side].edges[e], theirs = pieces.some(function (p) { return p.side !== side && p.piece === 'pawn' && same(p.at, square(edge[0])); });
       var answer = theirs && mine(edge[1][1], 'pawn') && step([edge[1]]);
-      if (answer) return { move: answer };
+      if (answer) return { move: answer, sure: true };
     }
     for (var i = 0; i < groups.length; i++) {
       var steps = groups[i], group = plan.groups[i];
@@ -394,7 +396,7 @@
         if (safe.length) return safe.length === 1 ? { move: step(safe) } : { moves: safe.map(legalStep) };
       } else {
         var move = step(steps);
-        if (move) return group.check ? { move: move, check: true } : { move: move };
+        if (move) return group.check ? { move: move, check: true } : group.pawns ? { move: move, sure: true } : { move: move };
       }
       if (!group.pawns && !group.check && steps.some(legalStep)) break;
     }
