@@ -249,8 +249,13 @@ assert(!R.isAttacked(R.applyMove(board('K:a1 R:d4 P:h3 k:h8 n:f5'), at(saved.sli
   g = line(['c3c4', 'b1c3', 'd3d4', 'g1e2', 'e1d2', 'f3f4']);
   eq(g.out, ['d6d5', 'g8e7', 'e6e5', 'b8d7', 'd8c7', 'c7d6'], 'ง5 attacked by ค4 ม.ค3: ม.ช8-จ7 first');
   assert.ok(g.even && shape(g.fen), g.fen); checks++;
-  g = line(['e3e4', 'd3d4', 'g1e2', 'b1d2', 'e1f2', 'f2e3', 'c1c2']);
-  assert.ok(g.out.slice(-1)[0].startsWith('done '), 'the plan ends with the met on ง6'); checks++;
+  // After the met, the khon ฉ8-ฉ7-จ6 (not the king); then the plan is done.
+  g = line(['e3e4', 'd3d4', 'g1e2', 'b1d2', 'e1f2', 'f2e3', 'c1c2', 'c2d3', 'f1f2']);
+  eq(g.out.slice(6, 8), ['f8f7', 'f7e6'], 'the khon to จ6 after the met');
+  assert.ok(g.out[8].startsWith('done '), 'the plan ends with the khon on จ6'); checks++;
+  // White's edge pawn up to ญ4: red meets it at once with ญ6-ญ5 (the game that let white take ญ5 and ฉ5).
+  g = line(['e3e4', 'h3h4', 'f3f4']);
+  eq(g.out, ['d6d5', 'h6h5', 'e6e5'], 'ญ4 met by ญ5');
   // White threatens something (a capture to make): the engine answers that move.
   const ps = board('K:d1 R:a1 R:h1 N:b1 N:g1 B:c1 B:f1 M:e1 P:a3 P:b3 P:c3 P:d3 P:e5 P:f3 P:g3 P:h3 k:e8 r:a8 r:h8 n:b8 n:g8 b:c8 b:f8 m:d8 p:a6 p:b6 p:c6 p:d5 p:e6 p:f6 p:g6 p:h6');
   eq(P.aiOpening(ps, 'black'), { free: true }, 'a threat or a capture: the engine plays');
@@ -269,12 +274,13 @@ assert(!R.isAttacked(R.applyMove(board('K:a1 R:d4 P:h3 k:h8 n:f5'), at(saved.sli
     }
     return out;
   };
-  eq(play('centre', ['d6d5', 'e6e5', 'b8d7', 'g8e7', 'd8c7', 'c7d6', 'c8c7']), ['e3e4', 'd3d4', 'g1e2', 'b1d2', 'e1f2', 'f2e3', 'done'], 'white centre plan');
-  const passive = ['a6a5', 'h6h5', 'a8a7', 'h8h7', 'a7a6', 'h7h6', 'a6a7', 'h6h7'];
-  eq(play('flank', passive), ['e3e4', 'f3f4', 'g1f3', 'e1f2', 'f2e3', ['c1c2', 'f1f2', 'f1e2'], 'd3d4', 'done'], 'white flank plan: the third pawn last');
+  eq(play('centre', ['d6d5', 'e6e5', 'b8d7', 'g8e7', 'd8c7', 'c7d6', 'f8f7', 'f7e6', 'c8c7']), ['e3e4', 'd3d4', 'g1e2', 'b1d2', 'e1f2', 'f2e3', 'c1c2', 'c2d3', 'done'], 'white centre plan');
+  // Red's edge pawns up to ก5 ญ5 are met by ก4 ญ4 first.
+  const passive = ['a6a5', 'h6h5', 'a8a7', 'h8h7', 'a7a6', 'h7h6', 'a6a7', 'h6h7', 'a7a6', 'h7h6'];
+  eq(play('flank', passive), ['e3e4', 'a3a4', 'h3h4', 'f3f4', 'g1f3', 'e1f2', 'f2e3', ['c1c2', 'f1f2', 'f1e2'], 'd3d4', 'done'], 'white flank plan: the third pawn last');
   // Red's pawns ค5 ง5 guard ง4: the third pawn is not played as a step; the engine moves (no king move, no flank pawn
   // push).
-  const wait = play('flank', ['c6c5', 'b8c6', 'd6d5', 'g8e7', 'd8c7', 'a6a5', 'c8b7']);
+  const wait = play('flank', ['c6c5', 'b8c6', 'd6d5', 'g8e7', 'd8c7', 'b6b5', 'c8b7']);
   eq(wait.slice(0, 6).map(x => Array.isArray(x) ? 'khon' : x), ['e3e4', 'f3f4', 'g1f3', 'e1f2', 'f2e3', 'khon'], 'flank shape before the third pawn');
   assert.ok(Array.isArray(wait[6]) && !wait[6].some(k => k.startsWith('d1') || /^([abcgh])3\14$/.test(k)), 'ง4 waits: ' + wait[6]); checks++;
 }
