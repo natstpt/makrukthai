@@ -539,22 +539,24 @@
       mate:before>=9000&&after<9000?G.mateIn(before):0,mated:after<=-9000&&before>-9000?-G.mateIn(after):0};
   }
   // วิเคราะห์ละเอียด (a button once the review is done): the moves worth a second look (all but a plain ดีที่สุด, and
-  // those offering a piece) are searched again, both positions, deeper and longer, and every move is graded again.
+  // those offering a piece) are searched again, both positions, 20 plies (at most 6 s each, 10 s on the lite engine),
+  // and every move is graded again. The button then shows the shallowest depth actually reached.
   function deepReview(){
     var job=review;if(!job||job.deep||job.deepRunning||job.error||job.done<job.total||!E||engine.state==='failed')return;
-    var ats={},two={},depth=liteEngine()?14:18,time=liteEngine()?1500:2500;
+    var ats={},two={},depth=20,time=liteEngine()?10000:6000;
     job.rated.forEach(function(q){if(q.table||q.kind==='best'&&!q.sac)return;ats[q.i]=true;ats[q.i+1]=true;if(!q.ai)two[q.i]=true;});
     var list=Object.keys(ats).map(Number).filter(function(at){var p=M.parse(job.fens[at]);return R.gameStatus(p.pieces,p.turn).state==='playing';}).sort(function(a,b){return a-b;});
-    job.deepRunning=true;job.deepDone=0;job.deepTotal=list.length;job.deepDepth=depth;drawReview();
+    job.deepRunning=true;job.deepDone=0;job.deepTotal=list.length;job.deepDepth=depth;job.deepReached=depth;drawReview();
     var step=function(k){
       if(job.stopped)return;
-      if(k>=list.length){job.deepRunning=false;job.deep=true;job.regrade();drawReview();return;}
+      if(k>=list.length){job.deepRunning=false;job.deep=true;job.deepDepth=job.deepReached;job.regrade();drawReview();return;}
       var at=list[k],fen=job.fens[at];
       E.evaluate(fen,{depth:depth,time:time,multipv:two[at]?2:1}).then(function(r){
         if(job.stopped)return;
         if(r&&r.score){
           var entry={value:reviewValue(r),best:r.best||null,depth:r.depth||0,second:r.second===undefined?(reviewCache.get(fen)||{}).second:r.second?reviewValue({score:r.second}):null};
           reviewCache.set(fen,entry);job.vals[at]=entry.value;if(two[at])job.seconds[at]=entry.second;
+          if(entry.depth)job.deepReached=Math.min(job.deepReached,entry.depth);
         }
         job.deepDone++;drawReview();step(k+1);
       },function(){if(job.stopped)return;job.deepRunning=false;job.error='AI วิเคราะห์ละเอียดไม่สำเร็จ';drawReview();});
