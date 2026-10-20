@@ -151,38 +151,34 @@
   // Opening shapes (ทรงหมาก). Each step is [piece, from, to, final square of that piece's route]; a step is done once
   // the piece stands on `to` or has already gone on to its final square.
   // centre: take the centre with two pawns first, then bring the pieces up behind them, the met ending on จ3 (ง6 red).
-  //   White: บ.จ3-จ4, บ.ง3-ง4, ม.ช1-จ2, ม็.จ1-ฉ2-จ3, ค.ฉ1-ฉ2, ค.ค1-ง2-ง3, ม.ข1-ง2.
-  //   Red:   บ.ง6-ง5, บ.จ6-จ5, ม.ข8-ง7, ม็.ง8-ค7-ง6, ค.ค8-ค7, ค.ฉ8-จ7-จ6, ม.ช8-จ7.
-  // flank: the pawns go up one file to the side (จ4 ฉ4), the met and a knight come up behind them, then the rest. The
-  // game page gives it to the AI only as white; the red version stays for completeness and the tests.
-  //   White: บ.จ3-จ4, บ.ฉ3-ฉ4, ม.ช1-ฉ3, ม็.จ1-ฉ2-จ3, ค.ฉ1-ฉ2, ค.ค1-ค2, ม.ข1-ง2.
-  //   Red:   บ.ง6-ง5, บ.ค6-ค5, ม.ข8-ค6, ม็.ง8-ค7-ง6, ค.ค8-ค7, ค.ฉ8-ฉ7, ม.ช8-จ7.
+  //   White: บ.จ3-จ4, บ.ง3-ง4, ม.ช1-จ2, ม็.จ1-ฉ2-จ3, ค.ฉ1-ฉ2, ค.ค1-ค2-ง3, ม.ข1-ง2.
+  //   Red:   บ.ง6-ง5, บ.จ6-จ5, ม.ข8-ง7, ม็.ง8-ค7-ง6, ค.ค8-ค7, ค.ฉ8-ฉ7-จ6, ม.ช8-จ7.
+  // flank (white only; the game page never gives it to red): the pawns go up one file to the side (จ4 ฉ4), the met and
+  // a knight come up behind them. The khon on ฉ1 is left out: ฉ2, จ2 or ช2 depends on the position, so the AI chooses.
+  //   White: บ.จ3-จ4, บ.ฉ3-ฉ4, ม.ช1-ฉ3, ม็.จ1-ฉ2-จ3, ค.ค1-ค2, ม.ข1-ง2.
   var OPENING = {
     white: [['pawn', 'e3', 'e4'], ['pawn', 'd3', 'd4'], ['knight', 'g1', 'e2'], ['met', 'e1', 'f2', 'e3'], ['met', 'f2', 'e3'],
-      ['khon', 'f1', 'f2'], ['khon', 'c1', 'd2', 'd3'], ['khon', 'd2', 'd3'], ['knight', 'b1', 'd2']],
+      ['khon', 'f1', 'f2'], ['khon', 'c1', 'c2', 'd3'], ['khon', 'c2', 'd3'], ['knight', 'b1', 'd2']],
     black: [['pawn', 'd6', 'd5'], ['pawn', 'e6', 'e5'], ['knight', 'b8', 'd7'], ['met', 'd8', 'c7', 'd6'], ['met', 'c7', 'd6'],
-      ['khon', 'c8', 'c7'], ['khon', 'f8', 'e7', 'e6'], ['khon', 'e7', 'e6'], ['knight', 'g8', 'e7']]
+      ['khon', 'c8', 'c7'], ['khon', 'f8', 'f7', 'e6'], ['khon', 'f7', 'e6'], ['knight', 'g8', 'e7']]
   };
   var OPENINGS = {
     centre: OPENING,
     flank: {
       white: [['pawn', 'e3', 'e4'], ['pawn', 'f3', 'f4'], ['knight', 'g1', 'f3'], ['met', 'e1', 'f2', 'e3'], ['met', 'f2', 'e3'],
-        ['khon', 'f1', 'f2'], ['khon', 'c1', 'c2'], ['knight', 'b1', 'd2']],
-      black: [['pawn', 'd6', 'd5'], ['pawn', 'c6', 'c5'], ['knight', 'b8', 'c6'], ['met', 'd8', 'c7', 'd6'], ['met', 'c7', 'd6'],
-        ['khon', 'c8', 'c7'], ['khon', 'f8', 'f7'], ['knight', 'g8', 'e7']]
+        ['khon', 'c1', 'c2'], ['knight', 'b1', 'd2']]
     }
   };
   function square(name) { return { r: 8 - Number(name[1]), c: 'abcdefgh'.indexOf(name[0]) }; }
-  // Against the flank shape the other side may push a pawn up to stand in front of it (เบี้ยสูง: a white pawn on จ5
-  // facing red's ง5 ค5, or a red pawn on ง4 facing white's จ4 ฉ4). The answer comes before the rest of the shape: the
-  // khon to ฉ7 (ค2) first, then the pawn to ช5 (ข4), then that pawn takes the pawn on ฉ4 (ค5) when the exchange is even.
+  // Against the flank shape red may push a pawn up to stand in front of it (เบี้ยสูง: a red pawn on ง4 facing white's
+  // จ4 ฉ4). The answer comes before the rest of the shape: the khon to ค2 first, then the pawn to ข4, then that pawn
+  // takes the pawn on ค5 when the exchange is even.
   var FLANK_ANSWER = {
-    black: { pawn: 'e5', steps: [['khon', 'f8', 'f7'], ['pawn', 'g6', 'g5', 'f4'], ['pawn', 'g5', 'f4']] },
     white: { pawn: 'd4', steps: [['khon', 'c1', 'c2'], ['pawn', 'b3', 'b4', 'c5'], ['pawn', 'b4', 'c5']] }
   };
   function shapeSteps(pieces, side, shape, answerOnly) {
-    var steps = answerOnly ? [] : (OPENINGS[shape] || OPENING)[side], answer = FLANK_ANSWER[side];
-    if (shape === 'flank' && pieces.some(function (p) { return p.side !== side && p.piece === 'pawn' && same(p.at, square(answer.pawn)); }))
+    var steps = answerOnly ? [] : (OPENINGS[shape] && OPENINGS[shape][side] || OPENING[side]), answer = FLANK_ANSWER[side];
+    if (shape === 'flank' && answer && pieces.some(function (p) { return p.side !== side && p.piece === 'pawn' && same(p.at, square(answer.pawn)); }))
       steps = answer.steps.concat(steps);
     return steps;
   }
