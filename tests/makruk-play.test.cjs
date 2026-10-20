@@ -240,7 +240,12 @@ assert(!R.isAttacked(R.applyMove(board('K:a1 R:d4 P:h3 k:h8 n:f5'), at(saved.sli
   eq(line(['e3e4', 'f3f4']), ['d6d5', 'e6e5'], 'against จ4 ฉ4: ง5 then จ5, never ค5');
   eq(line(['e3e4', 'd3d4', 'g1e2', 'b1d2']), ['d6d5', 'e6e5', ['b8d7', 'g8e7'], ['g8e7']], 'then only the knights at home');
   // จ5 would lose a pawn (attacked by ฉ4 and the knight on ฉ3): a knight first, จ5 once it is safe.
-  eq(line(['f3f4', 'g1f3', 'e3e4']), ['d6d5', ['b8d7', 'g8e7'], 'e6e5'], 'unsafe จ5 waits for a knight');
+  // The game that let white take จ5 (1. ฉ4 ง5 2. ม.ฉ3): only ม.ข8-ง7 makes จ5 safe, so it comes first and จ5 follows
+  // after จ4. The other way round, ง5 attacked by ค4 and the knight on ค3: ม.ช8-จ7 first.
+  eq(line(['f3f4', 'g1f3', 'e3e4']), ['d6d5', ['b8d7'], 'e6e5'], 'the knight that guards จ5');
+  let mirror = M.initial().pieces;
+  for (const [s, k] of [['white', 'c3c4'], ['black', 'e6e5'], ['white', 'b1c3']]) { const m = R.legalMoves(mirror, s).find(x => key(x) === k); mirror = R.applyMove(mirror, m.from, m.to); }
+  eq(P.redOpening(mirror).moves.map(key), ['g8e7'], 'the knight that guards ง5');
   // Not quiet and จ5 still to come: every move but a flank pawn push.
   let ps = board('K:d1 R:a1 R:h1 N:b1 N:g1 B:c1 B:f1 M:e1 P:a3 P:b3 P:c3 P:d3 P:e5 P:f3 P:g3 P:h3 k:e8 r:a8 r:h8 n:b8 n:g8 b:c8 b:f8 m:d8 p:a6 p:b6 p:c6 p:d5 p:e6 p:f6 p:g6 p:h6');
   const allowed = P.redOpening(ps).moves.map(key);
