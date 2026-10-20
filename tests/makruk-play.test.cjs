@@ -304,24 +304,27 @@ assert(!R.isAttacked(R.applyMove(board('K:a1 R:d4 P:h3 k:h8 n:f5'), at(saved.sli
   // Red's edge pawns up to ก5 ญ5 are met by ก4 ญ4 first.
   const passive = ['a6a5', 'h6h5', 'a8a7', 'h8h7', 'a7a6', 'h7h6', 'a6a7', 'h6h7', 'a7a6', 'h7h6'];
   // With the shape ready, จ4-จ5 comes first, for the engine to check; turned down (skip), the third pawn ง4.
-  eq(play('flank', passive).slice(0, 9), ['e3e4', 'a3a4', 'h3h4', 'f3f4', 'g1f3', 'e1f2', 'f2e3', ['c1c2', 'f1f2', 'f1e2'], 'check e4e5'], 'white flank plan: จ5 when the engine agrees');
-  eq(play('flank', passive, { e4e5: true }), ['e3e4', 'a3a4', 'h3h4', 'f3f4', 'g1f3', 'e1f2', 'f2e3', ['c1c2', 'f1f2', 'f1e2'], 'd3d4', 'done'], 'จ5 turned down: the third pawn last');
-  // The game in the picture: the flank shape ready (ค.ค2 up), จ5 guarded as well as attacked: จ4-จ5 for the engine.
-  const ready = board('R:a1 N:b1 K:d1 B:f1 R:h1 B:c2 P:a3 P:b3 P:c3 P:d3 M:e3 N:f3 P:g3 P:h3 P:e4 P:f4 r:a8 b:c8 k:e8 r:h8 m:c7 n:d7 n:e7 b:f7 p:a6 p:b6 p:c6 p:e6 p:f6 p:h6 p:d5 p:g5');
+  // The main shape จ4 ฉ4, ม.ฉ3, the met to จ3, ค.ฉ2; then จ5 (the engine checks it) or ง4; then ม.ง2, ค.ค2.
+  eq(play('flank', passive).slice(0, 9), ['e3e4', 'a3a4', 'h3h4', 'f3f4', 'g1f3', 'e1f2', 'f2e3', 'f1f2', 'check e4e5'], 'white flank plan: จ5 when the engine agrees');
+  eq(play('flank', passive.concat(['a6a7']), { e4e5: true }), ['e3e4', 'a3a4', 'h3h4', 'f3f4', 'g1f3', 'e1f2', 'f2e3', 'f1f2', 'd3d4', 'b1d2', 'c1c2'], 'จ5 turned down: ง4, then ม.ง2 and ค.ค2');
+  // The flank shape ready (ค.ฉ2 up), จ5 guarded as well as attacked: จ4-จ5 for the engine.
+  const ready = board('R:a1 N:b1 K:d1 B:c1 R:h1 B:f2 P:a3 P:b3 P:c3 P:d3 M:e3 N:f3 P:g3 P:h3 P:e4 P:f4 r:a8 b:c8 k:e8 r:h8 m:c7 n:d7 n:e7 b:f7 p:a6 p:b6 p:c6 p:e6 p:f6 p:h6 p:d5 p:g5');
   const offer = P.aiOpening(ready, 'white', 'flank');
   eq([key(offer.move), offer.check], ['e4e5', true], 'จ4-จ5 when the shape is ready');
   const after = P.aiOpening(ready, 'white', 'flank', { e4e5: true });
   assert.ok(!(after && after.move && key(after.move) === 'e4e5'), 'turned down: not offered again'); checks++;
-  // Which steps the engine checks first: not the centre pawns (sure); the met's step is (the game where ม็.จ1-ฉ2 let a
-  // rook come to ช5 and ม.ข1-ง2 was the engine's move).
+  // Which steps the engine checks first: not the centre pawns nor the flank shape (sure: ม.ช1-ฉ3 after จ4 ฉ4, where the
+  // lite engine preferred ม.ข1-ง2); the centre shape's knights and met are checked.
   eq(P.aiOpening(M.initial().pieces, 'white', 'flank').sure, true, 'centre pawn: played without the engine');
-  const rook = board('R:a1 N:b1 B:c1 K:d1 M:e1 B:f1 R:h1 P:a3 P:b3 P:c3 P:d3 P:h3 N:h4 P:f5 r:a8 n:b8 b:c8 m:d8 k:e8 b:f8 r:g8 n:e7 p:a6 p:b6 p:c6 p:d6 p:f6 p:h6');
-  const metStep = P.aiOpening(rook, 'white', 'flank');
-  eq([key(metStep.move), !!metStep.sure], ['e1f2', false], 'the met step: checked by the engine first');
+  const early = board('R:a1 N:b1 B:c1 K:d1 M:e1 B:f1 N:g1 R:h1 P:a3 P:b3 P:c3 P:d3 P:g3 P:h3 P:e4 P:f4 r:a8 n:b8 b:c8 m:d8 k:e8 b:f8 r:h8 n:e7 p:a6 p:b6 p:c6 p:d6 p:e6 p:f6 p:h6 p:g5');
+  const knightStep = P.aiOpening(early, 'white', 'flank');
+  eq([key(knightStep.move), knightStep.sure], ['g1f3', true], 'flank shape: ม.ช1-ฉ3 without the engine');
+  const centreKnight = P.aiOpening(board('R:a1 N:b1 B:c1 K:d1 M:e1 B:f1 N:g1 R:h1 P:a3 P:b3 P:c3 P:d4 P:e4 P:f3 P:g3 P:h3 r:a8 n:b8 b:c8 m:d8 k:e8 b:f8 n:g8 r:h8 p:a6 p:b6 p:c6 p:d5 p:e5 p:f6 p:g6 p:h6'), 'white', 'centre');
+  eq([key(centreKnight.move), !!centreKnight.sure], ['g1e2', false], 'centre shape knight: checked by the engine first');
   // Red's pawns ค5 ง5 guard ง4: the third pawn is not played as a step; the engine moves (no king move, no flank pawn
   // push).
   const wait = play('flank', ['c6c5', 'b8c6', 'd6d5', 'g8e7', 'd8c7', 'b6b5', 'c8b7'], { e4e5: true });
-  eq(wait.slice(0, 6).map(x => Array.isArray(x) ? 'khon' : x), ['e3e4', 'f3f4', 'g1f3', 'e1f2', 'f2e3', 'khon'], 'flank shape before the third pawn');
+  eq(wait.slice(0, 6), ['e3e4', 'f3f4', 'g1f3', 'e1f2', 'f2e3', 'f1f2'], 'flank shape before the third pawn');
   assert.ok(Array.isArray(wait[6]) && !wait[6].some(k => k.startsWith('d1') || /^([abcgh])3\14$/.test(k)), 'ง4 waits: ' + wait[6]); checks++;
 }
 

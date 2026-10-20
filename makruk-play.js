@@ -335,18 +335,19 @@
   //                  other khon one up, ค8-ค7. The king stays home until then.
   //   centre, white: the same mirrored: จ4 ง4, the knights on จ2 ง2, the met จ1-ฉ2-จ3 (จ1-ง2-จ3 while ง2 is free),
   //                  the khon ค1-ค2-ง3, then ฉ1-ฉ2.
-  //   flank, white:  จ4 ฉ4, ม.ช1-ฉ3, the met จ1-ฉ2-จ3 (จ1-จ2-จ3), one khon up (ค2, ฉ2 or จ2, the engine choosing), and
-  //                  only then, with the pieces ready, the pawn จ4-จ5 for room in the centre when the engine finds it
-  //                  no worse ({move, check}: the caller asks the engine and, if not, passes the step in `skip`), and
-  //                  the third pawn ง4. Done with the pawn on ง4.
+  //   flank, white:  จ4 ฉ4, ม.ช1-ฉ3, the met จ1-ฉ2-จ3 (จ1-จ2-จ3), the khon ฉ1-ฉ2: the main shape, each step played
+  //                  when it loses no material, whatever the engine prefers ({sure}). Then, with the pieces ready,
+  //                  the pawn จ4-จ5 for room in the centre when the engine finds it no worse ({move, check}: the
+  //                  caller asks the engine and, if not, passes the step in `skip`), and the third pawn ง4 ({sure});
+  //                  then ม.ข1-ง2 and ค.ค1-ค2, the king last of all.
   // A knight comes before a pawn of the first group whose square is not safe yet, the one that makes it safe first
   // (ม.ข8-ง7 guards จ5, ม.ช8-จ7 guards ง5); any other group waits for the one before it.
   // Every move it looks at the opponent first: in check, attacked, or with a capture to make, the engine answers that
   // move freely ({free}) and the plan goes on next move. A quiet move with no safe step goes to the engine without a
   // king move or a flank pawn push ({moves}). {move}: the step to play, which the caller has the engine check first
   // (a threat a move further on: played only when about as good as the engine's best, else the engine's move this
-  // time), except the centre pawns and an edge pawn's answer ({move, sure}); {moves} also for a choice of khon steps;
-  // null once the plan is done or cannot go on.
+  // time), except the centre pawns, an edge pawn's answer and the steps of white's flank shape ({move, sure});
+  // {moves} also for a choice of khon steps; null once the plan is done or cannot go on.
   var PLANS = {
     black: {
       centre: { groups: [
@@ -365,13 +366,15 @@
         { steps: [['khon', 'c1', 'c2', 'd3'], ['khon', 'c2', 'd3']] },
         { steps: [['khon', 'f1', 'f2']] }] },
       edges: [['h5', ['pawn', 'h3', 'h4']], ['a5', ['pawn', 'a3', 'a4']]],
-      flank: { end: ['pawn', 'd4'], groups: [
+      flank: { groups: [
         { pawns: true, steps: [['pawn', 'e3', 'e4'], ['pawn', 'f3', 'f4']] },
-        { knights: true, steps: [['knight', 'g1', 'f3']] },
-        { steps: [['met', 'e1', 'f2', 'e3'], ['met', 'f2', 'e3'], ['met', 'e1', 'e2', 'e3'], ['met', 'e2', 'e3']] },
-        { one: true, steps: [['khon', 'c1', 'c2'], ['khon', 'f1', 'f2'], ['khon', 'f1', 'e2']] },
+        { knights: true, sure: true, steps: [['knight', 'g1', 'f3']] },
+        { sure: true, steps: [['met', 'e1', 'f2', 'e3'], ['met', 'f2', 'e3'], ['met', 'e1', 'e2', 'e3'], ['met', 'e2', 'e3']] },
+        { sure: true, steps: [['khon', 'f1', 'f2']] },
         { check: true, steps: [['pawn', 'e4', 'e5']] },
-        { steps: [['pawn', 'd3', 'd4']] }] }
+        { sure: true, steps: [['pawn', 'd3', 'd4']] },
+        { steps: [['knight', 'b1', 'd2']] },
+        { steps: [['khon', 'c1', 'c2']] }] }
     }
   };
   // skip: steps the engine turned down this game ({'e4e5': true}), left out as if played.
@@ -409,7 +412,7 @@
         if (safe.length) return safe.length === 1 ? { move: step(safe) } : { moves: safe.map(legalStep) };
       } else {
         var move = step(steps);
-        if (move) return group.check ? { move: move, check: true } : group.pawns ? { move: move, sure: true } : { move: move };
+        if (move) return group.check ? { move: move, check: true } : group.pawns || group.sure ? { move: move, sure: true } : { move: move };
       }
       if (!group.pawns && !group.check && steps.some(legalStep)) break;
     }
