@@ -303,6 +303,13 @@
   function pawnAdvanced(pieces, side) {
     return pieces.some(function (p) { return p.piece === 'pawn' && p.side !== side && (p.side === 'white' ? p.at.r <= 3 : p.at.r >= 4); });
   }
+  // Whether the engine AI leaves its opening plan for good: material is no longer even, or a pawn of the other side
+  // stands past its 4th rank (pawnAdvanced). Not while an exchange is still going on (the last move took): a pawn that
+  // took onto ง5 can be taken back, and the plan goes on after the exchange.
+  function openingOver(pieces, side, lastTook) {
+    if (lastTook) return false;
+    return material(pieces, 'white') !== material(pieces, 'black') || pawnAdvanced(pieces, side);
+  }
   // The opening-shape move chooseMove would play now (the shape's pawns first), or null when the shape is done or has
   // to wait; the engine AI plays these before handing the game to the engine.
   function openingChoice(pieces, side, shape) { return chooseMove(pieces, side, { openingOnly: true, shape: shape }); }
@@ -400,5 +407,5 @@
     });
   }
 
-  return { canRequestBoardCount: canRequestBoardCount, requestBoardCount: requestBoardCount, canRequestSpecialCount: canRequestSpecialCount, requestSpecialCount: requestSpecialCount, quietPlies: quietPlies, pawnsLocked: pawnsLocked, LOCKED_PLIES: LOCKED_PLIES, SHUFFLES: SHUFFLES, shuffleMoves: shuffleMoves, material: material, VALUES: VALUES, OPENING: OPENING, OPENINGS: OPENINGS, openingMove: openingMove, openingMoves: openingMoves, openingChoice: openingChoice, flankAnswer: flankAnswer, aiOpening: aiOpening, PLANS: PLANS, pawnAdvanced: pawnAdvanced, ceilingFor: ceilingFor, nextCount: nextCount, countText: countText, exchange: exchange, chooseMove: chooseMove };
+  return { canRequestBoardCount: canRequestBoardCount, requestBoardCount: requestBoardCount, canRequestSpecialCount: canRequestSpecialCount, requestSpecialCount: requestSpecialCount, quietPlies: quietPlies, pawnsLocked: pawnsLocked, LOCKED_PLIES: LOCKED_PLIES, SHUFFLES: SHUFFLES, shuffleMoves: shuffleMoves, material: material, VALUES: VALUES, OPENING: OPENING, OPENINGS: OPENINGS, openingMove: openingMove, openingMoves: openingMoves, openingChoice: openingChoice, flankAnswer: flankAnswer, aiOpening: aiOpening, PLANS: PLANS, pawnAdvanced: pawnAdvanced, openingOver: openingOver, ceilingFor: ceilingFor, nextCount: nextCount, countText: countText, exchange: exchange, chooseMove: chooseMove };
 });
