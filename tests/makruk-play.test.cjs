@@ -187,7 +187,7 @@ assert(!R.isAttacked(R.applyMove(board('K:a1 R:d4 P:h3 k:h8 n:f5'), at(saved.sli
     const m = P.chooseMove(ps, side, { random: fixed });
     played.push(key(m)); ps = R.applyMove(ps, m.from, m.to); side = side === 'white' ? 'black' : 'white';
   }
-  eq(played, ['e3e4', 'd6d5', 'd3d4', 'e6e5', 'g1e2', 'b8d7', 'e1f2', 'd8c7', 'f2e3', 'c7d6', 'f1f2', 'c8c7', 'c1c2', 'f8f7', 'c2d3', 'f7e6', 'b1d2', 'g8e7'], 'opening shape for both sides');
+  eq(played, ['e3e4', 'd6d5', 'd3d4', 'e6e5', 'g1e2', 'b8d7', 'b1d2', 'g8e7', 'e1f2', 'd8c7', 'f2e3', 'c7d6', 'f1f2', 'c8c7', 'c1c2', 'f8f7', 'c2d3', 'f7e6'], 'opening shape for both sides');
   eq(M.fen({ pieces: ps, turn: side }).split(' ')[0], 'r3k2r/2snn3/pppmsppp/3pp3/3PP3/PPPSMPPP/3NNS2/R2K3R', 'the position in the example picture');
   // The pawn in the centre is not given away: with a red pawn able to win it for free, the pawn step waits.
   const guarded = P.openingMoves(M.initial().pieces, 'white').map(key);
@@ -212,8 +212,8 @@ assert(!R.isAttacked(R.applyMove(board('K:a1 R:d4 P:h3 k:h8 n:f5'), at(saved.sli
     const m = P.chooseMove(ps, side, { random: fixed, shape: side === 'white' ? 'flank' : 'centre' });
     played.push(key(m)); ps = R.applyMove(ps, m.from, m.to); side = side === 'white' ? 'black' : 'white';
   }
-  eq(played, ['e3e4', 'd6d5', 'f3f4', 'e6e5', 'g1f3', 'b8d7', 'e1f2', 'd8c7', 'f2e3', 'c7d6', 'c1c2', 'c8c7', 'b1d2', 'f8f7'], 'flank shape against the centre shape');
-  eq(M.fen({ pieces: ps, turn: side }).split(' ')[0], 'r3k1nr/2sn1s2/pppm1ppp/3pp3/4PP2/PPPPMNPP/2SN4/R2K1S1R', 'flank shape built, the khon still on ฉ1');
+  eq(played, ['e3e4', 'd6d5', 'f3f4', 'e6e5', 'g1f3', 'b8d7', 'e1f2', 'g8e7', 'f2e3', 'd8c7', 'c1c2', 'c7d6', 'b1d2', 'c8c7'], 'flank shape against the centre shape');
+  eq(M.fen({ pieces: ps, turn: side }).split(' ')[0], 'r3ks1r/2snn3/pppm1ppp/3pp3/4PP2/PPPPMNPP/2SN4/R2K1S1R', 'flank shape built, the khon still on ฉ1');
   eq(P.openingMove(ps, 'white', 'flank'), null, 'flank shape complete');
   eq(key(P.openingChoice(M.initial().pieces, 'white', 'flank')), 'e3e4', 'engine AI opens the flank shape with บ.จ4');
   eq(key(P.openingMove(M.initial().pieces, 'black', 'flank')), 'd6d5', 'red has no flank shape: the centre one');
