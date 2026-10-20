@@ -194,9 +194,9 @@
   }
   // The opening moves of `shape` (default centre) that can be played now, in order. Steps already done or no longer
   // possible are skipped.
-  function openingMoves(pieces, side, shape, answerOnly) {
+  function openingMoves(pieces, side, shape, answerOnly, only) {
     var legal = R.legalMoves(pieces, side), out = [];
-    shapeSteps(pieces, side, shape, answerOnly).forEach(function (step) {
+    (only || shapeSteps(pieces, side, shape, answerOnly)).forEach(function (step) {
       var piece = step[0], from = square(step[1]), to = square(step[2]);
       var targets = [to].concat(step[3] ? [square(step[3])] : []);
       if (pieces.some(function (p) { return p.side === side && p.piece === piece && targets.some(function (t) { return same(p.at, t); }); })) return;
@@ -281,7 +281,7 @@
     // that is safe (no pawn or piece is lost to an exchange, by material alone: a good square does not make up for it);
     // a step that is not safe yet waits.
     if (options.opening !== false && !R.inCheck(pieces, side) && !underAttack(pieces, side) && !scored.some(function (x) { return x.capture && x.score > 0.5; })) {
-      var steps = openingMoves(pieces, side, options.shape, options.answerOnly);
+      var steps = openingMoves(pieces, side, options.shape, options.answerOnly, options.steps);
       for (var i = 0; i < steps.length; i++) {
         var entry = scored.find(function (x) { return same(x.move.from, steps[i].from) && same(x.move.to, steps[i].to); });
         if (entry && entry.lost < 0.3 && entry.score > -0.5 && entry.score >= top - 0.6) return steps[i];
@@ -308,6 +308,25 @@
   function openingChoice(pieces, side, shape) { return chooseMove(pieces, side, { openingOnly: true, shape: shape }); }
   // The advanced-pawn answer alone (FLANK_ANSWER), for the engine AI after it has left the opening shape.
   function flankAnswer(pieces, side, shape) { return chooseMove(pieces, side, { openingOnly: true, answerOnly: true, shape: shape }); }
+  // Red's opening for the engine AI (red moves second). The two centre pawns ง5 จ5 are fixed: each is played as soon
+  // as it loses no material, whatever a short engine search prefers ({move}). Next come the knights, but on squares the
+  // engine chooses (a knight further up is sometimes better than ง7 จ7): while the game is quiet and a knight is still
+  // at home, the engine searches only the moves of the knights at home ({moves}). Until both centre pawns are up, no
+  // pawn other than ง จ moves forward without taking, unless red is in check ({moves}): pushing ค5 or ฉ5 early leaves
+  // red behind. null when none of this applies any more (the shape's met and khon follow as usual).
+  var RED_CENTRE = [['pawn', 'd6', 'd5'], ['pawn', 'e6', 'e5']], KNIGHT_HOME = ['b8', 'g8'].map(square);
+  function redOpening(pieces) {
+    var side = 'black', pawn = chooseMove(pieces, side, { openingOnly: true, steps: RED_CENTRE });
+    if (pawn) return { move: pawn };
+    var legal = R.legalMoves(pieces, side), at = function (s) { return pieces.find(function (p) { return same(p.at, s); }); };
+    var quiet = !R.inCheck(pieces, side) && !underAttack(pieces, side) && !underAttack(pieces, opponent(side));
+    var knights = legal.filter(function (m) { var p = at(m.from); return p.piece === 'knight' && KNIGHT_HOME.some(function (h) { return same(h, m.from); }) && !at(m.to); });
+    if (quiet && knights.length) return { moves: knights };
+    var pending = RED_CENTRE.some(function (step) { var p = at(square(step[1])); return p && p.side === side && p.piece === 'pawn'; });
+    if (!pending || R.inCheck(pieces, side)) return null;
+    var calm = legal.filter(function (m) { var p = at(m.from); return !(p.piece === 'pawn' && !at(m.to) && m.from.c !== 3 && m.from.c !== 4); });
+    return calm.length && calm.length < legal.length ? { moves: calm } : null;
+  }
   // Can the opponent win material right now (a capture whose exchange pays)?
   function underAttack(pieces, side) {
     var enemy = opponent(side), seen = [];
@@ -319,5 +338,5 @@
     });
   }
 
-  return { canRequestBoardCount: canRequestBoardCount, requestBoardCount: requestBoardCount, canRequestSpecialCount: canRequestSpecialCount, requestSpecialCount: requestSpecialCount, quietPlies: quietPlies, pawnsLocked: pawnsLocked, LOCKED_PLIES: LOCKED_PLIES, SHUFFLES: SHUFFLES, shuffleMoves: shuffleMoves, material: material, VALUES: VALUES, OPENING: OPENING, OPENINGS: OPENINGS, openingMove: openingMove, openingMoves: openingMoves, openingChoice: openingChoice, flankAnswer: flankAnswer, pawnAdvanced: pawnAdvanced, ceilingFor: ceilingFor, nextCount: nextCount, countText: countText, exchange: exchange, chooseMove: chooseMove };
+  return { canRequestBoardCount: canRequestBoardCount, requestBoardCount: requestBoardCount, canRequestSpecialCount: canRequestSpecialCount, requestSpecialCount: requestSpecialCount, quietPlies: quietPlies, pawnsLocked: pawnsLocked, LOCKED_PLIES: LOCKED_PLIES, SHUFFLES: SHUFFLES, shuffleMoves: shuffleMoves, material: material, VALUES: VALUES, OPENING: OPENING, OPENINGS: OPENINGS, openingMove: openingMove, openingMoves: openingMoves, openingChoice: openingChoice, flankAnswer: flankAnswer, redOpening: redOpening, pawnAdvanced: pawnAdvanced, ceilingFor: ceilingFor, nextCount: nextCount, countText: countText, exchange: exchange, chooseMove: chooseMove };
 });
