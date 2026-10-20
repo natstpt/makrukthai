@@ -253,6 +253,23 @@ for (const [ai, script, answer] of [['white', ['d6d5', 'c6c5', 'b8c6', 'd5d4'], 
   eq(P.flankAnswer(advanced, 'black', 'flank'), null, 'red has no flank shape');
 }
 
+// Red not standing in the centre (side moves only): after its shape, white also brings up the third centre pawn, to
+// ง4 จ4 ฉ4 (บ.ง3-ง4 after the flank shape, บ.ฉ3-ฉ4 after the centre one). With a red pawn on ง5 it does not.
+for (const [shape, extra] of [['flank', 'd3d4'], ['centre', 'f3f4']]) {
+  const red = ['g6g5', 'g8e7', 'f8f7', 'b8d7', 'd8c7', 'f7g6', 'a6a5', 'h6h5', 'b6b5', 'a8a7', 'h8h7'];
+  let ps = M.initial().pieces, side = 'white', o = 0;
+  const white = [];
+  for (let i = 0; i < 22; i++) {
+    let m;
+    if (side === 'black') { const k = red[o++]; m = R.legalMoves(ps, side).find(x => key(x) === k) || P.chooseMove(ps, side, { random: fixed, opening: false }); }
+    else { m = P.chooseMove(ps, side, { random: fixed, shape }); white.push(key(m)); }
+    ps = R.applyMove(ps, m.from, m.to); side = side === 'white' ? 'black' : 'white';
+  }
+  assert(white.includes(extra), shape + ': the third centre pawn goes up (' + white.join(' ') + ')'); checks++;
+  assert(['d4', 'e4', 'f4'].every(sq => ps.some(p => p.side === 'white' && p.piece === 'pawn' && p.at.r === at(sq).r && p.at.c === at(sq).c)), shape + ': pawns on ง4 จ4 ฉ4'); checks++;
+}
+eq(P.openingMoves(M.parse('rnsmksnr/8/ppp1pppp/3p4/3PP3/PPP2PPP/8/RNSKMSNR w - - 0 1').pieces, 'white', 'centre').map(key).includes('f3f4'), false, 'a red pawn on ง5: no third centre pawn');
+
 // เบี้ยสูง: a pawn of the other side past its 4th rank (white on rank 5, red on rank 4) ends the engine AI's shape.
 {
   eq(P.pawnAdvanced(M.initial().pieces, 'black'), false, 'opening position: no advanced pawn');
