@@ -787,7 +787,7 @@
   function clone(s){return {pieces:R.clonePieces(s.pieces),turn:s.turn};}
   function save(){if(mode!=='edit')return;try{localStorage.setItem(storageKey,M.fen(state));storageOK=true;}catch(e){storageOK=false;}}
   function snapshot(){return {state:clone(state),moves:moves.slice(),last:last,count:count};}
-  function restore(item){state=item.state;moves=item.moves;last=item.last;count=item.count||null;selected=null;save();render();}
+  function restore(item){state=item.state;moves=item.moves;last=item.last;count=item.count||null;selected=null;resetMarks();save();render();}
   function remember(){future=[];history.push(snapshot());if(history.length>200)history.shift();}
   function message(text,error){$('status').textContent=text;$('status').classList.toggle('error',!!error);document.querySelector('.positionFeedback').classList.toggle('hasStatus',!!text);scheduleFit();}
   function changed(){selected=null;last=null;save();render();}
@@ -867,7 +867,7 @@
       message((hint&&!hint.move&&hint.fen===M.fen(state)&&status.state==='playing'?'กำลังหาคำใบ้…':status.state==='resign'?'คุณยอมแพ้ — ฝ่าย'+sideName(status.winner)+'ชนะ · กดย้อนกลับเพื่อเล่นต่อ':status.state==='checkmate'?'รุกจน — ฝ่าย'+sideName(status.winner)+'ชนะ':status.state==='stalemate'?'เสมอเพราะอับ — ไม่มีตาเดินและขุนไม่ถูกรุก':status.state==='draw'?'เสมอ — เหลือขุนทั้งสองฝ่าย':status.state==='countdraw'?'เสมอ — นับครบตามกติกาแล้วยังไม่รุกจน':status.state==='repetition'?'เสมอ — ตำแหน่งเดิมเกิดขึ้นครบ 3 ครั้ง':status.check?'ขุน'+sideName(state.turn)+'กำลังถูกรุก':engine.reason?'AI ระดับเซียนใช้ไม่ได้: '+engine.reason:'')+(game&&game.lesson&&status.state!=='playing'?' · กด “← บทเรียน” เพื่อกลับไปผ่านบท':''),!!engine.reason&&!status.check);
     }
     $('openReview').hidden=!aiGame||reviewing||status.state==='playing'||!review;
-    renderMoves();if(reviewing)drawGameReview();scheduleFit();
+    renderMoves();drawMarks();if(reviewing)drawGameReview();scheduleFit();
   }
   // /ai during the game: the record in the same sliding row as in วิเคราะห์การเดิน (‹ › one move back or on).
   function drawPlayStrip(){if(game&&game.standalone&&!reviewing&&trial)drawMoveStrip(fullLine(),moves.length,null,['psMoves','psPrev','psNext']);}
@@ -930,7 +930,7 @@
   function editRemove(at){if(!pieceAt(at))return;remember();state.pieces=state.pieces.filter(function(p){return !same(p.at,at);});changed();}
   function playMove(from,at,dragged){
     if(!R.legalDestinations(state.pieces,from).some(function(to){return same(to,at);})){message('เดินช่องนี้ไม่ได้ ลองเลือกช่องที่มีจุดสีเขียว',true);sound.playResult('failure');return;}
-    remember();var record=N.formatMove(state.pieces,from,at);
+    remember();resetMarks();var record=N.formatMove(state.pieces,from,at);
     var mover=state.turn;if(think&&!think.done&&game&&game.ai&&mover===aiSide())think.done=Date.now();state.pieces=R.applyMove(state.pieces,from,at);state.turn=opponent(state.turn);count=P.nextCount(count,state.pieces,mover);last={from:from,to:at};selected=null;
     record.fen=M.fen(state);record.uci=moveKey({from:from,to:at});
     var result=playStatus();
@@ -961,6 +961,49 @@
   // Drag and drop: from the tray to place, on the board to move, off the board to remove.
   function squareEl(at){return $('board').querySelector('[data-r="'+at.r+'"][data-c="'+at.c+'"]');}
   function squareAt(x,y){var el=document.elementFromPoint(x,y),sq=el&&el.closest&&el.closest('#board .square');return sq?{r:Number(sq.dataset.r),c:Number(sq.dataset.c)}:null;}
+  // Marks drawn with the mouse while playing: right-click a square to colour it (again to clear it), right-drag from
+  // one square to another for an arrow (a knight's jump bends like an L, the longer leg first). A left click on the
+  // board, a move, or stepping through the game clears them.
+  var marks={squares:{},arrows:{}},markDrag=null;
+  function markKey(at){return at.r*8+at.c;}
+  function resetMarks(){marks={squares:{},arrows:{}};markDrag=null;}
+  function markPoints(a,b){
+    var pt=function(s){return {x:(flipped?7-s.c:s.c)+0.5,y:(flipped?7-s.r:s.r)+0.5};},p=pt(a),q=pt(b),dr=Math.abs(a.r-b.r),dc=Math.abs(a.c-b.c);
+    return dr*dc===2?[p,dr===2?{x:p.x,y:q.y}:{x:q.x,y:p.y},q]:[p,q];
+  }
+  function markArrow(a,b,ghost){
+    var pts=markPoints(a,b),n=pts.length,q=pts[n-1],o=pts[n-2],len=Math.hypot(q.x-o.x,q.y-o.y),ux=(q.x-o.x)/len,uy=(q.y-o.y)/len;
+    var tip={x:q.x-ux*0.08,y:q.y-uy*0.08},base={x:tip.x-ux*0.42,y:tip.y-uy*0.42},w=0.28;
+    var s=pts[0],t=pts[1],sl=Math.hypot(t.x-s.x,t.y-s.y),start={x:s.x+(t.x-s.x)/sl*0.22,y:s.y+(t.y-s.y)/sl*0.22};
+    var line=[start].concat(pts.slice(1,n-1),[base]).map(function(p){return p.x.toFixed(3)+','+p.y.toFixed(3);}).join(' ');
+    return '<g opacity="'+(ghost?0.55:0.8)+'"><polyline points="'+line+'" fill="none" stroke="#f6a821" stroke-width="0.2" stroke-linejoin="miter"/>'+
+      '<polygon points="'+tip.x+','+tip.y+' '+(base.x-uy*w)+','+(base.y+ux*w)+' '+(base.x+uy*w)+','+(base.y-ux*w)+'" fill="#f6a821"/></g>';
+  }
+  function drawMarks(){
+    if(!marks||!$('drawLayer'))return;
+    $('board').querySelectorAll('.square').forEach(function(sq){sq.classList.toggle('marked',!!marks.squares[Number(sq.dataset.r)*8+Number(sq.dataset.c)]);});
+    var html=Object.keys(marks.arrows).map(function(k){var a=marks.arrows[k];return markArrow(a.from,a.to);}).join('');
+    if(markDrag&&markDrag.to&&!same(markDrag.to,markDrag.from)&&!marks.arrows[markKey(markDrag.from)+'-'+markKey(markDrag.to)])html+=markArrow(markDrag.from,markDrag.to,true);
+    $('drawLayer').innerHTML=html;
+  }
+  $('board').addEventListener('contextmenu',function(e){if(mode==='play')e.preventDefault();});
+  $('board').addEventListener('pointerdown',function(e){
+    if(mode!=='play'||e.pointerType==='touch')return;
+    if(e.button===2){var sq=e.target.closest('.square');if(!sq)return;e.preventDefault();markDrag={id:e.pointerId,from:{r:Number(sq.dataset.r),c:Number(sq.dataset.c)},to:null};return;}
+    if(e.button===0&&(Object.keys(marks.squares).length||Object.keys(marks.arrows).length)){resetMarks();drawMarks();}
+  });
+  window.addEventListener('pointermove',function(e){
+    if(!markDrag||e.pointerId!==markDrag.id)return;
+    var at=squareAt(e.clientX,e.clientY);
+    if(at&&!same(at,markDrag.to)){markDrag.to=at;drawMarks();}
+  });
+  window.addEventListener('pointerup',function(e){
+    if(!markDrag||e.pointerId!==markDrag.id||e.button!==2)return;
+    var from=markDrag.from,at=squareAt(e.clientX,e.clientY);markDrag=null;
+    if(at&&same(at,from)){var k=markKey(at);if(marks.squares[k])delete marks.squares[k];else marks.squares[k]=true;}
+    else if(at){var key=markKey(from)+'-'+markKey(at);if(marks.arrows[key])delete marks.arrows[key];else marks.arrows[key]={from:from,to:at};}
+    drawMarks();
+  });
   function beginDrag(e,source){if(drag||e.button>0||!e.isPrimary)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY,source:source,ghost:null,started:false};}
   $('board').addEventListener('pointerdown',function(e){
     var sq=e.target.closest('.square');if(!sq)return;

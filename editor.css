@@ -183,3 +183,5 @@ body.reviewMode .evalText{padding:0 7px;border-radius:6px;background:#262018d9;c
 /* Until editor.js has laid the page out for what it is (a game, ถอดหมาก, /ai), the set-up markup stays hidden; shown
    after 3 s anyway, should the script not run. */
 body:not(.ready) main,body:not(.ready) .actionDock,body:not(.ready) #modeLabel,body:not(.ready) .brand h1:not(.final){visibility:hidden;animation:showAnyway 0s 3s forwards}@keyframes showAnyway{to{visibility:visible}}
+/* Marks the player draws with the right mouse button (editor.js drawMarks): a coloured square, orange arrows. */
+.square.marked{background:#ea7a62!important}
