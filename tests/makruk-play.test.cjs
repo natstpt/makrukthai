@@ -224,7 +224,7 @@ assert(!R.isAttacked(R.applyMove(board('K:a1 R:d4 P:h3 k:h8 n:f5'), at(saved.sli
   }
 }
 
-// Red's opening for the engine AI (redOpening): the centre pawns ง5 จ5, the knights side by side on ง7 จ7, then the
+// Red's opening for the engine AI (aiOpening): the centre pawns ง5 จ5, the knights side by side on ง7 จ7, then the
 // met ง8-ค7-ง6, each step losing no material; a move where white threatens something is the engine's ({free}, here
 // chooseMove), and the plan goes on after it. Against the games that went wrong (ค5; ม.ช8-จ7 letting white take จ5;
 // ค.ฉ7 and the king to ฉ8 after จ4 ฉ4 ม.ฉ3) red builds the whole shape and keeps material even.
@@ -233,7 +233,7 @@ assert(!R.isAttacked(R.applyMove(board('K:a1 R:d4 P:h3 k:h8 n:f5'), at(saved.sli
     let ps = M.initial().pieces; const out = [];
     for (const w of white) {
       const m = R.legalMoves(ps, 'white').find(x => key(x) === w); ps = R.applyMove(ps, m.from, m.to);
-      const r = P.redOpening(ps);
+      const r = P.aiOpening(ps, 'black');
       const mv = r && r.move ? r.move : r && r.moves ? r.moves[0] : P.chooseMove(ps, 'black', { random: fixed, opening: false });
       out.push((r && r.move ? '' : r && r.free ? 'free ' : r ? 'engine ' : 'done ') + key(mv)); ps = R.applyMove(ps, mv.from, mv.to);
     }
@@ -253,7 +253,30 @@ assert(!R.isAttacked(R.applyMove(board('K:a1 R:d4 P:h3 k:h8 n:f5'), at(saved.sli
   assert.ok(g.out.slice(-1)[0].startsWith('done '), 'the plan ends with the met on ง6'); checks++;
   // White threatens something (a capture to make): the engine answers that move.
   const ps = board('K:d1 R:a1 R:h1 N:b1 N:g1 B:c1 B:f1 M:e1 P:a3 P:b3 P:c3 P:d3 P:e5 P:f3 P:g3 P:h3 k:e8 r:a8 r:h8 n:b8 n:g8 b:c8 b:f8 m:d8 p:a6 p:b6 p:c6 p:d5 p:e6 p:f6 p:g6 p:h6');
-  eq(P.redOpening(ps), { free: true }, 'a threat or a capture: the engine plays');
+  eq(P.aiOpening(ps, 'black'), { free: true }, 'a threat or a capture: the engine plays');
+}
+
+// White's plans for the engine AI (aiOpening): the centre one mirrors red's (จ4 ง4, the knights on จ2 ง2, the met
+// จ1-ฉ2-จ3); the flank one is จ4 ฉ4, ม.ช1-ฉ3, the met to จ3, one khon up (the engine choosing ค2, ฉ2 or จ2), and only
+// then the third pawn ง4.
+{
+  const play = (shape, black) => {
+    let ps = M.initial().pieces; const out = [];
+    for (const b of black) {
+      const r = P.aiOpening(ps, 'white', shape); if (!r) { out.push('done'); break; }
+      const mv = r.move || r.moves[0]; out.push(r.move ? key(mv) : r.moves.map(key)); ps = R.applyMove(ps, mv.from, mv.to);
+      const m = R.legalMoves(ps, 'black').find(x => key(x) === b); ps = R.applyMove(ps, m.from, m.to);
+    }
+    return out;
+  };
+  eq(play('centre', ['d6d5', 'e6e5', 'b8d7', 'g8e7', 'd8c7', 'c7d6', 'c8c7']), ['e3e4', 'd3d4', 'g1e2', 'b1d2', 'e1f2', 'f2e3', 'done'], 'white centre plan');
+  const passive = ['a6a5', 'h6h5', 'a8a7', 'h8h7', 'a7a6', 'h7h6', 'a6a7', 'h6h7'];
+  eq(play('flank', passive), ['e3e4', 'f3f4', 'g1f3', 'e1f2', 'f2e3', ['c1c2', 'f1f2', 'f1e2'], 'd3d4', 'done'], 'white flank plan: the third pawn last');
+  // Red's pawns ค5 ง5 guard ง4: the third pawn is not played as a step; the engine moves (no king move, no flank pawn
+  // push).
+  const wait = play('flank', ['c6c5', 'b8c6', 'd6d5', 'g8e7', 'd8c7', 'a6a5', 'c8b7']);
+  eq(wait.slice(0, 6).map(x => Array.isArray(x) ? 'khon' : x), ['e3e4', 'f3f4', 'g1f3', 'e1f2', 'f2e3', 'khon'], 'flank shape before the third pawn');
+  assert.ok(Array.isArray(wait[6]) && !wait[6].some(k => k.startsWith('d1') || /^([abcgh])3\14$/.test(k)), 'ง4 waits: ' + wait[6]); checks++;
 }
 
 // An advanced pawn against the flank shape (เบี้ยสูง): red stands on ง5 ค5 with a knight on ค6 and pushes the
