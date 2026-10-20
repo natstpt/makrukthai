@@ -121,12 +121,15 @@
     // The shape is left for good as soon as the game is no longer a quiet opening: a capture has been made, or a pawn
     // of the other side stands past its 4th rank (เบี้ยสูง). Each shape move is also checked by the engine first
     // (checkBook).
-    if(hard&&!game.bookDone&&(moves.some(function(m){return m.capture;})||P.pawnAdvanced(state.pieces,state.turn)))game.bookDone=true;
-    // Red (the AI moving second) has its own opening first (makruk-play.js redOpening): the centre pawns ง5 จ5 fixed,
-    // then the knights where the engine likes them, no flank pawn pushed before the centre pawns.
-    var red=hard&&!game.bookDone&&state.turn==='black'&&P.redOpening(state.pieces);
+    // Red (the AI moving second) has its own opening instead (makruk-play.js redOpening): the centre pawns ง5 จ5, the
+    // knights on ง7 จ7, then the met to ง6. An even exchange does not end it; material no longer even does (not while
+    // an exchange is still going on: the last move took).
+    var redAi=hard&&state.turn==='black';
+    var uneven=P.material(state.pieces,'white')!==P.material(state.pieces,'black')&&!(moves.length&&moves[moves.length-1].capture);
+    if(hard&&!game.bookDone&&((redAi?uneven:moves.some(function(m){return m.capture;}))||P.pawnAdvanced(state.pieces,state.turn)))game.bookDone=true;
+    var red=redAi&&!game.bookDone&&P.redOpening(state.pieces);
     var fixed=red&&red.move,only=red&&red.moves&&red.moves.map(moveKey);
-    var book=fixed||!red&&hard&&!game.bookOff&&!game.bookDone&&P.openingChoice(state.pieces,state.turn,game.shape);
+    var book=fixed||!redAi&&hard&&!game.bookOff&&!game.bookDone&&P.openingChoice(state.pieces,state.turn,game.shape);
     // The answer to an advanced pawn against the flank shape (makruk-play.js FLANK_ANSWER) is played even after the
     // shape has handed over to the engine (unless the engine turned a shape move down).
     if(hard&&!game.bookOff&&game.bookDone&&!book)book=P.flankAnswer(state.pieces,state.turn,game.shape);
