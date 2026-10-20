@@ -80,9 +80,9 @@
     else if(status&&status.state!=='playing')text='เกมจบแล้ว · กดเริ่มใหม่เพื่อเล่นอีกเกม';
     else if(future.length)text='กำลังย้อนดูตาเดิน';
     else text='ถึงตาคุณเดิน · คุณเป็นฝ่าย'+sideName(game.human);
-    // Game over: a small เริ่มเกมใหม่ button beside the title (it keeps its place while hidden); in the review the
-    // coach takes the bar's place.
-    var over=!!status&&status.state!=='playing'||reviewing;bar.hidden=reviewing;$('topNewGame').style.visibility=over?'visible':'hidden';
+    // The header is the thinking bar alone (once the game is over the dock's ยอมแพ้ has become เริ่มใหม่); in the
+    // review the coach takes its place and a เริ่มเกมใหม่ button shows in the review panel's head.
+    var over=!!status&&status.state!=='playing'||reviewing;bar.hidden=reviewing;$('topNewGame').style.display=reviewing?'':'none';
     $('thinkFill').style.width=(pct*100).toFixed(1)+'%';$('thinkText').textContent=text;bar.classList.toggle('busy',busy);bar.classList.toggle('done',pct>=1);bar.classList.toggle('idle',!busy&&pct<1);
   }
   function moveKey(m){return 'abcdefgh'[m.from.c]+(8-m.from.r)+'abcdefgh'[m.to.c]+(8-m.to.r);}
@@ -609,12 +609,13 @@
     var coach=$('gameReview').querySelector('.grCoach');
     if(!coachHome){coachHome=document.createComment('grCoach');coach.before(coachHome);}
     // On the /ai page it takes the progress bar's place in the header, which keeps one height, so the board never moves.
-    if(game&&game.standalone)$('thinkBar').after(coach);else document.querySelector('.boardArea').prepend(coach);$('evalV').hidden=false;
+    // On /ai the เริ่มเกมใหม่ button goes to the review panel's head meanwhile (the header row is the coach's).
+    if(game&&game.standalone){$('thinkBar').after(coach);$('grSummary').before($('topNewGame'));}else document.querySelector('.boardArea').prepend(coach);$('evalV').hidden=false;
     jumpTo(ply===undefined?0:ply);
   }
   function closeReview(){var end=fullLine().length;stopReviewView();jumpTo(end);}
   var coachHome=null;
-  function putCoachBack(){if(coachHome)coachHome.after(document.querySelector('.grCoach'));$('evalV').hidden=true;}
+  function putCoachBack(){if(coachHome)coachHome.after(document.querySelector('.grCoach'));if(game&&game.standalone)$('thinkBar').after($('topNewGame'));$('evalV').hidden=true;}
   function stopReviewView(){putCoachBack();reviewing=false;document.body.classList.remove('reviewMode');$('gameReview').hidden=true;$('analysisPanel').hidden=true;$('arrowLayer').innerHTML='';render();}
   // Why a move of the player's was good or not, from the board itself: what it took, a check, a piece it saved, and
   // after a mistake the opponent's strongest reply (the threat, a red arrow) and what the better move did.
@@ -1201,7 +1202,10 @@
     // on the left for the review's evaluation bar, so the board never resizes or jumps.
     if(stacked&&game&&game.standalone){
       var head=document.querySelector('.pageHeader').offsetHeight;
-      size=Math.min(main.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight)-26,window.innerHeight-head-STANDALONE_RESERVE);
+      // The page's own height (100dvh), not window.innerHeight: in-app browsers (Facebook, LINE) report a taller window
+      // than they show, which pushed the move record and the buttons below the screen.
+      var tall=Math.min(document.body.clientHeight||window.innerHeight,window.innerHeight,window.visualViewport?window.visualViewport.height:Infinity);
+      size=Math.min(main.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight)-26,tall-head-STANDALONE_RESERVE);
     }else if(stacked){
       var feedback=document.querySelector('.positionFeedback').offsetHeight;
       var tools=parseFloat(getComputedStyle(main).getPropertyValue('--tools-reserve'))||112;
