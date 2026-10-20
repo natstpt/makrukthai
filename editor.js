@@ -1265,7 +1265,17 @@
   $('load').onclick=function(){if(mode!=='edit')return;try{var next=M.parse($('fen').value);remember();state=next;changed();$('optionsDialog').close();message('เปิดตำแหน่งแล้ว'+(M.validate(state)?' — '+M.validate(state):''));}catch(e){$('saveNote').textContent=e.message;}};
   $('copy').onclick=async function(){try{await navigator.clipboard.writeText($('fen').value);$('saveNote').textContent='คัดลอกรหัสแล้ว';}catch(e){$('fen').focus();$('fen').select();$('saveNote').textContent='เลือกข้อความแล้ว กรุณาคัดลอกด้วยเมนูของเครื่อง';}};
   document.addEventListener('keydown',function(e){if(reviewing&&(e.key==='ArrowLeft'||e.key==='ArrowRight')&&!/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)&&!document.querySelector('dialog[open]')){e.preventDefault();reviewStep(e.key==='ArrowLeft'?-1:1);return;}if(reviewing&&e.key==='Escape'&&!document.querySelector('dialog[open]')){closeReview();return;}if(e.key==='Escape'&&!$('exportDialog').open&&!$('optionsDialog').open){if(drag)return;selected=null;tool='move';render();}});
-  $('options').onclick=function(){$('optionsDialog').showModal();};
+  // In a game against the hard AI the options say which engine plays and, for the lite one, why; the full one can be
+  // tried again from there (engine-ai.js retryFull: reloads the page, the game starts over).
+  function drawEngineInfo(){
+    var tier=game&&game.ai&&game.level==='hard'&&E&&E.tier&&E.tier();
+    $('engineOptions').hidden=!tier;if(!tier)return;
+    var why=tier==='lite'&&E.liteReason&&E.liteReason();
+    $('engineInfo').textContent=tier==='full'?'ตอนนี้เล่นกับ AI ระดับสุดยอดเซียน (AI รุ่นเต็ม)':'ตอนนี้เล่นกับ AI ระดับเซียน (AI รุ่นเบา)'+(why?' · '+why:'');
+    $('retryFull').hidden=tier==='full';
+  }
+  $('retryFull').onclick=function(){if(E&&E.retryFull)E.retryFull();};
+  $('options').onclick=function(){drawEngineInfo();$('optionsDialog').showModal();};
   $('closeOptions').onclick=function(){$('optionsDialog').close();};
   $('optionsDialog').addEventListener('close',function(){$('options').focus();});
 

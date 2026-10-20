@@ -189,3 +189,7 @@ body:not(.ready) main,body:not(.ready) .actionDock,body:not(.ready) #modeLabel,b
 /* /ai on small screens: one header row only (no title): the thinking bar, with เริ่มเกมใหม่ beside it once the game is
    over; in the review the coach takes the row and the button moves to the review panel. */
 @media(max-width:900px) and (orientation:portrait),(max-width:599px){.standalonePage .pageHeader{height:92px;flex-wrap:nowrap;align-items:center;align-content:center;padding-top:4px;padding-bottom:4px}.standalonePage .brand{display:none}.standalonePage .thinkBar{flex:1 1 auto;margin:0}.standalonePage .pageHeader .topNewGame{flex:none;margin:0 0 0 8px;height:34px}.standalonePage .pageHeader>.grCoach{flex:1 1 100%}.standalonePage .grHead .topNewGame{order:0;margin-left:auto;height:30px;padding:0 8px;font-size:12px;white-space:nowrap}.standalonePage .grHead .topNewGame+.grSummary{margin-left:6px}}
+/* Options: which AI engine plays, and trying the full one again. */
+.engineOptions{display:grid;gap:8px;margin:4px 0 12px}
+.engineOptions[hidden],.engineOptions [hidden]{display:none}
+.engineOptions p{margin:0;font-size:.92rem;line-height:1.45}

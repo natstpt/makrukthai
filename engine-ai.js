@@ -124,27 +124,59 @@
   // died while the full build was starting on this device (out of memory), later visits use the lite build.
   var fullAnyway = false, defaultProgress = null;
   function preferFull(onProgress) { fullAnyway = true; defaultProgress = onProgress || null; }
+  // A crash is remembered for FULL_RETRY (3 days), then the full build is tried again; a mark from before the date was
+  // kept ('1') counts as old. Leaving the page while the full build starts (closing the tab, switching to another app)
+  // is not a crash: the mark is taken off as the page goes (see startingFull).
+  var FULL_RETRY = 3 * 24 * 3600 * 1000;
   function fullCrashed() {
     try {
-      if (localStorage.getItem('makrukFullTrying')) { localStorage.removeItem('makrukFullTrying'); localStorage.setItem('makrukFullFailed', '1'); }
-      return localStorage.getItem('makrukFullFailed') === '1';
+      if (localStorage.getItem('makrukFullTrying')) { localStorage.removeItem('makrukFullTrying'); localStorage.setItem('makrukFullFailed', String(Date.now())); }
+      var at = +localStorage.getItem('makrukFullFailed') || 0;
+      if (at && Date.now() - at > FULL_RETRY) { localStorage.removeItem('makrukFullFailed'); at = 0; }
+      return at > 1;
     } catch (e) { return false; }
   }
+  // Why the lite build plays (a short Thai reason), '' while the full one does or none has started.
+  var liteWhy = '';
   function fullAllowed() {
     if (fullWanted()) return true;
-    return fullAnyway && 'serviceWorker' in navigator && simdSupported() && !fullCrashed();
+    if (!fullAnyway) { liteWhy = 'ระดับนี้ใช้ AI รุ่นเบา'; return false; }
+    if (!('serviceWorker' in navigator) || !simdSupported()) { liteWhy = 'เบราว์เซอร์นี้เปิด AI รุ่นเต็มไม่ได้ (ลองเปิดใน Chrome หรือ Safari แทนเบราว์เซอร์ในแอป)'; return false; }
+    if (fullCrashed()) { liteWhy = 'ครั้งก่อนเครื่องค้างตอนเปิด AI รุ่นเต็ม (หน่วยความจำอาจไม่พอ)'; return false; }
+    return true;
+  }
+  // While the full build starts, leaving the page takes the crash mark off (only a page that dies keeps it); coming back
+  // puts it on again.
+  var fullStarting = false;
+  function startingFull(on) {
+    fullStarting = on;
+    try { if (on) localStorage.setItem('makrukFullTrying', '1'); else localStorage.removeItem('makrukFullTrying'); } catch (e) {}
+  }
+  function onLeave() { if (fullStarting) try { localStorage.removeItem('makrukFullTrying'); } catch (e) {} }
+  if (root.addEventListener) {
+    root.addEventListener('pagehide', onLeave);
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'hidden') onLeave();
+      else if (fullStarting) try { localStorage.setItem('makrukFullTrying', '1'); } catch (e) {}
+    });
+  }
+  // Takes back what kept the full build off (a remembered crash, this tab's isolation attempt) and loads the page again.
+  function retryFull() {
+    try { localStorage.removeItem('makrukFullFailed'); localStorage.removeItem('makrukFullTrying'); sessionStorage.removeItem('makrukIsolationReload'); } catch (e) {}
+    location.reload();
   }
   function start(onProgress, preferLite) {
     if (starting) return starting;
     onProgress = onProgress || defaultProgress;
     var why = unsupported();
     if (why) { starting = Promise.reject(fail(why)); starting.catch(function () {}); return starting; }
-    var lite = function () { listener = null; return startLite().then(function () { tier = 'lite'; return tier; }); };
-    var mark = function (on) { try { if (on) localStorage.setItem('makrukFullTrying', '1'); else localStorage.removeItem('makrukFullTrying'); } catch (e) {} };
+    var lite = function (why) { if (why) liteWhy = why; listener = null; return startLite().then(function () { tier = 'lite'; return tier; }); };
+    if (preferLite) liteWhy = 'ระดับนี้ใช้ AI รุ่นเบา';
     starting = preferLite || !fullAllowed() ? lite() : ensureIsolation().then(function (isolated) {
-      if (!isolated || typeof SharedArrayBuffer !== 'function') return lite();
-      mark(true);
-      return startFull(onProgress).then(function () { mark(false); tier = 'full'; return tier; }, function () { mark(false); return lite(); });
+      if (!isolated || typeof SharedArrayBuffer !== 'function') return lite('หน้าเว็บยังเปิดโหมดที่ AI รุ่นเต็มต้องใช้ไม่ได้ (ลองโหลดหน้าใหม่)');
+      startingFull(true);
+      return startFull(onProgress).then(function () { startingFull(false); liteWhy = ''; tier = 'full'; return tier; },
+        function (e) { startingFull(false); return lite((e && e.reason) || 'เปิด AI รุ่นเต็มไม่สำเร็จ'); });
     });
     starting.catch(function () {});
     return starting;
@@ -275,5 +307,5 @@
     }, function (e) { searched(); throw e; });
   }
 
-  root.MakrukEngine = { start: start, preferFull: preferFull, unsupported: unsupported, bestMove: bestMove, evaluate: evaluate, stopSearch: stopSearch, lastSearch: function () { return last; }, lastDepth: function () { return reached; }, analyse: analyse, stopAnalysis: stopAnalysis, tier: function () { return tier; }, ready: function () { return !!tier; } };
+  root.MakrukEngine = { start: start, preferFull: preferFull, retryFull: retryFull, liteReason: function () { return liteWhy; }, unsupported: unsupported, bestMove: bestMove, evaluate: evaluate, stopSearch: stopSearch, lastSearch: function () { return last; }, lastDepth: function () { return reached; }, analyse: analyse, stopAnalysis: stopAnalysis, tier: function () { return tier; }, ready: function () { return !!tier; } };
 })(window);
