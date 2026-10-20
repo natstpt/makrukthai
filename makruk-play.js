@@ -323,7 +323,9 @@
   //   centre, white: the same mirrored: จ4 ง4, the knights on จ2 ง2, the met จ1-ฉ2-จ3 (จ1-ง2-จ3 while ง2 is free),
   //                  the khon ค1-ค2-ง3, then ฉ1-ฉ2.
   //   flank, white:  จ4 ฉ4, ม.ช1-ฉ3, the met จ1-ฉ2-จ3 (จ1-จ2-จ3), one khon up (ค2, ฉ2 or จ2, the engine choosing), and
-  //                  only then, with the pieces ready, the third pawn ง4. Done with the pawn on ง4.
+  //                  only then, with the pieces ready, the pawn จ4-จ5 for room in the centre when the engine finds it
+  //                  no worse ({move, check}: the caller asks the engine and, if not, passes the step in `skip`), and
+  //                  the third pawn ง4. Done with the pawn on ง4.
   // A knight comes before a pawn of the first group whose square is not safe yet, the one that makes it safe first
   // (ม.ข8-ง7 guards จ5, ม.ช8-จ7 guards ง5); any other group waits for the one before it.
   // Every move it looks at the opponent first: in check, attacked, or with a capture to make, the engine answers that
@@ -353,17 +355,19 @@
         { knights: true, steps: [['knight', 'g1', 'f3']] },
         { steps: [['met', 'e1', 'f2', 'e3'], ['met', 'f2', 'e3'], ['met', 'e1', 'e2', 'e3'], ['met', 'e2', 'e3']] },
         { one: true, steps: [['khon', 'c1', 'c2'], ['khon', 'f1', 'f2'], ['khon', 'f1', 'e2']] },
+        { check: true, steps: [['pawn', 'e4', 'e5']] },
         { steps: [['pawn', 'd3', 'd4']] }] }
     }
   };
-  function aiOpening(pieces, side, shape) {
+  // skip: steps the engine turned down this game ({'e4e5': true}), left out as if played.
+  function aiOpening(pieces, side, shape, skip) {
     var plan = PLANS[side][shape] || PLANS[side].centre, legal = R.legalMoves(pieces, side);
     var mine = function (s, piece) { return pieces.some(function (p) { return p.side === side && p.piece === piece && same(p.at, square(s)); }); };
     // Steps still to come: their piece stands where the step starts and not yet where it goes (a group of one-of
     // steps is done once any of them is).
     var groups = plan.groups.map(function (g) {
       if (g.one && g.steps.some(function (st) { return mine(st[2], st[0]); })) return [];
-      return g.steps.filter(function (st) { return mine(st[1], st[0]) && !mine(st[3] || st[2], st[0]); });
+      return g.steps.filter(function (st) { return mine(st[1], st[0]) && !mine(st[3] || st[2], st[0]) && !(skip && skip[st[1] + st[2]]); });
     });
     var legalStep = function (st) { return legal.find(function (m) { return same(m.from, square(st[1])) && same(m.to, square(st[2])); }); };
     // Done: the end step played (white's flank shape), or no step still to come can be played (every one played, or
@@ -390,9 +394,9 @@
         if (safe.length) return safe.length === 1 ? { move: step(safe) } : { moves: safe.map(legalStep) };
       } else {
         var move = step(steps);
-        if (move) return { move: move };
+        if (move) return group.check ? { move: move, check: true } : { move: move };
       }
-      if (!group.pawns && steps.some(legalStep)) break;
+      if (!group.pawns && !group.check && steps.some(legalStep)) break;
     }
     var calm = legal.filter(function (m) {
       var p = pieces.find(function (x) { return same(x.at, m.from); }), taking = pieces.some(function (x) { return same(x.at, m.to); });

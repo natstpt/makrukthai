@@ -122,8 +122,11 @@
     // something is the engine's, and the plan goes on after it. The plan is left for good once the game has left the
     // quiet opening (makruk-play.js openingOver).
     if(hard&&!game.bookDone&&P.openingOver(state.pieces,state.turn,moves.length&&moves[moves.length-1].capture))game.bookDone=true;
-    var plan=hard&&!game.bookDone&&P.aiOpening(state.pieces,state.turn,game.shape);
-    var fixed=plan&&plan.move,only=plan&&plan.moves&&plan.moves.map(moveKey),book=fixed;
+    var plan=hard&&!game.bookDone&&P.aiOpening(state.pieces,state.turn,game.shape,game.planSkip);
+    // A step the engine must find no worse first (white's จ4-จ5): checked like a shape move; turned down, it is left out
+    // for the rest of the game and the plan goes on.
+    var checked=plan&&plan.check&&plan.move;
+    var fixed=!checked&&plan&&plan.move,only=plan&&plan.moves&&plan.moves.map(moveKey),book=fixed;
     // The answer to an advanced pawn against the flank shape (makruk-play.js FLANK_ANSWER) is played even after the
     // shape has handed over to the engine (unless the engine turned a shape move down).
     if(hard&&!game.bookOff&&game.bookDone&&!book)book=P.flankAnswer(state.pieces,state.turn,game.shape);
@@ -150,6 +153,7 @@
       if(table){if(think)think.quick=1;playMove(table.move.from,table.move.to);return;}
       if(!hard){easy();return;}
       if(fixed||only&&only.length===1){var one=fixed||plan.moves[0];playMove(one.from,one.to);return;}
+      if(checked){checkBook(checked,token,function(){(game.planSkip=game.planSkip||{})[moveKey(checked)]=true;scheduleAi();});return;}
       if(book){checkBook(book,token);return;}
       // The engine gets the moves since the last pawn move or capture (no position before it can come back), so it
       // sees the repetitions and never needs a promotion suffix.
@@ -171,11 +175,12 @@
   // plies, 0.4 s: no more than BOOK_MARGIN worse). Otherwise the AI plays the engine's move and keeps no shape for
   // the rest of the game (game.bookOff). Before the engine has loaded, the shape move is played unchecked.
   var BOOK_MARGIN=30,BOOK_CHECK={depth:12,time:400};
-  function checkBook(book,token){
+  // turnedDown (optional): what to do instead when the engine finds the move worse (and when there is no engine yet).
+  function checkBook(book,token,turnedDown){
     var fen=M.fen(state),key=moveKey(book),live=function(){return token===aiSearch&&aiTurn();};
     var play=function(){if(live())playMove(book.from,book.to);};
-    var leave=function(){if(!live())return;game.bookOff=game.bookDone=true;scheduleAi();};
-    if(!E||!E.evaluate||engine.state!=='ready'){play();return;}
+    var leave=function(){if(!live())return;if(turnedDown){turnedDown();return;}game.bookOff=game.bookDone=true;scheduleAi();};
+    if(!E||!E.evaluate||engine.state!=='ready'){if(turnedDown)leave();else play();return;}
     E.evaluate(fen,BOOK_CHECK).then(function(best){
       if(!live())return;
       if(!best||!best.score||best.best===key){play();return;}
@@ -410,7 +415,7 @@
   $('newGameCancel').onclick=function(){$('newGameDialog').close();};
   function newGame(side){
     $('newGameDialog').close();if($('resultDialog').open)$('resultDialog').close();stopReview();
-    cancelAi();hint=null;game.human=side;pickShape();game.bookDone=game.bookOff=false;game.recorded=false;game.resigned=false;flipped=side==='black';
+    cancelAi();hint=null;game.human=side;pickShape();game.bookDone=game.bookOff=false;game.planSkip={};game.recorded=false;game.resigned=false;flipped=side==='black';
     try{var url=new URL(location.href);url.searchParams.set('side',side);window.history.replaceState(null,'',url);}catch(e){}
     state=M.initial();trial={state:clone(state),history:[],future:[]};history=[];future=[];moves=[];selected=null;last=null;startCount();render();scheduleAi();
   }
@@ -1209,7 +1214,7 @@
   var pickMove=function(e){var td=e.target.closest('td.movePick');if(!td||mode!=='play')return;if(e.type==='keydown'&&e.key!=='Enter'&&e.key!==' ')return;e.preventDefault();jumpTo(Number(td.dataset.ply));};
   $('moveList').addEventListener('click',pickMove);$('moveList').addEventListener('keydown',pickMove);
   $('start').onclick=function(){var error=M.validate(state);if(error){message(error,true);sound.playResult('failure');return;}save();trial={state:clone(state),history:history.slice(),future:future.slice()};mode='play';history=[];future=[];moves=[];selected=null;last=null;startCount();render();};
-  $('restart').onclick=function(){cancelAi();stopReview();hint=null;pickShape();if(game){game.bookDone=game.bookOff=false;game.recorded=false;game.resigned=false;}remember();state=clone(trial.state);moves=[];selected=null;last=null;startCount();render();$('optionsDialog').close();scheduleAi();};
+  $('restart').onclick=function(){cancelAi();stopReview();hint=null;pickShape();if(game){game.bookDone=game.bookOff=false;game.planSkip={};game.recorded=false;game.resigned=false;}remember();state=clone(trial.state);moves=[];selected=null;last=null;startCount();render();$('optionsDialog').close();scheduleAi();};
   $('edit').onclick=function(){cancelAi();game=null;count=null;mode='edit';state=clone(trial.state);history=trial.history;future=trial.future;trial=null;moves=[];selected=null;last=null;render();};
   $('load').onclick=function(){if(mode!=='edit')return;try{var next=M.parse($('fen').value);remember();state=next;changed();$('optionsDialog').close();message('เปิดตำแหน่งแล้ว'+(M.validate(state)?' — '+M.validate(state):''));}catch(e){$('saveNote').textContent=e.message;}};
   $('copy').onclick=async function(){try{await navigator.clipboard.writeText($('fen').value);$('saveNote').textContent='คัดลอกรหัสแล้ว';}catch(e){$('fen').focus();$('fen').select();$('saveNote').textContent='เลือกข้อความแล้ว กรุณาคัดลอกด้วยเมนูของเครื่อง';}};
