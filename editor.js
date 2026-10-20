@@ -962,9 +962,10 @@
     $('emptyMoves').hidden=moves.length>0;
     $('panelTitle').textContent=mode==='edit'?'จัดตำแหน่งหมาก':'ทดลองเดิน';
     // /ai has no page title: the player bars say who plays which side, e.g. ฝ่ายแดง (AI ระดับเซียน) · ฝ่ายขาว (คุณ).
-    // The AI's side also says which engine plays: Full (the trained evaluation) or Lite.
-    var engineName=engineAi()&&E&&E.tier()?' · '+(E.tier()==='lite'?'Lite':'Full'):'';
-    var barName=function(side){return 'ฝ่าย'+(side==='white'?'ขาว':'แดง')+(game&&game.standalone?(side===game.human?' (คุณ)':' (AI ระดับเซียน'+engineName+')'):game&&game.ai&&side!==game.human&&engineName?' (AI'+engineName+')':'');};
+    // The AI's side also says which engine plays: the full one (the trained evaluation) is ระดับสุดยอดเซียน, the lite one
+    // ระดับเซียน.
+    var aiName='AI ระดับ'+(engineAi()&&E&&E.tier()==='full'?'สุดยอดเซียน':'เซียน');
+    var barName=function(side){return 'ฝ่าย'+(side==='white'?'ขาว':'แดง')+(game&&game.standalone?(side===game.human?' (คุณ)':' ('+aiName+')'):game&&game.ai&&game.level==='hard'&&side!==game.human&&E&&E.tier()?' ('+aiName+')':'');};
     $('topSide').textContent=barName(flipped?'white':'black');$('bottomSide').textContent=barName(flipped?'black':'white');
     $('topDot').classList.toggle('white',flipped);$('bottomDot').classList.toggle('white',!flipped);
     $('modeLabel').textContent=mode==='edit'?'1 · ตั้งตำแหน่ง':analysis?'AI ระดับเซียน'+(E&&E.tier()?' ('+(E.tier()==='lite'?'Lite':'Full')+')':''):game?(game.ai?'คุณเป็นฝ่าย'+sideName(game.human)+' · AI ระดับ'+(!engineAi()?'ง่าย'+(game.level==='easy'?'':' (สำรอง)'):({easy:'ง่าย',medium:'กลาง',hard:'เซียน'}[game.level])+' (คิดลึก '+(game.level==='hard'&&E&&E.lastDepth()||AI_LIMITS[game.level].depth)+' ชั้น)'):'เครื่องเดียวกัน'):'2 · ทดลองเดิน';var title=document.querySelector('.brand h1');if(title)title.textContent=analysis?'ถอดหมาก':game?(game.ai?'เล่นกับ AI':'เล่น 2 คน'):'ตั้งหมาก';
