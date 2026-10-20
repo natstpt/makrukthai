@@ -249,10 +249,10 @@ assert(!R.isAttacked(R.applyMove(board('K:a1 R:d4 P:h3 k:h8 n:f5'), at(saved.sli
   g = line(['c3c4', 'b1c3', 'd3d4', 'g1e2', 'e1d2', 'f3f4']);
   eq(g.out, ['d6d5', 'g8e7', 'e6e5', 'b8d7', 'd8c7', 'c7d6'], 'ง5 attacked by ค4 ม.ค3: ม.ช8-จ7 first');
   assert.ok(g.even && shape(g.fen), g.fen); checks++;
-  // After the met, the khon ฉ8-ฉ7-จ6 (not the king); then the plan is done.
-  g = line(['e3e4', 'd3d4', 'g1e2', 'b1d2', 'e1f2', 'f2e3', 'c1c2', 'c2d3', 'f1f2']);
-  eq(g.out.slice(6, 8), ['f8f7', 'f7e6'], 'the khon to จ6 after the met');
-  assert.ok(g.out[8].startsWith('done '), 'the plan ends with the khon on จ6'); checks++;
+  // After the met, the khon ฉ8-ฉ7-จ6 and the other khon one up, ค8-ค7 (not the king); then the plan is done.
+  g = line(['e3e4', 'd3d4', 'g1e2', 'b1d2', 'e1f2', 'f2e3', 'c1c2', 'c2d3', 'f1f2', 'h1h2']);
+  eq(g.out.slice(6, 9), ['f8f7', 'f7e6', 'c8c7'], 'the khon to จ6, then ค7');
+  assert.ok(g.out[9].startsWith('done '), 'the plan ends with the khon on ค7: ' + g.out[9]); checks++;
   // White's edge pawn up to ญ4: red meets it at once with ญ6-ญ5 (the game that let white take ญ5 and ฉ5).
   g = line(['e3e4', 'h3h4', 'f3f4']);
   eq(g.out, ['d6d5', 'h6h5', 'e6e5'], 'ญ4 met by ญ5');
@@ -291,7 +291,7 @@ assert(!R.isAttacked(R.applyMove(board('K:a1 R:d4 P:h3 k:h8 n:f5'), at(saved.sli
     }
     return out;
   };
-  eq(play('centre', ['d6d5', 'e6e5', 'b8d7', 'g8e7', 'd8c7', 'c7d6', 'f8f7', 'f7e6', 'c8c7']), ['e3e4', 'd3d4', 'g1e2', 'b1d2', 'e1f2', 'f2e3', 'c1c2', 'c2d3', 'done'], 'white centre plan');
+  eq(play('centre', ['d6d5', 'e6e5', 'b8d7', 'g8e7', 'd8c7', 'c7d6', 'f8f7', 'f7e6', 'c8c7', 'h8g8']), ['e3e4', 'd3d4', 'g1e2', 'b1d2', 'e1f2', 'f2e3', 'c1c2', 'c2d3', 'f1f2', 'done'], 'white centre plan');
   // Red's edge pawns up to ก5 ญ5 are met by ก4 ญ4 first.
   const passive = ['a6a5', 'h6h5', 'a8a7', 'h8h7', 'a7a6', 'h7h6', 'a6a7', 'h6h7', 'a7a6', 'h7h6'];
   eq(play('flank', passive), ['e3e4', 'a3a4', 'h3h4', 'f3f4', 'g1f3', 'e1f2', 'f2e3', ['c1c2', 'f1f2', 'f1e2'], 'd3d4', 'done'], 'white flank plan: the third pawn last');

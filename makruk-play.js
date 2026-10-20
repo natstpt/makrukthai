@@ -318,10 +318,10 @@
   // The engine AI's opening plans, a list of groups for each side and shape; each step is played as soon as it loses
   // no material (no short engine search can turn it down).
   //   centre, red:   the pawns ง5 จ5, the knights side by side on ง7 จ7 (guarding the pawns and each other against
-  //                  advanced pawns), the met ง8-ค7-ง6 (ง8-จ7-ง6 while จ7 is free), the khon ฉ8-ฉ7-จ6. Done with the
-  //                  khon on จ6 (the king stays home until then).
+  //                  advanced pawns), the met ง8-ค7-ง6 (ง8-จ7-ง6 while จ7 is free), the khon ฉ8-ฉ7-จ6, then the
+  //                  other khon one up, ค8-ค7. The king stays home until then.
   //   centre, white: the same mirrored: จ4 ง4, the knights on จ2 ง2, the met จ1-ฉ2-จ3 (จ1-ง2-จ3 while ง2 is free),
-  //                  the khon ค1-ค2-ง3.
+  //                  the khon ค1-ค2-ง3, then ฉ1-ฉ2.
   //   flank, white:  จ4 ฉ4, ม.ช1-ฉ3, the met จ1-ฉ2-จ3 (จ1-จ2-จ3), one khon up (ค2, ฉ2 or จ2, the engine choosing), and
   //                  only then, with the pieces ready, the third pawn ง4. Done with the pawn on ง4.
   // A knight comes before a pawn of the first group whose square is not safe yet, the one that makes it safe first
@@ -332,19 +332,21 @@
   // once the plan is done or cannot go on.
   var PLANS = {
     black: {
-      centre: { end: ['khon', 'e6'], groups: [
+      centre: { groups: [
         { pawns: true, steps: [['pawn', 'd6', 'd5'], ['pawn', 'e6', 'e5']] },
         { knights: true, steps: [['knight', 'b8', 'd7'], ['knight', 'g8', 'e7']] },
         { steps: [['met', 'd8', 'c7', 'd6'], ['met', 'c7', 'd6'], ['met', 'd8', 'e7', 'd6'], ['met', 'e7', 'd6']] },
-        { steps: [['khon', 'f8', 'f7', 'e6'], ['khon', 'f7', 'e6']] }] },
+        { steps: [['khon', 'f8', 'f7', 'e6'], ['khon', 'f7', 'e6']] },
+        { steps: [['khon', 'c8', 'c7']] }] },
       edges: [['h4', ['pawn', 'h6', 'h5']], ['a4', ['pawn', 'a6', 'a5']]]
     },
     white: {
-      centre: { end: ['khon', 'd3'], groups: [
+      centre: { groups: [
         { pawns: true, steps: [['pawn', 'e3', 'e4'], ['pawn', 'd3', 'd4']] },
         { knights: true, steps: [['knight', 'g1', 'e2'], ['knight', 'b1', 'd2']] },
         { steps: [['met', 'e1', 'f2', 'e3'], ['met', 'f2', 'e3'], ['met', 'e1', 'd2', 'e3'], ['met', 'd2', 'e3']] },
-        { steps: [['khon', 'c1', 'c2', 'd3'], ['khon', 'c2', 'd3']] }] },
+        { steps: [['khon', 'c1', 'c2', 'd3'], ['khon', 'c2', 'd3']] },
+        { steps: [['khon', 'f1', 'f2']] }] },
       edges: [['h5', ['pawn', 'h3', 'h4']], ['a5', ['pawn', 'a3', 'a4']]],
       flank: { end: ['pawn', 'd4'], groups: [
         { pawns: true, steps: [['pawn', 'e3', 'e4'], ['pawn', 'f3', 'f4']] },
@@ -363,9 +365,11 @@
       if (g.one && g.steps.some(function (st) { return mine(st[2], st[0]); })) return [];
       return g.steps.filter(function (st) { return mine(st[1], st[0]) && !mine(st[3] || st[2], st[0]); });
     });
-    if (mine(plan.end[1], plan.end[0]) || groups.every(function (g) { return !g.length; })) return null;
-    if (R.inCheck(pieces, side) || underAttack(pieces, side) || underAttack(pieces, opponent(side))) return { free: true };
     var legalStep = function (st) { return legal.find(function (m) { return same(m.from, square(st[1])) && same(m.to, square(st[2])); }); };
+    // Done: the end step played (white's flank shape), or no step still to come can be played (every one played, or
+    // its square taken for good).
+    if (plan.end && mine(plan.end[1], plan.end[0]) || !groups.some(function (g) { return g.some(legalStep); })) return null;
+    if (R.inCheck(pieces, side) || underAttack(pieces, side) || underAttack(pieces, opponent(side))) return { free: true };
     var step = function (steps, ps) { return steps.length ? chooseMove(ps || pieces, side, { openingOnly: true, steps: steps }) : null; };
     // An edge pawn of the opponent come up to its 4th rank (ญ4 against red) is met at once, pawn to pawn (ญ6-ญ5), so
     // it cannot go on and take room at the side.
