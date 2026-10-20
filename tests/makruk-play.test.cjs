@@ -278,6 +278,15 @@ assert(!R.isAttacked(R.applyMove(board('K:a1 R:d4 P:h3 k:h8 n:f5'), at(saved.sli
   eq(P.openingOver(board('K:d1 P:d5 k:e8 p:e6'), 'black', false), true, 'an advanced pawn after the exchange ends the plan');
 }
 
+// The lite engine's move that gives a pawn away for nothing is searched again among the moves that keep it
+// (keepMaterial): ค.ค1-ง2 left the pawn on ฉ4 to the knight on ช6; ฉ4-ฉ5 is the one move that keeps it.
+{
+  const ps = board('R:a1 N:b1 B:c1 K:d1 M:e1 B:f1 R:h1 P:a3 P:b3 P:c3 P:d3 N:f3 P:h3 P:e4 P:f4 r:a8 n:b8 b:c8 m:d8 k:e8 b:f8 r:h8 p:a6 p:b6 p:c6 p:d6 p:e6 p:f6 n:g6 p:h6');
+  eq(P.keepMaterial(ps, 'white', 'c1d2').moves.map(key), ['f4f5'], 'the pawn on ฉ4 kept');
+  eq(P.keepMaterial(ps, 'white', 'f4f5'), null, 'a move that keeps it stands');
+  eq(P.keepMaterial(M.initial().pieces, 'white', 'e3e4'), null, 'nothing given away');
+}
+
 // White's plans for the engine AI (aiOpening): the centre one mirrors red's (จ4 ง4, the knights on จ2 ง2, the met
 // จ1-ฉ2-จ3); the flank one is จ4 ฉ4, ม.ช1-ฉ3, the met to จ3, one khon up (the engine choosing ค2, ฉ2 or จ2), and only
 // then the third pawn ง4.
