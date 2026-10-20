@@ -15,40 +15,54 @@ const grade = (before, after, more) => G.classify(Object.assign({ before, after,
 eq(G.KINDS, ['brilliant', 'great', 'best', 'excellent', 'good', 'inaccuracy', 'mistake', 'miss', 'blunder'], 'nine grades');
 eq(G.KINDS.map(k => G.INFO[k].name), ['แต้มเซียน', 'แต้มเด็ด', 'ดีที่สุด', 'ดีมาก', 'ดี', 'ยังไม่แม่น', 'พลาด', 'พลาดโอกาส', 'พลาดหนัก'], 'Thai names');
 
-// By what the move gave away (centipawns for the side that moved).
+// By the chance of winning given away (1 pawn near a level game is about 9%).
 eq(grade(50, 50), 'best', 'no loss');
 eq(grade(50, 40), 'best', '0.1');
-eq(grade(50, 30), 'excellent', '0.2');
-eq(grade(50, 0), 'good', '0.5');
-eq(grade(50, -50), 'inaccuracy', '1.0');
-eq(grade(50, -150), 'mistake', '2.0');
-eq(grade(300, -100), 'blunder', 'more than 3');
-eq(grade(0, -320), 'blunder', 'level to lost');
-eq(grade(10000 - 3, 200), 'blunder', 'a mate thrown away');
+eq(grade(50, 30), 'excellent', 'under 2%');
+eq(grade(50, 0), 'good', 'under 5%');
+eq(grade(50, -50), 'inaccuracy', 'under 10%');
+eq(grade(50, -150), 'mistake', 'under 20%');
+eq(grade(300, -100), 'blunder', 'more than 20%');
+// The same two pawns cost little in a won game.
+eq(grade(900, 700), 'good', 'won game, two pawns');
+// Mates: walking into one, letting one go, keeping one, or lost anyway.
+eq(grade(0, -9995), 'blunder', 'walks into a mate');
+eq(grade(10000 - 3, 200), 'miss', 'a mate let go');
+eq(grade(10000 - 3, 1500), 'good', 'a mate let go, still as good as won');
+eq(grade(10000 - 3, 10000 - 4), 'best', 'the mate kept');
+eq(grade(10000 - 3, 10000 - 10), 'excellent', 'a slower mate');
 eq(grade(-10000 + 5, -10000 + 3), 'best', 'lost anyway');
+eq(G.mateIn(10000 - 3), 3, 'mate in 3');
+eq(G.mateIn(-10000 + 4), -4, 'mated in 4');
 
-// แต้มเด็ด: the only move (the second best at least 1.5 worse), not when the game was already won.
+// แต้มเด็ด: the only move (the second best gives away 15% or more), not when the game was already won.
 eq(grade(40, 40, { second: -150 }), 'great', 'only move');
 eq(grade(40, 40, { second: -60 }), 'best', 'others nearly as good');
 eq(grade(700, 700, { second: -200 }), 'best', 'already winning');
 eq(grade(40, 40, { second: null }), 'best', 'no second move');
-// แต้มเซียน: the best move offering a piece, the game still level or better.
-eq(grade(20, 20, { sacrifice: true }), 'brilliant', 'sacrifice');
-eq(grade(-200, -200, { sacrifice: true }), 'best', 'sacrifice while losing');
-eq(grade(20, -100, { sacrifice: true }), 'inaccuracy', 'a sacrifice that loses 1.2');
-// พลาดโอกาส: the opponent had just erred and this move let it go (without losing the game).
-eq(grade(400, 100, { prevLoss: 300 }), 'miss', 'missed the punishment');
-eq(grade(400, -400, { prevLoss: 300 }), 'blunder', 'and lost the game too');
-eq(grade(100, -100, { prevLoss: 50 }), 'mistake', 'no chance before');
+// แต้มเซียน: the best move offering a piece the engine would take, the game still level or better.
+eq(grade(20, 20, { sacrifice: true, replyTakes: true }), 'brilliant', 'sacrifice taken');
+eq(grade(20, 20, { sacrifice: true, replyTakes: null }), 'brilliant', 'sacrifice, reply not known');
+eq(grade(20, 20, { sacrifice: true, replyTakes: false }), 'best', 'the engine would not take it');
+eq(grade(-200, -200, { sacrifice: true, replyTakes: true }), 'best', 'sacrifice while losing');
+eq(grade(20, -60, { sacrifice: true }), 'inaccuracy', 'a sacrifice that gives away 7%');
+// พลาดโอกาส: the opponent had just erred, the best move took a piece or mated, and this move let it go.
+eq(grade(400, 100, { prevDrop: 20, bestWins: true }), 'miss', 'missed the punishment');
+eq(grade(400, 100, { prevDrop: 20, bestWins: false }), 'blunder', 'no shot there, just a big loss');
+eq(grade(400, -400, { prevDrop: 20, bestWins: true }), 'blunder', 'and lost the game too');
+eq(grade(100, -100, { prevDrop: 2, bestWins: true }), 'mistake', 'no chance before');
 
 eq([G.isTop('great'), G.isTop('excellent'), G.isBad('miss'), G.isBad('inaccuracy')], [true, false, true, false], 'groups');
 
-// Accuracy: 100 for moves that lose nothing, less the more the chance of winning drops.
+// Accuracy: 100 for moves that give nothing away; one big blunder among good moves pulls it down clearly.
 eq(Math.round(G.moveAccuracy(30, 30)), 100, 'no loss 100');
 assert.ok(G.moveAccuracy(0, -100) < G.moveAccuracy(0, -30)); checks++;
 assert.ok(G.moveAccuracy(0, -900) < 20); checks++;
 eq(G.accuracy([]), null, 'nothing graded');
-eq(Math.round(G.accuracy([{ before: 0, after: 0 }, { before: 0, after: 0 }])), 100, 'all best');
+const calm = Array.from({ length: 20 }, () => ({ before: 20, after: 20 }));
+eq(Math.round(G.accuracy(calm)), 100, 'all best');
+const oneBlunder = calm.slice(0, 19).concat([{ before: 20, after: -700 }]);
+assert.ok(G.accuracy(oneBlunder) < 88, 'one blunder (the plain average would be 95.6): ' + G.accuracy(oneBlunder).toFixed(1)); checks++;
 eq(G.winChance(10000 - 2), 100, 'mate is certain');
 
 // A sacrifice: a rook left where a pawn can take it.

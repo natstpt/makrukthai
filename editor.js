@@ -459,7 +459,7 @@
     if(!played)return false;
     var kind=score(played)===score(best)?'best':played.res===best.res?'good':played.res==='loss'?'blunder':'mistake',better=null;
     if(!G.isTop(kind)){try{better=N.formatMove(M.parse(job.fens[i]).pieces,best.move.from,best.move.to).text;}catch(e){}}
-    job.rated.push({i:i,kind:kind,loss:0,before:score(best),after:score(played),ai:side!==game.human,better:better,bestKey:G.isTop(kind)?null:moveKey(best.move),
+    job.rated.push({i:i,kind:kind,loss:0,before:score(best),after:score(played),ai:side!==game.human,table:true,better:better,bestKey:G.isTop(kind)?null:moveKey(best.move),
       note:G.isBad(kind)?'ตารางท้ายเกม: '+TABLE_WORD[best.res]+' → '+TABLE_WORD[played.res]:''});
     job.vals[i]=score(best);job.vals[i+1]=-score(played);
     return true;
@@ -500,18 +500,11 @@
     var grade=function(){
       line.forEach(function(m,i){
         if(graded[i]||job.vals[i]===undefined||job.vals[i+1]===undefined)return;
-        graded[i]=true;
-        var before=job.vals[i],after=-job.vals[i+1],mine=m.side===game.human,prev=job.rated.find(function(q){return q.i===i-1;}),pieces=M.parse(job.fens[i]).pieces;
-        var c=reviewCache.get(job.fens[i]),best=c&&c.best,sac=false;
-        try{sac=G.sacrifice(R,pieces,square(m.uci,0),square(m.uci,2));}catch(e){}
-        var kind=G.classify({before:before,after:after,second:mine?job.seconds[i]:null,sacrifice:sac,prevLoss:prev?Math.max(0,prev.before-prev.after):0});
-        if(best===m.uci&&!G.isTop(kind))kind='best';
-        var better=null,bestKey=G.isTop(kind)||!best||best===m.uci?null:best;
-        if(bestKey){try{better=N.formatMove(pieces,square(bestKey,0),square(bestKey,2)).text;}catch(e){}}
-        job.rated.push({i:i,kind:kind,loss:Math.max(0,Math.min(1000,before)-Math.max(-1000,after)),before:before,after:after,ai:!mine,better:better,bestKey:bestKey});
+        graded[i]=true;job.rated.push(gradeMove(job,i));
       });
       job.rated.sort(function(a,b){return a.i-b.i;});
     };
+    job.regrade=function(){job.rated=job.rated.filter(function(q){if(!q.table)graded[q.i]=false;return q.table;});grade();};
     grade();
     var step=function(k){
       if(job.stopped)return;
@@ -528,13 +521,59 @@
     };
     drawReview();step(0);
   }
+  // The grade of the move at ply i of a review, from the positions before and after it (review-grades.js): the
+  // engine's best move there (a capture or a mate it let go: พลาดโอกาส), its best reply after (whether it would take
+  // an offered piece: แต้มเซียน), the second best move (แต้มเด็ด) and what the opponent's move before gave away.
+  function gradeMove(job,i){
+    var m=job.line[i],before=job.vals[i],after=-job.vals[i+1],mine=m.side===game.human,prev=job.rated.find(function(q){return q.i===i-1;}),pieces=M.parse(job.fens[i]).pieces;
+    var c=reviewCache.get(job.fens[i]),best=c&&c.best,sac=false;
+    try{sac=G.sacrifice(R,pieces,square(m.uci,0),square(m.uci,2));}catch(e){}
+    var r1=reviewCache.get(job.fens[i+1]),reply=r1&&r1.best,bestWins=before>=9000;
+    if(best&&best!==m.uci){var took=pieces.find(function(p){return same(p.at,square(best,2));});if(took&&took.piece!=='pawn')bestWins=true;}
+    var kind=G.classify({before:before,after:after,second:mine?job.seconds[i]:null,sacrifice:sac,replyTakes:reply?reply.slice(2,4)===m.uci.slice(2,4):null,
+      prevDrop:prev?Math.max(0,G.winChance(prev.before)-G.winChance(prev.after)):0,bestWins:bestWins});
+    if(best===m.uci&&!G.isTop(kind))kind='best';
+    var better=null,bestKey=G.isTop(kind)||!best||best===m.uci?null:best;
+    if(bestKey){try{better=N.formatMove(pieces,square(bestKey,0),square(bestKey,2)).text;}catch(e){}}
+    return {i:i,kind:kind,loss:Math.max(0,Math.min(1000,before)-Math.max(-1000,after)),before:before,after:after,ai:!mine,sac:sac,better:better,bestKey:bestKey,
+      mate:before>=9000&&after<9000?G.mateIn(before):0,mated:after<=-9000&&before>-9000?-G.mateIn(after):0};
+  }
+  // วิเคราะห์ละเอียด (a button once the review is done): the moves worth a second look (all but a plain ดีที่สุด, and
+  // those offering a piece) are searched again, both positions, deeper and longer, and every move is graded again.
+  function deepReview(){
+    var job=review;if(!job||job.deep||job.deepRunning||job.error||job.done<job.total||!E||engine.state==='failed')return;
+    var ats={},two={},depth=liteEngine()?14:18,time=liteEngine()?1500:2500;
+    job.rated.forEach(function(q){if(q.table||q.kind==='best'&&!q.sac)return;ats[q.i]=true;ats[q.i+1]=true;if(!q.ai)two[q.i]=true;});
+    var list=Object.keys(ats).map(Number).filter(function(at){var p=M.parse(job.fens[at]);return R.gameStatus(p.pieces,p.turn).state==='playing';}).sort(function(a,b){return a-b;});
+    job.deepRunning=true;job.deepDone=0;job.deepTotal=list.length;job.deepDepth=depth;drawReview();
+    var step=function(k){
+      if(job.stopped)return;
+      if(k>=list.length){job.deepRunning=false;job.deep=true;job.regrade();drawReview();return;}
+      var at=list[k],fen=job.fens[at];
+      E.evaluate(fen,{depth:depth,time:time,multipv:two[at]?2:1}).then(function(r){
+        if(job.stopped)return;
+        if(r&&r.score){
+          var entry={value:reviewValue(r),best:r.best||null,depth:r.depth||0,second:r.second===undefined?(reviewCache.get(fen)||{}).second:r.second?reviewValue({score:r.second}):null};
+          reviewCache.set(fen,entry);job.vals[at]=entry.value;if(two[at])job.seconds[at]=entry.second;
+        }
+        job.deepDone++;drawReview();step(k+1);
+      },function(){if(job.stopped)return;job.deepRunning=false;job.error='AI วิเคราะห์ละเอียดไม่สำเร็จ';drawReview();});
+    };
+    step(0);
+  }
+  ['deepBtn','deepBtn2'].forEach(function(id){$(id).onclick=deepReview;});
   function drawReview(){
     var job=review;if(!job)return;
-    var finished=!job.error&&job.done>=job.total;
+    var finished=!job.error&&job.done>=job.total&&!job.deepRunning;
     $('gradeTable').innerHTML=gradeTableHtml(job);if($('gradeDialog').open)$('gradeTable2').innerHTML=gradeTableHtml(job);
     $('reviewProgress').hidden=finished&&!job.error;
-    $('reviewBar').style.width=(job.total?Math.round(job.done/job.total*100):100)+'%';
-    $('reviewText').textContent=job.error||(job.total?'AI กำลังวิเคราะห์ '+Math.round(job.done/job.total*100)+'% (ลึก '+(job.depth||reviewDepth())+' ชั้น)':job.line.length?'วิเคราะห์ครบแล้ว':'ยังไม่มีตาเดินให้วิเคราะห์');
+    var deepPct=job.deepTotal?Math.round(job.deepDone/job.deepTotal*100):100;
+    $('reviewBar').style.width=(job.deepRunning?deepPct:job.total?Math.round(job.done/job.total*100):100)+'%';
+    ['deepBtn','deepBtn2'].forEach(function(id){
+      var b=$(id);b.hidden=!!job.error||job.done<job.total||!job.line.length;b.disabled=!!job.deep||!!job.deepRunning;
+      b.textContent=job.deep?'✓ วิเคราะห์ละเอียดแล้ว (ลึก '+job.deepDepth+' ชั้น)':job.deepRunning?'กำลังวิเคราะห์ละเอียด… '+deepPct+'%':'🔍 วิเคราะห์ละเอียด';
+    });
+    $('reviewText').textContent=job.deepRunning?'กำลังวิเคราะห์ละเอียด '+deepPct+'% (ลึก '+job.deepDepth+' ชั้น)':job.error||(job.total?'AI กำลังวิเคราะห์ '+Math.round(job.done/job.total*100)+'% (ลึก '+(job.depth||reviewDepth())+' ชั้น)':job.line.length?'วิเคราะห์ครบแล้ว':'ยังไม่มีตาเดินให้วิเคราะห์');
     $('reviewBtn').disabled=!job.line.length;
     drawResultGraph();
     if(reviewing){renderMoves();drawGameReview();}
@@ -649,10 +688,11 @@
     if(r.kind==='great')return 'แต้มเด็ด! เป็นตาเดียวที่รักษาเกมไว้ได้'+(why.good?' · '+why.good:'');
     if(r.kind==='best')return why.good?BEST_HEAD[(n-1)%BEST_HEAD.length]+why.good:BEST_SAY[Math.floor((n-1)/2)%BEST_SAY.length];
     if(r.kind==='excellent')return 'ดีมาก! '+(why.good||'เกือบเท่าแต้มที่ดีที่สุด');
-    if(r.kind==='good')return 'ดี'+(why.good?' '+why.good:'')+' แต่ยังมีแต้มที่ดีกว่านิดหน่อย';
+    if(r.kind==='good')return r.mate?'ดี ยังชนะอยู่ แต่มีทางรุกจนใน '+r.mate+' ตาที่เร็วกว่า':'ดี'+(why.good?' '+why.good:'')+' แต่ยังมีแต้มที่ดีกว่านิดหน่อย';
     if(r.kind==='inaccuracy')return 'ยังไม่แม่นนิดหน่อย เสียไป '+pts;
     if(r.kind==='mistake')return r.note||'ตานี้พลาด เสียไป '+pts;
-    if(r.kind==='miss')return 'พลาดโอกาส! AI เพิ่งเดินพลาด แต่ตานี้ยังไม่ได้เอาคืน'+(big?'':' (เสียไป '+pts+')');
+    if(r.kind==='miss')return r.mate?'พลาดโอกาส! ตรงนี้มีทางรุกจนใน '+r.mate+' ตา':'พลาดโอกาส! AI เพิ่งเดินพลาด แต่ตานี้ยังไม่ได้เอาคืน'+(big?'':' (เสียไป '+pts+')');
+    if(r.mated)return 'พลาดหนัก! เปิดทางให้ AI รุกจนใน '+r.mated+' ตา';
     return r.note||(big?'พลาดหนัก! เสียเปรียบไปมาก':'พลาดหนัก! เสียไป '+pts);
   }
   // The summary of the game: each side's accuracy, then how many moves of each grade (the player's, then the AI's);
