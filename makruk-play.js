@@ -179,8 +179,15 @@
   var FLANK_ANSWER = {
     white: { pawn: 'd4', steps: [['khon', 'c1', 'c2'], ['pawn', 'b3', 'b4', 'c5'], ['pawn', 'b4', 'c5']] }
   };
+  // White's three centre pawns (ง4 จ4 ฉ4): after the rest of its shape, when red does not stand in the centre (no red
+  // pawn on ค5 ง5 จ5 ฉ5), the missing one of them goes up too, for room to attack. Red keeps its shape as it is.
+  var CENTRE_PAWNS = [['pawn', 'd3', 'd4'], ['pawn', 'e3', 'e4'], ['pawn', 'f3', 'f4']];
+  function centreFree(pieces) {
+    return !pieces.some(function (p) { return p.side === 'black' && p.piece === 'pawn' && p.at.r === 3 && p.at.c >= 2 && p.at.c <= 5; });
+  }
   function shapeSteps(pieces, side, shape, answerOnly) {
     var steps = answerOnly ? [] : (OPENINGS[shape] && OPENINGS[shape][side] || OPENING[side]), answer = FLANK_ANSWER[side];
+    if (!answerOnly && side === 'white' && centreFree(pieces)) steps = steps.concat(CENTRE_PAWNS);
     if (shape === 'flank' && answer && pieces.some(function (p) { return p.side !== side && p.piece === 'pawn' && same(p.at, square(answer.pawn)); }))
       steps = answer.steps.concat(steps);
     return steps;
@@ -291,6 +298,11 @@
     scored.forEach(function (x) { var s = x.score + random() * 0.35; if (s > bestScore) { bestScore = s; best = x.move; } });
     return best;
   }
+  // A pawn of the other side past its 4th rank (เบี้ยสูง: a white pawn on rank 5 or further, a red one on rank 4 or
+  // lower): the game has left the quiet opening the shapes are made for, and the engine AI leaves its shape.
+  function pawnAdvanced(pieces, side) {
+    return pieces.some(function (p) { return p.piece === 'pawn' && p.side !== side && (p.side === 'white' ? p.at.r <= 3 : p.at.r >= 4); });
+  }
   // The opening-shape move chooseMove would play now (the shape's pawns first), or null when the shape is done or has
   // to wait; the engine AI plays these before handing the game to the engine.
   function openingChoice(pieces, side, shape) { return chooseMove(pieces, side, { openingOnly: true, shape: shape }); }
@@ -307,5 +319,5 @@
     });
   }
 
-  return { canRequestBoardCount: canRequestBoardCount, requestBoardCount: requestBoardCount, canRequestSpecialCount: canRequestSpecialCount, requestSpecialCount: requestSpecialCount, quietPlies: quietPlies, pawnsLocked: pawnsLocked, LOCKED_PLIES: LOCKED_PLIES, SHUFFLES: SHUFFLES, shuffleMoves: shuffleMoves, material: material, VALUES: VALUES, OPENING: OPENING, OPENINGS: OPENINGS, openingMove: openingMove, openingMoves: openingMoves, openingChoice: openingChoice, flankAnswer: flankAnswer, ceilingFor: ceilingFor, nextCount: nextCount, countText: countText, exchange: exchange, chooseMove: chooseMove };
+  return { canRequestBoardCount: canRequestBoardCount, requestBoardCount: requestBoardCount, canRequestSpecialCount: canRequestSpecialCount, requestSpecialCount: requestSpecialCount, quietPlies: quietPlies, pawnsLocked: pawnsLocked, LOCKED_PLIES: LOCKED_PLIES, SHUFFLES: SHUFFLES, shuffleMoves: shuffleMoves, material: material, VALUES: VALUES, OPENING: OPENING, OPENINGS: OPENINGS, openingMove: openingMove, openingMoves: openingMoves, openingChoice: openingChoice, flankAnswer: flankAnswer, pawnAdvanced: pawnAdvanced, ceilingFor: ceilingFor, nextCount: nextCount, countText: countText, exchange: exchange, chooseMove: chooseMove };
 });

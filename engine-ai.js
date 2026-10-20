@@ -241,6 +241,7 @@
   // searching limits.depth plies but stopping itself after limits.time ms. Resolves {best: 'e3e4'|null,
   // score: {cp}|{mate}|null, depth}. Queued with bestMove, so it never overlaps an AI move.
   // limits.multipv 2 also searches the second best move: second is its score (null when there is only one move).
+  // limits.searchmoves ['e3e4', …] searches only those moves (the opening check scores the shape's move this way).
   // The last bestMove search: {score, depth, best, fen, moves} (score from the side to move), for the game review.
   var last = null, evaluating = false;
   // Ends an evaluate() at once (the full build; the lite one cannot be stopped and finishes its short search).
@@ -269,7 +270,7 @@
         };
         var give = setTimeout(function () { listener = null; searched(); resolve(out); }, limits.time + 1500);
         line.post('position fen ' + fen);
-        line.post('go depth ' + limits.depth + ' movetime ' + limits.time);
+        line.post('go depth ' + limits.depth + ' movetime ' + limits.time + (limits.searchmoves ? ' searchmoves ' + limits.searchmoves.join(' ') : ''));
       });
     }, function (e) { searched(); throw e; });
   }
