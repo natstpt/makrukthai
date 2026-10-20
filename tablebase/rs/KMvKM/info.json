@@ -1,0 +1,1 @@
+{"name":"KMvKM","white":["M"],"black":["M"],"positions":2621440,"symmetries":[0,1,2,3,4,5,6,7],"kings":[0,1,2,3,9,10,11,18,19,27],"comb":4096,"groups":[{"start":0,"count":1,"size":64},{"start":1,"count":1,"size":64}],"files":["KMvKM.w.bin","KMvKM.b.bin"],"wins":15,"losses":6,"longest":1,"part":2621440,"single":true,"zero":[]}
