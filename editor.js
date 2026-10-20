@@ -962,9 +962,10 @@
     $('emptyMoves').hidden=moves.length>0;
     $('panelTitle').textContent=mode==='edit'?'จัดตำแหน่งหมาก':'ทดลองเดิน';
     // /ai has no page title: the player bars say who plays which side, e.g. ฝ่ายแดง (AI ระดับเซียน) · ฝ่ายขาว (คุณ).
-    // The AI's side also says which engine plays: Full (the trained evaluation) or Lite.
-    var engineName=engineAi()&&E&&E.tier()?' · '+(E.tier()==='lite'?'Lite':'Full'):'';
-    var barName=function(side){return 'ฝ่าย'+(side==='white'?'ขาว':'แดง')+(game&&game.standalone?(side===game.human?' (คุณ)':' (AI ระดับเซียน'+engineName+')'):game&&game.ai&&side!==game.human&&engineName?' (AI'+engineName+')':'');};
+    // The AI's side also says which engine plays: the full one (the trained evaluation) is ระดับสุดยอดเซียน, the lite one
+    // ระดับเซียน.
+    var aiName='AI ระดับ'+(engineAi()&&E&&E.tier()==='full'?'สุดยอดเซียน':'เซียน');
+    var barName=function(side){return 'ฝ่าย'+(side==='white'?'ขาว':'แดง')+(game&&game.standalone?(side===game.human?' (คุณ)':' ('+aiName+')'):game&&game.ai&&game.level==='hard'&&side!==game.human&&E&&E.tier()?' ('+aiName+')':'');};
     $('topSide').textContent=barName(flipped?'white':'black');$('bottomSide').textContent=barName(flipped?'black':'white');
     $('topDot').classList.toggle('white',flipped);$('bottomDot').classList.toggle('white',!flipped);
     $('modeLabel').textContent=mode==='edit'?'1 · ตั้งตำแหน่ง':analysis?'AI ระดับเซียน'+(E&&E.tier()?' ('+(E.tier()==='lite'?'Lite':'Full')+')':''):game?(game.ai?'คุณเป็นฝ่าย'+sideName(game.human)+' · AI ระดับ'+(!engineAi()?'ง่าย'+(game.level==='easy'?'':' (สำรอง)'):({easy:'ง่าย',medium:'กลาง',hard:'เซียน'}[game.level])+' (คิดลึก '+(game.level==='hard'&&E&&E.lastDepth()||AI_LIMITS[game.level].depth)+' ชั้น)'):'เครื่องเดียวกัน'):'2 · ทดลองเดิน';var title=document.querySelector('.brand h1');if(title)title.textContent=analysis?'ถอดหมาก':game?(game.ai?'เล่นกับ AI':'เล่น 2 คน'):'ตั้งหมาก';
@@ -1264,7 +1265,17 @@
   $('load').onclick=function(){if(mode!=='edit')return;try{var next=M.parse($('fen').value);remember();state=next;changed();$('optionsDialog').close();message('เปิดตำแหน่งแล้ว'+(M.validate(state)?' — '+M.validate(state):''));}catch(e){$('saveNote').textContent=e.message;}};
   $('copy').onclick=async function(){try{await navigator.clipboard.writeText($('fen').value);$('saveNote').textContent='คัดลอกรหัสแล้ว';}catch(e){$('fen').focus();$('fen').select();$('saveNote').textContent='เลือกข้อความแล้ว กรุณาคัดลอกด้วยเมนูของเครื่อง';}};
   document.addEventListener('keydown',function(e){if(reviewing&&(e.key==='ArrowLeft'||e.key==='ArrowRight')&&!/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)&&!document.querySelector('dialog[open]')){e.preventDefault();reviewStep(e.key==='ArrowLeft'?-1:1);return;}if(reviewing&&e.key==='Escape'&&!document.querySelector('dialog[open]')){closeReview();return;}if(e.key==='Escape'&&!$('exportDialog').open&&!$('optionsDialog').open){if(drag)return;selected=null;tool='move';render();}});
-  $('options').onclick=function(){$('optionsDialog').showModal();};
+  // In a game against the hard AI the options say which engine plays and, for the lite one, why; the full one can be
+  // tried again from there (engine-ai.js retryFull: reloads the page, the game starts over).
+  function drawEngineInfo(){
+    var tier=game&&game.ai&&game.level==='hard'&&E&&E.tier&&E.tier();
+    $('engineOptions').hidden=!tier;if(!tier)return;
+    var why=tier==='lite'&&E.liteReason&&E.liteReason();
+    $('engineInfo').textContent=tier==='full'?'ตอนนี้เล่นกับ AI ระดับสุดยอดเซียน (AI รุ่นเต็ม)':'ตอนนี้เล่นกับ AI ระดับเซียน (AI รุ่นเบา)'+(why?' · '+why:'');
+    $('retryFull').hidden=tier==='full';
+  }
+  $('retryFull').onclick=function(){if(E&&E.retryFull)E.retryFull();};
+  $('options').onclick=function(){drawEngineInfo();$('optionsDialog').showModal();};
   $('closeOptions').onclick=function(){$('optionsDialog').close();};
   $('optionsDialog').addEventListener('close',function(){$('options').focus();});
 
