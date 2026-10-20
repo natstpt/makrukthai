@@ -253,6 +253,14 @@ for (const [ai, script, answer] of [['white', ['d6d5', 'c6c5', 'b8c6', 'd5d4'], 
   eq(P.flankAnswer(advanced, 'black', 'flank'), null, 'red has no flank shape');
 }
 
+// เบี้ยสูง: a pawn of the other side past its 4th rank (white on rank 5, red on rank 4) ends the engine AI's shape.
+{
+  eq(P.pawnAdvanced(M.initial().pieces, 'black'), false, 'opening position: no advanced pawn');
+  eq(P.pawnAdvanced(M.parse('rnsmksnr/8/pppppp1p/6pP/8/PPPPPPP1/8/RNSKMSNR b - - 0 1').pieces, 'black'), true, 'white pawn on ญ5: red leaves its shape');
+  eq(P.pawnAdvanced(M.parse('rnsmksnr/8/pppppp1p/6pP/8/PPPPPPP1/8/RNSKMSNR b - - 0 1').pieces, 'white'), false, 'own pawns do not count');
+  eq(P.pawnAdvanced(M.parse('rnsmksnr/8/ppp1pppp/8/3p4/PPPPPPPP/8/RNSKMSNR w - - 0 1').pieces, 'white'), true, 'red pawn on ง4: white leaves its shape');
+}
+
 // Whole games: the computer plays both sides with counting; every game ends (mate or a draw) within the count limits.
 let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
 const endings = {};

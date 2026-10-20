@@ -118,13 +118,17 @@
     var token=aiSearch,hard=engineAi();
     // Engine AI: the opening shape first (ง4 จ4 / ง5 จ5 pawns, then the pieces behind them); once it is done or has
     // to stop, the engine plays the rest of the game. Decided now, so an engine move does not wait the opening delay.
-    var book=hard&&!game.bookDone&&P.openingChoice(state.pieces,state.turn,game.shape);
+    // The shape is left for good as soon as the game is no longer a quiet opening: a capture has been made, or a pawn
+    // of the other side stands past its 4th rank (เบี้ยสูง). Each shape move is also checked by the engine first
+    // (checkBook).
+    if(hard&&!game.bookDone&&(moves.some(function(m){return m.capture;})||P.pawnAdvanced(state.pieces,state.turn)))game.bookDone=true;
+    var book=hard&&!game.bookOff&&!game.bookDone&&P.openingChoice(state.pieces,state.turn,game.shape);
     // The answer to an advanced pawn against the flank shape (makruk-play.js FLANK_ANSWER) is played even after the
-    // shape has handed over to the engine.
-    if(hard&&game.bookDone&&!book)book=P.flankAnswer(state.pieces,state.turn,game.shape);
+    // shape has handed over to the engine (unless the engine turned a shape move down).
+    if(hard&&!game.bookOff&&game.bookDone&&!book)book=P.flankAnswer(state.pieces,state.turn,game.shape);
     if(hard&&!book)game.bookDone=true;
     var delay=hard?(book||game.level!=='hard'?500:100):700;
-    think={start:Date.now(),depth:0,at:{},target:20,quick:book||!hard?delay:0,time:0};
+    think={start:Date.now(),depth:0,at:{},target:20,quick:book?delay+900:!hard?delay:0,time:0};
     aiTimer=setTimeout(function(){
       aiTimer=0;if(token!==aiSearch||!aiTurn())return;
       // The AI asks for the ordinary board count when it is behind; the special count is for the player only.
@@ -144,7 +148,7 @@
       var table=game.level!=='easy'&&window.MakrukTablebase&&MakrukTablebase.bestMove(state.pieces,state.turn);
       if(table){if(think)think.quick=1;playMove(table.move.from,table.move.to);return;}
       if(!hard){easy();return;}
-      if(book){playMove(book.from,book.to);return;}
+      if(book){checkBook(book,token);return;}
       // The engine gets the moves since the last pawn move or capture (no position before it can come back), so it
       // sees the repetitions and never needs a promotion suffix.
       var since=moves.length;while(since>0&&moves[since-1].piece!=='pawn'&&!moves[since-1].capture)since--;
@@ -158,6 +162,25 @@
         if(move)playMove(move.from,move.to);else easy();
       },function(){if(token===aiSearch&&aiTurn())easy();});
     },delay);
+  }
+  // A shape move is played only when the engine finds it about as good as its own best move (a short search, 12
+  // plies, 0.4 s: no more than BOOK_MARGIN worse). Otherwise the AI plays the engine's move and keeps no shape for
+  // the rest of the game (game.bookOff). Before the engine has loaded, the shape move is played unchecked.
+  var BOOK_MARGIN=30,BOOK_CHECK={depth:12,time:400};
+  function checkBook(book,token){
+    var fen=M.fen(state),key=moveKey(book),live=function(){return token===aiSearch&&aiTurn();};
+    var play=function(){if(live())playMove(book.from,book.to);};
+    var leave=function(){if(!live())return;game.bookOff=game.bookDone=true;scheduleAi();};
+    if(!E||!E.evaluate||engine.state!=='ready'){play();return;}
+    E.evaluate(fen,BOOK_CHECK).then(function(best){
+      if(!live())return;
+      if(!best||!best.score||best.best===key){play();return;}
+      return E.evaluate(fen,Object.assign({searchmoves:[key]},BOOK_CHECK)).then(function(mine){
+        if(!live())return;
+        if(!mine||!mine.score){play();return;}
+        if(reviewValue(best)-reviewValue(mine)<=BOOK_MARGIN)play();else leave();
+      });
+    }).catch(play);
   }
   // A finished game against the AI is counted for its level (makrukAiGames), once per game; the play-the-computer
   // lessons (ai-lessons.js) pass after one.
@@ -383,7 +406,7 @@
   $('newGameCancel').onclick=function(){$('newGameDialog').close();};
   function newGame(side){
     $('newGameDialog').close();if($('resultDialog').open)$('resultDialog').close();stopReview();
-    cancelAi();hint=null;game.human=side;pickShape();game.bookDone=false;game.recorded=false;game.resigned=false;flipped=side==='black';
+    cancelAi();hint=null;game.human=side;pickShape();game.bookDone=game.bookOff=false;game.recorded=false;game.resigned=false;flipped=side==='black';
     try{var url=new URL(location.href);url.searchParams.set('side',side);window.history.replaceState(null,'',url);}catch(e){}
     state=M.initial();trial={state:clone(state),history:[],future:[]};history=[];future=[];moves=[];selected=null;last=null;startCount();render();scheduleAi();
   }
@@ -1182,7 +1205,7 @@
   var pickMove=function(e){var td=e.target.closest('td.movePick');if(!td||mode!=='play')return;if(e.type==='keydown'&&e.key!=='Enter'&&e.key!==' ')return;e.preventDefault();jumpTo(Number(td.dataset.ply));};
   $('moveList').addEventListener('click',pickMove);$('moveList').addEventListener('keydown',pickMove);
   $('start').onclick=function(){var error=M.validate(state);if(error){message(error,true);sound.playResult('failure');return;}save();trial={state:clone(state),history:history.slice(),future:future.slice()};mode='play';history=[];future=[];moves=[];selected=null;last=null;startCount();render();};
-  $('restart').onclick=function(){cancelAi();stopReview();hint=null;pickShape();if(game){game.bookDone=false;game.recorded=false;game.resigned=false;}remember();state=clone(trial.state);moves=[];selected=null;last=null;startCount();render();$('optionsDialog').close();scheduleAi();};
+  $('restart').onclick=function(){cancelAi();stopReview();hint=null;pickShape();if(game){game.bookDone=game.bookOff=false;game.recorded=false;game.resigned=false;}remember();state=clone(trial.state);moves=[];selected=null;last=null;startCount();render();$('optionsDialog').close();scheduleAi();};
   $('edit').onclick=function(){cancelAi();game=null;count=null;mode='edit';state=clone(trial.state);history=trial.history;future=trial.future;trial=null;moves=[];selected=null;last=null;render();};
   $('load').onclick=function(){if(mode!=='edit')return;try{var next=M.parse($('fen').value);remember();state=next;changed();$('optionsDialog').close();message('เปิดตำแหน่งแล้ว'+(M.validate(state)?' — '+M.validate(state):''));}catch(e){$('saveNote').textContent=e.message;}};
   $('copy').onclick=async function(){try{await navigator.clipboard.writeText($('fen').value);$('saveNote').textContent='คัดลอกรหัสแล้ว';}catch(e){$('fen').focus();$('fen').select();$('saveNote').textContent='เลือกข้อความแล้ว กรุณาคัดลอกด้วยเมนูของเครื่อง';}};
