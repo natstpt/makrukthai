@@ -116,24 +116,20 @@
     if(!aiTurn()||future.length||playStatus().state!=='playing'){ponder();return;}
     if(pondering&&E&&E.stopSearch)E.stopSearch();
     var token=aiSearch,hard=engineAi();
-    // Engine AI: the opening shape first (ง4 จ4 / ง5 จ5 pawns, then the pieces behind them); once it is done or has
-    // to stop, the engine plays the rest of the game. Decided now, so an engine move does not wait the opening delay.
-    // The shape is left for good as soon as the game is no longer a quiet opening: a capture has been made, or a pawn
-    // of the other side stands past its 4th rank (เบี้ยสูง). Each shape move is also checked by the engine first
-    // (checkBook).
-    // Red (the AI moving second) has its own opening instead (makruk-play.js redOpening): the centre pawns ง5 จ5, the
-    // knights on ง7 จ7, then the met to ง6. An even exchange does not end it; material no longer even does (not while
-    // an exchange is still going on: the last move took).
-    var redAi=hard&&state.turn==='black';
+    // Engine AI: the opening plan first (makruk-play.js aiOpening: the centre pawns, the knights, the met, and for
+    // white's flank shape a khon and the third pawn); once it is done or has to stop, the engine plays the rest of the
+    // game. Decided now, so an engine move does not wait the opening delay. A move where the opponent threatens
+    // something is the engine's, and the plan goes on after it. The plan is left for good once material is no longer
+    // even (not while an exchange is still going on: the last move took) or a pawn of the other side stands past its
+    // 4th rank (เบี้ยสูง).
     var uneven=P.material(state.pieces,'white')!==P.material(state.pieces,'black')&&!(moves.length&&moves[moves.length-1].capture);
-    if(hard&&!game.bookDone&&((redAi?uneven:moves.some(function(m){return m.capture;}))||P.pawnAdvanced(state.pieces,state.turn)))game.bookDone=true;
-    var red=redAi&&!game.bookDone&&P.redOpening(state.pieces);
-    var fixed=red&&red.move,only=red&&red.moves&&red.moves.map(moveKey);
-    var book=fixed||!redAi&&hard&&!game.bookOff&&!game.bookDone&&P.openingChoice(state.pieces,state.turn,game.shape);
+    if(hard&&!game.bookDone&&(uneven||P.pawnAdvanced(state.pieces,state.turn)))game.bookDone=true;
+    var plan=hard&&!game.bookDone&&P.aiOpening(state.pieces,state.turn,game.shape);
+    var fixed=plan&&plan.move,only=plan&&plan.moves&&plan.moves.map(moveKey),book=fixed;
     // The answer to an advanced pawn against the flank shape (makruk-play.js FLANK_ANSWER) is played even after the
     // shape has handed over to the engine (unless the engine turned a shape move down).
     if(hard&&!game.bookOff&&game.bookDone&&!book)book=P.flankAnswer(state.pieces,state.turn,game.shape);
-    if(hard&&!book&&!red)game.bookDone=true;
+    if(hard&&!book&&!plan)game.bookDone=true;
     var delay=hard?(book||game.level!=='hard'?500:100):700;
     think={start:Date.now(),depth:0,at:{},target:20,quick:book?delay+900:!hard?delay:0,time:0};
     aiTimer=setTimeout(function(){
@@ -155,7 +151,7 @@
       var table=game.level!=='easy'&&window.MakrukTablebase&&MakrukTablebase.bestMove(state.pieces,state.turn);
       if(table){if(think)think.quick=1;playMove(table.move.from,table.move.to);return;}
       if(!hard){easy();return;}
-      if(fixed||only&&only.length===1){var one=fixed||red.moves[0];playMove(one.from,one.to);return;}
+      if(fixed||only&&only.length===1){var one=fixed||plan.moves[0];playMove(one.from,one.to);return;}
       if(book){checkBook(book,token);return;}
       // The engine gets the moves since the last pawn move or capture (no position before it can come back), so it
       // sees the repetitions and never needs a promotion suffix.
@@ -163,7 +159,7 @@
       var searched=M.fen(state),limits=Object.assign({},aiLimits()),mine=think;
       if(mine){mine.target=limits.depth||20;mine.time=limits.time||0;mine.start=Date.now();}
       limits.onDepth=function(d){if(mine&&think===mine){mine.depth=d;mine.at[d]=Date.now();}};
-      // Red's opening: only the moves redOpening allows (the search's score is not kept for the review then).
+      // The opening plan: only the moves aiOpening allows (the search's score is not kept for the review then).
       if(only)limits.searchmoves=only;
       E.bestMove(since?moves[since-1].fen:M.fen(trial.state),moves.slice(since).map(function(m){return m.uci;}),limits).then(function(key){
         if(!only)keepAiSearch(searched);

@@ -308,36 +308,69 @@
   function openingChoice(pieces, side, shape) { return chooseMove(pieces, side, { openingOnly: true, shape: shape }); }
   // The advanced-pawn answer alone (FLANK_ANSWER), for the engine AI after it has left the opening shape.
   function flankAnswer(pieces, side, shape) { return chooseMove(pieces, side, { openingOnly: true, answerOnly: true, shape: shape }); }
-  // Red's opening for the engine AI (red moves second), in three parts, each step played as soon as it loses no
-  // material (no short engine search can turn it down): the centre pawns ง5 จ5, the knights side by side on ง7 จ7
-  // (guarding the pawns and each other against white's advanced pawns), then the met ง8-ค7-ง6 (ง8-จ7-ง6 while จ7 is
-  // free) in the middle. A knight comes before a centre pawn whose square is not safe yet, the one that makes it safe
-  // first (ม.ข8-ง7 guards จ5, ม.ช8-จ7 guards ง5); the met waits for the knights.
-  // Every move it looks at white first: in check, attacked, or with a capture to make, the engine answers that move
-  // freely ({free}) and the plan goes on next move. A quiet move with no safe step left to the engine without a king
-  // move or a flank pawn push ({moves}). {move}: the step to play; null once the plan is done or cannot go on.
-  var RED_CENTRE = [['pawn', 'd6', 'd5'], ['pawn', 'e6', 'e5']], RED_KNIGHTS = [['knight', 'b8', 'd7'], ['knight', 'g8', 'e7']];
-  var RED_MET = [['met', 'd8', 'c7', 'd6'], ['met', 'c7', 'd6'], ['met', 'd8', 'e7', 'd6'], ['met', 'e7', 'd6']];
-  function redOpening(pieces) {
-    var side = 'black', at = function (s) { return pieces.find(function (p) { return same(p.at, square(s)); }); };
-    var mine = function (s, piece) { var p = at(s); return p && p.side === side && p.piece === piece; };
-    // Steps still to come: their piece stands where the step starts.
-    var waiting = function (steps) { return steps.filter(function (st) { return mine(st[1], st[0]) && !mine(st[3] || st[2], st[0]); }); };
-    if (mine('d6', 'met') || !waiting(RED_CENTRE.concat(RED_KNIGHTS, RED_MET)).length) return null;
-    if (R.inCheck(pieces, side) || underAttack(pieces, side) || underAttack(pieces, opponent(side))) return { free: true };
-    var step = function (steps) { return steps.length ? chooseMove(pieces, side, { openingOnly: true, steps: steps }) : null; };
-    var move = step(RED_CENTRE);
-    if (!move) {
-      var knights = waiting(RED_KNIGHTS);
-      if (waiting(RED_CENTRE).length) knights = knights.filter(function (st) {
-        var m = R.legalMoves(pieces, side).find(function (x) { return same(x.from, square(st[1])) && same(x.to, square(st[2])); });
-        return m && chooseMove(R.applyMove(pieces, m.from, m.to), side, { openingOnly: true, steps: RED_CENTRE });
-      }).concat(knights);
-      move = step(knights);
-      if (!move && !R.legalMoves(pieces, side).some(function (m) { return waiting(RED_KNIGHTS).some(function (st) { return same(m.from, square(st[1])) && same(m.to, square(st[2])); }); })) move = step(RED_MET);
+  // The engine AI's opening plans, a list of groups for each side and shape; each step is played as soon as it loses
+  // no material (no short engine search can turn it down).
+  //   centre, red:   the pawns ง5 จ5, the knights side by side on ง7 จ7 (guarding the pawns and each other against
+  //                  advanced pawns), the met ง8-ค7-ง6 (ง8-จ7-ง6 while จ7 is free). Done with the met on ง6.
+  //   centre, white: the same mirrored: จ4 ง4, the knights on จ2 ง2, the met จ1-ฉ2-จ3 (จ1-ง2-จ3 while ง2 is free).
+  //   flank, white:  จ4 ฉ4, ม.ช1-ฉ3, the met จ1-ฉ2-จ3 (จ1-จ2-จ3), one khon up (ค2, ฉ2 or จ2, the engine choosing), and
+  //                  only then, with the pieces ready, the third pawn ง4. Done with the pawn on ง4.
+  // A knight comes before a pawn of the first group whose square is not safe yet, the one that makes it safe first
+  // (ม.ข8-ง7 guards จ5, ม.ช8-จ7 guards ง5); any other group waits for the one before it.
+  // Every move it looks at the opponent first: in check, attacked, or with a capture to make, the engine answers that
+  // move freely ({free}) and the plan goes on next move. A quiet move with no safe step goes to the engine without a
+  // king move or a flank pawn push ({moves}). {move}: the step to play; {moves} also for a choice of khon steps; null
+  // once the plan is done or cannot go on.
+  var PLANS = {
+    black: {
+      centre: { end: ['met', 'd6'], groups: [
+        { pawns: true, steps: [['pawn', 'd6', 'd5'], ['pawn', 'e6', 'e5']] },
+        { knights: true, steps: [['knight', 'b8', 'd7'], ['knight', 'g8', 'e7']] },
+        { steps: [['met', 'd8', 'c7', 'd6'], ['met', 'c7', 'd6'], ['met', 'd8', 'e7', 'd6'], ['met', 'e7', 'd6']] }] }
+    },
+    white: {
+      centre: { end: ['met', 'e3'], groups: [
+        { pawns: true, steps: [['pawn', 'e3', 'e4'], ['pawn', 'd3', 'd4']] },
+        { knights: true, steps: [['knight', 'g1', 'e2'], ['knight', 'b1', 'd2']] },
+        { steps: [['met', 'e1', 'f2', 'e3'], ['met', 'f2', 'e3'], ['met', 'e1', 'd2', 'e3'], ['met', 'd2', 'e3']] }] },
+      flank: { end: ['pawn', 'd4'], groups: [
+        { pawns: true, steps: [['pawn', 'e3', 'e4'], ['pawn', 'f3', 'f4']] },
+        { knights: true, steps: [['knight', 'g1', 'f3']] },
+        { steps: [['met', 'e1', 'f2', 'e3'], ['met', 'f2', 'e3'], ['met', 'e1', 'e2', 'e3'], ['met', 'e2', 'e3']] },
+        { one: true, steps: [['khon', 'c1', 'c2'], ['khon', 'f1', 'f2'], ['khon', 'f1', 'e2']] },
+        { steps: [['pawn', 'd3', 'd4']] }] }
     }
-    if (move) return { move: move };
-    var calm = R.legalMoves(pieces, side).filter(function (m) {
+  };
+  function aiOpening(pieces, side, shape) {
+    var plan = PLANS[side][shape] || PLANS[side].centre, legal = R.legalMoves(pieces, side);
+    var mine = function (s, piece) { return pieces.some(function (p) { return p.side === side && p.piece === piece && same(p.at, square(s)); }); };
+    // Steps still to come: their piece stands where the step starts and not yet where it goes (a group of one-of
+    // steps is done once any of them is).
+    var groups = plan.groups.map(function (g) {
+      if (g.one && g.steps.some(function (st) { return mine(st[2], st[0]); })) return [];
+      return g.steps.filter(function (st) { return mine(st[1], st[0]) && !mine(st[3] || st[2], st[0]); });
+    });
+    if (mine(plan.end[1], plan.end[0]) || groups.every(function (g) { return !g.length; })) return null;
+    if (R.inCheck(pieces, side) || underAttack(pieces, side) || underAttack(pieces, opponent(side))) return { free: true };
+    var legalStep = function (st) { return legal.find(function (m) { return same(m.from, square(st[1])) && same(m.to, square(st[2])); }); };
+    var step = function (steps, ps) { return steps.length ? chooseMove(ps || pieces, side, { openingOnly: true, steps: steps }) : null; };
+    for (var i = 0; i < groups.length; i++) {
+      var steps = groups[i], group = plan.groups[i];
+      if (!steps.length) continue;
+      if (group.knights && groups[0].length) steps = steps.filter(function (st) {
+        var m = legalStep(st);
+        return m && step(groups[0], R.applyMove(pieces, m.from, m.to));
+      }).concat(steps);
+      if (group.one) {
+        var safe = steps.filter(function (st) { return step([st]); });
+        if (safe.length) return safe.length === 1 ? { move: step(safe) } : { moves: safe.map(legalStep) };
+      } else {
+        var move = step(steps);
+        if (move) return { move: move };
+      }
+      if (!group.pawns && steps.some(legalStep)) break;
+    }
+    var calm = legal.filter(function (m) {
       var p = pieces.find(function (x) { return same(x.at, m.from); }), taking = pieces.some(function (x) { return same(x.at, m.to); });
       return p.piece !== 'king' && !(p.piece === 'pawn' && !taking && m.from.c !== 3 && m.from.c !== 4);
     });
@@ -354,5 +387,5 @@
     });
   }
 
-  return { canRequestBoardCount: canRequestBoardCount, requestBoardCount: requestBoardCount, canRequestSpecialCount: canRequestSpecialCount, requestSpecialCount: requestSpecialCount, quietPlies: quietPlies, pawnsLocked: pawnsLocked, LOCKED_PLIES: LOCKED_PLIES, SHUFFLES: SHUFFLES, shuffleMoves: shuffleMoves, material: material, VALUES: VALUES, OPENING: OPENING, OPENINGS: OPENINGS, openingMove: openingMove, openingMoves: openingMoves, openingChoice: openingChoice, flankAnswer: flankAnswer, redOpening: redOpening, pawnAdvanced: pawnAdvanced, ceilingFor: ceilingFor, nextCount: nextCount, countText: countText, exchange: exchange, chooseMove: chooseMove };
+  return { canRequestBoardCount: canRequestBoardCount, requestBoardCount: requestBoardCount, canRequestSpecialCount: canRequestSpecialCount, requestSpecialCount: requestSpecialCount, quietPlies: quietPlies, pawnsLocked: pawnsLocked, LOCKED_PLIES: LOCKED_PLIES, SHUFFLES: SHUFFLES, shuffleMoves: shuffleMoves, material: material, VALUES: VALUES, OPENING: OPENING, OPENINGS: OPENINGS, openingMove: openingMove, openingMoves: openingMoves, openingChoice: openingChoice, flankAnswer: flankAnswer, aiOpening: aiOpening, PLANS: PLANS, pawnAdvanced: pawnAdvanced, ceilingFor: ceilingFor, nextCount: nextCount, countText: countText, exchange: exchange, chooseMove: chooseMove };
 });
