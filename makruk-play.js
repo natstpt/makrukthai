@@ -145,22 +145,25 @@
     });
     if (!best) return 0;
     var after = R.applyMove(pieces, best.from, best.to);
-    return Math.max(0, VALUES[victim.piece] - exchange(after, square, opponent(side), depth + 1));
+    // A pawn that promotes as it takes has gained the difference too (what the other side wins back is the promoted pawn).
+    var mover = pieces.find(function (p) { return same(p.at, best.from); }), landed = after.find(function (p) { return same(p.at, square); });
+    var promotion = mover.piece === 'pawn' && landed.piece === 'promoted' ? VALUES.promoted - VALUES.pawn : 0;
+    return Math.max(0, VALUES[victim.piece] + promotion - exchange(after, square, opponent(side), depth + 1));
   }
 
   // Opening shapes (ทรงหมาก). Each step is [piece, from, to, final square of that piece's route]; a step is done once
   // the piece stands on `to` or has already gone on to its final square.
   // centre: take the centre with two pawns first, then bring the pieces up behind them, the met ending on จ3 (ง6 red).
-  //   White: บ.จ3-จ4, บ.ง3-ง4, ม.ช1-จ2, ม็.จ1-ฉ2-จ3, ค.ฉ1-ฉ2, ค.ค1-ค2-ง3, ม.ข1-ง2.
-  //   Red:   บ.ง6-ง5, บ.จ6-จ5, ม.ข8-ง7, ม็.ง8-ค7-ง6, ค.ค8-ค7, ค.ฉ8-ฉ7-จ6, ม.ช8-จ7.
+  //   White: บ.จ3-จ4, บ.ง3-ง4, ม.ช1-จ2, ม.ข1-ง2, ม็.จ1-ฉ2-จ3, ค.ฉ1-ฉ2, ค.ค1-ค2-ง3.
+  //   Red:   บ.ง6-ง5, บ.จ6-จ5, ม.ข8-ง7, ม.ช8-จ7, ม็.ง8-ค7-ง6, ค.ค8-ค7, ค.ฉ8-ฉ7-จ6.
   // flank (white only; the game page never gives it to red): the pawns go up one file to the side (จ4 ฉ4), the met and
   // a knight come up behind them. The khon on ฉ1 is left out: ฉ2, จ2 or ช2 depends on the position, so the AI chooses.
   //   White: บ.จ3-จ4, บ.ฉ3-ฉ4, ม.ช1-ฉ3, ม็.จ1-ฉ2-จ3, ค.ค1-ค2, ม.ข1-ง2.
   var OPENING = {
-    white: [['pawn', 'e3', 'e4'], ['pawn', 'd3', 'd4'], ['knight', 'g1', 'e2'], ['met', 'e1', 'f2', 'e3'], ['met', 'f2', 'e3'],
-      ['khon', 'f1', 'f2'], ['khon', 'c1', 'c2', 'd3'], ['khon', 'c2', 'd3'], ['knight', 'b1', 'd2']],
-    black: [['pawn', 'd6', 'd5'], ['pawn', 'e6', 'e5'], ['knight', 'b8', 'd7'], ['met', 'd8', 'c7', 'd6'], ['met', 'c7', 'd6'],
-      ['khon', 'c8', 'c7'], ['khon', 'f8', 'f7', 'e6'], ['khon', 'f7', 'e6'], ['knight', 'g8', 'e7']]
+    white: [['pawn', 'e3', 'e4'], ['pawn', 'd3', 'd4'], ['knight', 'g1', 'e2'], ['knight', 'b1', 'd2'], ['met', 'e1', 'f2', 'e3'],
+      ['met', 'f2', 'e3'], ['khon', 'f1', 'f2'], ['khon', 'c1', 'c2', 'd3'], ['khon', 'c2', 'd3']],
+    black: [['pawn', 'd6', 'd5'], ['pawn', 'e6', 'e5'], ['knight', 'b8', 'd7'], ['knight', 'g8', 'e7'], ['met', 'd8', 'c7', 'd6'],
+      ['met', 'c7', 'd6'], ['khon', 'c8', 'c7'], ['khon', 'f8', 'f7', 'e6'], ['khon', 'f7', 'e6']]
   };
   var OPENINGS = {
     centre: OPENING,
@@ -232,7 +235,7 @@
       var after = R.applyMove(pieces, move.from, move.to), status = R.gameStatus(after, enemy);
       // options.repeats(position, side to move): how often that position has stood before; a third time is a draw.
       if (status.state === 'playing' && options.repeats && options.repeats(after, enemy) >= 2) status = { state: 'repetition' };
-      var score;
+      var score, lost = 0;
       if (status.state === 'checkmate') score = 10000;
       else if (status.state !== 'playing') score = ahead > 1 ? -500 : ahead < -1 ? 300 : 0; // a draw: avoid it when ahead
       else {
@@ -247,6 +250,8 @@
         });
         threatened.forEach(function (at) { loss = Math.max(loss, exchange(after, at, enemy, 0)); });
         score -= loss * 0.9;
+        // What the move gives away in material alone (the opening shape plays no step that loses any).
+        lost = Math.max(0, -(gain - exchange(after, move.to, enemy, 0)), loss);
         // Never walk into a mate in one.
         if (replies.some(function (m) { var next = R.applyMove(after, m.from, m.to); return R.inCheck(next, side) && R.gameStatus(next, side).state === 'checkmate'; })) score -= 5000;
         if (status.check) score += 0.3;
@@ -260,18 +265,19 @@
           score -= edge * 0.4 + gap * 0.15 + R.legalMoves(after, enemy).length * 0.1;
         }
       }
-      scored.push({ move: move, score: score, capture: !!taken });
+      scored.push({ move: move, score: score, capture: !!taken, lost: lost });
     });
     if (!scored.length) return null;
     var top = Math.max.apply(null, scored.map(function (x) { return x.score; }));
     // Opening: build the shape while nothing is being exchanged and the king is not attacked.
     // Opening: follow the shape while nothing is being exchanged and the king is not attacked. Take the first step
-    // that is safe (the pawn or piece is not lost to an exchange); a step that is not safe yet waits.
+    // that is safe (no pawn or piece is lost to an exchange, by material alone: a good square does not make up for it);
+    // a step that is not safe yet waits.
     if (options.opening !== false && !R.inCheck(pieces, side) && !underAttack(pieces, side) && !scored.some(function (x) { return x.capture && x.score > 0.5; })) {
       var steps = openingMoves(pieces, side, options.shape, options.answerOnly);
       for (var i = 0; i < steps.length; i++) {
         var entry = scored.find(function (x) { return same(x.move.from, steps[i].from) && same(x.move.to, steps[i].to); });
-        if (entry && entry.score > -0.5 && entry.score >= top - 0.6) return steps[i];
+        if (entry && entry.lost < 0.3 && entry.score > -0.5 && entry.score >= top - 0.6) return steps[i];
       }
     }
     if (options.openingOnly) return null;
