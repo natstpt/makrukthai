@@ -124,7 +124,10 @@
     // game. Decided now, so an engine move does not wait the opening delay. A move where the opponent threatens
     // something is the engine's, and the plan goes on after it. The plan is left for good once the game has left the
     // quiet opening (makruk-play.js openingOver).
-    if(hard&&!game.bookDone&&P.openingOver(state.pieces,state.turn,moves.length&&moves[moves.length-1].capture))game.bookDone=true;
+    // What the plan has given up belongs to the moves it was given up at: back before them (ย้อนกลับ) it is open again.
+    if(game.bookAt!==undefined&&moves.length<game.bookAt){game.bookDone=game.bookOff=false;game.bookAt=undefined;}
+    if(game.planSkip)Object.keys(game.planSkip).forEach(function(k){if(moves.length+1<game.planSkip[k])delete game.planSkip[k];});
+    if(hard&&!game.bookDone&&P.openingOver(state.pieces,state.turn,moves.length&&moves[moves.length-1].capture))endBook();
     var plan=hard&&!game.bookDone&&P.aiOpening(state.pieces,state.turn,game.shape,game.planSkip);
     // Each step but the centre pawns and an edge pawn's answer (plan.sure) is checked by the engine first (checkStep).
     var fixed=plan&&plan.sure&&plan.move,checked=plan&&!plan.sure&&plan.move;
@@ -132,7 +135,7 @@
     // The answer to an advanced pawn against the flank shape (makruk-play.js FLANK_ANSWER) is played even after the
     // shape has handed over to the engine (unless the engine turned a shape move down).
     if(hard&&!game.bookOff&&game.bookDone&&!book)book=P.flankAnswer(state.pieces,state.turn,game.shape);
-    if(hard&&!book&&!plan)game.bookDone=true;
+    if(hard&&!book&&!plan)endBook();
     var delay=hard?(book||game.level!=='hard'?500:100):700;
     think={start:Date.now(),depth:0,at:{},target:20,quick:book?delay+900:!hard?delay:0,time:0};
     aiTimer=setTimeout(function(){
@@ -187,6 +190,8 @@
   // A shape move is played only when the engine finds it about as good as its own best move (a short search, 12
   // plies, 0.4 s: no more than BOOK_MARGIN worse). Otherwise the AI plays the engine's move and keeps no shape for
   // the rest of the game (game.bookOff). Before the engine has loaded, the shape move is played unchecked.
+  // The opening plan is done (off: the engine turned a shape move down) from this move on; game.bookAt remembers when.
+  function endBook(off){if(!game.bookDone)game.bookAt=moves.length;game.bookDone=true;if(off)game.bookOff=true;}
   var BOOK_MARGIN=30,BOOK_CHECK={depth:12,time:400};
   // A step of the opening plan (makruk-play.js aiOpening) is played when the engine finds it no more than STEP_MARGIN
   // worse than its own best move (16 plies, up to 1.5 s: deep enough to see a pawn won a move later, such as a rook
@@ -199,7 +204,7 @@
     var play=function(m){if(live())playMove(m.from,m.to);};
     var instead=function(best){
       if(!live())return;
-      if(once){(game.planSkip=game.planSkip||{})[key]=true;scheduleAi();return;}
+      if(once){(game.planSkip=game.planSkip||{})[key]=moves.length+1;scheduleAi();return;}
       var move=best&&R.legalMoves(state.pieces,state.turn).find(function(m){return moveKey(m)===best;});
       if(move)play(move);else play(step);
     };
@@ -217,7 +222,7 @@
   function checkBook(book,token){
     var fen=M.fen(state),key=moveKey(book),live=function(){return token===aiSearch&&aiTurn();};
     var play=function(){if(live())playMove(book.from,book.to);};
-    var leave=function(){if(!live())return;game.bookOff=game.bookDone=true;scheduleAi();};
+    var leave=function(){if(!live())return;endBook(true);scheduleAi();};
     if(!E||!E.evaluate||engine.state!=='ready'){play();return;}
     E.evaluate(fen,BOOK_CHECK).then(function(best){
       if(!live())return;
@@ -453,7 +458,7 @@
   $('newGameCancel').onclick=function(){$('newGameDialog').close();};
   function newGame(side){
     $('newGameDialog').close();if($('resultDialog').open)$('resultDialog').close();stopReview();
-    cancelAi();hint=null;game.human=side;pickShape();game.bookDone=game.bookOff=false;game.planSkip={};game.recorded=false;game.resigned=false;flipped=side==='black';
+    cancelAi();hint=null;game.human=side;pickShape();game.bookDone=game.bookOff=false;game.bookAt=undefined;game.planSkip={};game.recorded=false;game.resigned=false;flipped=side==='black';
     try{var url=new URL(location.href);url.searchParams.set('side',side);window.history.replaceState(null,'',url);}catch(e){}
     state=M.initial();trial={state:clone(state),history:[],future:[]};history=[];future=[];moves=[];selected=null;last=null;startCount();render();scheduleAi();
   }
@@ -1254,7 +1259,7 @@
   var pickMove=function(e){var td=e.target.closest('td.movePick');if(!td||mode!=='play')return;if(e.type==='keydown'&&e.key!=='Enter'&&e.key!==' ')return;e.preventDefault();jumpTo(Number(td.dataset.ply));};
   $('moveList').addEventListener('click',pickMove);$('moveList').addEventListener('keydown',pickMove);
   $('start').onclick=function(){var error=M.validate(state);if(error){message(error,true);sound.playResult('failure');return;}save();trial={state:clone(state),history:history.slice(),future:future.slice()};mode='play';history=[];future=[];moves=[];selected=null;last=null;startCount();render();};
-  $('restart').onclick=function(){cancelAi();stopReview();hint=null;pickShape();if(game){game.bookDone=game.bookOff=false;game.planSkip={};game.recorded=false;game.resigned=false;}remember();state=clone(trial.state);moves=[];selected=null;last=null;startCount();render();$('optionsDialog').close();scheduleAi();};
+  $('restart').onclick=function(){cancelAi();stopReview();hint=null;pickShape();if(game){game.bookDone=game.bookOff=false;game.bookAt=undefined;game.planSkip={};game.recorded=false;game.resigned=false;}remember();state=clone(trial.state);moves=[];selected=null;last=null;startCount();render();$('optionsDialog').close();scheduleAi();};
   $('edit').onclick=function(){cancelAi();game=null;count=null;mode='edit';state=clone(trial.state);history=trial.history;future=trial.future;trial=null;moves=[];selected=null;last=null;render();};
   $('load').onclick=function(){if(mode!=='edit')return;try{var next=M.parse($('fen').value);remember();state=next;changed();$('optionsDialog').close();message('เปิดตำแหน่งแล้ว'+(M.validate(state)?' — '+M.validate(state):''));}catch(e){$('saveNote').textContent=e.message;}};
   $('copy').onclick=async function(){try{await navigator.clipboard.writeText($('fen').value);$('saveNote').textContent='คัดลอกรหัสแล้ว';}catch(e){$('fen').focus();$('fen').select();$('saveNote').textContent='เลือกข้อความแล้ว กรุณาคัดลอกด้วยเมนูของเครื่อง';}};
