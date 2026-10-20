@@ -183,5 +183,6 @@ body.reviewMode .evalText{padding:0 7px;border-radius:6px;background:#262018d9;c
 /* Until editor.js has laid the page out for what it is (a game, ถอดหมาก, /ai), the set-up markup stays hidden; shown
    after 3 s anyway, should the script not run. */
 body:not(.ready) main,body:not(.ready) .actionDock,body:not(.ready) #modeLabel,body:not(.ready) .brand h1:not(.final){visibility:hidden;animation:showAnyway 0s 3s forwards}@keyframes showAnyway{to{visibility:visible}}
+.deepBtn{display:block;width:100%;min-height:42px;margin:0 0 10px;border:1px solid #6a5a3a;border-radius:10px;background:#3a3226;color:#ffd56a;font-size:15px;font-weight:800}.deepBtn:disabled{color:#b9ad95;opacity:1}.deepBtn[hidden]{display:none}
 /* Marks the player draws with the right mouse button (editor.js drawMarks): a coloured square, orange arrows. */
 .square.marked{background:#ea7a62!important}
