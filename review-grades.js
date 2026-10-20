@@ -1,7 +1,7 @@
 /* How good a move was, for วิเคราะห์การเดิน (the game review after a game against the AI).
  * A move is graded from the evaluations before and after it, both in centipawns for the side that moved (a mate as
  * ±10000 less its moves), into one of nine grades, from แต้มเซียน down to พลาดหนัก; the accuracy of a side (0–100)
- * comes from the chance of winning each of its moves gave away, as on the chess sites.
+ * comes from the chance of winning each of its moves gave away, weighted as on the chess sites.
  */
 (function (root, factory) {
   'use strict';
@@ -44,32 +44,54 @@
     var lost = Math.max(0, winChance(before) - winChance(after));
     return Math.max(0, Math.min(100, 103.1668 * Math.exp(-0.04354 * lost) - 3.1669));
   }
-  // A side's accuracy over its graded moves ({before, after}); null without any.
+  // A side's accuracy over its graded moves ({before, after}, in game order); null without any. As on the chess sites:
+  // each move's accuracy, weighted by how much the game was swinging around it (a quiet move counts less than one in a
+  // tense position), and averaged with the harmonic mean (one bad move pulls the score down as it should); the two
+  // averaged.
   function accuracy(moves) {
     if (!moves.length) return null;
-    return moves.reduce(function (sum, m) { return sum + moveAccuracy(m.before, m.after); }, 0) / moves.length;
+    var accs = moves.map(function (m) { return moveAccuracy(m.before, m.after); });
+    var chances = moves.map(function (m) { return winChance(m.before); });
+    var weights = chances.map(function (_, i) {
+      var w = chances.slice(Math.max(0, i - 2), i + 3), mean = w.reduce(function (s, x) { return s + x; }, 0) / w.length;
+      var sd = Math.sqrt(w.reduce(function (s, x) { return s + (x - mean) * (x - mean); }, 0) / w.length);
+      return Math.max(0.5, Math.min(12, sd));
+    });
+    var total = weights.reduce(function (s, x) { return s + x; }, 0);
+    var weighted = accs.reduce(function (s, x, i) { return s + x * weights[i]; }, 0) / total;
+    var harmonic = accs.length / accs.reduce(function (s, x) { return s + 1 / Math.max(1, x); }, 0);
+    return (weighted + harmonic) / 2;
   }
+  // A mate in an evaluation: moves to it for the side it is given for (positive: it mates; negative: it is mated).
+  function mateIn(v) { return v >= 9000 ? 10000 - v : v <= -9000 ? -(10000 + v) : 0; }
 
   // The grade of a move. m: before and after (for the side that moved), second (the second best move's value before
-  // it, when searched; null when there was none), sacrifice (the move offers a piece), prevLoss (what the opponent's
-  // move just before gave away).
-  //   ดีที่สุด: within 0.1 of the best; แต้มเซียน when it offers a piece and the game is still at least level;
-  //   แต้มเด็ด when every other move was at least 1.5 worse (the only move), and the game was not already won;
-  //   ดีมาก ≤ 0.3, ดี ≤ 0.6, ยังไม่แม่น ≤ 1.2; above that พลาดโอกาส when the opponent had just erred (and this move
-  //   did not lose the game), พลาดหนัก above 3 (or from level to lost), พลาด otherwise.
+  // it, when searched; null when there was none), sacrifice (the move offers a piece), replyTakes (the engine's best
+  // reply takes it: true, false, or null when not known), prevDrop (the chance of winning the opponent's move just
+  // before gave away, 0–100), bestWins (the best move here took a piece or mated).
+  // Graded on the chance of winning given away (the chess sites' scale), so a pawn lost in a won game costs little:
+  //   ดีที่สุด: within 0.1 of the best (or a mate kept); แต้มเซียน when it offers a piece the engine would take, and the
+  //   game stays at least level; แต้มเด็ด when every other move was much worse (the only move) and the game was not
+  //   already won; ดีมาก up to 2% given away, ดี up to 5, ยังไม่แม่น up to 10; then พลาดโอกาส when the opponent had just
+  //   erred and this move let a capture or a mate go, พลาด up to 20, พลาดหนัก beyond (or walking into a mate).
+  //   A forced mate let go is พลาดโอกาส (ดี when the game is still as good as won).
   function classify(m) {
-    var b = clamp(m.before), a = clamp(m.after), loss = Math.max(0, b - a);
-    if (loss <= 10) {
-      if (m.sacrifice && a >= -50 && b < 600) return 'brilliant';
-      if (m.second !== null && m.second !== undefined && b - clamp(m.second) >= 150 && a >= -300 && b < 600) return 'great';
+    var wb = winChance(m.before), wa = winChance(m.after), drop = Math.max(0, wb - wa);
+    var loss = Math.max(0, clamp(m.before) - clamp(m.after));
+    if (m.after <= -9000 && m.before > -9000) return 'blunder';
+    if (m.before >= 9000 && m.after < 9000) return wa >= 97 ? 'good' : 'miss';
+    var kept = m.before >= 9000 ? mateIn(m.after) <= mateIn(m.before) + 2 : loss <= 10;
+    if (kept) {
+      if (m.sacrifice && m.replyTakes !== false && wa >= 45 && wb < 90) return 'brilliant';
+      if (m.second !== null && m.second !== undefined && wb - winChance(m.second) >= 15 && wb < 90 && wa >= 25) return 'great';
       return 'best';
     }
-    if (loss <= 30) return 'excellent';
-    if (loss <= 60) return 'good';
-    if (loss <= 120) return 'inaccuracy';
-    if ((m.prevLoss || 0) >= 120 && a > -150) return 'miss';
-    if (loss > 300 || (b >= -50 && a <= -300)) return 'blunder';
-    return 'mistake';
+    if (m.before >= 9000) return 'excellent';
+    if (drop <= 2) return 'excellent';
+    if (drop <= 5) return 'good';
+    if (drop <= 10) return 'inaccuracy';
+    if ((m.prevDrop || 0) >= 10 && m.bestWins && wa >= 30) return 'miss';
+    return drop <= 20 ? 'mistake' : 'blunder';
   }
 
   // Whether the move from→to offers a piece: a piece worth more than a เบี้ย stands where the opponent can take it,
@@ -95,5 +117,5 @@
     return !defended || cheapest < worth;
   }
 
-  return { KINDS: KINDS, INFO: INFO, isTop: isTop, isBad: isBad, classify: classify, sacrifice: sacrifice, winChance: winChance, moveAccuracy: moveAccuracy, accuracy: accuracy };
+  return { KINDS: KINDS, INFO: INFO, isTop: isTop, isBad: isBad, classify: classify, sacrifice: sacrifice, winChance: winChance, moveAccuracy: moveAccuracy, accuracy: accuracy, mateIn: mateIn };
 });
