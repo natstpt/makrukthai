@@ -224,6 +224,30 @@ assert(!R.isAttacked(R.applyMove(board('K:a1 R:d4 P:h3 k:h8 n:f5'), at(saved.sli
   }
 }
 
+// Red's opening for the engine AI (redOpening): ง5 จ5 fixed, then the knights at home (squares left to the engine), no
+// flank pawn pushed before the centre pawns. Against white's จ4 ฉ4 (the game that played ค5): ง5 then จ5.
+{
+  const line = (white) => {
+    let ps = M.initial().pieces; const out = [];
+    for (const w of white) {
+      const m = R.legalMoves(ps, 'white').find(x => key(x) === w); ps = R.applyMove(ps, m.from, m.to);
+      const r = P.redOpening(ps); if (!r) { out.push(null); break; }
+      out.push(r.move ? key(r.move) : r.moves.map(key));
+      const mv = r.move || r.moves[0]; ps = R.applyMove(ps, mv.from, mv.to);
+    }
+    return out;
+  };
+  eq(line(['e3e4', 'f3f4']), ['d6d5', 'e6e5'], 'against จ4 ฉ4: ง5 then จ5, never ค5');
+  eq(line(['e3e4', 'd3d4', 'g1e2', 'b1d2']), ['d6d5', 'e6e5', ['b8d7', 'g8e7'], ['g8e7']], 'then only the knights at home');
+  // จ5 would lose a pawn (attacked by ฉ4 and the knight on ฉ3): a knight first, จ5 once it is safe.
+  eq(line(['f3f4', 'g1f3', 'e3e4']), ['d6d5', ['b8d7', 'g8e7'], 'e6e5'], 'unsafe จ5 waits for a knight');
+  // Not quiet and จ5 still to come: every move but a flank pawn push.
+  let ps = board('K:d1 R:a1 R:h1 N:b1 N:g1 B:c1 B:f1 M:e1 P:a3 P:b3 P:c3 P:d3 P:e5 P:f3 P:g3 P:h3 k:e8 r:a8 r:h8 n:b8 n:g8 b:c8 b:f8 m:d8 p:a6 p:b6 p:c6 p:d5 p:e6 p:f6 p:g6 p:h6');
+  const allowed = P.redOpening(ps).moves.map(key);
+  eq(allowed.filter(k => k[1] === '6' && k[3] === '5' && 'abcfgh'.includes(k[0]) && k[0] === k[2]), [], 'no flank pawn push');
+  assert.ok(allowed.includes('f6e5') && allowed.includes('d5d4')); checks++;
+}
+
 // An advanced pawn against the flank shape (เบี้ยสูง): red stands on ง5 ค5 with a knight on ค6 and pushes the
 // supported pawn to ง4 on its 4th move. White answers ค.ค1-ค2, บ.ข3-ข4, บ.ข4×ค5, without losing material.
 for (const [ai, script, answer] of [['white', ['d6d5', 'c6c5', 'b8c6', 'd5d4'], ['c1c2', 'b3b4', 'b4c5']]]) {

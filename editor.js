@@ -122,11 +122,15 @@
     // of the other side stands past its 4th rank (เบี้ยสูง). Each shape move is also checked by the engine first
     // (checkBook).
     if(hard&&!game.bookDone&&(moves.some(function(m){return m.capture;})||P.pawnAdvanced(state.pieces,state.turn)))game.bookDone=true;
-    var book=hard&&!game.bookOff&&!game.bookDone&&P.openingChoice(state.pieces,state.turn,game.shape);
+    // Red (the AI moving second) has its own opening first (makruk-play.js redOpening): the centre pawns ง5 จ5 fixed,
+    // then the knights where the engine likes them, no flank pawn pushed before the centre pawns.
+    var red=hard&&!game.bookDone&&state.turn==='black'&&P.redOpening(state.pieces);
+    var fixed=red&&red.move,only=red&&red.moves&&red.moves.map(moveKey);
+    var book=fixed||!red&&hard&&!game.bookOff&&!game.bookDone&&P.openingChoice(state.pieces,state.turn,game.shape);
     // The answer to an advanced pawn against the flank shape (makruk-play.js FLANK_ANSWER) is played even after the
     // shape has handed over to the engine (unless the engine turned a shape move down).
     if(hard&&!game.bookOff&&game.bookDone&&!book)book=P.flankAnswer(state.pieces,state.turn,game.shape);
-    if(hard&&!book)game.bookDone=true;
+    if(hard&&!book&&!red)game.bookDone=true;
     var delay=hard?(book||game.level!=='hard'?500:100):700;
     think={start:Date.now(),depth:0,at:{},target:20,quick:book?delay+900:!hard?delay:0,time:0};
     aiTimer=setTimeout(function(){
@@ -148,6 +152,7 @@
       var table=game.level!=='easy'&&window.MakrukTablebase&&MakrukTablebase.bestMove(state.pieces,state.turn);
       if(table){if(think)think.quick=1;playMove(table.move.from,table.move.to);return;}
       if(!hard){easy();return;}
+      if(fixed||only&&only.length===1){var one=fixed||red.moves[0];playMove(one.from,one.to);return;}
       if(book){checkBook(book,token);return;}
       // The engine gets the moves since the last pawn move or capture (no position before it can come back), so it
       // sees the repetitions and never needs a promotion suffix.
@@ -155,8 +160,10 @@
       var searched=M.fen(state),limits=Object.assign({},aiLimits()),mine=think;
       if(mine){mine.target=limits.depth||20;mine.time=limits.time||0;mine.start=Date.now();}
       limits.onDepth=function(d){if(mine&&think===mine){mine.depth=d;mine.at[d]=Date.now();}};
+      // Red's opening: only the moves redOpening allows (the search's score is not kept for the review then).
+      if(only)limits.searchmoves=only;
       E.bestMove(since?moves[since-1].fen:M.fen(trial.state),moves.slice(since).map(function(m){return m.uci;}),limits).then(function(key){
-        keepAiSearch(searched);
+        if(!only)keepAiSearch(searched);
         if(token!==aiSearch||!aiTurn())return;
         var move=key&&R.legalMoves(state.pieces,state.turn).find(function(m){return moveKey(m)===key;});
         if(move)playMove(move.from,move.to);else easy();

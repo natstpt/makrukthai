@@ -155,7 +155,7 @@
   // moves (optional, 'e3e4' keys played from fen) let the engine see positions that already stood, so it knows a
   // third repetition is a draw. limits (optional): depth (plies to search), time (ms at most; the engine stops itself),
   // skill (Stockfish Skill Level 0–20: below 20 it now and then picks a weaker move among its best lines). Without
-  // limits the search is told 0.8 s (lite 0.7 s). lastDepth() is the depth the last search reached.
+  // limits the search is told 0.8 s (lite 0.7 s). limits.searchmoves ['b8c6', …]: only those moves are searched. lastDepth() is the depth the last search reached.
   var skillLevel = 20, reached = 0;
   function bestMove(fen, moves, limits) {
     limits = limits || {};
@@ -183,7 +183,7 @@
         // search that must reach its depth whatever it takes).
         var give = setTimeout(function () { resolve(null); }, limits.wait || (time || 3000) + 500);
         line.post('position fen ' + fen + (moves && moves.length ? ' moves ' + moves.join(' ') : ''));
-        line.post('go' + (limits.depth ? ' depth ' + limits.depth : '') + (time ? ' movetime ' + time : ''));
+        line.post('go' + (limits.depth ? ' depth ' + limits.depth : '') + (time ? ' movetime ' + time : '') + (limits.searchmoves ? ' searchmoves ' + limits.searchmoves.join(' ') : ''));
       });
     }, function (e) { searched(); throw e; });
   }
