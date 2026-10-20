@@ -1,4 +1,4 @@
-/* The computer player: Fairy-Stockfish (WebAssembly) in one of two builds. The hard AI searches 17 plies for its first 15
+/* The computer player: Fairy-Stockfish (WebAssembly) in one of two builds. The hard AI searches 20 plies for its first 15
  * moves (a minute at most), then toward 20 plies for under 2 seconds a move; easy and medium search a fixed shallow depth on the lite build.
  * - full (engine/): multi-threaded, SIMD, with the makruk NNUE network (48 MB download, about 320 MB of memory).
  *   It needs SharedArrayBuffer, so the page must be cross-origin isolated; on GitHub Pages coi-sw.js adds the headers

@@ -14,7 +14,7 @@
   function sideName(side){return side==='white'?'ขาว':'แดง';}
   // Games opened from the lesson page's settings: editor.html?play=2 (two players on one device) or
   // ?play=ai&side=white|black&level=easy|medium|hard (the learner plays that side against the computer). Every level is
-  // Fairy-Stockfish (engine-ai.js) after the same opening shape, with the limits in AI_LIMITS: hard searches 17
+  // Fairy-Stockfish (engine-ai.js) after the same opening shape, with the limits in AI_LIMITS: hard searches 20
   // plies (a minute at most) for its first 15 moves, then toward 20 plies for under 2 seconds a move, medium 5 plies and easy 1 ply with a low Skill Level (now and then a weaker
   // move), both on the small lite engine. If no engine runs in this browser, the player in makruk-play.js plays instead
   // (easy making a mistake now and then).
@@ -43,13 +43,13 @@
   function askCount(side){count=P.canRequestBoardCount(state.pieces,count)?P.requestBoardCount(side):P.requestSpecialCount(side,state.pieces);}
   var aiTimer=0,aiSearch=0,E=window.MakrukEngine,engine={state:'off',progress:0};
   var AI_LIMITS={easy:{depth:1,skill:3},medium:{depth:5},hard:{depth:20,time:1800}};
-  // The hard AI's first 15 moves search 17 plies, stopping after a minute at most (a slow phone); from its 16th move
+  // The hard AI's first 15 moves search 20 plies, stopping after a minute at most (a slow phone); from its 16th move
   // on, AI_LIMITS (under 2 seconds a move).
   var HARD_OPENING_MOVES=15;
   function aiLimits(){
     if(game.level!=='hard')return AI_LIMITS[game.level];
     var played=moves.filter(function(m){return m.side===aiSide();}).length;
-    return played<HARD_OPENING_MOVES?{depth:17,time:60000,wait:62000}:AI_LIMITS.hard;
+    return played<HARD_OPENING_MOVES?{depth:20,time:60000,wait:62000}:AI_LIMITS.hard;
   }
   function engineAi(){return !!game&&!!game.ai&&engine.state!=='failed';}
   function cancelAi(){clearTimeout(aiTimer);aiTimer=0;aiSearch++;think=null;}
