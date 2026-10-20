@@ -308,30 +308,40 @@
   function openingChoice(pieces, side, shape) { return chooseMove(pieces, side, { openingOnly: true, shape: shape }); }
   // The advanced-pawn answer alone (FLANK_ANSWER), for the engine AI after it has left the opening shape.
   function flankAnswer(pieces, side, shape) { return chooseMove(pieces, side, { openingOnly: true, answerOnly: true, shape: shape }); }
-  // Red's opening for the engine AI (red moves second). The two centre pawns ง5 จ5 are fixed: each is played as soon
-  // as it loses no material, whatever a short engine search prefers ({move}). Next come the knights, but on squares the
-  // engine chooses (a knight further up is sometimes better than ง7 จ7): while the game is quiet and a knight is still
-  // at home, the engine searches only the moves of the knights at home ({moves}); while a centre pawn waits for its
-  // square to be safe, only the knight moves after which it is. Until both centre pawns are up, no
-  // pawn other than ง จ moves forward without taking, unless red is in check ({moves}): pushing ค5 or ฉ5 early leaves
-  // red behind. null when none of this applies any more (the shape's met and khon follow as usual).
-  var RED_CENTRE = [['pawn', 'd6', 'd5'], ['pawn', 'e6', 'e5']], KNIGHT_HOME = ['b8', 'g8'].map(square);
+  // Red's opening for the engine AI (red moves second), in three parts, each step played as soon as it loses no
+  // material (no short engine search can turn it down): the centre pawns ง5 จ5, the knights side by side on ง7 จ7
+  // (guarding the pawns and each other against white's advanced pawns), then the met ง8-ค7-ง6 (ง8-จ7-ง6 while จ7 is
+  // free) in the middle. A knight comes before a centre pawn whose square is not safe yet, the one that makes it safe
+  // first (ม.ข8-ง7 guards จ5, ม.ช8-จ7 guards ง5); the met waits for the knights.
+  // Every move it looks at white first: in check, attacked, or with a capture to make, the engine answers that move
+  // freely ({free}) and the plan goes on next move. A quiet move with no safe step left to the engine without a king
+  // move or a flank pawn push ({moves}). {move}: the step to play; null once the plan is done or cannot go on.
+  var RED_CENTRE = [['pawn', 'd6', 'd5'], ['pawn', 'e6', 'e5']], RED_KNIGHTS = [['knight', 'b8', 'd7'], ['knight', 'g8', 'e7']];
+  var RED_MET = [['met', 'd8', 'c7', 'd6'], ['met', 'c7', 'd6'], ['met', 'd8', 'e7', 'd6'], ['met', 'e7', 'd6']];
   function redOpening(pieces) {
-    var side = 'black', pawn = chooseMove(pieces, side, { openingOnly: true, steps: RED_CENTRE });
-    if (pawn) return { move: pawn };
-    var legal = R.legalMoves(pieces, side), at = function (s) { return pieces.find(function (p) { return same(p.at, s); }); };
-    var quiet = !R.inCheck(pieces, side) && !underAttack(pieces, side) && !underAttack(pieces, opponent(side));
-    var knights = legal.filter(function (m) { var p = at(m.from); return p.piece === 'knight' && KNIGHT_HOME.some(function (h) { return same(h, m.from); }) && !at(m.to); });
-    var pending = RED_CENTRE.some(function (step) { var p = at(square(step[1])); return p && p.side === side && p.piece === 'pawn'; });
-    if (quiet && knights.length) {
-      // A centre pawn still to come but not safe yet: the knights that make it safe on red's next move (ม.ข8-ง7
-      // guards จ5, ม.ช8-จ7 guards ง5), when there are any, so white cannot take the square first.
-      var ready = pending && knights.filter(function (m) { return chooseMove(R.applyMove(pieces, m.from, m.to), side, { openingOnly: true, steps: RED_CENTRE }); });
-      return { moves: ready && ready.length ? ready : knights };
+    var side = 'black', at = function (s) { return pieces.find(function (p) { return same(p.at, square(s)); }); };
+    var mine = function (s, piece) { var p = at(s); return p && p.side === side && p.piece === piece; };
+    // Steps still to come: their piece stands where the step starts.
+    var waiting = function (steps) { return steps.filter(function (st) { return mine(st[1], st[0]) && !mine(st[3] || st[2], st[0]); }); };
+    if (mine('d6', 'met') || !waiting(RED_CENTRE.concat(RED_KNIGHTS, RED_MET)).length) return null;
+    if (R.inCheck(pieces, side) || underAttack(pieces, side) || underAttack(pieces, opponent(side))) return { free: true };
+    var step = function (steps) { return steps.length ? chooseMove(pieces, side, { openingOnly: true, steps: steps }) : null; };
+    var move = step(RED_CENTRE);
+    if (!move) {
+      var knights = waiting(RED_KNIGHTS);
+      if (waiting(RED_CENTRE).length) knights = knights.filter(function (st) {
+        var m = R.legalMoves(pieces, side).find(function (x) { return same(x.from, square(st[1])) && same(x.to, square(st[2])); });
+        return m && chooseMove(R.applyMove(pieces, m.from, m.to), side, { openingOnly: true, steps: RED_CENTRE });
+      }).concat(knights);
+      move = step(knights);
+      if (!move && !R.legalMoves(pieces, side).some(function (m) { return waiting(RED_KNIGHTS).some(function (st) { return same(m.from, square(st[1])) && same(m.to, square(st[2])); }); })) move = step(RED_MET);
     }
-    if (!pending || R.inCheck(pieces, side)) return null;
-    var calm = legal.filter(function (m) { var p = at(m.from); return !(p.piece === 'pawn' && !at(m.to) && m.from.c !== 3 && m.from.c !== 4); });
-    return calm.length && calm.length < legal.length ? { moves: calm } : null;
+    if (move) return { move: move };
+    var calm = R.legalMoves(pieces, side).filter(function (m) {
+      var p = pieces.find(function (x) { return same(x.at, m.from); }), taking = pieces.some(function (x) { return same(x.at, m.to); });
+      return p.piece !== 'king' && !(p.piece === 'pawn' && !taking && m.from.c !== 3 && m.from.c !== 4);
+    });
+    return calm.length ? { moves: calm } : { free: true };
   }
   // Can the opponent win material right now (a capture whose exchange pays)?
   function underAttack(pieces, side) {
