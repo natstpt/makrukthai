@@ -311,7 +311,8 @@
   // Red's opening for the engine AI (red moves second). The two centre pawns ง5 จ5 are fixed: each is played as soon
   // as it loses no material, whatever a short engine search prefers ({move}). Next come the knights, but on squares the
   // engine chooses (a knight further up is sometimes better than ง7 จ7): while the game is quiet and a knight is still
-  // at home, the engine searches only the moves of the knights at home ({moves}). Until both centre pawns are up, no
+  // at home, the engine searches only the moves of the knights at home ({moves}); while a centre pawn waits for its
+  // square to be safe, only the knight moves after which it is. Until both centre pawns are up, no
   // pawn other than ง จ moves forward without taking, unless red is in check ({moves}): pushing ค5 or ฉ5 early leaves
   // red behind. null when none of this applies any more (the shape's met and khon follow as usual).
   var RED_CENTRE = [['pawn', 'd6', 'd5'], ['pawn', 'e6', 'e5']], KNIGHT_HOME = ['b8', 'g8'].map(square);
@@ -321,8 +322,13 @@
     var legal = R.legalMoves(pieces, side), at = function (s) { return pieces.find(function (p) { return same(p.at, s); }); };
     var quiet = !R.inCheck(pieces, side) && !underAttack(pieces, side) && !underAttack(pieces, opponent(side));
     var knights = legal.filter(function (m) { var p = at(m.from); return p.piece === 'knight' && KNIGHT_HOME.some(function (h) { return same(h, m.from); }) && !at(m.to); });
-    if (quiet && knights.length) return { moves: knights };
     var pending = RED_CENTRE.some(function (step) { var p = at(square(step[1])); return p && p.side === side && p.piece === 'pawn'; });
+    if (quiet && knights.length) {
+      // A centre pawn still to come but not safe yet: the knights that make it safe on red's next move (ม.ข8-ง7
+      // guards จ5, ม.ช8-จ7 guards ง5), when there are any, so white cannot take the square first.
+      var ready = pending && knights.filter(function (m) { return chooseMove(R.applyMove(pieces, m.from, m.to), side, { openingOnly: true, steps: RED_CENTRE }); });
+      return { moves: ready && ready.length ? ready : knights };
+    }
     if (!pending || R.inCheck(pieces, side)) return null;
     var calm = legal.filter(function (m) { var p = at(m.from); return !(p.piece === 'pawn' && !at(m.to) && m.from.c !== 3 && m.from.c !== 4); });
     return calm.length && calm.length < legal.length ? { moves: calm } : null;
