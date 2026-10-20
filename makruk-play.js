@@ -274,6 +274,7 @@
       }
       scored.push({ move: move, score: score, capture: !!taken, lost: lost });
     });
+    if (options.scoredOnly) return scored;
     if (!scored.length) return null;
     var top = Math.max.apply(null, scored.map(function (x) { return x.score; }));
     // Opening: build the shape while nothing is being exchanged and the king is not attacked.
@@ -302,6 +303,18 @@
   // lower): the game has left the quiet opening the shapes are made for, and the engine AI leaves its shape.
   function pawnAdvanced(pieces, side) {
     return pieces.some(function (p) { return p.piece === 'pawn' && p.side !== side && (p.side === 'white' ? p.at.r <= 3 : p.at.r >= 4); });
+  }
+  // Moves that give material away by a plain exchange (a piece or pawn left to be taken, 1 เบี้ย or more) while another
+  // move keeps everything: {moves: the moves that do} for the lite engine's move to be searched again among them; null
+  // when the move keeps its material or nothing does. (The lite engine, without its trained evaluation, now and then lets
+  // a pawn go for nothing, as ค.ค1-ง2 where ฉ4-ฉ5 held the pawn on ฉ4.)
+  function keepMaterial(pieces, side, key) {
+    var scored = chooseMove(pieces, side, { scoredOnly: true, opening: false });
+    var k = function (m) { return 'abcdefgh'[m.from.c] + (8 - m.from.r) + 'abcdefgh'[m.to.c] + (8 - m.to.r); };
+    var mine = scored.find(function (x) { return k(x.move) === key; });
+    if (!mine || mine.lost < 0.9 || mine.score >= 1000) return null;
+    var safe = scored.filter(function (x) { return x.lost < 0.3 && x.score > -1000; }).map(function (x) { return x.move; });
+    return safe.length ? { moves: safe } : null;
   }
   // Whether the engine AI leaves its opening plan for good: material is no longer even, or a pawn of the other side
   // stands past its 4th rank (pawnAdvanced). Not while an exchange is still going on (the last move took): a pawn that
@@ -417,5 +430,5 @@
     });
   }
 
-  return { canRequestBoardCount: canRequestBoardCount, requestBoardCount: requestBoardCount, canRequestSpecialCount: canRequestSpecialCount, requestSpecialCount: requestSpecialCount, quietPlies: quietPlies, pawnsLocked: pawnsLocked, LOCKED_PLIES: LOCKED_PLIES, SHUFFLES: SHUFFLES, shuffleMoves: shuffleMoves, material: material, VALUES: VALUES, OPENING: OPENING, OPENINGS: OPENINGS, openingMove: openingMove, openingMoves: openingMoves, openingChoice: openingChoice, flankAnswer: flankAnswer, aiOpening: aiOpening, PLANS: PLANS, pawnAdvanced: pawnAdvanced, openingOver: openingOver, ceilingFor: ceilingFor, nextCount: nextCount, countText: countText, exchange: exchange, chooseMove: chooseMove };
+  return { canRequestBoardCount: canRequestBoardCount, requestBoardCount: requestBoardCount, canRequestSpecialCount: canRequestSpecialCount, requestSpecialCount: requestSpecialCount, quietPlies: quietPlies, pawnsLocked: pawnsLocked, LOCKED_PLIES: LOCKED_PLIES, SHUFFLES: SHUFFLES, shuffleMoves: shuffleMoves, material: material, VALUES: VALUES, OPENING: OPENING, OPENINGS: OPENINGS, openingMove: openingMove, openingMoves: openingMoves, openingChoice: openingChoice, flankAnswer: flankAnswer, aiOpening: aiOpening, PLANS: PLANS, pawnAdvanced: pawnAdvanced, openingOver: openingOver, keepMaterial: keepMaterial, ceilingFor: ceilingFor, nextCount: nextCount, countText: countText, exchange: exchange, chooseMove: chooseMove };
 });

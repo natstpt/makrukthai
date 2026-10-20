@@ -101,6 +101,9 @@
   function loadEngine(){
     if(!E){engine.state='failed';fallbackNotice();return;}
     engine.state='loading';
+    // The hard AI uses the full engine on phones too, as ถอดหมาก does (engine-ai.js preferFull: the lite one, without
+    // its trained evaluation, misjudges positions); where the full one cannot run the lite one takes over.
+    if(game.level==='hard'&&E.preferFull)E.preferFull();
     E.start(function(f){var pct=Math.floor(f*100);if(pct!==engine.progress){engine.progress=pct;render();}},game.level!=='hard')
       .then(function(){engine.state='ready';render();},function(e){engine.state='failed';engine.reason=(e&&e.reason)||'เบราว์เซอร์นี้ยังไม่รองรับ';render();fallbackNotice();scheduleAi();});
   }
@@ -166,6 +169,17 @@
         if(!only)keepAiSearch(searched);
         if(token!==aiSearch||!aiTurn())return;
         var move=key&&R.legalMoves(state.pieces,state.turn).find(function(m){return moveKey(m)===key;});
+        // The lite engine's move giving a pawn or piece away for nothing (makruk-play.js keepMaterial): searched again
+        // among the moves that keep it (3 s), and that move played.
+        var keep=move&&liteEngine()&&!only&&P.keepMaterial(state.pieces,state.turn,key);
+        if(keep){
+          E.bestMove(M.fen(state),[],{depth:20,time:3000,searchmoves:keep.moves.map(moveKey)}).then(function(again){
+            if(token!==aiSearch||!aiTurn())return;
+            var better=again&&R.legalMoves(state.pieces,state.turn).find(function(m){return moveKey(m)===again;});
+            playMove((better||move).from,(better||move).to);
+          },function(){if(token===aiSearch&&aiTurn())playMove(move.from,move.to);});
+          return;
+        }
         if(move)playMove(move.from,move.to);else easy();
       },function(){if(token===aiSearch&&aiTurn())easy();});
     },delay);
@@ -943,7 +957,9 @@
     $('emptyMoves').hidden=moves.length>0;
     $('panelTitle').textContent=mode==='edit'?'จัดตำแหน่งหมาก':'ทดลองเดิน';
     // /ai has no page title: the player bars say who plays which side, e.g. ฝ่ายแดง (AI ระดับเซียน) · ฝ่ายขาว (คุณ).
-    var barName=function(side){return 'ฝ่าย'+(side==='white'?'ขาว':'แดง')+(game&&game.standalone?(side===game.human?' (คุณ)':' (AI ระดับเซียน)'):'');};
+    // The AI's side also says which engine plays: Full (the trained evaluation) or Lite.
+    var engineName=engineAi()&&E&&E.tier()?' · '+(E.tier()==='lite'?'Lite':'Full'):'';
+    var barName=function(side){return 'ฝ่าย'+(side==='white'?'ขาว':'แดง')+(game&&game.standalone?(side===game.human?' (คุณ)':' (AI ระดับเซียน'+engineName+')'):game&&game.ai&&side!==game.human&&engineName?' (AI'+engineName+')':'');};
     $('topSide').textContent=barName(flipped?'white':'black');$('bottomSide').textContent=barName(flipped?'black':'white');
     $('topDot').classList.toggle('white',flipped);$('bottomDot').classList.toggle('white',!flipped);
     $('modeLabel').textContent=mode==='edit'?'1 · ตั้งตำแหน่ง':analysis?'AI ระดับเซียน'+(E&&E.tier()?' ('+(E.tier()==='lite'?'Lite':'Full')+')':''):game?(game.ai?'คุณเป็นฝ่าย'+sideName(game.human)+' · AI ระดับ'+(!engineAi()?'ง่าย'+(game.level==='easy'?'':' (สำรอง)'):({easy:'ง่าย',medium:'กลาง',hard:'เซียน'}[game.level])+' (คิดลึก '+(game.level==='hard'&&E&&E.lastDepth()||AI_LIMITS[game.level].depth)+' ชั้น)'):'เครื่องเดียวกัน'):'2 · ทดลองเดิน';var title=document.querySelector('.brand h1');if(title)title.textContent=analysis?'ถอดหมาก':game?(game.ai?'เล่นกับ AI':'เล่น 2 คน'):'ตั้งหมาก';
