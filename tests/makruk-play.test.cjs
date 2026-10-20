@@ -261,6 +261,23 @@ assert(!R.isAttacked(R.applyMove(board('K:a1 R:d4 P:h3 k:h8 n:f5'), at(saved.sli
   eq(P.aiOpening(ps, 'black'), { free: true }, 'a threat or a capture: the engine plays');
 }
 
+// The plan is not left in the middle of an exchange (openingOver): after ค4×ง5 the white pawn stands on ง5 (past its
+// 4th rank) and material is uneven, but red takes back and goes on with the plan (the game where red left it and
+// played ม.ข8-ค6, ค.ฉ8-จ7).
+{
+  let ps = M.initial().pieces, took = false; const out = [];
+  for (const w of ['c3c4', 'c4d5', 'b1c3', 'd3d4', 'f1e2', 'e2d3', 'c1c2', 'e1f2', 'g1e2']) {
+    const m = R.legalMoves(ps, 'white').find(x => key(x) === w);
+    took = ps.some(p => p.at.r === m.to.r && p.at.c === m.to.c); ps = R.applyMove(ps, m.from, m.to);
+    if (P.openingOver(ps, 'black', took)) { out.push('over'); break; }
+    const r = P.aiOpening(ps, 'black', 'centre');
+    const mv = r && r.move ? r.move : r && r.moves ? r.moves[0] : P.chooseMove(ps, 'black', { random: fixed, opening: false });
+    out.push(key(mv)); ps = R.applyMove(ps, mv.from, mv.to);
+  }
+  eq(out, ['d6d5', 'c6d5', 'g8e7', 'e6e5', 'b8d7', 'd8c7', 'c7d6', 'f8f7', 'f7e6'], 'the plan goes on after the exchange on ง5');
+  eq(P.openingOver(board('K:d1 P:d5 k:e8 p:e6'), 'black', false), true, 'an advanced pawn after the exchange ends the plan');
+}
+
 // White's plans for the engine AI (aiOpening): the centre one mirrors red's (จ4 ง4, the knights on จ2 ง2, the met
 // จ1-ฉ2-จ3); the flank one is จ4 ฉ4, ม.ช1-ฉ3, the met to จ3, one khon up (the engine choosing ค2, ฉ2 or จ2), and only
 // then the third pawn ง4.

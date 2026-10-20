@@ -119,11 +119,9 @@
     // Engine AI: the opening plan first (makruk-play.js aiOpening: the centre pawns, the knights, the met, and for
     // white's flank shape a khon and the third pawn); once it is done or has to stop, the engine plays the rest of the
     // game. Decided now, so an engine move does not wait the opening delay. A move where the opponent threatens
-    // something is the engine's, and the plan goes on after it. The plan is left for good once material is no longer
-    // even (not while an exchange is still going on: the last move took) or a pawn of the other side stands past its
-    // 4th rank (เบี้ยสูง).
-    var uneven=P.material(state.pieces,'white')!==P.material(state.pieces,'black')&&!(moves.length&&moves[moves.length-1].capture);
-    if(hard&&!game.bookDone&&(uneven||P.pawnAdvanced(state.pieces,state.turn)))game.bookDone=true;
+    // something is the engine's, and the plan goes on after it. The plan is left for good once the game has left the
+    // quiet opening (makruk-play.js openingOver).
+    if(hard&&!game.bookDone&&P.openingOver(state.pieces,state.turn,moves.length&&moves[moves.length-1].capture))game.bookDone=true;
     var plan=hard&&!game.bookDone&&P.aiOpening(state.pieces,state.turn,game.shape);
     var fixed=plan&&plan.move,only=plan&&plan.moves&&plan.moves.map(moveKey),book=fixed;
     // The answer to an advanced pawn against the flank shape (makruk-play.js FLANK_ANSWER) is played even after the
