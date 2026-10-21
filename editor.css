@@ -216,3 +216,24 @@ body:not(.ready) main,body:not(.ready) .actionDock,body:not(.ready) #modeLabel,b
 .askActions .levelStart:disabled{opacity:.45}
 .askActions button[hidden]{display:none}
 .levelChoice:focus:not(:focus-visible),.levelDialog .sideChoice:focus:not(:focus-visible){outline:none}
+/* /ai: ⓘ, how the levels differ. */
+.levelHead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.levelHead h2{margin:0 !important}
+.levelInfo,.levelInfoX{min-width:40px;min-height:40px;border:1px solid #605647;border-radius:50%;background:#3a3125;color:#e4cd92;font-size:20px;line-height:1}
+.levelInfoDialog{width:min(480px,calc(100% - 20px));max-height:calc(100dvh - 20px);overflow:auto}
+.levelInfoDialog h2{font-size:18px}
+.levelInfoHint{margin:0 0 8px !important;font-size:13px !important;color:#cfc6b6}
+.levelTable{width:100%;border-collapse:separate;border-spacing:0 6px;font-size:14px}
+.levelTable thead th{font-size:12px;font-weight:400;color:#cfc6b6;text-align:left;padding:0 6px}
+.levelTable tbody tr{cursor:pointer;background:#3a3125}
+.levelTable tbody tr[aria-selected="true"]{background:#5a4a2c;outline:2px solid #e4cd92}
+.levelTable tbody th,.levelTable td{padding:8px 6px;vertical-align:middle;text-align:left}
+.levelTable tbody th{border-radius:10px 0 0 10px;white-space:nowrap}
+.levelTable tbody th small{display:block;font-size:10px;letter-spacing:-1px;color:#e4cd92}
+.levelTable td b{display:block;font-weight:700}
+.levelTable td small{display:block;font-size:12px;color:#cfc6b6}
+.levelTable .levelStat{border-radius:0 10px 10px 0;font-size:12px;color:#e4cd92;white-space:nowrap}
+.levelTips{margin-top:8px;font-size:14px;line-height:1.5}
+.levelTips p{margin:8px 0 2px !important;font-size:15px !important}
+.levelTips ul{margin:0;padding-left:20px}
+.levelInfo:focus:not(:focus-visible),.levelInfoX:focus:not(:focus-visible){outline:none;box-shadow:none}
