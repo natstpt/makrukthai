@@ -22,8 +22,22 @@
   // The stand-alone test page (ai/index.html, made by scripts/build-ai-page.cjs): the hard AI only, outside the
   // lessons — no way back to them, no hint (a เริ่มใหม่ button instead), the level and side in large type.
   var standalone=window.MAKRUK_PAGE==='ai';
-  if(standalone){var aiParams={};try{aiParams=new URLSearchParams(location.search);}catch(e){}game={ai:true,human:aiParams.get&&aiParams.get('side')==='black'?'black':'white',level:'hard',standalone:true};}
-  else try{var playParams=new URLSearchParams(location.search);if(playParams.get('play')==='2')game={ai:false};else if(playParams.get('play')==='ai')game={ai:true,human:playParams.get('side')==='black'?'black':'white',level:['easy','hard'].indexOf(playParams.get('level'))>=0?playParams.get('level'):'medium',lesson:playParams.get('lesson')};}catch(e){}
+  // The AI's levels, strongest first. easy, medium and hard keep the keys the lesson pages' links use. Only สุดยอดเซียน
+  // plays on the full engine (engine-ai.js: 48 MB the first time); every other level plays on the lite one, so a level
+  // plays the same on every device. The opening plan (makruk-play.js aiOpening) is for ฝึกฝน and the levels above it.
+  var LEVELS=[
+    {key:'grand',name:'สุดยอดเซียน',icon:'👑',plan:true,note:'AI รุ่นเต็ม แข็งที่สุด คิดลึก 20 ชั้น เปิดเกมเป็นรูปแบบเซียน'},
+    {key:'hard',name:'ยอดเซียน',icon:'⭐⭐⭐⭐⭐',plan:true,note:'คิดลึก 20 ชั้น เปิดเกมเป็นรูปแบบเซียน'},
+    {key:'expert',name:'เซียน',icon:'⭐⭐⭐⭐',plan:true,note:'คิดลึก 12 ชั้น เปิดเกมเป็นรูปแบบเซียน'},
+    {key:'practice',name:'ฝึกฝน',icon:'⭐⭐⭐',plan:true,note:'คิดลึก 8 ชั้น พลาดบ้างเล็กน้อย เหมาะกับการฝึก'},
+    {key:'medium',name:'มือใหม่',icon:'⭐⭐',note:'คิดลึก 5 ชั้น เหมาะกับคนที่เล่นเป็นแล้ว'},
+    {key:'easy',name:'เริ่มต้น',icon:'⭐',note:'คิดตาเดียวและพลาดบ่อย เหมาะกับคนเพิ่งเริ่มเล่น'}
+  ];
+  function levelOf(key){return LEVELS.filter(function(l){return l.key===key;})[0]||LEVELS[1];}
+  function levelKey(key){return levelOf(key).key===key?key:null;}
+  // /ai: the level and side are chosen before each game (the level dialog), never during one.
+  if(standalone){var aiParams={};try{aiParams=new URLSearchParams(location.search);}catch(e){}game={ai:true,human:aiParams.get&&aiParams.get('side')==='black'?'black':'white',level:aiParams.get&&levelKey(aiParams.get('level'))||'practice',standalone:true,picked:false};}
+  else try{var playParams=new URLSearchParams(location.search);if(playParams.get('play')==='2')game={ai:false};else if(playParams.get('play')==='ai')game={ai:true,human:playParams.get('side')==='black'?'black':'white',level:levelKey(playParams.get('level'))||'medium',lesson:playParams.get('lesson')};}catch(e){}
   function aiSide(){return game&&game.ai?opponent(game.human):null;}
   // The AI's opening shape (makruk-play.js OPENINGS): as red always the centre shape ง5 จ5 (the flank shape would
   // leave red to deal with an advanced pawn on จ5); as white, each game picks at random between the centre shape ง4 จ4
@@ -42,14 +56,14 @@
   function canAskSpecial(){return P.canRequestSpecialCount(state.pieces,count,moves,trial&&M.fen(trial.state));}
   function askCount(side){count=P.canRequestBoardCount(state.pieces,count)?P.requestBoardCount(side):P.requestSpecialCount(side,state.pieces);}
   var aiTimer=0,aiSearch=0,E=window.MakrukEngine,engine={state:'off',progress:0};
-  var AI_LIMITS={easy:{depth:1,skill:3},medium:{depth:5},hard:{depth:20,time:1800}};
+  var AI_LIMITS={easy:{depth:1,skill:3},medium:{depth:5},practice:{depth:8,skill:12},expert:{depth:12,time:1000},hard:{depth:20,time:1800},grand:{depth:20,time:1800}};
   // The hard AI's first 20 moves search 20 plies, stopping after a minute at most (a slow phone); from its 21st move
   // on, AI_LIMITS (under 2 seconds a move).
   var HARD_OPENING_MOVES=20;
   function aiLimits(){
-    if(game.level!=='hard')return AI_LIMITS[game.level];
+    if(game.level!=='hard'&&game.level!=='grand')return AI_LIMITS[game.level];
     var played=moves.filter(function(m){return m.side===aiSide();}).length;
-    return played<HARD_OPENING_MOVES?{depth:20,time:60000,wait:62000}:AI_LIMITS.hard;
+    return played<HARD_OPENING_MOVES?{depth:20,time:60000,wait:62000}:AI_LIMITS[game.level];
   }
   function engineAi(){return !!game&&!!game.ai&&engine.state!=='failed';}
   function cancelAi(){clearTimeout(aiTimer);aiTimer=0;aiSearch++;think=null;}
@@ -74,7 +88,7 @@
   function drawThink(){
     var bar=$('thinkBar');if(!bar||!game||!game.standalone)return;
     var now=Date.now(),pct=0,text='',status=mode==='play'?playStatus():null,busy=false;
-    if(engine.state==='loading'&&aiTurn()){pct=(engine.progress||0)/100;text='กำลังโหลด AI ระดับเซียน '+(engine.progress||0)+'%';busy=true;}
+    if(engine.state==='loading'&&aiTurn()){pct=(engine.progress||0)/100;text='กำลังโหลด AI ระดับ'+levelOf(game.level).name+' '+(engine.progress||0)+'%';busy=true;}
     else if(think&&think.done&&now-think.done<700){pct=1;text='AI เดินแล้ว · 100%';}
     else if(think&&!think.done){pct=thinkPercent(think,now);text='AI กำลังคิด… '+(pct*100).toFixed(1)+'%';busy=true;}
     else if(status&&status.state!=='playing')text='เกมจบแล้ว · กดเริ่มใหม่เพื่อเล่นอีกเกม';
@@ -93,7 +107,7 @@
   // (the simple player in makruk-play.js), why, and how to fix it when that is known.
   function fallbackNotice(){
     if(!game||!game.ai||game.level==='easy')return;
-    $('fallbackText').textContent='เครื่องหรือเบราว์เซอร์นี้ไม่รองรับ AI ระดับ'+{medium:'กลาง',hard:'เซียน'}[game.level]+' ตอนนี้จึงเล่นกับ AI ระดับง่ายแทน';
+    $('fallbackText').textContent='เครื่องหรือเบราว์เซอร์นี้ไม่รองรับ AI ระดับ'+levelOf(game.level).name+' ตอนนี้จึงเล่นกับ AI ระดับเริ่มต้นแทน';
     $('fallbackReason').textContent=engine.reason||'';$('fallbackReason').hidden=!engine.reason;
     if($('fallbackDialog').showModal)$('fallbackDialog').showModal();
   }
@@ -101,10 +115,9 @@
   function loadEngine(){
     if(!E){engine.state='failed';fallbackNotice();return;}
     engine.state='loading';
-    // The hard AI uses the full engine on phones too, as ถอดหมาก does (engine-ai.js preferFull: the lite one, without
-    // its trained evaluation, misjudges positions); where the full one cannot run the lite one takes over.
-    if(game.level==='hard'&&E.preferFull)E.preferFull();
-    E.start(function(f){var pct=Math.floor(f*100);if(pct!==engine.progress){engine.progress=pct;render();}},game.level!=='hard')
+    // สุดยอดเซียน plays on the full engine, phones too (engine-ai.js preferFull); every other level on the lite one.
+    if(game.level==='grand'&&E.preferFull)E.preferFull();
+    E.start(function(f){var pct=Math.floor(f*100);if(pct!==engine.progress){engine.progress=pct;render();}},game.level!=='grand')
       .then(function(){engine.state='ready';render();},function(e){engine.state='failed';engine.reason=(e&&e.reason)||'เบราว์เซอร์นี้ยังไม่รองรับ';render();fallbackNotice();scheduleAi();});
   }
   $('requestCount').addEventListener('click',function(){
@@ -116,6 +129,7 @@
     cancelAi();
     // While an earlier position of the game is on the board (moves to go forward to), the AI waits. On the player's
     // turn the engine searches the position for the game review; on the AI's turn that search stops at once.
+    if(game&&game.standalone&&!game.picked)return;
     if(!aiTurn()||future.length||playStatus().state!=='playing'){ponder();return;}
     if(pondering&&E&&E.stopSearch)E.stopSearch();
     var token=aiSearch,hard=engineAi();
@@ -129,7 +143,7 @@
     // A tried step the engine turned down (white's จ4-จ5) is left out for that move only: looked at again next move.
     if(game.planSkip)Object.keys(game.planSkip).forEach(function(k){if(game.planSkip[k]!==moves.length+1)delete game.planSkip[k];});
     if(hard&&!game.bookDone&&P.openingOver(state.pieces,state.turn,moves.length&&moves[moves.length-1].capture))endBook();
-    var plan=hard&&!game.bookDone&&P.aiOpening(state.pieces,state.turn,game.shape,game.planSkip);
+    var plan=hard&&levelOf(game.level).plan&&!game.bookDone&&P.aiOpening(state.pieces,state.turn,game.shape,game.planSkip);
     // Each step but the centre pawns and an edge pawn's answer (plan.sure) is checked by the engine first (checkStep).
     var fixed=plan&&plan.sure&&plan.move,checked=plan&&!plan.sure&&plan.move;
     var only=plan&&plan.moves&&plan.moves.map(moveKey),book=fixed||checked;
@@ -470,13 +484,82 @@
   function newGame(side){
     $('newGameDialog').close();if($('resultDialog').open)$('resultDialog').close();stopReview();
     cancelAi();hint=null;game.human=side;pickShape();game.bookDone=game.bookOff=false;game.bookAt=undefined;game.planSkip={};game.recorded=false;game.resigned=false;flipped=side==='black';
-    try{var url=new URL(location.href);url.searchParams.set('side',side);window.history.replaceState(null,'',url);}catch(e){}
+    try{var url=new URL(location.href);url.searchParams.set('side',side);if(game.standalone)url.searchParams.set('level',game.level);window.history.replaceState(null,'',url);}catch(e){}
     state=M.initial();trial={state:clone(state),history:[],future:[]};history=[];future=[];moves=[];selected=null;last=null;startCount();render();scheduleAi();
   }
-  $('newGameBtn').onclick=function(){$('newGameDialog').showModal();};
-  $('topNewGame').onclick=function(){$('newGameDialog').showModal();};
+  // A new game: on /ai the level dialog (level and side), elsewhere the side only.
+  function askNewGame(){if(game&&game.standalone)openPick();else $('newGameDialog').showModal();}
+  $('newGameBtn').onclick=askNewGame;
+  $('topNewGame').onclick=askNewGame;
   $('newWhite').onclick=function(){newGame('white');};
   $('newBlack').onclick=function(){newGame('black');};
+  // /ai: the level dialog. The level and side are chosen before each game, never during one, and kept for the next
+  // visit (makrukAiPick; a ?level= or ?side= in the link comes first). สุดยอดเซียน needs the full engine: its 48 MB load
+  // from here with a bar, and its game starts only once the engine is ready. A level wanting the other engine than the
+  // one this page has started reloads the page and carries on from the choice (sessionStorage makrukAiResume), as the
+  // full engine's first start may also reload it.
+  var pick={level:'practice',side:'white'},full={loading:false,pct:0,failed:''};
+  if(standalone){
+    try{var kept=JSON.parse(localStorage.getItem('makrukAiPick')||'null');if(kept){if(levelKey(kept.level))pick.level=kept.level;if(kept.side==='black'||kept.side==='white')pick.side=kept.side;}}catch(e){}
+    try{var linked=new URLSearchParams(location.search);if(levelKey(linked.get('level')))pick.level=linked.get('level');if(linked.get('side'))pick.side=linked.get('side')==='black'?'black':'white';}catch(e){}
+  }
+  function resumeAfter(what){try{sessionStorage.setItem('makrukAiResume',JSON.stringify({level:pick.level,side:pick.side,what:what}));}catch(e){}}
+  function takeResume(){var r=null;try{r=JSON.parse(sessionStorage.getItem('makrukAiResume')||'null');sessionStorage.removeItem('makrukAiResume');}catch(e){}return r;}
+  function reloadFor(what){resumeAfter(what);location.reload();}
+  function drawPick(){
+    var box=$('levelChoices');
+    if(!box.children.length)LEVELS.forEach(function(l){
+      var b=document.createElement('button');b.type='button';b.className='levelChoice';b.setAttribute('role','radio');b.dataset.level=l.key;
+      b.innerHTML='<small></small><span></span>';b.firstChild.textContent=l.icon;b.lastChild.textContent=l.name;
+      b.onclick=function(){if(full.loading)return;pick.level=l.key;full.failed='';drawPick();};box.appendChild(b);
+    });
+    Array.prototype.forEach.call(box.children,function(b){b.setAttribute('aria-checked',String(b.dataset.level===pick.level));b.disabled=full.loading&&b.dataset.level!==pick.level;});
+    $('pickWhite').setAttribute('aria-checked',String(pick.side==='white'));$('pickBlack').setAttribute('aria-checked',String(pick.side==='black'));
+    $('levelNote').textContent=levelOf(pick.level).note;
+    var grand=pick.level==='grand',ready=!!E&&E.tier&&E.tier()==='full';
+    $('fullLoad').hidden=!grand;
+    $('fullLoadBtn').hidden=!grand||ready||full.loading||!!full.failed;
+    $('fullTrack').hidden=!full.loading;$('fullBar').style.width=Math.round(full.pct*100)+'%';
+    $('fullActions').hidden=!full.failed;
+    var text=$('fullText');text.className='fullText'+(ready?' ok':'');
+    text.textContent=ready?'✓ สุดยอดเซียนพร้อมเล่นแล้ว · กด เริ่มเล่น ได้เลย':full.failed?'โหลดสุดยอดเซียนไม่สำเร็จ: '+full.failed:
+      full.loading?(full.pct<1?'กำลังโหลดสุดยอดเซียน '+Math.round(full.pct*100)+'% ('+Math.round(full.pct*48)+' / 48 MB) · อย่าปิดหรือสลับแอประหว่างโหลด':'โหลดครบแล้ว กำลังเตรียม AI…'):
+      'ครั้งแรกต้องโหลด 48 MB (ใช้เน็ตพอสมควร) แล้วจึงเริ่มเล่นได้';
+    $('levelStart').disabled=grand&&!ready||full.loading;
+    $('levelCancel').hidden=!game.picked;
+  }
+  function openPick(){if($('resultDialog').open)$('resultDialog').close();full.failed='';drawPick();if(!$('levelDialog').open)$('levelDialog').showModal();}
+  function loadFull(){
+    if(!E){full.failed='เบราว์เซอร์นี้ยังไม่รองรับ';drawPick();return;}
+    if(E.tier()==='lite'||engine.state==='loading'&&!full.loading){reloadFor('load');return;}
+    full.loading=true;full.pct=0;full.failed='';drawPick();
+    resumeAfter('load');
+    if(E.preferFull)E.preferFull();
+    engine.state='loading';
+    E.start(function(f){full.pct=f;engine.progress=Math.floor(f*100);drawPick();},false).then(function(tier){
+      takeResume();full.loading=false;engine.state='ready';
+      if(tier!=='full')full.failed=(E.liteReason&&E.liteReason())||'เครื่องนี้เปิด AI รุ่นเต็มไม่ได้';
+      drawPick();render();
+    },function(e){takeResume();full.loading=false;engine.state='failed';engine.reason=(e&&e.reason)||'เบราว์เซอร์นี้ยังไม่รองรับ';full.failed=engine.reason;drawPick();render();});
+  }
+  function startPick(){
+    try{localStorage.setItem('makrukAiPick',JSON.stringify(pick));}catch(e){}
+    var tier=E&&E.tier&&E.tier(),need=pick.level==='grand'?'full':'lite';
+    if(need==='full'&&tier!=='full')return;
+    if(need==='lite'&&(tier==='full'||full.loading)){reloadFor('play');return;}
+    game.level=pick.level;game.picked=true;
+    if($('levelDialog').open)$('levelDialog').close();
+    if(engine.state==='off')loadEngine();
+    newGame(pick.side);
+  }
+  $('pickWhite').onclick=function(){pick.side='white';drawPick();};
+  $('pickBlack').onclick=function(){pick.side='black';drawPick();};
+  $('fullLoadBtn').onclick=loadFull;
+  $('fullRetry').onclick=function(){resumeAfter('load');if(E&&E.retryFull)E.retryFull();else location.reload();};
+  $('fullInstead').onclick=function(){pick.level='hard';full.failed='';drawPick();};
+  $('levelStart').onclick=startPick;
+  $('levelCancel').onclick=function(){if(game.picked&&!full.loading)$('levelDialog').close();};
+  $('levelDialog').addEventListener('cancel',function(e){if(!game.picked||full.loading)e.preventDefault();});
 
   // Result of a game against the AI: who won and how, a word from the coach, and a game review that rates each of the
   // player's moves by how much it lost against the best move: ดีเยี่ยม = the best move or within 0.3 pawn ·
@@ -510,7 +593,7 @@
   function keepAiSearch(fen){var s=E&&E.lastSearch&&E.lastSearch();if(s&&s.score&&s.depth>=8)keepReview(fen,s);}
   function showResult(){
     var status=playStatus();if(!game||!game.ai||status.state==='playing')return;
-    var won=status.winner===game.human,lost=!!status.winner&&!won,level={easy:'ง่าย',medium:'กลาง',hard:'เซียน'}[game.level];
+    var won=status.winner===game.human,lost=!!status.winner&&!won,level=levelOf(game.level).name;
     $('resultTitle').textContent=won?'คุณชนะ!':lost?'AI ชนะ':'เสมอ';
     $('resultTitle').className=won?'win':lost?'loss':'drawn';
     $('resultReason').textContent=RESULT_REASON[status.state]||'';
@@ -907,7 +990,7 @@
   $('reviewBtn').onclick=function(){openReview(0);};
   $('openReview').onclick=function(){openReview(0);};
   $('resultClose').onclick=function(){$('resultDialog').close();};
-  $('resultNew').onclick=function(){$('resultDialog').close();$('newGameDialog').showModal();};
+  $('resultNew').onclick=function(){$('resultDialog').close();askNewGame();};
   $('resultRematch').onclick=function(){newGame(game.human);};
   document.querySelectorAll('[data-assist]').forEach(function(box){
     box.checked=assist[box.dataset.assist];
@@ -973,13 +1056,12 @@
     $('emptyMoves').hidden=moves.length>0;
     $('panelTitle').textContent=mode==='edit'?'จัดตำแหน่งหมาก':'ทดลองเดิน';
     // /ai has no page title: the player bars say who plays which side, e.g. ฝ่ายแดง (AI ระดับเซียน) · ฝ่ายขาว (คุณ).
-    // The AI's side also says which engine plays: the full one (the trained evaluation) is ระดับสุดยอดเซียน, the lite one
-    // ระดับเซียน.
-    var aiName='AI ระดับ'+(engineAi()&&E&&E.tier()==='full'?'สุดยอดเซียน':'เซียน');
-    var barName=function(side){return 'ฝ่าย'+(side==='white'?'ขาว':'แดง')+(game&&game.standalone?(side===game.human?' (คุณ)':' ('+aiName+')'):game&&game.ai&&game.level==='hard'&&side!==game.human&&E&&E.tier()?' ('+aiName+')':'');};
+    // The AI's side says the level chosen for the game, the same from its first move to its last.
+    var aiName=game&&game.ai?'AI '+levelOf(game.level).name+' '+levelOf(game.level).icon:'';
+    var barName=function(side){return 'ฝ่าย'+(side==='white'?'ขาว':'แดง')+(game&&game.standalone?(side===game.human?' (คุณ)':' ('+aiName+')'):game&&game.ai&&side!==game.human?' ('+aiName+')':'');};
     $('topSide').textContent=barName(flipped?'white':'black');$('bottomSide').textContent=barName(flipped?'black':'white');
     $('topDot').classList.toggle('white',flipped);$('bottomDot').classList.toggle('white',!flipped);
-    $('modeLabel').textContent=mode==='edit'?'1 · ตั้งตำแหน่ง':analysis?'AI ระดับเซียน'+(E&&E.tier()?' ('+(E.tier()==='lite'?'Lite':'Full')+')':''):game?(game.ai?'คุณเป็นฝ่าย'+sideName(game.human)+' · AI ระดับ'+(!engineAi()?'ง่าย'+(game.level==='easy'?'':' (สำรอง)'):({easy:'ง่าย',medium:'กลาง',hard:'เซียน'}[game.level])+' (คิดลึก '+(game.level==='hard'&&E&&E.lastDepth()||AI_LIMITS[game.level].depth)+' ชั้น)'):'เครื่องเดียวกัน'):'2 · ทดลองเดิน';var title=document.querySelector('.brand h1');if(title)title.textContent=analysis?'ถอดหมาก':game?(game.ai?'เล่นกับ AI':'เล่น 2 คน'):'ตั้งหมาก';
+    $('modeLabel').textContent=mode==='edit'?'1 · ตั้งตำแหน่ง':analysis?'AI ระดับเซียน'+(E&&E.tier()?' ('+(E.tier()==='lite'?'Lite':'Full')+')':''):game?(game.ai?'คุณเป็นฝ่าย'+sideName(game.human)+' · AI ระดับ'+(!engineAi()?'เริ่มต้น'+(game.level==='easy'?'':' (สำรอง)'):levelOf(game.level).name+' (คิดลึก '+((game.level==='hard'||game.level==='grand')&&E&&E.lastDepth()||AI_LIMITS[game.level].depth)+' ชั้น)'):'เครื่องเดียวกัน'):'2 · ทดลองเดิน';var title=document.querySelector('.brand h1');if(title)title.textContent=analysis?'ถอดหมาก':game?(game.ai?'เล่นกับ AI':'เล่น 2 คน'):'ตั้งหมาก';
     if(game&&game.standalone){$('modeLabel').hidden=true;drawThink();}$('turn').value=state.turn;
     document.querySelectorAll('[data-tool]').forEach(function(b){b.setAttribute('aria-pressed',String(tool===b.dataset.tool));});
     $('fen').value=M.fen(state);
@@ -1279,7 +1361,7 @@
   // In a game against the hard AI the options say which engine plays and, for the lite one, why; the full one can be
   // tried again from there (engine-ai.js retryFull: reloads the page, the game starts over).
   function drawEngineInfo(){
-    var tier=game&&game.ai&&game.level==='hard'&&E&&E.tier&&E.tier();
+    var tier=game&&game.ai&&!game.standalone&&game.level==='hard'&&E&&E.tier&&E.tier();
     $('engineOptions').hidden=!tier;if(!tier)return;
     var why=tier==='lite'&&E.liteReason&&E.liteReason();
     $('engineInfo').textContent=tier==='full'?'ตอนนี้เล่นกับ AI ระดับสุดยอดเซียน (AI รุ่นเต็ม)':'ตอนนี้เล่นกับ AI ระดับเซียน (AI รุ่นเบา)'+(why?' · '+why:'');
@@ -1346,11 +1428,17 @@
   if(game&&game.ai){
     // ตัวเลือก and พลิก become small icons at the top right above the board; the dock keeps ย้อนกลับ, เดินหน้า, คำใบ้, ยอมแพ้.
     document.body.classList.add('aiGame');$('boardTools').hidden=false;$('boardTools').append($('options'),$('flip'));
-    loadEngine();if(window.MakrukTablebase)MakrukTablebase.load();
+    if(!standalone)loadEngine();
+    if(window.MakrukTablebase)MakrukTablebase.load();
   }
   // ถอดหมาก: the endgame table answers king + rook against king positions (see tableView).
   if(analysis&&window.MakrukTablebase)MakrukTablebase.load().then(function(ok){if(ok){view.fen=null;render();}});
   render();if(notice)message(notice,notice!=='เปิดตำแหน่งจากลิงก์แชร์แล้ว');
+  // /ai opens on the level dialog, or carries on from a choice the page was reloaded for.
+  if(standalone){
+    var resume=takeResume();if(resume){if(levelKey(resume.level))pick.level=resume.level;pick.side=resume.side==='black'?'black':'white';}
+    if(resume&&resume.what==='play')startPick();else{openPick();if(resume&&resume.what==='load')loadFull();}
+  }
   // The page shows once laid out for what it is (until then the set-up page's own markup would flash; editor.css).
   document.body.classList.add('ready');
   // The board shows, and the AI starts, once every piece picture is loaded (piece-colors.js), at most 2.5 s.

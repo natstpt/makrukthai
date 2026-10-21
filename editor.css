@@ -193,3 +193,26 @@ body:not(.ready) main,body:not(.ready) .actionDock,body:not(.ready) #modeLabel,b
 .engineOptions{display:grid;gap:8px;margin:4px 0 12px}
 .engineOptions[hidden],.engineOptions [hidden]{display:none}
 .engineOptions p{margin:0;font-size:.92rem;line-height:1.45}
+/* /ai: the level dialog, before each game. */
+.levelDialog{width:min(460px,calc(100% - 24px));max-height:calc(100dvh - 24px);overflow:auto}
+.levelDialog h2{margin:0 0 12px;font-size:20px}
+.levelChoices{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.levelChoice{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:72px;padding:8px 4px;border:1px solid #605647;border-radius:12px;background:#3a3125;color:#f2f0ec;font-size:15px;font-weight:700;line-height:1.2}
+.levelChoice small{font-size:11px;letter-spacing:-1px;color:#e4cd92}
+.levelChoice[aria-checked="true"],.levelDialog .sideChoice[aria-checked="true"]{border-color:#e4cd92;background:#5a4a2c;box-shadow:0 0 0 2px #e4cd9255}
+.levelNote{margin:10px 0 0 !important;font-size:14px !important;color:#cfc6b6;min-height:2.9em}
+.fullLoad{margin:8px 0 4px;padding:10px;border:1px solid #605647;border-radius:12px;background:#2a241b}
+.fullLoad[hidden],.fullLoad [hidden]{display:none}
+.fullLoadBtn{width:100%;min-height:44px;border:0;border-radius:10px;background:#e4cd92;color:#2a2116;font-size:16px;font-weight:700}
+.fullTrack{height:12px;border-radius:6px;background:#00000055;overflow:hidden;margin:4px 0}
+.fullTrack i{display:block;height:100%;width:0;background:linear-gradient(90deg,#e4cd92,#ffd56a);transition:width .2s}
+.fullText{margin:6px 0 0 !important;font-size:14px !important;line-height:1.45}
+.fullText.ok{color:#9fe0a0;font-weight:700}
+.fullActions{display:flex;gap:8px;margin-top:8px}
+.fullActions button{flex:1;min-height:40px;border:1px solid #605647;border-radius:10px;background:#3a3125;color:#e4cd92;font-weight:700}
+.levelSideTitle{margin:14px 0 8px !important;font-size:16px !important;font-weight:700}
+.levelDialog .sideChoice{min-height:72px}
+.askActions .levelStart{background:#e4cd92;color:#2a2116}
+.askActions .levelStart:disabled{opacity:.45}
+.askActions button[hidden]{display:none}
+.levelChoice:focus:not(:focus-visible),.levelDialog .sideChoice:focus:not(:focus-visible){outline:none}
