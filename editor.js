@@ -26,12 +26,12 @@
   // plays on the full engine (engine-ai.js: 48 MB the first time); every other level plays on the lite one, so a level
   // plays the same on every device. The opening plan (makruk-play.js aiOpening) is for ฝึกฝน and the levels above it.
   var LEVELS=[
-    {key:'grand',name:'สุดยอดเซียน',icon:'👑',plan:true,note:'AI รุ่นเต็ม แข็งที่สุด คิดลึก 20 ชั้น เปิดเกมเป็นรูปแบบเซียน'},
-    {key:'hard',name:'ยอดเซียน',icon:'⭐⭐⭐⭐⭐',plan:true,note:'คิดลึก 20 ชั้น เปิดเกมเป็นรูปแบบเซียน'},
-    {key:'expert',name:'เซียน',icon:'⭐⭐⭐⭐',plan:true,note:'คิดลึก 12 ชั้น เปิดเกมเป็นรูปแบบเซียน'},
-    {key:'practice',name:'ฝึกฝน',icon:'⭐⭐⭐',plan:true,note:'คิดลึก 8 ชั้น พลาดบ้างเล็กน้อย เหมาะกับการฝึก'},
-    {key:'medium',name:'มือใหม่',icon:'⭐⭐',note:'คิดลึก 5 ชั้น เหมาะกับคนที่เล่นเป็นแล้ว'},
-    {key:'easy',name:'เริ่มต้น',icon:'⭐',note:'คิดตาเดียวและพลาดบ่อย เหมาะกับคนเพิ่งเริ่มเล่น'}
+    {key:'grand',name:'สุดยอดเซียน',icon:'👑',strength:'แข็งที่สุด มองเกมแม่นที่สุด',fit:'อยากเจอคู่ต่อสู้ที่ยากที่สุด',plan:true,note:'AI รุ่นเต็ม แข็งที่สุด คิดลึก 20 ชั้น เปิดเกมเป็นรูปแบบเซียน'},
+    {key:'hard',name:'ยอดเซียน',icon:'⭐⭐⭐⭐⭐',strength:'แข็งมาก คิดล่วงหน้าไกล',fit:'เล่นเก่งแล้ว',plan:true,note:'คิดลึก 20 ชั้น เปิดเกมเป็นรูปแบบเซียน'},
+    {key:'expert',name:'เซียน',icon:'⭐⭐⭐⭐',strength:'แข็ง คิดเร็ว',fit:'อยากท้าทายตัวเอง',plan:true,note:'คิดลึก 12 ชั้น เปิดเกมเป็นรูปแบบเซียน'},
+    {key:'practice',name:'ฝึกฝน',icon:'⭐⭐⭐',strength:'กลาง ๆ พลาดบ้าง',fit:'ฝึกให้เก่งขึ้น',plan:true,note:'คิดลึก 8 ชั้น พลาดบ้างเล็กน้อย เหมาะกับการฝึก'},
+    {key:'medium',name:'มือใหม่',icon:'⭐⭐',strength:'ง่าย',fit:'เล่นเป็นแล้ว',note:'คิดลึก 5 ชั้น เหมาะกับคนที่เล่นเป็นแล้ว'},
+    {key:'easy',name:'เริ่มต้น',icon:'⭐',strength:'ง่ายที่สุด พลาดบ่อย',fit:'เพิ่งเริ่มเล่น',note:'คิดตาเดียวและพลาดบ่อย เหมาะกับคนเพิ่งเริ่มเล่น'}
   ];
   function levelOf(key){return LEVELS.filter(function(l){return l.key===key;})[0]||LEVELS[1];}
   function levelKey(key){return levelOf(key).key===key?key:null;}
@@ -558,6 +558,23 @@
   $('fullRetry').onclick=function(){resumeAfter('load');if(E&&E.retryFull)E.retryFull();else location.reload();};
   $('fullInstead').onclick=function(){pick.level='hard';full.failed='';drawPick();};
   $('levelStart').onclick=startPick;
+  // ⓘ: how the levels differ, with this player's results at each (makrukAiGames); a row picks that level.
+  function drawLevelInfo(){
+    var games={};try{games=JSON.parse(localStorage.getItem('makrukAiGames')||'{}');}catch(e){}
+    var body=$('levelTableBody');body.textContent='';
+    LEVELS.forEach(function(l){
+      var tr=document.createElement('tr'),rec=games[l.key];tr.tabIndex=0;tr.dataset.level=l.key;tr.setAttribute('aria-selected',String(l.key===pick.level));
+      tr.innerHTML='<th scope="row"><small></small><span></span></th><td><b></b><small></small></td><td class="levelStat"></td>';
+      tr.cells[0].firstChild.textContent=l.icon;tr.cells[0].lastChild.textContent=l.name;
+      tr.cells[1].firstChild.textContent=l.strength;tr.cells[1].lastChild.textContent='เหมาะกับ'+l.fit;
+      tr.cells[2].textContent=rec&&rec.done?'ชนะ '+rec.won+' / '+rec.done:'ยังไม่เคยเล่น';
+      var choose=function(){if(full.loading)return;pick.level=l.key;full.failed='';drawPick();$('levelInfoDialog').close();};
+      tr.onclick=choose;tr.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();choose();}};
+      body.appendChild(tr);
+    });
+  }
+  $('levelInfo').onclick=function(){drawLevelInfo();$('levelInfoDialog').showModal();};
+  $('levelInfoClose').onclick=$('levelInfoOk').onclick=function(){$('levelInfoDialog').close();};
   $('levelCancel').onclick=function(){if(game.picked&&!full.loading)$('levelDialog').close();};
   $('levelDialog').addEventListener('cancel',function(e){if(!game.picked||full.loading)e.preventDefault();});
 
