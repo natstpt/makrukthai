@@ -335,11 +335,11 @@
   //                  other khon one up, ค8-ค7. The king stays home until then.
   //   centre, white: the same mirrored: จ4 ง4, the knights on จ2 ง2, the met จ1-ฉ2-จ3 (จ1-ง2-จ3 while ง2 is free),
   //                  the khon ค1-ค2-ง3, then ฉ1-ฉ2.
-  //   flank, white:  จ4 ฉ4, ม.ช1-ฉ3, the met จ1-ฉ2-จ3 (จ1-จ2-จ3), the khon ฉ1-ฉ2: the main shape, each step played
-  //                  when it loses no material, whatever the engine prefers ({sure}). Then, with the pieces ready,
-  //                  the pawn จ4-จ5 for room in the centre when the engine finds it no worse ({move, check}: the
-  //                  caller asks the engine and, if not, passes the step in `skip`), and the third pawn ง4 ({sure});
-  //                  then ม.ข1-ง2 and ค.ค1-ค2, the king last of all.
+  //   flank, white:  จ4 ฉ4, then จ4-จ5 for room in the centre, looked at first every move: when it loses no
+  //                  material, the caller has the engine decide ({move, check}; turned down, it passes the step in
+  //                  `skip` for that move and the shape goes on). ม.ช1-ฉ3, the met จ1-ฉ2-จ3 (จ1-จ2-จ3), the khon ฉ1-ฉ2:
+  //                  the main shape, each step played when it loses no material, whatever the engine prefers
+  //                  ({sure}); the third pawn ง4; then ม.ข1-ง2 and ค.ค1-ค2, the king last of all.
   // A knight comes before a pawn of the first group whose square is not safe yet, the one that makes it safe first
   // (ม.ข8-ง7 guards จ5, ม.ช8-จ7 guards ง5); any other group waits for the one before it.
   // Every move it looks at the opponent first: in check, attacked, or with a capture to make, the engine answers that
@@ -368,16 +368,16 @@
       edges: [['h5', ['pawn', 'h3', 'h4']], ['a5', ['pawn', 'a3', 'a4']]],
       flank: { groups: [
         { pawns: true, steps: [['pawn', 'e3', 'e4'], ['pawn', 'f3', 'f4']] },
+        { first: true, check: true, steps: [['pawn', 'e4', 'e5']] },
         { knights: true, sure: true, steps: [['knight', 'g1', 'f3']] },
         { sure: true, steps: [['met', 'e1', 'f2', 'e3'], ['met', 'f2', 'e3'], ['met', 'e1', 'e2', 'e3'], ['met', 'e2', 'e3']] },
         { sure: true, steps: [['khon', 'f1', 'f2']] },
-        { check: true, steps: [['pawn', 'e4', 'e5']] },
         { sure: true, steps: [['pawn', 'd3', 'd4']] },
         { steps: [['knight', 'b1', 'd2']] },
         { steps: [['khon', 'c1', 'c2']] }] }
     }
   };
-  // skip: steps the engine turned down this game ({'e4e5': true}), left out as if played.
+  // skip: steps the engine turned down for this move ({'e4e5': true}), left out as if played.
   function aiOpening(pieces, side, shape, skip) {
     var plan = PLANS[side][shape] || PLANS[side].centre, legal = R.legalMoves(pieces, side);
     var mine = function (s, piece) { return pieces.some(function (p) { return p.side === side && p.piece === piece && same(p.at, square(s)); }); };
@@ -414,7 +414,7 @@
         var move = step(steps);
         if (move) return group.check ? { move: move, check: true } : group.pawns || group.sure ? { move: move, sure: true } : { move: move };
       }
-      if (!group.pawns && !group.check && steps.some(legalStep)) break;
+      if (!group.pawns && !group.check && !group.first && steps.some(legalStep)) break;
     }
     var calm = legal.filter(function (m) {
       var p = pieces.find(function (x) { return same(x.at, m.from); }), taking = pieces.some(function (x) { return same(x.at, m.to); });
