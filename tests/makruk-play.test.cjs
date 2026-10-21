@@ -304,15 +304,15 @@ assert(!R.isAttacked(R.applyMove(board('K:a1 R:d4 P:h3 k:h8 n:f5'), at(saved.sli
   // Red's edge pawns up to ก5 ญ5 are met by ก4 ญ4 first.
   const passive = ['a6a5', 'h6h5', 'a8a7', 'h8h7', 'a7a6', 'h7h6', 'a6a7', 'h6h7', 'a7a6', 'h7h6'];
   // With the shape ready, จ4-จ5 comes first, for the engine to check; turned down (skip), the third pawn ง4.
-  // จ4 ฉ4, then จ5 as soon as it loses no material (here once ม.ฉ3 guards it as well as ฉ4); the main shape ม.ฉ3, the
-  // met to จ3, ค.ฉ2; ง4; then ม.ง2, ค.ค2.
-  eq(play('flank', passive), ['e3e4', 'a3a4', 'h3h4', 'f3f4', 'g1f3', 'e4e5', 'free'], 'white flank plan: จ5 at once when it is safe');
-  eq(play('flank', passive.concat(['a6a7']), { e4e5: true }), ['e3e4', 'a3a4', 'h3h4', 'f3f4', 'g1f3', 'e1f2', 'f2e3', 'f1f2', 'd3d4', 'b1d2', 'c1c2'], 'without จ5: ง4, then ม.ง2 and ค.ค2');
-  // The flank shape ready (ค.ฉ2 up), จ5 guarded as well as attacked: จ4-จ5 at once.
+  // จ4 ฉ4, then จ5 for the engine to decide as soon as it loses no material (here once ม.ฉ3 guards it as well as ฉ4);
+  // the main shape ม.ฉ3, the met to จ3, ค.ฉ2; ง4; then ม.ง2, ค.ค2.
+  eq(play('flank', passive), ['e3e4', 'a3a4', 'h3h4', 'f3f4', 'g1f3', 'check e4e5', 'free'], 'white flank plan: จ5 for the engine when it is safe');
+  eq(play('flank', passive.concat(['a6a7']), { e4e5: true }), ['e3e4', 'a3a4', 'h3h4', 'f3f4', 'g1f3', 'e1f2', 'f2e3', 'f1f2', 'd3d4', 'b1d2', 'c1c2'], 'จ5 turned down every move: ง4, then ม.ง2 and ค.ค2');
+  // The flank shape ready (ค.ฉ2 up), จ5 guarded as well as attacked: จ4-จ5 for the engine.
   const ready = board('R:a1 N:b1 K:d1 B:c1 R:h1 B:f2 P:a3 P:b3 P:c3 P:d3 M:e3 N:f3 P:g3 P:h3 P:e4 P:f4 r:a8 b:c8 k:e8 r:h8 m:c7 n:d7 n:e7 b:f7 p:a6 p:b6 p:c6 p:e6 p:f6 p:h6 p:d5 p:g5');
   const offer = P.aiOpening(ready, 'white', 'flank');
-  eq([key(offer.move), offer.sure], ['e4e5', true], 'จ4-จ5 when the shape is ready');
-  // The game in the picture: จ4 ฉ4 ม.ฉ3 against ง5 ค5 ม.ค6, the met still home: จ5 before the met.
+  eq([key(offer.move), offer.check], ['e4e5', true], 'จ4-จ5 when the shape is ready');
+  // The game in the picture: จ4 ฉ4 ม.ฉ3 against ง5 ค5 ม.ค6, the met still home: จ5 (for the engine) before the met.
   const early5 = board('R:a1 N:b1 B:c1 K:d1 M:e1 B:f1 R:h1 P:a3 P:b3 P:c3 P:d3 N:f3 P:g3 P:h3 P:e4 P:f4 r:a8 b:c8 m:d8 k:e8 b:f8 n:g8 r:h8 p:a6 p:b6 n:c6 p:e6 p:f6 p:g6 p:h6 p:c5 p:d5');
   eq(key(P.aiOpening(early5, 'white', 'flank').move), 'e4e5', 'จ5 as soon as it is safe');
   const after = P.aiOpening(ready, 'white', 'flank', { e4e5: true });

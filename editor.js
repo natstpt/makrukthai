@@ -126,7 +126,8 @@
     // quiet opening (makruk-play.js openingOver).
     // What the plan has given up belongs to the moves it was given up at: back before them (ย้อนกลับ) it is open again.
     if(game.bookAt!==undefined&&moves.length<game.bookAt){game.bookDone=game.bookOff=false;game.bookAt=undefined;}
-    if(game.planSkip)Object.keys(game.planSkip).forEach(function(k){if(moves.length+1<game.planSkip[k])delete game.planSkip[k];});
+    // A tried step the engine turned down (white's จ4-จ5) is left out for that move only: looked at again next move.
+    if(game.planSkip)Object.keys(game.planSkip).forEach(function(k){if(game.planSkip[k]!==moves.length+1)delete game.planSkip[k];});
     if(hard&&!game.bookDone&&P.openingOver(state.pieces,state.turn,moves.length&&moves[moves.length-1].capture))endBook();
     var plan=hard&&!game.bookDone&&P.aiOpening(state.pieces,state.turn,game.shape,game.planSkip);
     // Each step but the centre pawns and an edge pawn's answer (plan.sure) is checked by the engine first (checkStep).
@@ -196,9 +197,17 @@
   // A step of the opening plan (makruk-play.js aiOpening) is played when the engine finds it no more than STEP_MARGIN
   // worse than its own best move (16 plies, up to 1.5 s: deep enough to see a pawn won a move later, such as a rook
   // coming to ช5 after ม็.จ1-ฉ2 where ม.ข1-ง2 holds). Otherwise the AI plays the engine's best move this time and the
-  // plan goes on next move; a step that is only tried (once: white's จ4-จ5) is left out for the rest of the game.
-  // Before the engine has loaded, a plain step is played unchecked and a tried one left out.
-  var STEP_MARGIN=50,STEP_CHECK={depth:16,time:1500};
+  // plan goes on next move. Before the engine has loaded, a plain step is played unchecked.
+  // A step that is only tried (once: white's จ4-จ5, for room in the centre) must keep the game level: after it white is
+  // no more than TRY_LEVEL behind and it is no more than TRY_MARGIN worse than the engine's best move. The lite engine,
+  // whose evaluation is less sure, plays it only as its own best move or with white not behind at all. Turned down (or
+  // without the engine yet), it is left out for this move only and looked at again the next.
+  var STEP_MARGIN=50,STEP_CHECK={depth:16,time:1500},TRY_LEVEL=-20,TRY_MARGIN=30;
+  function tryOk(best,mine,key){
+    var gap=reviewValue(best)-reviewValue(mine),level=reviewValue(mine);
+    if(liteEngine())return best.best===key||level>=0;
+    return level>=TRY_LEVEL&&gap<=TRY_MARGIN;
+  }
   function checkStep(step,once,token){
     var fen=M.fen(state),key=moveKey(step),live=function(){return token===aiSearch&&aiTurn();};
     var play=function(m){if(live())playMove(m.from,m.to);};
@@ -211,13 +220,15 @@
     if(!E||!E.evaluate||engine.state!=='ready'){if(once)instead(null);else play(step);return;}
     E.evaluate(fen,STEP_CHECK).then(function(best){
       if(!live())return;
-      if(!best||!best.score||best.best===key){play(step);return;}
+      if(!best||!best.score){if(once)instead(null);else play(step);return;}
+      // The engine's own best move: its score is the step's (a tried step must still keep the game level).
+      if(best.best===key){if(!once||tryOk(best,best,key))play(step);else instead(null);return;}
       return E.evaluate(fen,Object.assign({searchmoves:[key]},STEP_CHECK)).then(function(mine){
         if(!live())return;
-        if(!mine||!mine.score){play(step);return;}
-        if(reviewValue(best)-reviewValue(mine)<=STEP_MARGIN)play(step);else instead(best.best);
+        if(!mine||!mine.score){if(once)instead(null);else play(step);return;}
+        if(once?tryOk(best,mine,key):reviewValue(best)-reviewValue(mine)<=STEP_MARGIN)play(step);else instead(best.best);
       });
-    }).catch(function(){play(step);});
+    }).catch(function(){if(once)instead(null);else play(step);});
   }
   function checkBook(book,token){
     var fen=M.fen(state),key=moveKey(book),live=function(){return token===aiSearch&&aiTurn();};
