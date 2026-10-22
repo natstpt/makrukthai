@@ -238,3 +238,10 @@ body:not(.ready) main,body:not(.ready) .actionDock,body:not(.ready) #modeLabel,b
 .levelTips{margin:6px 0 0 !important;font-size:13px !important;line-height:1.45;color:#e8e2d6}
 .levelInfo:focus:not(:focus-visible),.levelInfoX:focus{outline:none;box-shadow:none}
 .levelInfoX:focus-visible{background:#4a3f30}
+/* ถอดหมาก: ∞ ไม่จำกัด beside the evaluation bar. */
+.analysisPanel{grid-template-columns:minmax(0,1fr) auto;column-gap:6px}
+.analysisPanel .engineLines{grid-column:1/-1}
+.deepAnalysis{align-self:center;min-height:0;height:24px;line-height:1;padding:0 10px;border:1px solid var(--line);border-radius:5px;background:#3d362c;color:#e4cd92;font-size:13px;font-weight:700;white-space:nowrap}
+.deepAnalysis[aria-pressed="true"]{background:#e4cd92;color:#2a2116;border-color:#e4cd92}
+.deepAnalysis:disabled{opacity:.45}
+.deepAnalysis[hidden]{display:none}

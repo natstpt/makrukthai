@@ -223,7 +223,8 @@
   // Analysis (the ถอดหมาก page): searches fen with two lines (MultiPV 2) and calls onUpdate({depth, lines, done})
   // with each new depth; a line is {score: {cp}|{mate}, pv: ['e3e4', …]} from the side to move. A new call replaces
   // the running search: the full build is stopped at once, the lite one (which cannot be stopped) finishes first.
-  // The full build searches 4 s, the lite one 1.5 s; stop() ends the analysis.
+  // The full build searches 4 s, the lite one 1.5 s; with deep (full build only) it searches with no limit, deeper and
+  // deeper, until the next position or stopAnalysis().
   var analysis = { running: false, next: null };
   // How many lines the engine searches (MultiPV), set only when it changes.
   var multipv = 1;
@@ -258,11 +259,13 @@
     };
     lines(2);
     line.post('position fen ' + job.fen);
-    line.post('go movetime ' + (line.stops ? 4000 : 1500));
+    // Without a limit (deep: the full build only, which can be stopped) the search goes on until the position changes
+    // or stopAnalysis().
+    line.post(job.deep && line.stops ? 'go infinite' : 'go movetime ' + (line.stops ? 4000 : 1500));
   }
-  function analyse(fen, onUpdate) {
+  function analyse(fen, onUpdate, deep) {
     return start().then(function () {
-      analysis.next = { fen: fen, onUpdate: onUpdate };
+      analysis.next = { fen: fen, onUpdate: onUpdate, deep: !!deep };
       if (analysis.running) { if (line.stops) line.post('stop'); return; }
       runAnalysis();
     });
@@ -307,5 +310,5 @@
     }, function (e) { searched(); throw e; });
   }
 
-  root.MakrukEngine = { start: start, preferFull: preferFull, retryFull: retryFull, liteReason: function () { return liteWhy; }, unsupported: unsupported, bestMove: bestMove, evaluate: evaluate, stopSearch: stopSearch, lastSearch: function () { return last; }, lastDepth: function () { return reached; }, analyse: analyse, stopAnalysis: stopAnalysis, tier: function () { return tier; }, ready: function () { return !!tier; } };
+  root.MakrukEngine = { start: start, preferFull: preferFull, retryFull: retryFull, liteReason: function () { return liteWhy; }, unsupported: unsupported, bestMove: bestMove, evaluate: evaluate, stopSearch: stopSearch, lastSearch: function () { return last; }, lastDepth: function () { return reached; }, analyse: analyse, stopAnalysis: stopAnalysis, canSearchDeep: function () { return !!line && !!line.stops; }, tier: function () { return tier; }, ready: function () { return !!tier; } };
 })(window);
