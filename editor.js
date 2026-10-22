@@ -314,6 +314,10 @@
     $('arrowLayer').innerHTML='';
     if(!on)return;
     $('evalBar').hidden=!assist.bar;$('engineLines').hidden=!assist.lines;
+    var deepOk=!!E&&E.canSearchDeep&&E.canSearchDeep(),deepBtn=$('deepAnalysis');
+    deepBtn.hidden=!assist.bar||!!view.table;deepBtn.disabled=!deepOk;if(!deepOk)deepSearch=false;
+    deepBtn.setAttribute('aria-pressed',String(deepSearch));deepBtn.textContent=deepSearch?'∞ กำลังคิด':'∞ ไม่จำกัด';
+    deepBtn.title=deepOk?(deepSearch?'กดอีกครั้งเพื่อกลับไปคิดตามเวลาปกติ':'ให้ AI คิดต่อไปเรื่อย ๆ ไม่จำกัดเวลา ยิ่งรอนานยิ่งลึก'):'ต้องใช้ AI รุ่นเต็ม';
     $('modeLabel').textContent='AI ระดับเซียน'+(E&&E.tier()?' ('+(E.tier()==='lite'?'Lite':'Full')+')':'');
     var v=top?whiteValue(top.score,state.turn):0;
     $('evalFill').style.width=(top?(top.score.mate!==undefined?(v>0?100:0):50+50*Math.tanh(v/4)):50)+'%';
@@ -415,6 +419,10 @@
       li.appendChild(b);ol.appendChild(li);
     });
   }
+  // ∞ ไม่จำกัด: the analysis searches with no time limit (the full engine only), deeper the longer one waits, for this
+  // position and the next ones until switched off.
+  var deepSearch=false;
+  $('deepAnalysis').onclick=function(){deepSearch=!deepSearch;view.fen=null;render();};
   function updateAnalysis(){
     if(!analysis)return;
     if(mode!=='play'){if(E)E.stopAnalysis();view.fen=null;drawAnalysis();return;}
@@ -430,7 +438,7 @@
       }
       else if(playStatus().state!=='playing'){if(E)E.stopAnalysis();}
       else if(!E){view.error='เปิด AI ไม่ได้';}
-      else E.analyse(fen,function(u){if(view.fen!==fen||view.table)return;view.lines=u.lines;view.depth=u.depth;view.done=u.done;drawAnalysis();})
+      else E.analyse(fen,function(u){if(view.fen!==fen||view.table)return;view.lines=u.lines;view.depth=u.depth;view.done=u.done;drawAnalysis();},deepSearch)
         .catch(function(e){view.error='AI ใช้ไม่ได้: '+((e&&e.reason)||'เบราว์เซอร์นี้ยังไม่รองรับ');drawAnalysis();});
     }
     drawAnalysis();
