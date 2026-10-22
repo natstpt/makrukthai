@@ -242,17 +242,17 @@
     var job = analysis.next; analysis.next = null;
     if (!job) { analysis.running = false; return; }
     analysis.running = true;
-    var lines = [], depth = 0;
+    var found = [], depth = 0;
     listener = function (text) {
       if (text.indexOf('info') === 0 && text.indexOf(' pv ') > 0 && text.indexOf('lowerbound') < 0 && text.indexOf('upperbound') < 0) {
         var info = parseInfo(text);
         if (!info.pv || !info.score) return;
         if (info.depth > depth) depth = info.depth;
-        lines[(info.multipv || 1) - 1] = { score: info.score, pv: info.pv };
-        if (!analysis.next) job.onUpdate({ depth: depth, lines: lines.filter(Boolean), done: false });
+        found[(info.multipv || 1) - 1] = { score: info.score, pv: info.pv };
+        if (!analysis.next) job.onUpdate({ depth: depth, lines: found.filter(Boolean), done: false });
       } else if (text.indexOf('bestmove') === 0) {
         listener = null;
-        if (!analysis.next) job.onUpdate({ depth: depth, lines: lines.filter(Boolean), done: true });
+        if (!analysis.next) job.onUpdate({ depth: depth, lines: found.filter(Boolean), done: true });
         runAnalysis();
       }
     };
