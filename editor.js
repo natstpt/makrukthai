@@ -74,15 +74,20 @@
   var think=null;
   function thinkPercent(t,now){
     var elapsed=now-t.start;
-    if(t.quick)return Math.min(1,elapsed/t.quick);
+    if(t.quick)return creep(t,now,Math.min(0.9,elapsed/t.quick));
     var d=t.depth,at=function(k){return k<=0?t.start:t.at[k]||t.start;};
     var last=Math.max(5,at(d)-at(d-1)),before=at(d-1)-at(d-2),grow=d>=3&&before>4?Math.max(1.3,Math.min(4,last/before)):2;
     t.grow=t.grow?t.grow*0.6+grow*0.4:grow;
     var total=at(d)-t.start,dt=last;
     for(var k=d+1;k<=t.target;k++){dt*=t.grow;total+=dt;if(total>36e5)break;}
     if(t.time)total=Math.min(total,t.time);
-    var p=Math.min(0.999,elapsed/Math.max(total,elapsed*1.05,1));
-    t.shown=Math.max(t.shown||0,p);
+    return creep(t,now,Math.min(0.995,elapsed/Math.max(total,elapsed*1.05,1)));
+  }
+  // Never still: between estimates the bar keeps creeping toward the end (a little of what is left, each frame), so a
+  // long search does not look stuck; it only ever moves forward, and reaches 100% only once the AI has moved.
+  function creep(t,now,p){
+    var shown=t.shown||0,since=Math.min(1000,now-(t.drawn||now));t.drawn=now;
+    t.shown=Math.min(0.995,Math.max(shown,p,shown+(0.995-shown)*since/20000));
     return t.shown;
   }
   function drawThink(){
@@ -90,7 +95,8 @@
     var now=Date.now(),pct=0,text='',status=mode==='play'?playStatus():null,busy=false;
     if(engine.state==='loading'&&aiTurn()){pct=(engine.progress||0)/100;text='กำลังโหลด AI ระดับ'+levelOf(game.level).name+' '+(engine.progress||0)+'%';busy=true;}
     else if(think&&think.done&&now-think.done<700){pct=1;text='AI เดินแล้ว · 100%';}
-    else if(think&&!think.done){pct=thinkPercent(think,now);text='AI กำลังคิด… '+(pct*100).toFixed(1)+'%';busy=true;}
+    // While the AI searches: the share done, the seconds it has been thinking (ticking every tenth) and how deep it is.
+    else if(think&&!think.done){pct=thinkPercent(think,now);text='AI กำลังคิด '+(pct*100).toFixed(1)+'% · '+((now-think.start)/1000).toFixed(1)+' วิ'+(think.depth&&!think.quick?' · ลึก '+think.depth:'');busy=true;}
     else if(status&&status.state!=='playing')text='เกมจบแล้ว · กดเริ่มใหม่เพื่อเล่นอีกเกม';
     else if(future.length)text='กำลังย้อนดูตาเดิน';
     else text='ถึงตาคุณเดิน · คุณเป็นฝ่าย'+sideName(game.human);
@@ -152,7 +158,8 @@
     if(hard&&!game.bookOff&&game.bookDone&&!book)book=P.flankAnswer(state.pieces,state.turn,game.shape);
     if(hard&&!book&&!plan)endBook();
     var delay=hard?(book||game.level!=='hard'?500:100):700;
-    think={start:Date.now(),depth:0,at:{},target:20,quick:book?delay+900:!hard?delay:0,time:0};
+    // A plan step the engine checks first takes the check's two searches (STEP_CHECK) more.
+    think={start:Date.now(),depth:0,at:{},target:20,quick:checked?delay+3200:book?delay+900:!hard?delay:0,time:0};
     aiTimer=setTimeout(function(){
       aiTimer=0;if(token!==aiSearch||!aiTurn())return;
       // The AI asks for the ordinary board count when it is behind; the special count is for the player only.

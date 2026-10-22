@@ -245,3 +245,7 @@ body:not(.ready) main,body:not(.ready) .actionDock,body:not(.ready) #modeLabel,b
 .deepAnalysis[aria-pressed="true"]{background:#e4cd92;color:#2a2116;border-color:#e4cd92}
 .deepAnalysis:disabled{opacity:.45}
 .deepAnalysis[hidden]{display:none}
+/* /ai on a phone: the player's own bar shows under the board too (ฝ่ายแดง (คุณ)). */
+@media(max-width:900px) and (orientation:portrait),(max-width:599px){body.standalonePage.aiGame .playerBar:not(.topBar){display:flex;height:28px;min-height:28px;padding:0 4px;box-sizing:border-box;margin-top:2px}
+  /* The move record sits in the middle of the spare height between the board and the buttons. */
+  body.standalonePage.aiGame .controlPanel{align-self:center}}
