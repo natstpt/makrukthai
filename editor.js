@@ -48,7 +48,9 @@
   // Counting to a draw (กติกา ข้อ ก 5) while playing; kept in the undo history with the position.
   var count=null;
   function startCount(){count=P.nextCount(null,state.pieces,opponent(state.turn));}
-  function playStatus(){if(game&&game.resigned)return {state:'resign',winner:aiSide(),check:false};var s=R.gameStatus(state.pieces,state.turn);return s.state!=='playing'?s:count&&count.draw?{state:'countdraw',check:s.check}:repetitions(M.fen(state))>=3?{state:'repetition',check:s.check}:s;}
+  function playStatus(){if(game&&game.resigned)return {state:'resign',winner:aiSide(),check:false};return boardStatus();}
+  // The position's own state (the review's trial moves look past a resignation).
+  function boardStatus(){var s=R.gameStatus(state.pieces,state.turn);return s.state!=='playing'?s:count&&count.draw?{state:'countdraw',check:s.check}:repetitions(M.fen(state))>=3?{state:'repetition',check:s.check}:s;}
   // Draw by repetition: the same position (pieces and side to move) a third time, at any point of the game, ends it.
   // Each move record keeps the position after it (fen) and its key (uci).
   function repetitions(fen){return (trial&&M.fen(trial.state)===fen?1:0)+moves.filter(function(m){return m.fen===fen;}).length;}
@@ -646,7 +648,7 @@
       else setTimeout(function(){if(playStatus().state!=='playing'&&!$('resultDialog').open)$('resultDialog').showModal();},status.state==='resign'?0:700);
     }
   }
-  function stopReview(){if(review)review.stopped=true;review=null;if(reviewing){putCoachBack();reviewing=false;document.body.classList.remove('reviewMode');$('gameReview').hidden=true;$('analysisPanel').hidden=true;$('arrowLayer').innerHTML='';}}
+  function stopReview(){if(review)review.stopped=true;review=null;if(variation)dropVariation();liveBest=null;document.body.classList.remove('exploring');if(reviewing){putCoachBack();reviewing=false;document.body.classList.remove('reviewMode');$('gameReview').hidden=true;$('analysisPanel').hidden=true;$('arrowLayer').innerHTML='';}}
   function reviewValue(r){
     if(!r||!r.score)return 0;
     return r.score.mate!==undefined?(r.score.mate>0?10000-r.score.mate:-10000-r.score.mate):r.score.cp;
@@ -896,7 +898,7 @@
   function closeReview(){var end=fullLine().length;stopReviewView();jumpTo(end);}
   var coachHome=null;
   function putCoachBack(){if(coachHome)coachHome.after(document.querySelector('.grCoach'));if(game&&game.standalone)$('thinkBar').after($('topNewGame'));$('evalV').hidden=true;}
-  function stopReviewView(){practice=null;if(lineShow){clearTimeout(lineShow.timer);if(lineShow.base)restore(lineShow.base);lineShow=null;}putCoachBack();reviewing=false;document.body.classList.remove('reviewMode');$('gameReview').hidden=true;$('analysisPanel').hidden=true;$('arrowLayer').innerHTML='';render();}
+  function stopReviewView(){if(variation)dropVariation();document.body.classList.remove('exploring');practice=null;if(lineShow){clearTimeout(lineShow.timer);if(lineShow.base)restore(lineShow.base);lineShow=null;}putCoachBack();reviewing=false;document.body.classList.remove('reviewMode');$('gameReview').hidden=true;$('analysisPanel').hidden=true;$('arrowLayer').innerHTML='';render();}
   // Why a move of the player's was good or not, from the board itself: what it took, a check, a piece it saved, and
   // after a mistake the opponent's strongest reply (the threat, a red arrow) and what the better move did.
   function explainMove(job,i,r,fallback){
@@ -951,14 +953,16 @@
   var BEST_HEAD=['ดีเยี่ยม! ','เก่งมาก! ','ยอดเยี่ยม! ','สุดยอด! ','เยี่ยมไปเลย! '];
   var reviewShow={at:-1,threat:false,best:false};
   // /ai: the game's moves in one row (ตาเลข, then white's and red's move); the shown one is marked and kept in view, a
-  // tap goes to it.
-  function drawMoveStrip(line,n,job,ids){
+  // tap goes to it. With varFrom, the moves from that ply on are a trial line (ทดลองเดิน), after a ↳ and in their own
+  // colour.
+  function drawMoveStrip(line,n,job,ids,varFrom){
     ids=ids||['grMoves','grStripPrev','grStripNext'];
     var box=$(ids[0]),first=trial.state.turn,html='';
     line.forEach(function(m,k){
-      var no=Math.floor((k+(first==='white'?0:1))/2)+1,q=ratingOf(k)||aiRatingOf(k);
-      if(m.side==='white'||k===0)html+='<span class="grNo">'+no+'.</span>';
-      html+='<button type="button" data-ply="'+(k+1)+'" class="grMv'+(k+1===n?' now':'')+(m.side===game.human?' mine':'')+(q?' g-'+q.kind:'')+'">'+(q?gradeIcon(q.kind):'')+m.text.replace(/ /g,'')+'</button>';
+      var tried=varFrom!==undefined&&k>=varFrom,no=Math.floor((k+(first==='white'?0:1))/2)+1,q=tried?varGrade(k-varFrom+1):ratingOf(k)||aiRatingOf(k);
+      if(tried&&k===varFrom)html+='<span class="grVarMark" aria-hidden="true">↳</span>';
+      if(m.side==='white'||k===0||tried&&k===varFrom)html+='<span class="grNo">'+no+(m.side==='white'?'.':'…')+'</span>';
+      html+='<button type="button" '+(tried?'data-var="'+(k-varFrom+1)+'"':'data-ply="'+(k+1)+'"')+' class="grMv'+(tried?' var':'')+(k+1===n?' now':'')+(m.side===game.human?' mine':'')+(q?' g-'+q.kind:'')+'">'+(q?gradeIcon(q.kind):'')+m.text.replace(/ /g,'')+'</button>';
     });
     if(box.dataset.html!==html){box.innerHTML=html;box.dataset.html=html;}
     var cur=box.querySelector('.now');
@@ -1017,6 +1021,8 @@
     var line=fullLine(),n=moves.length,total=line.length,evals=reviewEvals(),now=evals[Math.min(n,evals.length-1)];
     message('');
     $('modeLabel').textContent='วิเคราะห์การเดิน';
+    document.body.classList.toggle('exploring',!!variation);$('grBack').hidden=!variation;
+    if(variation){drawVariation();return;}
     // Evaluation bar (the analysis bar, without engine lines) and the rating of the move just played.
     $('analysisPanel').hidden=true;
     var share=50+50*evalHeight(now.v);$('evalVFill').style.height=share+'%';$('evalV').classList.toggle('flipped',flipped);
@@ -1029,7 +1035,7 @@
     var why=mine?explainMove(job,n-1,r,solo&&n<total?line[n].uci:null):null;
     // ลองใหม่: for the player's moves that were not the best (and had a better move to find).
     $('grRetry').hidden=false;$('grRetry').disabled=!mine||!r||G.isTop(r.kind)||!r.bestKey;
-    ['grHint','grShow'].forEach(function(id){$(id).hidden=true;});['grThreat','grBest'].forEach(function(id){$(id).hidden=false;});$('grKey').textContent='ถัดไป ›';
+    ['grHint','grShow'].forEach(function(id){$(id).hidden=true;});['grThreat','grBest'].forEach(function(id){$(id).hidden=false;});$('grKey').textContent='ถัดไป ›';$('grKey').title='ไปจุดที่เกมเปลี่ยนถัดไป';
     if(solo){
       // /ai: the arrows wait for อันตราย (the AI's strongest reply, else its real one) and การเดินที่ดี (the better move), so
       // the player can think first; both close again on another position.
@@ -1037,14 +1043,16 @@
       var arrows='';
       if(reviewShow.threat&&why&&why.threatKey)arrows+=arrow(why.threatKey,'rgba(222,62,48,.92)',false);
       if(reviewShow.best&&r&&!G.isTop(r.kind)&&r.bestKey)arrows+=arrow(r.bestKey,'rgba(87,190,90,.9)',true);
+      var live=reviewShow.best&&!(mine&&r)&&liveResult(M.fen(state));
+      if(live&&live.best)arrows+=arrow(live.best,'rgba(87,190,90,.9)',true);
       $('arrowLayer').innerHTML=arrows;
-      $('grThreat').disabled=!mine||!why||!why.threatKey;$('grBest').disabled=!mine||!r;
+      $('grThreat').disabled=!mine||!why||!why.threatKey;$('grBest').disabled=!(mine&&r)&&boardStatus().state!=='playing';
       $('grThreat').setAttribute('aria-pressed',String(reviewShow.threat));$('grBest').setAttribute('aria-pressed',String(reviewShow.best));
     }else $('arrowLayer').innerHTML=(why&&why.threatKey?arrow(why.threatKey,'rgba(222,62,48,.92)',false):'')+(r&&G.isBad(r.kind)&&r.bestKey?arrow(r.bestKey,'rgba(87,190,90,.9)',true):'');
     // What the coach says about the move just played. A loss is in คะแนน (the evaluation bar's unit), not เบี้ย, since
     // the move may cost any piece or just position.
     var say;
-    if(!n)say=game.standalone?'มาดูเกมนี้กัน! กด › เพื่อดูทีละตาของคุณ หรือ ถัดไป เพื่อไปจุดที่เกมเปลี่ยน':'มาดูเกมนี้กัน! กด ▶ เพื่อดูทีละตา แตะตาในบันทึก หรือแตะบนกราฟเพื่อไปตานั้น';
+    if(!n)say=game.standalone?'มาดูเกมนี้กัน! กด › เพื่อดูทีละตาของคุณ หรือ ถัดไป เพื่อไปจุดที่เกมเปลี่ยน · ลองเดินหมากบนกระดานเองก็ได้นะ':'มาดูเกมนี้กัน! กด ▶ เพื่อดูทีละตา แตะตาในบันทึก หรือแตะบนกราฟเพื่อไปตานั้น';
     else{
       var m=line[n-1],no=Math.floor((n-1+(trial.state.turn==='white'?0:1))/2)+1,head='ตา '+no+' ';
       // On /ai only the player's moves are explained (the steps skip the AI's); its last move just ends the game.
@@ -1073,6 +1081,8 @@
       if(reviewShow.best&&!G.isTop(r.kind)&&r.bestKey){
         var lineBtn=document.createElement('button');lineBtn.type='button';lineBtn.className='sayLine';lineBtn.textContent='▶ ดูแนวต่อ';
         lineBtn.title='ให้ AI เดินแนวที่ดีต่อให้ดูบนกระดาน';lineBtn.onclick=startLine;bubble.appendChild(lineBtn);
+        var tryBtn=document.createElement('button');tryBtn.type='button';tryBtn.className='sayLine';tryBtn.textContent='ลองเดินตาม';
+        tryBtn.title='เดินตาที่ดีกว่าแทนตาในเกม แล้วทดลองเดินต่อเอง';tryBtn.onclick=function(){var key=r.bestKey;jumpTo(n-1);exploreMove(square(key,0),square(key,2));if(variation)variation.ret=n;};bubble.appendChild(tryBtn);
       }
     }else if(n&&!mine&&aiRatingOf(n-1)){
       // The AI's move explained: what it did, or its slip as the player's chance.
@@ -1082,6 +1092,7 @@
       bd.className='sayWhy';bd.textContent=G.isBad(ra.kind)?'AI เดินพลาด'+(wa.hang?' '+wa.hang:'')+' · เป็นโอกาสของคุณ!':wa.good?'AI '+wa.good:G.isTop(ra.kind)?'AI เดินตาที่ดีที่สุด':'AI เดินตามแผนของมัน';
       bubble.append(hl,bd);r=ra;
     }else bubble.textContent=say;
+    if(solo&&!(mine&&ratingOf(n-1)))appendLive(bubble,M.fen(state));
     drawSquareBadge(n,r);
     if(solo)drawMoveStrip(line,n,job);
     var mineRated=job.rated.filter(function(x){return !x.ai;}),count=function(test){return mineRated.filter(function(x){return test(x.kind);}).length;};
@@ -1115,6 +1126,7 @@
   function reviewStep(d){
     if(practice){practice=null;selected=null;}
     if(lineShow){endLine();return;}
+    if(variation){varStep(d);return;}
     var line=fullLine(),n=moves.length,to=n+d;
     if(game&&game.standalone&&!explainAi)while(to>0&&to<line.length&&line[to-1].side!==game.human)to+=d;
     jumpTo(Math.max(0,Math.min(line.length,to)));
@@ -1128,7 +1140,7 @@
   };
   $('grClose').onclick=closeReview;
   repeatButton($('grStripPrev'),function(){reviewStep(-1);});repeatButton($('grStripNext'),function(){reviewStep(1);});
-  $('grMoves').addEventListener('click',function(e){var b=e.target.closest('[data-ply]');if(b){practice=null;selected=null;if(lineShow){clearTimeout(lineShow.timer);if(lineShow.base)restore(lineShow.base);lineShow=null;}jumpTo(Number(b.dataset.ply));}});
+  $('grMoves').addEventListener('click',function(e){var t=e.target.closest('[data-var]');if(t&&variation){varGo(Number(t.dataset.var));return;}var b=e.target.closest('[data-ply]');if(b){practice=null;selected=null;if(lineShow){clearTimeout(lineShow.timer);if(lineShow.base)restore(lineShow.base);lineShow=null;}jumpTo(Number(b.dataset.ply));}});
   repeatButton($('psPrev'),function(){jumpTo(Math.max(0,moves.length-1));});repeatButton($('psNext'),function(){jumpTo(Math.min(fullLine().length,moves.length+1));});
   $('psMoves').addEventListener('click',function(e){var b=e.target.closest('[data-ply]');if(b)jumpTo(Number(b.dataset.ply));});
   // ลองใหม่ (the player's graded moves that were not the best): the board goes back to before the move and the player
@@ -1165,12 +1177,184 @@
       done(!!res&&!!res.score&&job&&job.vals[pr.i]!==undefined&&job.vals[pr.i]-reviewValue(res)<=PRACTICE_MARGIN);
     },function(){done(false);});
   }
+  // ทดลองเดิน (/ai): in the review any move may be played on the board, for either side. The game's own next move goes
+  // on in the game; any other starts a trial line from that position (the game's record is not touched): each position
+  // is searched (VAR_LIMITS, an endgame table position from the table) for the evaluation and the grade of the move
+  // that led to it. A new move in the middle of the line replaces the rest of it. ↩ กลับเกมจริง (or a move of the game
+  // in the record) returns to the game where the line left it.
+  var variation=null,varCache=new Map(),varBusy=null,VAR_LIMITS={full:{depth:16,time:1500},lite:{depth:11,time:900}};
+  function canExplore(){return !!game&&game.standalone&&!practice&&!lineShow&&boardStatus().state==='playing';}
+  function posCopy(p){return {state:clone(p.state),moves:p.moves.slice(),last:p.last,count:p.count};}
+  function exploreMove(from,to,dragged){
+    if(!canExplore()){selected=null;render();return;}
+    if(!R.legalDestinations(state.pieces,from).some(function(s){return same(s,to);})){selected=null;render();return;}
+    var key=moveKey({from:from,to:to}),v=variation;
+    if(!v){
+      var n=moves.length,line=fullLine();
+      if(n<line.length&&line[n].uci===key){selected=null;jumpTo(n+1);if(!dragged)animateMove(from,to);return;}
+      var base=snapshot();base.fen=M.fen(state);v=variation={from:n,pos:[base],recs:[],at:0,error:''};
+    }else if(v.at<v.recs.length&&v.recs[v.at].uci===key){selected=null;varGo(v.at+1);if(!dragged)animateMove(from,to);return;}
+    else{v.pos=v.pos.slice(0,v.at+1);v.recs=v.recs.slice(0,v.at);}
+    var record=N.formatMove(state.pieces,from,to),mover=state.turn;
+    state={pieces:R.applyMove(state.pieces,from,to),turn:opponent(mover)};count=P.nextCount(count,state.pieces,mover);last={from:from,to:to};selected=null;
+    record.uci=key;record.fen=M.fen(state);
+    var after=snapshot();after.fen=record.fen;v.recs.push(record);v.pos.push(after);v.at=v.recs.length;
+    render();sound.queueMove({from:from,to:to,check:R.inCheck(state.pieces,state.turn),skipAnimation:true});sound.flush();if(!dragged)animateMove(from,to);
+    varPump();
+  }
+  function varGo(k){var v=variation;if(!v)return;v.at=Math.max(0,Math.min(v.recs.length,k));restore(posCopy(v.pos[v.at]));varPump();}
+  function varStep(d){var v=variation;if(!v)return;if(d<0){if(v.at>0)varGo(v.at-1);else endVariation();}else if(v.at<v.recs.length)varGo(v.at+1);}
+  // Back to the game's position the line started from (no redraw of its own: restore draws the board).
+  function dropVariation(){var v=variation;variation=null;liveBest=null;selected=null;if(v)restore(posCopy(v.pos[0]));}
+  // ↩ กลับเกมจริง: back to the game where the line left it (or to the move being looked at, for a line from ลองเดินตาม).
+  function endVariation(){if(!variation)return;var ret=variation.ret;dropVariation();document.body.classList.remove('exploring');if(ret!==undefined)jumpTo(ret);else render();}
+  // A position's evaluation, from the side to move: {value, best, pv, depth} (a finished game, an endgame table, a
+  // search of this page or of the game review), or null while not searched.
+  function varEvalOf(fen){
+    var c=varCache.get(fen);if(c)return c;
+    var p=M.parse(fen),st=R.gameStatus(p.pieces,p.turn),out=null;
+    if(st.state!=='playing')out={value:st.state==='checkmate'?-10000:0,best:null,pv:[],end:st.state};
+    else{
+      var T=window.MakrukTablebase,o=null;try{o=T&&T.outcomes(p.pieces,p.turn);}catch(e){}
+      if(o&&o.moves.length){
+        var score=function(x){if(o.two)return x.res==='win'?10000-x.n:x.res==='loss'?-10000+x.n:0;if(x.n===Infinity)return 0;return p.turn===o.strong?10000-(x.n+1):-10000+x.n;};
+        var top=o.moves.reduce(function(a,b){return score(b)>score(a)?b:a;});
+        out={value:score(top),best:moveKey(top.move),pv:[moveKey(top.move)],table:true};
+      }
+    }
+    if(out){varCache.set(fen,out);return out;}
+    var rc=reviewCache.get(fen);return rc?{value:rc.value,best:rc.best,pv:rc.best?[rc.best]:[],depth:rc.depth}:null;
+  }
+  // Searches what the shown trial position still needs (it and the position before it), one at a time.
+  function varPump(){
+    var v=variation;if(!v||varBusy)return;
+    var want=[v.pos[v.at].fen];if(v.at>0)want.unshift(v.pos[v.at-1].fen);
+    var fen=want.find(function(f){return !varEvalOf(f);});if(!fen)return;
+    if(!E||!E.evaluate||engine.state!=='ready'){v.error=engine.state==='failed'||!E?'เครื่องนี้ใช้ AI วิเคราะห์ไม่ได้':'AI ยังโหลดไม่เสร็จ รอสักครู่นะ';return;}
+    varBusy=fen;v.error='';
+    E.evaluate(fen,VAR_LIMITS[liteEngine()?'lite':'full']).then(function(r){
+      varBusy=null;
+      if(r&&r.score)varCache.set(fen,{value:reviewValue(r),best:r.best||null,pv:r.pv||[],depth:r.depth||0});else if(variation)variation.error='AI วิเคราะห์ไม่สำเร็จ';
+      if(variation&&reviewing){drawGameReview();if(!variation.error)varPump();}
+    },function(){varBusy=null;if(variation){variation.error='AI วิเคราะห์ไม่สำเร็จ';if(reviewing)drawGameReview();}});
+  }
+  // The grade of the k-th move of the trial line (from the positions before and after it), or null while not searched.
+  function varGrade(k){
+    var v=variation;if(!v||k<1||k>v.recs.length)return null;
+    var p=varEvalOf(v.pos[k-1].fen),c=varEvalOf(v.pos[k].fen);if(!p||!c)return null;
+    var rec=v.recs[k-1],before=p.value,after=-c.value,pieces=v.pos[k-1].state.pieces,sac=false;
+    try{sac=G.sacrifice(R,pieces,square(rec.uci,0),square(rec.uci,2));}catch(e){}
+    var kind=G.classify({before:before,after:after,second:null,sacrifice:sac,replyTakes:c.best?c.best.slice(2,4)===rec.uci.slice(2,4):null,prevDrop:0,bestWins:false});
+    if(p.best===rec.uci&&!G.isTop(kind))kind='best';
+    var bestKey=G.isTop(kind)||!p.best||p.best===rec.uci?null:p.best,better=null;
+    if(bestKey){try{better=N.formatMove(pieces,square(bestKey,0),square(bestKey,2)).text;}catch(e){}}
+    return {kind:kind,bestKey:bestKey,better:better,loss:Math.max(0,Math.min(1000,before)-Math.max(-1000,after))};
+  }
+  // การเดินที่ดี on a position with no graded move of the player's to compare (a trial line, the AI's move, the start):
+  // the engine searches the position itself, deeper (20 plies, 3 s; the lite engine 14), for its move, the
+  // evaluation and the line it expects.
+  var liveBest=null;
+  function liveWanted(){if(variation)return true;var n=moves.length;return !(n>0&&fullLine()[n-1].side===game.human&&ratingOf(n-1));}
+  function liveResult(fen){return liveBest&&liveBest.fen===fen?liveBest.res:null;}
+  function liveAnalyse(fen){
+    if(liveBest&&liveBest.fen===fen&&(liveBest.res||!liveBest.error))return;
+    var known=varEvalOf(fen);
+    if(known&&(known.table||known.end)){liveBest={fen:fen,res:known};return;}
+    if(!E||!E.evaluate||engine.state!=='ready'){liveBest={fen:fen,res:null,error:engine.state==='failed'||!E?'เครื่องนี้ใช้ AI วิเคราะห์ไม่ได้':'AI ยังโหลดไม่เสร็จ ลองกดใหม่อีกครั้งนะ'};return;}
+    var mine=liveBest={fen:fen,res:null},full=!liteEngine();
+    var done=function(r){
+      if(liveBest!==mine)return;
+      if(r&&r.score){mine.res={value:reviewValue(r),best:r.best||null,pv:r.pv||[],depth:r.depth||0};var old=varCache.get(fen);if(!old||(old.depth||0)<=mine.res.depth)varCache.set(fen,mine.res);}
+      else mine.error='AI วิเคราะห์ไม่สำเร็จ';
+      if(reviewing)drawGameReview();
+    };
+    E.evaluate(fen,{depth:full?20:14,time:full?3000:2500}).then(done,function(){done(null);});
+  }
+  // A line of moves from a position as text (up to max plies, while legal).
+  function pvText(fen,pv,max){
+    var pieces=M.parse(fen).pieces,out=[];
+    (pv||[]).slice(0,max).every(function(key){
+      var from=square(key,0),to=square(key,2);
+      if(!pieces.some(function(p){return same(p.at,from);})||!R.legalDestinations(pieces,from).some(function(x){return same(x,to);}))return false;
+      out.push(N.formatMove(pieces,from,to).text);pieces=R.applyMove(pieces,from,to);return true;
+    });
+    return out.join(' → ');
+  }
+  // The engine's answer in the coach's bubble (with ลองเดินตาม, which plays its move on the board).
+  function appendLive(bubble,fen){
+    if(!reviewShow.best||!liveBest||liveBest.fen!==fen)return;
+    var res=liveBest.res,turn=M.parse(fen).turn,say=document.createElement('span');say.className='sayWhy sayLive';
+    if(liveBest.error)say.textContent=liveBest.error;
+    else if(!res)say.textContent='🔍 AI กำลังคิดตำแหน่งนี้ให้ละเอียด…';
+    else if(res.end||!res.best)say.textContent='ตำแหน่งนี้จบเกมแล้ว ไม่มีตาให้เดินต่อ';
+    else{
+      var white=turn==='white'?res.value:-res.value,line=pvText(fen,res.pv,4).split(' → ');
+      say.textContent='🔍 AI แนะนำฝ่าย'+sideName(turn)+': '+line[0]+' ('+evalLabel(white)+(res.table?' ตารางท้ายเกม':res.depth?' ลึก '+res.depth+' ชั้น':'')+')'+(line.length>1?' · แนวต่อ '+line.slice(1).join(' → '):'')+' ';
+    }
+    bubble.appendChild(say);
+    if(res&&res.best&&!res.end&&canExplore()){
+      var b=document.createElement('button');b.type='button';b.className='sayLine';b.textContent='ลองเดินตาม';b.title='เดินตาที่ AI แนะนำบนกระดาน';
+      b.onclick=function(){exploreMove(square(res.best,0),square(res.best,2));};say.appendChild(b);
+    }
+    bubble.scrollTop=bubble.scrollHeight;
+  }
+  // The trial line on the screen: the evaluation bar, the coach (🧪 ทดลองเดิน · แยกจากตา N, the grade of the move just
+  // tried and why), the arrows of อันตราย (the reply) and การเดินที่ดี (the engine's move here), the record with the
+  // line after the game's moves, and ↩ กลับเกมจริง.
+  function drawVariation(){
+    var v=variation,fen=v.pos[v.at].fen,cur=varEvalOf(fen),k=v.at,first=trial.state.turn,line=fullLine().slice(0,v.from).concat(v.recs);
+    $('analysisPanel').hidden=true;$('moveRating').hidden=true;$('evalV').classList.toggle('flipped',flipped);
+    var white=cur?(state.turn==='white'?cur.value:-cur.value):0;
+    $('evalVFill').style.height=(50+50*evalHeight(white))+'%';$('evalVText').textContent=cur?evalLabel(white).replace(/^\+/,''):'…';$('evalV').classList.toggle('redAhead',!!cur&&white<0);
+    var key='v'+k+':'+fen;if(reviewShow.at!==key)reviewShow={at:key,threat:false,best:false};
+    var g=k>0?varGrade(k):null,rec=k>0?v.recs[k-1]:null,status=boardStatus(),reply=cur&&!cur.end&&cur.best;
+    var arrows='';
+    if(reviewShow.threat&&reply)arrows+=arrow(reply,'rgba(222,62,48,.92)',false);
+    var live=reviewShow.best&&liveResult(fen);
+    if(live&&live.best)arrows+=arrow(live.best,'rgba(87,190,90,.9)',true);
+    $('arrowLayer').innerHTML=arrows;
+    var bubble=$('grSpeech');bubble.textContent='';
+    var head=document.createElement('span'),ev=document.createElement('em');head.className='sayHead';
+    head.textContent='🧪 ทดลองเดิน · แยกจากตา '+(Math.floor((v.from+(first==='white'?0:1))/2)+1);
+    ev.className='sayEval';ev.textContent=cur?evalLabel(white):'…';head.appendChild(ev);bubble.appendChild(head);
+    var body=document.createElement('span');body.className='sayWhy';
+    if(!rec)body.textContent='เดินหมากบนกระดานได้เลย ทั้งสองฝ่าย ลองดูว่าจะเป็นอย่างไร · กด ↩ กลับเกมจริง เมื่อดูเสร็จ';
+    else{
+      var who='ฝ่าย'+sideName(rec.side)+' '+rec.text;
+      if(g){
+        var why=explainMove({line:fullLine().slice(0,v.from).concat(v.recs),fens:review.fens.slice(0,v.from+1).concat(v.recs.map(function(x){return x.fen;}))},v.from+k-1,g,cur&&cur.best);
+        var bad=G.isBad(g.kind)||g.kind==='inaccuracy';
+        // With the engine's answer shown, the grade alone (the bubble keeps its height).
+        var parts=live&&live.best?[who,G.INFO[g.kind].name]:[who,G.INFO[g.kind].name,bad?why.hang||'เสียไป '+(g.loss/100).toFixed(1)+' คะแนน':why.good,g.better?'ตาที่ดีกว่า: '+g.better:''];
+        body.innerHTML=gradeIcon(g.kind);body.appendChild(document.createTextNode(parts.filter(Boolean).join(' · ')));
+      }else body.textContent=who+' · '+(v.error||'AI กำลังคิด…');
+    }
+    if(status.state!=='playing')body.appendChild(document.createTextNode(' · จบเกมในแนวนี้: '+(status.state==='checkmate'?'รุกจน ฝ่าย'+sideName(status.winner)+'ชนะ':'เสมอ')));
+    bubble.appendChild(body);
+    if(reviewShow.threat&&reply&&!(live&&live.best===reply)){
+      var th=document.createElement('span');th.className='sayWhy';
+      th.textContent='ฝ่าย'+sideName(state.turn)+'จะตอบ '+pvText(fen,[reply],1)+' (ดูลูกศรแดง)';bubble.appendChild(th);
+    }
+    appendLive(bubble,fen);
+    document.querySelectorAll('#board .sqBadge').forEach(function(b){b.remove();});
+    if(rec&&g){
+      var sq=$('board').querySelector('[data-r="'+square(rec.uci,2).r+'"][data-c="'+square(rec.uci,2).c+'"]');
+      if(sq){var b=document.createElement('span');b.className='sqBadge g-'+g.kind;b.textContent=G.INFO[g.kind].icon;b.title=G.INFO[g.kind].name;sq.appendChild(b);}
+    }
+    $('grThreat').hidden=$('grBest').hidden=false;$('grRetry').hidden=$('grHint').hidden=$('grShow').hidden=true;
+    $('grThreat').disabled=!reply;$('grBest').disabled=status.state!=='playing';
+    $('grThreat').setAttribute('aria-pressed',String(reviewShow.threat));$('grBest').setAttribute('aria-pressed',String(reviewShow.best));
+    $('grKey').textContent='↩ กลับเกมจริง';$('grKey').title='กลับไปตำแหน่งในเกมจริงที่แยกออกมา';
+    drawMoveStrip(line,v.from+k,review,null,v.from);
+  }
   $('grRetry').onclick=function(){if(practice)endPractice();else startPractice();};
   $('grHint').onclick=function(){if(!practice||practice.result==='right')return;practice.hints=Math.min(2,practice.hints+1);drawGameReview();};
   $('grShow').onclick=function(){if(!practice)return;practice.shown=true;practice.hints=2;drawGameReview();};
   $('grThreat').onclick=function(){reviewShow.threat=!reviewShow.threat;drawGameReview();};
-  $('grBest').onclick=function(){reviewShow.best=!reviewShow.best;drawGameReview();};
+  $('grBest').onclick=function(){reviewShow.best=!reviewShow.best;if(reviewShow.best&&liveWanted())liveAnalyse(M.fen(state));drawGameReview();};
+  $('grBack').onclick=function(){varStep(-1);};
   $('grKey').onclick=function(){
+    if(variation){endVariation();return;}
     if(practice){endPractice();return;}
     if(lineShow){endLine();return;}
     var list=keyMoments(),n=moves.length,next=list.find(function(p){return p>n;});
@@ -1341,7 +1525,7 @@
   }
   function editRemove(at){if(!pieceAt(at))return;remember();state.pieces=state.pieces.filter(function(p){return !same(p.at,at);});changed();}
   function playMove(from,at,dragged){
-    if(reviewing){if(practice)practiceMove(from,at);return;}
+    if(reviewing){if(practice)practiceMove(from,at);else exploreMove(from,at,dragged);return;}
     if(!R.legalDestinations(state.pieces,from).some(function(to){return same(to,at);})){message('เดินช่องนี้ไม่ได้ ลองเลือกช่องที่มีจุดสีเขียว',true);sound.playResult('failure');return;}
     remember();resetMarks();var record=N.formatMove(state.pieces,from,at);
     var mover=state.turn;if(think&&!think.done&&game&&game.ai&&mover===aiSide())think.done=Date.now();state.pieces=R.applyMove(state.pieces,from,at);state.turn=opponent(state.turn);count=P.nextCount(count,state.pieces,mover);last={from:from,to:at};selected=null;
@@ -1363,7 +1547,7 @@
       if(!selected){if(p){selected=at;render();}return;}
       editMove(selected,at);return;
     }
-    if(reviewing){if(practice)practiceClick(at,p);return;}
+    if(reviewing){if(practice)practiceClick(at,p);else if(canExplore()){if(p&&p.side===state.turn){selected=same(selected,at)?null:at;render();}else if(selected)exploreMove(selected,at);}return;}
     if(playStatus().state!=='playing'){message('ตำแหน่งนี้จบแล้ว กดย้อนกลับ หรือกลับไปตั้งหมาก');return;}
     if(aiTurn()){message(future.length?'ตอนนี้ย้อนดูตาเดินอยู่ กดเดินหน้า หรือแตะตาเดินในบันทึกเพื่อไปต่อ':'รอ AI เดินก่อนนะ');return;}
     if(p&&p.side===state.turn){selected=same(selected,at)?null:at;render();return;}
@@ -1421,7 +1605,7 @@
   $('board').addEventListener('pointerdown',function(e){
     var sq=e.target.closest('.square');if(!sq)return;
     var at={r:Number(sq.dataset.r),c:Number(sq.dataset.c)},p=pieceAt(at);if(!p)return;
-    if(mode==='play'&&(reviewing&&!(practice&&!practice.result&&p.side===state.turn)||!reviewing&&(aiTurn()||p.side!==state.turn||playStatus().state!=='playing')))return;
+    if(mode==='play'&&(reviewing&&!(practice&&!practice.result&&p.side===state.turn||canExplore()&&p.side===state.turn)||!reviewing&&(aiTurn()||p.side!==state.turn||playStatus().state!=='playing')))return;
     beginDrag(e,{from:at,piece:p});
   });
   function startDrag(){
@@ -1525,7 +1709,7 @@
   }
   function redo(){if(reviewing){reviewStep(1);return;}cancelAi();var next=future.pop();if(!next)return;history.push(snapshot());restore(next);scheduleAi();}
   function jumpTo(n){
-    cancelAi();
+    cancelAi();if(variation)dropVariation();
     while(moves.length>n&&history.length){future.push(snapshot());restore(history.pop());}
     while(moves.length<n&&future.length){history.push(snapshot());restore(future.pop());}
     scheduleAi();

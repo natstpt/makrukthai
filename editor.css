@@ -264,3 +264,11 @@ body:not(.ready) main,body:not(.ready) .actionDock,body:not(.ready) #modeLabel,b
 .standalonePage .grTools:not(:has(.grTool:not([hidden]))){grid-template-columns:1fr}
 .grCoach p .sayLine{display:inline-block;margin-top:4px;min-height:28px;padding:2px 10px;border:0;border-radius:8px;background:#3f8f3a;color:#fff;font-size:13px;font-weight:800}
 .gtHead b{display:inline-flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap;font-size:13px}.gtHead .playerDot{width:12px;height:12px}
+/* ทดลองเดิน: the trial line in the record (after ↳, in purple) and a purple frame round the board while in it. */
+.grMv.var{color:#cfb3ff}.grMv.var.now{background:#4a3a63;border-bottom-color:#a77bf3}
+.grVarMark{flex:none;padding:0 2px 0 6px;color:#a77bf3;font-weight:900;font-size:16px}
+body.exploring #board{outline:3px solid #a77bf3;outline-offset:2px}
+.grCoach p .sayLive{margin-top:4px;padding-top:4px;border-top:1px dashed #0002}
+.grCoach p .sayLine+.sayLine{margin-left:6px}
+.standalonePage .pageHeader>.grCoach p{overflow-y:auto;overscroll-behavior:contain}
+.grCoach p .sayLive .sayLine{margin-top:2px;min-height:24px;padding:1px 9px;font-size:12px}
