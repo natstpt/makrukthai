@@ -796,6 +796,76 @@
   var reviewing=false;
   // The grade of the player's move at ply i (the AI's moves are graded too, for the summary).
   function ratingOf(i){return review&&review.rated.find(function(r){return r.i===i&&!r.ai;});}
+  // ตา AI (the review's head): the coach also explains the AI's moves, the steps stop at them and the record and the
+  // board show their grades.
+  var explainAi=false;try{explainAi=localStorage.getItem('makrukReviewAi')==='1';}catch(e){}
+  function aiRatingOf(i){return explainAi&&review?review.rated.find(function(r){return r.i===i&&r.ai;}):null;}
+  // ▶ ดูแนวต่อ: from before the player's move, the engine's line (its best move and what follows, up to LINE_PLIES
+  // plies) is played out on the board, a move a second with its arrow; กลับไปวิเคราะห์ (or the end of the line and a
+  // tap) returns to the review at that move.
+  var lineShow=null,LINE_PLIES=6;
+  function startLine(){
+    var n=moves.length,r=n>0&&ratingOf(n-1);if(!r||!r.bestKey||!review)return;
+    var fen=review.fens[n-1];
+    lineShow={at:n,i:n-1,pv:null,step:0,base:null,timer:0,text:[]};
+    var mine=lineShow;jumpTo(n-1);lineShow.base=snapshot();drawGameReview();
+    var go=function(pv){
+      if(lineShow!==mine)return;
+      mine.pv=(pv&&pv.length?pv:[r.bestKey]).slice(0,LINE_PLIES);if(mine.pv[0]!==r.bestKey)mine.pv=[r.bestKey];
+      var tick=function(){
+        if(lineShow!==mine)return;
+        if(mine.step>=mine.pv.length){drawGameReview();return;}
+        var key=mine.pv[mine.step],from=square(key,0),to=square(key,2);
+        if(!R.legalDestinations(state.pieces,from).some(function(x){return same(x,to);})){mine.pv=mine.pv.slice(0,mine.step);drawGameReview();return;}
+        mine.text.push(N.formatMove(state.pieces,from,to).text);
+        state.pieces=R.applyMove(state.pieces,from,to);state.turn=opponent(state.turn);last={from:from,to:to};mine.step++;
+        render();animateMove(from,to);mine.timer=setTimeout(tick,1300);
+      };
+      mine.timer=setTimeout(tick,500);
+    };
+    if(E&&E.evaluate&&engine.state==='ready')E.evaluate(fen,{depth:16,time:1500,searchmoves:[r.bestKey]}).then(function(res){go(res&&res.pv);},function(){go(null);});
+    else go(null);
+  }
+  function endLine(){var ls=lineShow;if(!ls)return;clearTimeout(ls.timer);lineShow=null;if(ls.base)restore(ls.base);jumpTo(ls.at);drawGameReview();}
+  function drawLine(){
+    var ls=lineShow,line=fullLine(),next=ls.pv&&ls.step<ls.pv.length?ls.pv[ls.step]:null;
+    $('arrowLayer').innerHTML=next?arrow(next,ls.step%2?'rgba(222,62,48,.85)':'rgba(87,190,90,.9)',false):'';
+    document.querySelectorAll('#board .sqBadge').forEach(function(b){b.remove();});
+    var bubble=$('grSpeech');bubble.textContent='';var head=document.createElement('span'),body=document.createElement('span');
+    head.className='sayHead';head.textContent='▶ แนวที่ดีกว่า';body.className='sayWhy';
+    body.textContent=!ls.pv?'AI กำลังคิดแนวต่อ…':ls.text.length?ls.text.map(function(t,k){return (k%2?'AI ':'คุณ ')+t;}).join(' → ')+(ls.step>=ls.pv.length?' · จบแนว กด กลับไปวิเคราะห์':''):'เริ่มจากตำแหน่งก่อนตาของคุณ…';
+    bubble.append(head,body);
+    ['grThreat','grBest','grRetry','grHint','grShow'].forEach(function(id){$(id).hidden=true;});
+    $('grKey').textContent='กลับไปวิเคราะห์';
+    drawMoveStrip(line,ls.at,review);
+  }
+  // The practice (ลองใหม่) on the board: the coach's words, the hint's mark or arrow, the buttons ใบ้ / เฉลย and
+  // กลับไปวิเคราะห์.
+  function drawPractice(){
+    var pr=practice,line=fullLine(),m=line[pr.i],best=square(pr.best,0),arrows='';
+    if(pr.hints>=1&&pr.result!=='right')arrows+='<circle cx="'+((flipped?7-best.c:best.c)+.5)+'" cy="'+((flipped?7-best.r:best.r)+.5)+'" r=".46" fill="none" stroke="rgba(87,190,90,.95)" stroke-width=".09"/>';
+    if(pr.hints>=2&&pr.result!=='right')arrows+=arrow(pr.best,'rgba(87,190,90,.9)',true);
+    $('arrowLayer').innerHTML=arrows;
+    var better='';try{better=N.formatMove(M.parse(review.fens[pr.i]).pieces,best,square(pr.best,2)).text;}catch(e){}
+    var say=pr.busy?'ขอดูก่อนนะ…':pr.result==='right'?'✓ เยี่ยมมาก! เจอแต้มที่ดีแล้ว'+(pr.tries>1?' (ลอง '+pr.tries+' ครั้ง)':'')+' · กด กลับไปวิเคราะห์ เพื่อดูตาต่อไป':
+      pr.result==='wrong'?'ยังไม่ใช่ ลองอีกครั้งนะ':pr.shown?'เฉลย: '+better+' (ดูลูกศรเขียว) · ลองเดินตามดูได้':
+      pr.result==='again'?'ลองหาแต้มอื่นอีกครั้ง'+(pr.hints?'':' · ติดตรงไหนกด ใบ้ ได้นะ'):
+      'ลองใหม่! ตาเดิมคือ '+m.text+' · หาแต้มที่ดีกว่านี้ดูนะ'+(pr.hints===1?' (ใบ้: หมากที่วงไว้)':pr.hints>=2?' (ใบ้: ดูลูกศรเขียว)':'');
+    var bubble=$('grSpeech');bubble.textContent='';var head=document.createElement('span'),body=document.createElement('span');
+    head.className='sayHead';head.textContent=pr.result==='right'?'✓ ถูกต้อง':'↺ ลองใหม่';body.className='sayWhy';body.textContent=say;bubble.append(head,body);
+    document.querySelectorAll('#board .sqBadge').forEach(function(b){b.remove();});
+    ['grThreat','grBest'].forEach(function(id){$(id).hidden=true;});
+    $('grHint').hidden=$('grShow').hidden=false;$('grHint').disabled=pr.result==='right'||pr.hints>=2||pr.busy;$('grShow').disabled=pr.result==='right'||pr.shown||pr.busy;
+    $('grRetry').hidden=true;$('grKey').textContent='กลับไปวิเคราะห์';
+    drawMoveStrip(line,pr.at,review);
+  }
+  // The grade of the move just shown as a badge on its square (the board apps' way), cleared on any other position.
+  function drawSquareBadge(n,r){
+    document.querySelectorAll('#board .sqBadge').forEach(function(b){b.remove();});
+    var m=n>0&&fullLine()[n-1];if(!m||!r)return;
+    var sq=$('board').querySelector('[data-r="'+square(m.uci,2).r+'"][data-c="'+square(m.uci,2).c+'"]');if(!sq)return;
+    var b=document.createElement('span');b.className='sqBadge g-'+r.kind;b.textContent=G.INFO[r.kind].icon;b.title=G.INFO[r.kind].name;sq.appendChild(b);
+  }
   function gradeIcon(kind){return '<i class="gi g-'+kind+'" aria-hidden="true">'+G.INFO[kind].icon+'</i>';}
   // Each position's evaluation for white (cp, a mate as ±10000 less its moves); a position not searched keeps the one
   // before it.
@@ -826,11 +896,11 @@
   function closeReview(){var end=fullLine().length;stopReviewView();jumpTo(end);}
   var coachHome=null;
   function putCoachBack(){if(coachHome)coachHome.after(document.querySelector('.grCoach'));if(game&&game.standalone)$('thinkBar').after($('topNewGame'));$('evalV').hidden=true;}
-  function stopReviewView(){putCoachBack();reviewing=false;document.body.classList.remove('reviewMode');$('gameReview').hidden=true;$('analysisPanel').hidden=true;$('arrowLayer').innerHTML='';render();}
+  function stopReviewView(){practice=null;if(lineShow){clearTimeout(lineShow.timer);if(lineShow.base)restore(lineShow.base);lineShow=null;}putCoachBack();reviewing=false;document.body.classList.remove('reviewMode');$('gameReview').hidden=true;$('analysisPanel').hidden=true;$('arrowLayer').innerHTML='';render();}
   // Why a move of the player's was good or not, from the board itself: what it took, a check, a piece it saved, and
   // after a mistake the opponent's strongest reply (the threat, a red arrow) and what the better move did.
   function explainMove(job,i,r,fallback){
-    var out={good:'',threat:'',better:'',threatKey:null},m=job.line[i],me=m.side,them=me==='white'?'black':'white';
+    var out={good:'',threat:'',better:'',threatKey:null,hang:''},m=job.line[i],me=m.side,them=me==='white'?'black':'white';
     var at=function(pieces,s){return pieces.find(function(p){return same(p.at,s);});};
     var facts=function(pieces,key){
       var from=square(key,0),to=square(key,2),mover=at(pieces,from),took=at(pieces,to),after=R.applyMove(pieces,from,to),st=R.gameStatus(after,mover.side==='white'?'black':'white');
@@ -838,12 +908,27 @@
     };
     try{
       var before=M.parse(job.fens[i]).pieces,f=facts(before,m.uci),bits=[];
+      // What one side can win on a square by taking there first (makruk-play.js exchange), 0 when nothing.
+      var wins=function(pieces,s,side){try{return P.exchange(pieces,s,side,0);}catch(e){return 0;}};
+      var mine=function(pieces){return pieces.filter(function(p){return p.side===me&&p.piece!=='king';});};
       if(f.mate)bits.push('รุกจน!');else{
-        if(f.took)bits.push('กิน'+names[f.took.piece]+'ได้');
+        var prevMove=i>0&&job.line[i-1],retake=f.took&&prevMove&&prevMove.capture&&prevMove.uci.slice(2,4)===m.uci.slice(2,4);
+        if(f.took)bits.push(retake?'กิน'+names[f.took.piece]+'คืน':wins(before,f.to,me)>0&&!R.isAttacked(f.after,f.to,them)?'กิน'+names[f.took.piece]+'ที่ถูกปล่อยไว้ฟรี':'กิน'+names[f.took.piece]+'ได้');
         if(f.check)bits.push('รุกขุน');
+        if(f.mover.piece==='pawn'&&f.after.some(function(p){return same(p.at,f.to)&&p.piece==='promoted';}))bits.push('หงายเบี้ย');
         if(!f.took&&f.mover.piece!=='king'&&R.isAttacked(before,f.from,them)&&!R.isAttacked(f.after,f.to,them))bits.push('พา'+names[f.mover.piece]+'หนีจากการถูกโจมตี');
+        // A piece of ours the opponent could have won, safe after the move (not the one that moved).
+        var saved=mine(before).find(function(p){return !same(p.at,f.from)&&wins(before,p.at,them)>0&&wins(f.after,p.at,them)<=0;});
+        if(saved&&!f.took)bits.push('ป้องกัน'+names[saved.piece]+'ที่ถูกจู่โจม');
+        if(!bits.length&&f.mover.piece==='pawn'&&(f.to.c===3||f.to.c===4)&&(f.to.r===3||f.to.r===4))bits.push('ยึดกลางกระดาน');
+        if(!bits.length&&/knight|khon|met/.test(f.mover.piece)&&f.from.r===(me==='white'?7:0))bits.push('ออก'+names[f.mover.piece]+'มาช่วยเกม');
       }
       out.good=bits.join(' และ ');
+      // The most a move leaves to be taken for nothing (a piece of ours the opponent wins by taking it), for the
+      // reason of a mistake.
+      var worst=null,worstLoss=0;
+      mine(f.after).forEach(function(p){var w=wins(f.after,p.at,them);if(w>worstLoss){worstLoss=w;worst=p;}});
+      if(worst&&worstLoss>=1&&!f.mate)out.hang='ปล่อย'+names[worst.piece]+'ให้ถูกกินฟรี';
       if(!r||G.isTop(r.kind)&&!fallback)return out;
       var c=reviewCache.get(job.fens[i+1]),key=c&&c.best||fallback;
       if(key){
@@ -871,7 +956,7 @@
     ids=ids||['grMoves','grStripPrev','grStripNext'];
     var box=$(ids[0]),first=trial.state.turn,html='';
     line.forEach(function(m,k){
-      var no=Math.floor((k+(first==='white'?0:1))/2)+1,q=ratingOf(k);
+      var no=Math.floor((k+(first==='white'?0:1))/2)+1,q=ratingOf(k)||aiRatingOf(k);
       if(m.side==='white'||k===0)html+='<span class="grNo">'+no+'.</span>';
       html+='<button type="button" data-ply="'+(k+1)+'" class="grMv'+(k+1===n?' now':'')+(m.side===game.human?' mine':'')+(q?' g-'+q.kind:'')+'">'+(q?gradeIcon(q.kind):'')+m.text.replace(/ /g,'')+'</button>';
     });
@@ -900,18 +985,19 @@
     if(r.kind==='best')return why.good?BEST_HEAD[(n-1)%BEST_HEAD.length]+why.good:BEST_SAY[Math.floor((n-1)/2)%BEST_SAY.length];
     if(r.kind==='excellent')return 'ดีมาก! '+(why.good||'เกือบเท่าแต้มที่ดีที่สุด');
     if(r.kind==='good')return r.mate?'ดี ยังชนะอยู่ แต่มีทางรุกจนใน '+r.mate+' ตาที่เร็วกว่า':'ดี'+(why.good?' '+why.good:'')+' แต่ยังมีแต้มที่ดีกว่านิดหน่อย';
-    if(r.kind==='inaccuracy')return 'ยังไม่แม่นนิดหน่อย เสียไป '+pts;
-    if(r.kind==='mistake')return r.note||'ตานี้พลาด เสียไป '+pts;
+    if(r.kind==='inaccuracy')return why.hang?'ยังไม่แม่น '+why.hang:'ยังไม่แม่นนิดหน่อย เสียไป '+pts;
+    if(r.kind==='mistake')return r.note||(why.hang?'พลาด! '+why.hang:'ตานี้พลาด เสียไป '+pts);
     if(r.kind==='miss')return r.mate?'พลาดโอกาส! ตรงนี้มีทางรุกจนใน '+r.mate+' ตา':'พลาดโอกาส! AI เพิ่งเดินพลาด แต่ตานี้ยังไม่ได้เอาคืน'+(big?'':' (เสียไป '+pts+')');
     if(r.mated)return 'พลาดหนัก! เปิดทางให้ AI รุกจนใน '+r.mated+' ตา';
-    return r.note||(big?'พลาดหนัก! เสียเปรียบไปมาก':'พลาดหนัก! เสียไป '+pts);
+    return r.note||(why.hang?'พลาดหนัก! '+why.hang:big?'พลาดหนัก! เสียเปรียบไปมาก':'พลาดหนัก! เสียไป '+pts);
   }
   // The summary of the game: each side's accuracy, then how many moves of each grade (the player's, then the AI's);
   // a grade the player has opens the review at the first such move.
   function gradeTableHtml(job){
     var mine=job.rated.filter(function(q){return !q.ai;}),ai=job.rated.filter(function(q){return q.ai;});
     var acc=function(list){var a=G.accuracy(list);return a===null?'–':a.toFixed(1);},count=function(list,k){return list.filter(function(q){return q.kind===k;}).length;};
-    var html='<div class="gtRow gtHead"><span></span><b>คุณ</b><span></span><b>AI</b></div><div class="gtRow gtAcc"><span>ความแม่นยำ</span><b class="gtBox you">'+acc(mine)+'</b><span></span><b class="gtBox ai">'+acc(ai)+'</b></div>';
+    var dot=function(side){return '<span class="playerDot'+(side==='white'?' white':'')+'"></span>';};
+    var html='<div class="gtRow gtHead"><span></span><b>'+dot(game.human)+'คุณ</b><span></span><b>'+dot(aiSide())+'AI'+(game.standalone?' '+levelOf(game.level).name:'')+'</b></div><div class="gtRow gtAcc"><span>ความแม่นยำ</span><b class="gtBox you">'+acc(mine)+'</b><span></span><b class="gtBox ai">'+acc(ai)+'</b></div>';
     G.KINDS.forEach(function(k){
       var c=count(mine,k);
       html+='<button type="button" class="gtRow g-'+k+'" data-kind="'+k+'"'+(c?'':' disabled')+'><span class="gtName">'+G.INFO[k].name+'</span><b>'+c+'</b>'+gradeIcon(k)+'<b>'+count(ai,k)+'</b></button>';
@@ -937,8 +1023,13 @@
     $('evalVText').textContent=now.known?evalLabel(now.v).replace(/^\+/,''):'…';$('evalV').classList.toggle('redAhead',now.known&&now.v<0);
     var r=n>0&&ratingOf(n-1),rating=$('moveRating');
     rating.hidden=!r;if(r){rating.textContent=G.INFO[r.kind].icon+' '+G.INFO[r.kind].name;rating.className='moveRating'+(G.isBad(r.kind)?' bad':' good');}
+    if(practice){drawPractice();return;}
+    if(lineShow){drawLine();return;}
     var mine=n>0&&line[n-1].side===game.human,solo=game.standalone;
     var why=mine?explainMove(job,n-1,r,solo&&n<total?line[n].uci:null):null;
+    // ลองใหม่: for the player's moves that were not the best (and had a better move to find).
+    $('grRetry').hidden=false;$('grRetry').disabled=!mine||!r||G.isTop(r.kind)||!r.bestKey;
+    ['grHint','grShow'].forEach(function(id){$(id).hidden=true;});['grThreat','grBest'].forEach(function(id){$(id).hidden=false;});$('grKey').textContent='ถัดไป ›';
     if(solo){
       // /ai: the arrows wait for อันตราย (the AI's strongest reply, else its real one) and การเดินที่ดี (the better move), so
       // the player can think first; both close again on another position.
@@ -968,9 +1059,30 @@
       if(reviewShow.threat&&why.threat)extra.push(why.threat);
       if(reviewShow.best)extra.push(G.isTop(r.kind)?'ตานี้เดินดีที่สุดแล้ว เก่งมาก!':r.better?'ถ้าเดิน '+r.better+' จะดีกว่านะ'+(why.better?' '+why.better:'')+' (ดูลูกศรเขียว)':'ยังไม่มีแต้มที่ดีกว่าให้ดู');
       if(extra.length)say=head+'คุณเดิน '+m.text+' · '+extra.join(' · ');
-      else if(G.isBad(r.kind)||r.kind==='inaccuracy')say+=' · ลองกด "อันตราย" หรือ "การเดินที่ดี" ดูนะ';
+      else if(G.isBad(r.kind)||r.kind==='inaccuracy')say+=' · ลองกด "ลองใหม่" หาแต้มที่ดีกว่าเองดูนะ';
     }
-    $('grSpeech').textContent=say;
+    // The bubble: the grade's icon, the move and its grade with the evaluation after it, then what the coach says.
+    var bubble=$('grSpeech');bubble.textContent='';
+    if(n&&r&&mine){
+      var headLine=document.createElement('span'),icon=document.createElement('span'),body=document.createElement('span'),ev=document.createElement('em');
+      headLine.className='sayHead';icon.innerHTML=gradeIcon(r.kind);headLine.appendChild(icon.firstChild);
+      headLine.appendChild(document.createTextNode(head+m.text+' · '+G.INFO[r.kind].name));
+      var evNow=evals[Math.min(n,evals.length-1)];ev.className='sayEval';ev.textContent=evNow.known?evalLabel(evNow.v):'…';headLine.appendChild(ev);
+      body.className='sayWhy';body.textContent=say.replace(head+'คุณเดิน '+m.text+' · ','');
+      bubble.append(headLine,body);
+      if(reviewShow.best&&!G.isTop(r.kind)&&r.bestKey){
+        var lineBtn=document.createElement('button');lineBtn.type='button';lineBtn.className='sayLine';lineBtn.textContent='▶ ดูแนวต่อ';
+        lineBtn.title='ให้ AI เดินแนวที่ดีต่อให้ดูบนกระดาน';lineBtn.onclick=startLine;bubble.appendChild(lineBtn);
+      }
+    }else if(n&&!mine&&aiRatingOf(n-1)){
+      // The AI's move explained: what it did, or its slip as the player's chance.
+      var ra=aiRatingOf(n-1),wa=explainMove(job,n-1,ra,null),hl=document.createElement('span'),ic=document.createElement('span'),bd=document.createElement('span'),ev2=document.createElement('em');
+      hl.className='sayHead';ic.innerHTML=gradeIcon(ra.kind);hl.appendChild(ic.firstChild);hl.appendChild(document.createTextNode(head+'AI '+m.text+' · '+G.INFO[ra.kind].name));
+      var e2=evals[Math.min(n,evals.length-1)];ev2.className='sayEval';ev2.textContent=e2.known?evalLabel(e2.v):'…';hl.appendChild(ev2);
+      bd.className='sayWhy';bd.textContent=G.isBad(ra.kind)?'AI เดินพลาด'+(wa.hang?' '+wa.hang:'')+' · เป็นโอกาสของคุณ!':wa.good?'AI '+wa.good:G.isTop(ra.kind)?'AI เดินตาที่ดีที่สุด':'AI เดินตามแผนของมัน';
+      bubble.append(hl,bd);r=ra;
+    }else bubble.textContent=say;
+    drawSquareBadge(n,r);
     if(solo)drawMoveStrip(line,n,job);
     var mineRated=job.rated.filter(function(x){return !x.ai;}),count=function(test){return mineRated.filter(function(x){return test(x.kind);}).length;};
     $('grStats').innerHTML='<span class="grChip best">★ '+count(G.isTop)+'</span><span class="grChip good">👍 '+count(function(k){return k==='excellent'||k==='good'||k==='inaccuracy';})+'</span><span class="grChip mistake">? '+count(G.isBad)+'</span>'+(job.done<job.total&&!job.error?'<span class="grBusy">วิเคราะห์ '+job.done+'/'+job.total+'</span>':'');
@@ -994,13 +1106,17 @@
   // In the review the graph stays folded away (the board as large as in the game); the กราฟ button shows it.
   var showGraph=false;try{showGraph=localStorage.getItem('makrukReviewGraph')==='1';}catch(e){}
   function applyGraph(){$('gameReview').classList.toggle('graphHidden',!showGraph);$('grGraphToggle').setAttribute('aria-pressed',String(showGraph));scheduleFit();}
+  $('grAiMoves').onclick=function(){explainAi=!explainAi;try{localStorage.setItem('makrukReviewAi',explainAi?'1':'0');}catch(e){}$('grAiMoves').setAttribute('aria-pressed',String(explainAi));if(review&&reviewing)drawGameReview();};
+  $('grAiMoves').setAttribute('aria-pressed',String(explainAi));
   $('grGraphToggle').onclick=function(){showGraph=!showGraph;try{localStorage.setItem('makrukReviewGraph',showGraph?'1':'0');}catch(e){}applyGraph();};
   applyGraph();
   // On /ai the steps go from one of the player's moves to the next (the AI's replies are passed over), plus the start
   // and the end of the game.
   function reviewStep(d){
+    if(practice){practice=null;selected=null;}
+    if(lineShow){endLine();return;}
     var line=fullLine(),n=moves.length,to=n+d;
-    if(game&&game.standalone)while(to>0&&to<line.length&&line[to-1].side!==game.human)to+=d;
+    if(game&&game.standalone&&!explainAi)while(to>0&&to<line.length&&line[to-1].side!==game.human)to+=d;
     jumpTo(Math.max(0,Math.min(line.length,to)));
   }
   $('grFirst').onclick=function(){jumpTo(0);};$('grLast').onclick=function(){jumpTo(fullLine().length);};
@@ -1012,12 +1128,51 @@
   };
   $('grClose').onclick=closeReview;
   repeatButton($('grStripPrev'),function(){reviewStep(-1);});repeatButton($('grStripNext'),function(){reviewStep(1);});
-  $('grMoves').addEventListener('click',function(e){var b=e.target.closest('[data-ply]');if(b)jumpTo(Number(b.dataset.ply));});
+  $('grMoves').addEventListener('click',function(e){var b=e.target.closest('[data-ply]');if(b){practice=null;selected=null;if(lineShow){clearTimeout(lineShow.timer);if(lineShow.base)restore(lineShow.base);lineShow=null;}jumpTo(Number(b.dataset.ply));}});
   repeatButton($('psPrev'),function(){jumpTo(Math.max(0,moves.length-1));});repeatButton($('psNext'),function(){jumpTo(Math.min(fullLine().length,moves.length+1));});
   $('psMoves').addEventListener('click',function(e){var b=e.target.closest('[data-ply]');if(b)jumpTo(Number(b.dataset.ply));});
+  // ลองใหม่ (the player's graded moves that were not the best): the board goes back to before the move and the player
+  // looks for a better one. A move as good as the best (the engine's best move, or no more than PRACTICE_MARGIN worse
+  // by a short search) is right: it stays on the board, ✓. Otherwise it is shown a moment and taken back. ใบ้ marks
+  // the piece to move, then adds the arrow; เฉลย shows the best move. กลับไปวิเคราะห์ returns to the review at that move.
+  var practice=null,PRACTICE_MARGIN=30;
+  function startPractice(){
+    var n=moves.length,r=n>0&&ratingOf(n-1);if(!r||!r.bestKey)return;
+    practice={at:n,i:n-1,best:r.bestKey,hints:0,result:'',tries:0,busy:false,shown:false};
+    jumpTo(n-1);selected=null;render();
+  }
+  function endPractice(){var at=practice&&practice.at;practice=null;selected=null;if(at!==undefined){jumpTo(at);}drawGameReview();}
+  function practiceClick(at,p){
+    if(!practice||practice.result==='right'||practice.busy)return;
+    if(p&&p.side===state.turn){selected=same(selected,at)?null:at;render();return;}
+    if(selected)practiceMove(selected,at);
+  }
+  function practiceMove(from,to){
+    var pr=practice;if(!pr||pr.busy||pr.result==='right')return;
+    if(!R.legalDestinations(state.pieces,from).some(function(s){return same(s,to);}))return;
+    var key=moveKey({from:from,to:to}),before=snapshot(),fen=M.fen(state),job=review;
+    state.pieces=R.applyMove(state.pieces,from,to);selected=null;pr.busy=true;pr.tries++;render();animateMove(from,to);
+    var done=function(right){
+      if(practice!==pr)return;
+      pr.busy=false;pr.result=right?'right':'wrong';
+      if(right){sound.playResult('complete');drawGameReview();return;}
+      drawGameReview();
+      setTimeout(function(){if(practice!==pr)return;restore(before);pr.result=pr.result==='wrong'?'again':pr.result;render();},1100);
+    };
+    if(key===pr.best){done(true);return;}
+    if(!E||!E.evaluate||engine.state!=='ready'){done(false);return;}
+    E.evaluate(fen,{depth:14,time:900,searchmoves:[key]}).then(function(res){
+      done(!!res&&!!res.score&&job&&job.vals[pr.i]!==undefined&&job.vals[pr.i]-reviewValue(res)<=PRACTICE_MARGIN);
+    },function(){done(false);});
+  }
+  $('grRetry').onclick=function(){if(practice)endPractice();else startPractice();};
+  $('grHint').onclick=function(){if(!practice||practice.result==='right')return;practice.hints=Math.min(2,practice.hints+1);drawGameReview();};
+  $('grShow').onclick=function(){if(!practice)return;practice.shown=true;practice.hints=2;drawGameReview();};
   $('grThreat').onclick=function(){reviewShow.threat=!reviewShow.threat;drawGameReview();};
   $('grBest').onclick=function(){reviewShow.best=!reviewShow.best;drawGameReview();};
   $('grKey').onclick=function(){
+    if(practice){endPractice();return;}
+    if(lineShow){endLine();return;}
     var list=keyMoments(),n=moves.length,next=list.find(function(p){return p>n;});
     if(next===undefined)next=list[0];
     if(next===undefined||next===n)reviewStep(1);else jumpTo(next);
@@ -1186,6 +1341,7 @@
   }
   function editRemove(at){if(!pieceAt(at))return;remember();state.pieces=state.pieces.filter(function(p){return !same(p.at,at);});changed();}
   function playMove(from,at,dragged){
+    if(reviewing){if(practice)practiceMove(from,at);return;}
     if(!R.legalDestinations(state.pieces,from).some(function(to){return same(to,at);})){message('เดินช่องนี้ไม่ได้ ลองเลือกช่องที่มีจุดสีเขียว',true);sound.playResult('failure');return;}
     remember();resetMarks();var record=N.formatMove(state.pieces,from,at);
     var mover=state.turn;if(think&&!think.done&&game&&game.ai&&mover===aiSide())think.done=Date.now();state.pieces=R.applyMove(state.pieces,from,at);state.turn=opponent(state.turn);count=P.nextCount(count,state.pieces,mover);last={from:from,to:at};selected=null;
@@ -1207,7 +1363,7 @@
       if(!selected){if(p){selected=at;render();}return;}
       editMove(selected,at);return;
     }
-    if(reviewing)return;
+    if(reviewing){if(practice)practiceClick(at,p);return;}
     if(playStatus().state!=='playing'){message('ตำแหน่งนี้จบแล้ว กดย้อนกลับ หรือกลับไปตั้งหมาก');return;}
     if(aiTurn()){message(future.length?'ตอนนี้ย้อนดูตาเดินอยู่ กดเดินหน้า หรือแตะตาเดินในบันทึกเพื่อไปต่อ':'รอ AI เดินก่อนนะ');return;}
     if(p&&p.side===state.turn){selected=same(selected,at)?null:at;render();return;}
@@ -1265,7 +1421,7 @@
   $('board').addEventListener('pointerdown',function(e){
     var sq=e.target.closest('.square');if(!sq)return;
     var at={r:Number(sq.dataset.r),c:Number(sq.dataset.c)},p=pieceAt(at);if(!p)return;
-    if(mode==='play'&&(reviewing||aiTurn()||p.side!==state.turn||playStatus().state!=='playing'))return;
+    if(mode==='play'&&(reviewing&&!(practice&&!practice.result&&p.side===state.turn)||!reviewing&&(aiTurn()||p.side!==state.turn||playStatus().state!=='playing')))return;
     beginDrag(e,{from:at,piece:p});
   });
   function startDrag(){
