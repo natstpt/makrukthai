@@ -272,9 +272,8 @@ body.exploring #board{outline:3px solid #a77bf3;outline-offset:2px}
 .grCoach p .sayLine+.sayLine{margin-left:6px}
 .standalonePage .pageHeader>.grCoach p{overflow-y:auto;overscroll-behavior:contain}
 .grCoach p .sayLive .sayLine{margin-top:2px;min-height:24px;padding:1px 9px;font-size:12px}
-/* ตัวเลือก → เกี่ยวกับและเครดิต, and its link at the foot of /ai. */
+/* ตัวเลือก → เกี่ยวกับและเครดิต: every credit and source, with its links. */
 .creditsGuide summary{min-height:44px;font-size:14px}
 .creditMini{font-size:13px;line-height:1.6;color:#d9cfbd}.creditMini p{margin:0 0 8px}.creditMini ul{margin:0 0 8px;padding-left:18px}.creditMini li{margin-bottom:6px}
 .creditMiniLinks{display:inline-flex;flex-wrap:wrap;gap:2px 12px}.creditMini a{color:#f0c35a;font-weight:700}
-.siteCredit{display:none;margin:6px 0 0;text-align:center}.standalonePage .siteCredit{display:block}
-.siteCredit button{min-height:28px;padding:2px 8px;border:0;background:none;color:#9d917c;font-size:12px;text-decoration:underline}
+.creditMini .creditMiniNote{font-size:12px;color:#a89a82}
