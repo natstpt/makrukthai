@@ -249,3 +249,18 @@ body:not(.ready) main,body:not(.ready) .actionDock,body:not(.ready) #modeLabel,b
 @media(max-width:900px) and (orientation:portrait),(max-width:599px){body.standalonePage.aiGame .playerBar:not(.topBar){display:flex;height:28px;min-height:28px;padding:0 4px;box-sizing:border-box;margin-top:2px}
   /* The move record sits in the middle of the spare height between the board and the buttons. */
   body.standalonePage.aiGame .controlPanel{align-self:center}}
+/* วิเคราะห์การเดิน: the coach's bubble in two lines (the grade, the move and the evaluation; then why), and the grade
+   as a badge on the moved piece's square. */
+.grCoach p .sayHead{display:flex;align-items:center;gap:6px;font-weight:800}
+.grCoach p .sayHead .gi{width:20px;height:20px;font-size:11px}
+.grCoach p .sayEval{margin-left:auto;padding:1px 7px;border-radius:6px;background:#2a2116;color:#fff;font-style:normal;font-size:12px;font-weight:800}
+.grCoach p .sayWhy{display:block;margin-top:2px}
+.sqBadge{position:absolute;top:1px;right:1px;z-index:4;display:grid;place-items:center;width:42%;height:42%;max-width:24px;max-height:24px;border-radius:50%;border:2px solid #fff;color:#fff;font-size:clamp(8px,2.4vw,11px);font-weight:900;line-height:1;letter-spacing:-.5px;box-shadow:0 1px 3px #0008;pointer-events:none}
+.sqBadge.g-brilliant{background:var(--g-brilliant)}.sqBadge.g-great{background:var(--g-great)}.sqBadge.g-best{background:var(--g-best)}.sqBadge.g-excellent{background:var(--g-excellent)}.sqBadge.g-good{background:var(--g-good)}.sqBadge.g-inaccuracy{background:var(--g-inaccuracy)}.sqBadge.g-mistake{background:var(--g-mistake)}.sqBadge.g-miss{background:var(--g-miss)}.sqBadge.g-blunder{background:var(--g-blunder)}
+/* วิเคราะห์การเดิน: three small buttons (อันตราย การเดินที่ดี ลองใหม่, or ใบ้ เฉลย in a practice) and the large ถัดไป. */
+.standalonePage .grTools{grid-template-columns:repeat(var(--tools,3),minmax(0,1fr)) 1.5fr}
+.standalonePage .grTools:has(#grHint:not([hidden])){--tools:2}
+.grTool[hidden]{display:none}
+.standalonePage .grTools:not(:has(.grTool:not([hidden]))){grid-template-columns:1fr}
+.grCoach p .sayLine{display:inline-block;margin-top:4px;min-height:28px;padding:2px 10px;border:0;border-radius:8px;background:#3f8f3a;color:#fff;font-size:13px;font-weight:800}
+.gtHead b{display:inline-flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap;font-size:13px}.gtHead .playerDot{width:12px;height:12px}

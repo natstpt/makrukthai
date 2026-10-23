@@ -274,7 +274,8 @@
 
   // Game review: the engine's best move and score for the side to move in fen, at full strength with one line,
   // searching limits.depth plies but stopping itself after limits.time ms. Resolves {best: 'e3e4'|null,
-  // score: {cp}|{mate}|null, depth}. Queued with bestMove, so it never overlaps an AI move.
+  // score: {cp}|{mate}|null, depth, pv: ['e3e4', …] (the line it expects)}. Queued with bestMove, so it never overlaps
+  // an AI move.
   // limits.multipv 2 also searches the second best move: second is its score (null when there is only one move).
   // limits.searchmoves ['e3e4', …] searches only those moves (the opening check scores the shape's move this way).
   // The last bestMove search: {score, depth, best, fen, moves} (score from the side to move), for the game review.
@@ -296,7 +297,7 @@
           if (text.indexOf('info') === 0 && text.indexOf(' score ') > 0 && text.indexOf('bound') < 0) {
             var info = parseInfo(text);
             if (info.score && info.multipv === 2) { if (info.depth >= secondDepth) { out.second = info.score; secondDepth = info.depth; } }
-            else if (info.score && info.depth >= out.depth) { out.score = info.score; out.depth = info.depth; }
+            else if (info.score && info.depth >= out.depth) { out.score = info.score; out.depth = info.depth; if (info.pv) out.pv = info.pv; }
             return;
           }
           if (text.indexOf('bestmove') !== 0) return;
