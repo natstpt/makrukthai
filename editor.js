@@ -26,12 +26,12 @@
   // plays on the full engine (engine-ai.js: 48 MB the first time); every other level plays on the lite one, so a level
   // plays the same on every device. The opening plan (makruk-play.js aiOpening) is for ฝึกฝน and the levels above it.
   var LEVELS=[
-    {key:'grand',name:'สุดยอดเซียน',icon:'👑',strength:'แข็งที่สุด',fit:'อยากเจอคู่ต่อสู้ที่ยากที่สุด',plan:true,note:'AI รุ่นเต็ม แข็งที่สุด คิดลึก 20 ชั้น เปิดเกมเป็นรูปแบบเซียน'},
-    {key:'hard',name:'ยอดเซียน',icon:'⭐⭐⭐⭐⭐',strength:'แข็งมาก',fit:'เล่นเก่งแล้ว',plan:true,note:'คิดลึก 20 ชั้น เปิดเกมเป็นรูปแบบเซียน'},
-    {key:'expert',name:'เซียน',icon:'⭐⭐⭐⭐',strength:'แข็ง',fit:'อยากท้าทายตัวเอง',plan:true,note:'คิดลึก 12 ชั้น เปิดเกมเป็นรูปแบบเซียน'},
-    {key:'practice',name:'ฝึกฝน',icon:'⭐⭐⭐',strength:'กลาง ๆ',fit:'ฝึกให้เก่งขึ้น',plan:true,note:'คิดลึก 8 ชั้น พลาดบ้างเล็กน้อย เหมาะกับการฝึก'},
-    {key:'medium',name:'มือใหม่',icon:'⭐⭐',strength:'ง่าย',fit:'เล่นเป็นแล้ว',note:'คิดลึก 5 ชั้น เหมาะกับคนที่เล่นเป็นแล้ว'},
-    {key:'easy',name:'เริ่มต้น',icon:'⭐',strength:'ง่ายที่สุด',fit:'เพิ่งเริ่มเล่น',note:'คิดตาเดียวและพลาดบ่อย เหมาะกับคนเพิ่งเริ่มเล่น'}
+    {key:'grand',name:'สุดยอดเซียน',icon:'👑',strength:'แข็งที่สุด',fit:'อยากเจอคู่ต่อสู้ที่ยากที่สุด',plan:true,note:'AI รุ่นเต็ม แข็งที่สุด'},
+    {key:'hard',name:'ยอดเซียน',icon:'⭐⭐⭐⭐⭐',strength:'แข็งมาก',fit:'เล่นเก่งแล้ว',plan:true,note:'คิดลึก 20 ชั้น แข็งมาก'},
+    {key:'expert',name:'เซียน',icon:'⭐⭐⭐⭐',strength:'แข็ง',fit:'อยากท้าทายตัวเอง',plan:true,note:'คิดลึก 12 ชั้น ท้าทาย'},
+    {key:'practice',name:'ฝึกฝน',icon:'⭐⭐⭐',strength:'กลาง ๆ',fit:'ฝึกให้เก่งขึ้น',plan:true,note:'คิดลึก 8 ชั้น เหมาะกับการฝึก'},
+    {key:'medium',name:'มือใหม่',icon:'⭐⭐',strength:'ง่าย',fit:'เล่นเป็นแล้ว',note:'คิดลึก 5 ชั้น สำหรับคนเล่นเป็น'},
+    {key:'easy',name:'เริ่มต้น',icon:'⭐',strength:'ง่ายที่สุด',fit:'เพิ่งเริ่มเล่น',note:'คิดตาเดียว สำหรับผู้เริ่มเล่น'}
   ];
   function levelOf(key){return LEVELS.filter(function(l){return l.key===key;})[0]||LEVELS[1];}
   function levelKey(key){return levelOf(key).key===key?key:null;}
@@ -539,9 +539,9 @@
     $('fullTrack').hidden=!full.loading;$('fullBar').style.width=Math.round(full.pct*100)+'%';
     $('fullActions').hidden=!full.failed;
     var text=$('fullText');text.className='fullText'+(ready?' ok':'');
-    text.textContent=ready?'✓ สุดยอดเซียนพร้อมเล่นแล้ว · กด เริ่มเล่น ได้เลย':full.failed?'โหลดสุดยอดเซียนไม่สำเร็จ: '+full.failed:
-      full.loading?(full.pct<1?'กำลังโหลดสุดยอดเซียน '+Math.round(full.pct*100)+'% ('+Math.round(full.pct*48)+' / 48 MB) · อย่าปิดหรือสลับแอประหว่างโหลด':'โหลดครบแล้ว กำลังเตรียม AI…'):
-      'ครั้งแรกต้องโหลด 48 MB (ใช้เน็ตพอสมควร) แล้วจึงเริ่มเล่นได้';
+    text.textContent=ready?'✓ พร้อมเล่นแล้ว':full.failed?'โหลดไม่สำเร็จ: '+full.failed:
+      full.loading?(full.pct<1?'โหลด '+Math.round(full.pct*48)+'/48 MB · อย่าสลับแอป':'กำลังเตรียม AI…'):
+      'ครั้งแรกต้องโหลดก่อนเล่น';
     $('levelStart').disabled=grand&&!ready||full.loading;
     $('levelCancel').hidden=!game.picked;
   }

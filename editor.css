@@ -200,7 +200,7 @@ body:not(.ready) main,body:not(.ready) .actionDock,body:not(.ready) #modeLabel,b
 .levelChoice{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:72px;padding:8px 4px;border:1px solid #605647;border-radius:12px;background:#3a3125;color:#f2f0ec;font-size:15px;font-weight:700;line-height:1.2}
 .levelChoice small{font-size:11px;letter-spacing:-1px;color:#e4cd92}
 .levelChoice[aria-checked="true"],.levelDialog .sideChoice[aria-checked="true"]{border-color:#e4cd92;background:#5a4a2c;box-shadow:0 0 0 2px #e4cd9255}
-.levelNote{margin:10px 0 0 !important;font-size:14px !important;color:#cfc6b6;min-height:2.9em}
+.levelNote{margin:10px 0 0 !important;font-size:14px !important;color:#cfc6b6;min-height:1.45em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fullLoad{margin:8px 0 4px;padding:10px;border:1px solid #605647;border-radius:12px;background:#2a241b}
 .fullLoad[hidden],.fullLoad [hidden]{display:none}
 .fullLoadBtn{width:100%;min-height:44px;border:0;border-radius:10px;background:#e4cd92;color:#2a2116;font-size:16px;font-weight:700}
