@@ -273,7 +273,10 @@ body.exploring #board{outline:3px solid #a77bf3;outline-offset:2px}
 .standalonePage .pageHeader>.grCoach p{overflow-y:auto;overscroll-behavior:contain}
 .grCoach p .sayLive .sayLine{margin-top:2px;min-height:24px;padding:1px 9px;font-size:12px}
 /* ตัวเลือก → เกี่ยวกับและเครดิต: every credit and source, with its links. */
-.creditsGuide summary{min-height:44px;font-size:14px}
 .creditMini{font-size:13px;line-height:1.6;color:#d9cfbd}.creditMini p{margin:0 0 8px}.creditMini ul{margin:0 0 8px;padding-left:18px}.creditMini li{margin-bottom:6px}
 .creditMiniLinks{display:inline-flex;flex-wrap:wrap;gap:2px 12px}.creditMini a{color:#f0c35a;font-weight:700}
 .creditMini .creditMiniNote{font-size:12px;color:#a89a82}
+/* ตัวเลือก: วิธีอ่านบันทึกหมาก looks like the other rows (no inset, no own background). */
+#optionsDialog .notationGuide{margin:0;padding:0;background:none}
+#optionsDialog .notationGuide p{font-size:13px}
+#optionsDialog .notationGuide summary{min-height:49px}
