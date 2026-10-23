@@ -1748,6 +1748,8 @@
   }
   $('retryFull').onclick=function(){if(E&&E.retryFull)E.retryFull();};
   $('options').onclick=function(){drawEngineInfo();$('optionsDialog').showModal();};
+  // เครดิต · สัญญาอนุญาต (the foot of /ai): the options with เกี่ยวกับและเครดิต opened.
+  $('creditLink').onclick=function(){drawEngineInfo();$('creditsInfo').open=true;$('optionsDialog').showModal();$('creditsInfo').scrollIntoView({block:'start'});};
   $('closeOptions').onclick=function(){$('optionsDialog').close();};
   $('optionsDialog').addEventListener('close',function(){$('options').focus();});
 
