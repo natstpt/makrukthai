@@ -99,13 +99,14 @@
     else if(think&&think.done&&now-think.done<700){pct=1;text='AI เดินแล้ว · 100%';}
     // While the AI searches: the share done, the seconds it has been thinking (ticking every tenth) and how deep it is.
     else if(think&&!think.done){pct=thinkPercent(think,now);text='AI กำลังคิด '+(pct*100).toFixed(1)+'% · '+((now-think.start)/1000).toFixed(1)+' วิ'+(think.depth&&!think.quick?' · ลึก '+think.depth:'');busy=true;}
-    else if(status&&status.state!=='playing')text='เกมจบแล้ว · กดเริ่มใหม่เพื่อเล่นอีกเกม';
+    // The page has no turn line of its own: the result and a check are said here.
+    else if(status&&status.state!=='playing')text=(status.state==='checkmate'?'รุกจน · '+sideName(status.winner)+'ชนะ':status.state==='resign'?'ยอมแพ้ · '+sideName(status.winner)+'ชนะ':status.state==='stalemate'?'อับ · เสมอ':status.state==='countdraw'?'นับครบ · เสมอ':status.state==='repetition'?'เดินซ้ำ 3 ครั้ง · เสมอ':'เสมอ')+' · กดเริ่มใหม่';
     else if(future.length)text='กำลังย้อนดูตาเดิน';
-    else text='ถึงตาคุณเดิน · คุณเป็นฝ่าย'+sideName(game.human);
+    else text=status&&status.check?'รุก! ถึงตาคุณเดิน · พาขุนหนีก่อนนะ':'ถึงตาคุณเดิน · คุณเป็นฝ่าย'+sideName(game.human);
     // The header is the thinking bar alone (once the game is over the dock's ยอมแพ้ has become เริ่มใหม่); in the
     // review the coach takes its place and a เริ่มเกมใหม่ button shows in the review panel's head.
     var over=!!status&&status.state!=='playing'||reviewing;bar.hidden=reviewing;$('topNewGame').style.display=reviewing?'':'none';
-    $('thinkFill').style.width=(pct*100).toFixed(1)+'%';$('thinkText').textContent=text;bar.classList.toggle('busy',busy);bar.classList.toggle('done',pct>=1);bar.classList.toggle('idle',!busy&&pct<1);
+    $('thinkFill').style.width=(pct*100).toFixed(1)+'%';$('thinkText').textContent=text;bar.classList.toggle('alert',!busy&&!!status&&(status.state!=='playing'||!!status.check));bar.classList.toggle('busy',busy);bar.classList.toggle('done',pct>=1);bar.classList.toggle('idle',!busy&&pct<1);
   }
   function moveKey(m){return 'abcdefgh'[m.from.c]+(8-m.from.r)+'abcdefgh'[m.to.c]+(8-m.to.r);}
   // The engine loads once: for the hard AI the full engine (48 MB the first time) on strong computers, the lite one
@@ -964,6 +965,7 @@
       if(m.side==='white'||k===0||tried&&k===varFrom)html+='<span class="grNo">'+no+(m.side==='white'?'.':'…')+'</span>';
       html+='<button type="button" '+(tried?'data-var="'+(k-varFrom+1)+'"':'data-ply="'+(k+1)+'"')+' class="grMv'+(tried?' var':'')+(k+1===n?' now':'')+(m.side===game.human?' mine':'')+(q?' g-'+q.kind:'')+'">'+(q?gradeIcon(q.kind):'')+m.text.replace(/ /g,'')+'</button>';
     });
+    if(!line.length)html='<span class="grEmpty">ยังไม่มีตาเดิน</span>';
     if(box.dataset.html!==html){box.innerHTML=html;box.dataset.html=html;}
     var cur=box.querySelector('.now');
     if(cur)box.scrollLeft=Math.max(0,cur.offsetLeft-box.clientWidth/2+cur.offsetWidth/2);else if(!n)box.scrollLeft=0;
@@ -1368,6 +1370,8 @@
   $('reviewBtn').onclick=function(){openReview(0);};
   $('openReview').onclick=function(){openReview(0);};
   $('resultClose').onclick=function(){$('resultDialog').close();};
+  // ★ วิเคราะห์การเดิน under the record: the review was started after the board was last drawn.
+  $('resultDialog').addEventListener('close',function(){if(game&&game.ai&&!reviewing)render();});
   $('resultNew').onclick=function(){$('resultDialog').close();askNewGame();};
   $('resultRematch').onclick=function(){newGame(game.human);};
   document.querySelectorAll('[data-assist]').forEach(function(box){
@@ -1753,7 +1757,7 @@
 
   var fitFrame=0;
   function scheduleFit(){if(fitFrame)return;fitFrame=requestAnimationFrame(function(){fitFrame=0;fitWorkspace();});}
-  var STANDALONE_RESERVE=230;
+  var STANDALONE_RESERVE=230,STANDALONE_HEAD=92;
   function fitWorkspace(){
     var main=document.querySelector('main'),panel=document.querySelector('.controlPanel'),dock=document.querySelector('.actionDock');
     var style=getComputedStyle(main),gap=parseFloat(style.rowGap)||0;
@@ -1763,10 +1767,12 @@
     // /ai: one board size for the whole page (the game, its end and the review), from the window alone, with a gutter
     // on the left for the review's evaluation bar, so the board never resizes or jumps.
     if(stacked&&game&&game.standalone){
-      var head=document.querySelector('.pageHeader').offsetHeight;
+      // The header is sized for the review (its coach); in the game it is lower and the move record gets the rest.
+      var head=Math.max(STANDALONE_HEAD,document.querySelector('.pageHeader').offsetHeight);
       // The page's own height (100dvh), not window.innerHeight: in-app browsers (Facebook, LINE) report a taller window
-      // than they show, which pushed the move record and the buttons below the screen.
-      var tall=Math.min(document.body.clientHeight||window.innerHeight,window.innerHeight,window.visualViewport?window.visualViewport.height:Infinity);
+      // than they show, which pushed the move record and the buttons below the screen. The body's padding (the
+      // safe-area insets, which those browsers may set while showing their own bar) is not the page's.
+      var bs=getComputedStyle(document.body),tall=Math.min(document.body.clientHeight||window.innerHeight,window.innerHeight,window.visualViewport?window.visualViewport.height:Infinity)-(parseFloat(bs.paddingTop)||0)-(parseFloat(bs.paddingBottom)||0);
       size=Math.min(main.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight)-26,tall-head-STANDALONE_RESERVE);
     }else if(stacked){
       var feedback=document.querySelector('.positionFeedback').offsetHeight;
