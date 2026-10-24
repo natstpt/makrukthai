@@ -293,3 +293,13 @@ body.exploring #board{outline:3px solid #a77bf3;outline-offset:2px}
 .standalonePage .grHead h3{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .standalonePage .grHead>button{flex:none}
 @media(max-width:380px){.standalonePage .grHead{gap:5px}.standalonePage .grHead h3{font-size:13px}.standalonePage .grHead .grGraphToggle,.standalonePage .grHead .grSummary{padding:0 7px;font-size:12px}.standalonePage .grHead .topNewGame{padding:0 6px;font-size:11px}}
+/* /ai: the move record is the sliding row alone (no บันทึกหมาก heading, no turn line: the think bar above says whose
+   turn it is, a check and the result); the count and the count / review buttons show under it when there are any. */
+.standalonePage .movesHead h3,.standalonePage #turnHeading{display:none}
+.standalonePage .movesHead{order:1;padding:0 8px}
+.standalonePage .movesHead #countLine{text-align:center}
+.standalonePage .movesHead .openReview{margin:4px auto 0}
+.standalonePage .movesPanel{padding:4px 4px}
+.standalonePage .playStrip{margin-top:0}
+.grMoves .grEmpty{color:#8f8470;font-size:13px;padding:0 6px;white-space:nowrap}
+.thinkBar.alert .thinkText{color:#ffb35c}
