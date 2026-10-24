@@ -280,3 +280,16 @@ body.exploring #board{outline:3px solid #a77bf3;outline-offset:2px}
 #optionsDialog .notationGuide{margin:0;padding:0;background:none}
 #optionsDialog .notationGuide p{font-size:13px}
 #optionsDialog .notationGuide summary{min-height:49px}
+/* /ai on phones during the game: a low header (the think bar only), and the board centred; the review keeps the tall
+   header for its coach and the gutter on the left for its evaluation bar. */
+@media(max-width:900px) and (orientation:portrait),(max-width:599px){
+  body.standalonePage:not(.reviewMode) .pageHeader{height:50px}
+  body.standalonePage:not(.reviewMode) .boardWrap{margin-left:13px;margin-right:13px}
+  /* The move record right under the board; what space is left goes above the buttons. */
+  body.standalonePage:not(.reviewMode) .controlPanel{align-self:start}
+}
+/* The review panel's head on a narrow phone: the title gives way (shortened) before any button is pushed out. */
+.standalonePage .grHead{min-width:0}
+.standalonePage .grHead h3{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.standalonePage .grHead>button{flex:none}
+@media(max-width:380px){.standalonePage .grHead{gap:5px}.standalonePage .grHead h3{font-size:13px}.standalonePage .grHead .grGraphToggle,.standalonePage .grHead .grSummary{padding:0 7px;font-size:12px}.standalonePage .grHead .topNewGame{padding:0 6px;font-size:11px}}

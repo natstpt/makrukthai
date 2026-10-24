@@ -1753,7 +1753,7 @@
 
   var fitFrame=0;
   function scheduleFit(){if(fitFrame)return;fitFrame=requestAnimationFrame(function(){fitFrame=0;fitWorkspace();});}
-  var STANDALONE_RESERVE=230;
+  var STANDALONE_RESERVE=230,STANDALONE_HEAD=92;
   function fitWorkspace(){
     var main=document.querySelector('main'),panel=document.querySelector('.controlPanel'),dock=document.querySelector('.actionDock');
     var style=getComputedStyle(main),gap=parseFloat(style.rowGap)||0;
@@ -1763,10 +1763,12 @@
     // /ai: one board size for the whole page (the game, its end and the review), from the window alone, with a gutter
     // on the left for the review's evaluation bar, so the board never resizes or jumps.
     if(stacked&&game&&game.standalone){
-      var head=document.querySelector('.pageHeader').offsetHeight;
+      // The header is sized for the review (its coach); in the game it is lower and the move record gets the rest.
+      var head=Math.max(STANDALONE_HEAD,document.querySelector('.pageHeader').offsetHeight);
       // The page's own height (100dvh), not window.innerHeight: in-app browsers (Facebook, LINE) report a taller window
-      // than they show, which pushed the move record and the buttons below the screen.
-      var tall=Math.min(document.body.clientHeight||window.innerHeight,window.innerHeight,window.visualViewport?window.visualViewport.height:Infinity);
+      // than they show, which pushed the move record and the buttons below the screen. The body's padding (the
+      // safe-area insets, which those browsers may set while showing their own bar) is not the page's.
+      var bs=getComputedStyle(document.body),tall=Math.min(document.body.clientHeight||window.innerHeight,window.innerHeight,window.visualViewport?window.visualViewport.height:Infinity)-(parseFloat(bs.paddingTop)||0)-(parseFloat(bs.paddingBottom)||0);
       size=Math.min(main.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight)-26,tall-head-STANDALONE_RESERVE);
     }else if(stacked){
       var feedback=document.querySelector('.positionFeedback').offsetHeight;
