@@ -1273,7 +1273,8 @@
     E.evaluate(fen,{depth:full?20:14,time:full?3000:2500}).then(done,function(){done(null);});
   }
   // A line of moves from a position as text (up to max plies, while legal).
-  function pvText(fen,pv,max){
+  // Not pvText (ถอดหมาก's, above): one name for both made this one replace that one and break the analysis lines.
+  function reviewLineText(fen,pv,max){
     var pieces=M.parse(fen).pieces,out=[];
     (pv||[]).slice(0,max).every(function(key){
       var from=square(key,0),to=square(key,2);
@@ -1290,7 +1291,7 @@
     else if(!res)say.textContent='🔍 AI กำลังคิดตำแหน่งนี้ให้ละเอียด…';
     else if(res.end||!res.best)say.textContent='ตำแหน่งนี้จบเกมแล้ว ไม่มีตาให้เดินต่อ';
     else{
-      var white=turn==='white'?res.value:-res.value,line=pvText(fen,res.pv,4).split(' → ');
+      var white=turn==='white'?res.value:-res.value,line=reviewLineText(fen,res.pv,4).split(' → ');
       say.textContent='🔍 AI แนะนำฝ่าย'+sideName(turn)+': '+line[0]+' ('+evalLabel(white)+(res.table?' ตารางท้ายเกม':res.depth?' ลึก '+res.depth+' ชั้น':'')+')'+(line.length>1?' · แนวต่อ '+line.slice(1).join(' → '):'')+' ';
     }
     bubble.appendChild(say);
@@ -1335,7 +1336,7 @@
     bubble.appendChild(body);
     if(reviewShow.threat&&reply&&!(live&&live.best===reply)){
       var th=document.createElement('span');th.className='sayWhy';
-      th.textContent='ฝ่าย'+sideName(state.turn)+'จะตอบ '+pvText(fen,[reply],1)+' (ดูลูกศรแดง)';bubble.appendChild(th);
+      th.textContent='ฝ่าย'+sideName(state.turn)+'จะตอบ '+reviewLineText(fen,[reply],1)+' (ดูลูกศรแดง)';bubble.appendChild(th);
     }
     appendLive(bubble,fen);
     document.querySelectorAll('#board .sqBadge').forEach(function(b){b.remove();});
