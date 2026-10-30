@@ -319,7 +319,7 @@
     return loss<=0.3?'✓ ตาดี (Good)':loss<=1?'?! ไม่แม่น (Inaccuracy) · เสียไป '+loss.toFixed(1):loss<=2.5?'? พลาด (Mistake) · เสียไป '+loss.toFixed(1):'?? พลาดหนัก (Blunder) · เสียไป '+Math.min(loss,99).toFixed(1);
   }
   // ถอดหมาก's engine: the full one, as the สุดยอดเซียน level plays (only a device that cannot run it gets the lite one).
-  function analysisName(){return E&&E.tier()==='lite'?'AI รุ่น Lite (เครื่องนี้ใช้รุ่นเต็มไม่ได้)':'AI ระดับสุดยอดเซียน'+(E&&E.tier()?' (Full)':'');}
+  function analysisName(){return E&&E.tier()==='lite'?'AI รุ่น Lite (เครื่องนี้ใช้รุ่นเต็มไม่ได้)':'AI สุดยอดเซียน 👑';}
   function drawAnalysis(){
     var on=analysis&&mode==='play',lines=view.lines,top=lines[0];drawTableMoves();
     $('analysisPanel').hidden=!on;$('bestMove').hidden=!on;$('bestMove').disabled=!top;
@@ -1743,6 +1743,14 @@
   $('edit').onclick=function(){cancelAi();game=null;count=null;mode='edit';state=clone(trial.state);history=trial.history;future=trial.future;trial=null;moves=[];selected=null;last=null;render();};
   $('load').onclick=function(){if(mode!=='edit')return;try{var next=M.parse($('fen').value);remember();state=next;changed();$('optionsDialog').close();message('เปิดตำแหน่งแล้ว'+(M.validate(state)?' — '+M.validate(state):''));}catch(e){$('saveNote').textContent=e.message;}};
   $('copy').onclick=async function(){try{await navigator.clipboard.writeText($('fen').value);$('saveNote').textContent='คัดลอกรหัสแล้ว';}catch(e){$('fen').focus();$('fen').select();$('saveNote').textContent='เลือกข้อความแล้ว กรุณาคัดลอกด้วยเมนูของเครื่อง';}};
+  // ถอดหมาก on a keyboard: ← ย้อนกลับ, → เดินหน้า, B ดีที่สุด (the key itself, so it works with the Thai layout on too).
+  // Not while typing, with a dialog open, or with Ctrl/Alt/⌘ (the browser's own shortcuts).
+  if(analysis){$('undo').title+=' (ปุ่ม ←)';$('redo').title+=' (ปุ่ม →)';$('bestMove').title+=' (ปุ่ม B)';}
+  document.addEventListener('keydown',function(e){
+    if(!analysis||mode!=='play'||reviewing||e.ctrlKey||e.metaKey||e.altKey||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)||document.querySelector('dialog[open]'))return;
+    if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();if(e.key==='ArrowLeft')undo();else redo();return;}
+    if(e.code==='KeyB'&&!e.repeat&&!$('bestMove').hidden&&!$('bestMove').disabled){e.preventDefault();$('bestMove').click();}
+  });
   document.addEventListener('keydown',function(e){if(reviewing&&(e.key==='ArrowLeft'||e.key==='ArrowRight')&&!/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)&&!document.querySelector('dialog[open]')){e.preventDefault();reviewStep(e.key==='ArrowLeft'?-1:1);return;}if(reviewing&&e.key==='Escape'&&!document.querySelector('dialog[open]')){closeReview();return;}if(e.key==='Escape'&&!$('exportDialog').open&&!$('optionsDialog').open){if(drag)return;selected=null;tool='move';render();}});
   // In a game against the hard AI the options say which engine plays and, for the lite one, why; the full one can be
   // tried again from there (engine-ai.js retryFull: reloads the page, the game starts over).
