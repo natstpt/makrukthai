@@ -30,6 +30,16 @@ use std::path::PathBuf;
 use std::time::Instant;
 use tables::{stats, Registry};
 
+/// Every table a capture leads to from `mat`, down to the smallest, opened (or built) in the registry: the random check
+/// of an export looks positions up in them.
+fn open_subs(reg: &mut Registry, mat: &Material) {
+    for sub in tables::subs(mat) {
+        if sub.count() == 0 { continue; }
+        reg.get(&sub);
+        open_subs(reg, &sub);
+    }
+}
+
 fn repo_root() -> PathBuf {
     // tools/makruk-tb → the repository.
     let here = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -102,6 +112,7 @@ fn main() {
                 let t = reg.get(&mat);
                 let name = t.lay.mat.name();
                 if check_first > 0 {
+                    open_subs(&mut reg, &mat);
                     let n = check::sample(&reg, &mat, check_first, 2026);
                     println!("{}: {} random positions agree with their moves", name, n);
                 }

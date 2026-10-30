@@ -269,6 +269,9 @@ fn atomic(v: Vec<u8>) -> Vec<AtomicU8> {
     // SAFETY: AtomicU8 has the same size and alignment as u8.
     unsafe { Vec::from_raw_parts(v.as_mut_ptr() as *mut AtomicU8, v.len(), v.capacity()) }
 }
+/// A table's bytes shared by the threads that copy mirror images (each writes its own positions).
+struct Shared(*mut u8);
+unsafe impl Sync for Shared {}
 fn plain(v: Vec<AtomicU8>) -> Vec<u8> {
     let mut v = std::mem::ManuallyDrop::new(v);
     unsafe { Vec::from_raw_parts(v.as_mut_ptr() as *mut u8, v.len(), v.capacity()) }
@@ -374,20 +377,23 @@ pub fn build(reg: &Registry, lay: Layout) -> Table {
     let [w, b] = v;
     let (mut w, mut b) = (plain(w), plain(b));
     w.par_iter_mut().chain(b.par_iter_mut()).for_each(|x| { if *x == UNKNOWN || *x == ILLEGAL { *x = DRAW; } });
-    // Mirror images get their position's value, so a reader may number positions either way.
+    // Mirror images get their position's value, so a reader may number positions either way. Copied in place: a mirror
+    // image i is written once, from its position c, which is never itself a mirror image (so never written here); no
+    // list of copies is kept (a six-piece table has over a billion mirror images).
     let lr = &lay;
     for side in [&mut w, &mut b] {
-        let copies: Vec<(u64, u8)> = (0..chunks).into_par_iter().flat_map_iter(|ch| {
-            let (side, lay) = (&*side, lr);
-            (ch * CHUNK..((ch + 1) * CHUNK).min(n)).filter_map(move |i| {
-                let p = lay.decode(&reg.cb, i);
-                let b = Board { geo: &reg.geo, lay: &lay, p, n: lay.slots.len() };
-                if !b.sane() { return None; }
-                let c = lay.encode(&reg.geo, &reg.cb, &p);
-                if c != i { Some((i, side[c as usize])) } else { None }
-            })
-        }).collect();
-        for (i, x) in copies { side[i as usize] = x; }
+        let at = Shared(side.as_mut_ptr());
+        (0..chunks).into_par_iter().for_each(|ch| {
+            let at = &at;
+            for i in ch * CHUNK..((ch + 1) * CHUNK).min(n) {
+                let p = lr.decode(&reg.cb, i);
+                let b = Board { geo: &reg.geo, lay: lr, p, n: lr.slots.len() };
+                if !b.sane() { continue; }
+                let c = lr.encode(&reg.geo, &reg.cb, &p);
+                // SAFETY: each i is written by one thread only, and no written i is read (c is not a mirror image).
+                if c != i { unsafe { *at.0.add(i as usize) = *at.0.add(c as usize); } }
+            }
+        });
     }
     if reg.log { eprintln!("{}: done in {:.1} min", name, t0.elapsed().as_secs_f64() / 60.0); }
     Table { lay, v: [Data::Owned(w), Data::Owned(b)] }
