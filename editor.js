@@ -391,7 +391,7 @@
     list.sort(function(a,b){return rank(a)-rank(b);});
     list.forEach(function(x){var reply=x.kind==='draw'?null:T.bestMove(R.applyMove(state.pieces,x.move.from,x.move.to),opponent(mover));x.reply=reply?moveKey(reply.move):null;});
     var best=list[0],rook=sideName(o.strong),lone=sideName(opponent(o.strong));
-    var summary=!best?'':best.kind==='win'?rook+'ชนะ · รุกจนใน '+best.moves+' ตา':best.kind==='loss'?lone+'แพ้ใน '+best.moves+' ตา (ถ้า'+rook+'เดินดีที่สุด)':'เสมอ · '+(strong?(list.some(function(x){return /นับ/.test(x.why||'');})?rook+'รุกจนไม่ทันนับ':rook+'ไล่ไม่จน'):lone+'รอดได้');
+    var summary=!best?'':best.kind==='win'?rook+'ชนะ · รุกจนใน '+best.moves+' ตา':best.kind==='loss'?lone+'แพ้ใน '+best.moves+' ตา':'เสมอ · '+(strong?(list.some(function(x){return /นับ/.test(x.why||'');})?rook+'รุกจนไม่ทันนับ':rook+'ไล่ไม่จน'):lone+'รอดได้');
     return {list:list,summary:summary,strong:strong};
   }
   // Pieces on both sides (tablebase/rs): either side may win. Each move: win (mate in n of the mover's moves, this one
@@ -410,7 +410,7 @@
     list.sort(function(a,b){return rank(a)-rank(b);});
     list.forEach(function(x){var reply=x.kind==='draw'?null:T.bestMove(R.applyMove(state.pieces,x.move.from,x.move.to),opp);x.reply=reply?moveKey(reply.move):null;});
     var best=list[0];
-    var summary=!best?'':best.kind==='win'?sideName(mover)+'ชนะ · รุกจนใน '+best.moves+' ตา':best.kind==='loss'?sideName(mover)+'แพ้ใน '+best.moves+' ตา (ถ้า'+sideName(opp)+'เดินดีที่สุด)':'เสมอ · ทั้งสองฝ่ายเดินดีที่สุด';
+    var summary=!best?'':best.kind==='win'?sideName(mover)+'ชนะ · รุกจนใน '+best.moves+' ตา':best.kind==='loss'?sideName(mover)+'แพ้ใน '+best.moves+' ตา':'เสมอ · ทั้งสองฝ่ายเดินดีที่สุด';
     return {list:list,summary:summary,strong:true,local:!!o.local};
   }
   // The mate score of a table row from the mover's side: a win counts up, a loss down.
