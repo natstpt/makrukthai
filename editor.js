@@ -318,6 +318,8 @@
     var loss=sign*whiteValue(prev.line.score,prev.turn)-sign*whiteValue(view.lines[0].score,state.turn);
     return loss<=0.3?'✓ ตาดี (Good)':loss<=1?'?! ไม่แม่น (Inaccuracy) · เสียไป '+loss.toFixed(1):loss<=2.5?'? พลาด (Mistake) · เสียไป '+loss.toFixed(1):'?? พลาดหนัก (Blunder) · เสียไป '+Math.min(loss,99).toFixed(1);
   }
+  // ถอดหมาก's engine: the full one, as the สุดยอดเซียน level plays (only a device that cannot run it gets the lite one).
+  function analysisName(){return E&&E.tier()==='lite'?'AI รุ่น Lite (เครื่องนี้ใช้รุ่นเต็มไม่ได้)':'AI ระดับสุดยอดเซียน'+(E&&E.tier()?' (Full)':'');}
   function drawAnalysis(){
     var on=analysis&&mode==='play',lines=view.lines,top=lines[0];drawTableMoves();
     $('analysisPanel').hidden=!on;$('bestMove').hidden=!on;$('bestMove').disabled=!top;
@@ -328,10 +330,10 @@
     deepBtn.hidden=!assist.bar||!!view.table;deepBtn.disabled=!deepOk;if(!deepOk)deepSearch=false;
     deepBtn.setAttribute('aria-pressed',String(deepSearch));deepBtn.textContent=deepSearch?'∞ กำลังคิด':'∞ ไม่จำกัด';
     deepBtn.title=deepOk?(deepSearch?'กดอีกครั้งเพื่อกลับไปคิดตามเวลาปกติ':'ให้ AI คิดต่อไปเรื่อย ๆ ไม่จำกัดเวลา ยิ่งรอนานยิ่งลึก'):'ต้องใช้ AI รุ่นเต็ม';
-    $('modeLabel').textContent='AI ระดับเซียน'+(E&&E.tier()?' ('+(E.tier()==='lite'?'Lite':'Full')+')':'');
+    $('modeLabel').textContent=analysisName();
     var v=top?whiteValue(top.score,state.turn):0;
     $('evalFill').style.width=(top?(top.score.mate!==undefined?(v>0?100:0):50+50*Math.tanh(v/4)):50)+'%';
-    $('evalText').textContent=view.table?view.table.summary+(view.table.local?' (ตาราง local)':' (ตาราง)'):top?scoreText(top.score,state.turn)+' · ลึก '+view.depth:(view.error||(engine.progress>0&&engine.progress<100?'กำลังโหลด AI ระดับเซียน (Full) '+engine.progress+'%':'AI กำลังคิด…'));
+    $('evalText').textContent=view.table?view.table.summary+' (ตารางข้อมูลปลายกระดาน)':top?scoreText(top.score,state.turn)+' · ลึก '+view.depth:(view.error||(engine.progress>0&&engine.progress<100?'กำลังโหลด AI ระดับเซียน (Full) '+engine.progress+'%':'AI กำลังคิด…'));
     var list=$('engineLines');list.replaceChildren();list.classList.toggle('tableChips',!!view.table);
     // With an endgame table: every move as a chip in one row that scrolls sideways (best first), no second list.
     if(view.table)view.table.list.forEach(function(x,i){
@@ -1438,13 +1440,13 @@
     $('hint').disabled=!canHint();$('resign').disabled=!aiGame;var over=aiGame&&status.state!=='playing';$('resign').classList.toggle('newGame',over);$('resignLabel').textContent=over?'เริ่มใหม่':'ยอมแพ้';$('resign').title=over?'เริ่มเกมใหม่ เลือกสีหมาก':'ยอมแพ้เกมนี้';
     $('emptyMoves').hidden=moves.length>0;
     $('panelTitle').textContent=mode==='edit'?'จัดตำแหน่งหมาก':'ทดลองเดิน';
-    // /ai has no page title: the player bars say who plays which side, e.g. ฝ่ายแดง (AI ระดับเซียน) · ฝ่ายขาว (คุณ).
+    // /ai has no page title: the player bars say who plays which side, e.g. ฝ่ายแดง (AI ยอดเซียน ⭐⭐⭐⭐⭐) · ฝ่ายขาว (คุณ).
     // The AI's side says the level chosen for the game, the same from its first move to its last.
     var aiName=game&&game.ai?'AI '+levelOf(game.level).name+' '+levelOf(game.level).icon:'';
     var barName=function(side){return 'ฝ่าย'+(side==='white'?'ขาว':'แดง')+(game&&game.standalone?(side===game.human?' (คุณ)':' ('+aiName+')'):game&&game.ai&&side!==game.human?' ('+aiName+')':'');};
     $('topSide').textContent=barName(flipped?'white':'black');$('bottomSide').textContent=barName(flipped?'black':'white');
     $('topDot').classList.toggle('white',flipped);$('bottomDot').classList.toggle('white',!flipped);
-    $('modeLabel').textContent=mode==='edit'?'1 · ตั้งตำแหน่ง':analysis?'AI ระดับเซียน'+(E&&E.tier()?' ('+(E.tier()==='lite'?'Lite':'Full')+')':''):game?(game.ai?'คุณเป็นฝ่าย'+sideName(game.human)+' · AI ระดับ'+(!engineAi()?'เริ่มต้น'+(game.level==='easy'?'':' (สำรอง)'):levelOf(game.level).name+' (คิดลึก '+((game.level==='hard'||game.level==='grand')&&E&&E.lastDepth()||AI_LIMITS[game.level].depth)+' ชั้น)'):'เครื่องเดียวกัน'):'2 · ทดลองเดิน';var title=document.querySelector('.brand h1');if(title)title.textContent=analysis?'ถอดหมาก':game?(game.ai?'เล่นกับ AI':'เล่น 2 คน'):'ตั้งหมาก';
+    $('modeLabel').textContent=mode==='edit'?'1 · ตั้งตำแหน่ง':analysis?analysisName():game?(game.ai?'คุณเป็นฝ่าย'+sideName(game.human)+' · AI ระดับ'+(!engineAi()?'เริ่มต้น'+(game.level==='easy'?'':' (สำรอง)'):levelOf(game.level).name+' (คิดลึก '+((game.level==='hard'||game.level==='grand')&&E&&E.lastDepth()||AI_LIMITS[game.level].depth)+' ชั้น)'):'เครื่องเดียวกัน'):'2 · ทดลองเดิน';var title=document.querySelector('.brand h1');if(title)title.textContent=analysis?'ถอดหมาก':game?(game.ai?'เล่นกับ AI':'เล่น 2 คน'):'ตั้งหมาก';
     if(game&&game.standalone){$('modeLabel').hidden=true;drawThink();}$('turn').value=state.turn;
     document.querySelectorAll('[data-tool]').forEach(function(b){b.setAttribute('aria-pressed',String(tool===b.dataset.tool));});
     $('fen').value=M.fen(state);
@@ -1465,7 +1467,7 @@
       $('requestCount').title=special?'ยังมีเบี้ยคว่ำแต่รูปหมากไม่เปลี่ยน: นับ 1 ถึง 64 ถ้ายังไม่มีผลแพ้ชนะ เสมอ':'';
       $('turnHeading').classList.toggle('alert',status.state!=='playing'||!!status.check);
       $('instruction').textContent=status.state==='playing'?(status.check?'รุก! ต้องเดินให้ขุนพ้นจากการรุก':'ตาฝ่าย'+sideName(state.turn)+' ลากหรือแตะหมากไปช่องที่มีจุด'):'จบตำแหน่งนี้แล้ว ย้อนกลับเพื่อทดลองทางอื่นได้';
-      message((hint&&!hint.move&&hint.fen===M.fen(state)&&status.state==='playing'?'กำลังหาคำใบ้…':status.state==='resign'?'คุณยอมแพ้ — ฝ่าย'+sideName(status.winner)+'ชนะ · กดย้อนกลับเพื่อเล่นต่อ':status.state==='checkmate'?'รุกจน — ฝ่าย'+sideName(status.winner)+'ชนะ':status.state==='stalemate'?'เสมอเพราะอับ — ไม่มีตาเดินและขุนไม่ถูกรุก':status.state==='draw'?'เสมอ — เหลือขุนทั้งสองฝ่าย':status.state==='countdraw'?'เสมอ — นับครบตามกติกาแล้วยังไม่รุกจน':status.state==='repetition'?'เสมอ — ตำแหน่งเดิมเกิดขึ้นครบ 3 ครั้ง':status.check?'ขุน'+sideName(state.turn)+'กำลังถูกรุก':engine.reason?'AI ระดับเซียนใช้ไม่ได้: '+engine.reason:'')+(game&&game.lesson&&status.state!=='playing'?' · กด “← บทเรียน” เพื่อกลับไปผ่านบท':''),!!engine.reason&&!status.check);
+      message((hint&&!hint.move&&hint.fen===M.fen(state)&&status.state==='playing'?'กำลังหาคำใบ้…':status.state==='resign'?'คุณยอมแพ้ — ฝ่าย'+sideName(status.winner)+'ชนะ · กดย้อนกลับเพื่อเล่นต่อ':status.state==='checkmate'?'รุกจน — ฝ่าย'+sideName(status.winner)+'ชนะ':status.state==='stalemate'?'เสมอเพราะอับ — ไม่มีตาเดินและขุนไม่ถูกรุก':status.state==='draw'?'เสมอ — เหลือขุนทั้งสองฝ่าย':status.state==='countdraw'?'เสมอ — นับครบตามกติกาแล้วยังไม่รุกจน':status.state==='repetition'?'เสมอ — ตำแหน่งเดิมเกิดขึ้นครบ 3 ครั้ง':status.check?'ขุน'+sideName(state.turn)+'กำลังถูกรุก':engine.reason?(game&&game.ai?'AI ระดับ'+levelOf(game.level).name:'AI')+'ใช้ไม่ได้: '+engine.reason:'')+(game&&game.lesson&&status.state!=='playing'?' · กด “← บทเรียน” เพื่อกลับไปผ่านบท':''),!!engine.reason&&!status.check);
     }
     $('openReview').hidden=!aiGame||reviewing||status.state==='playing'||!review;
     renderMoves();drawMarks();if(reviewing)drawGameReview();scheduleFit();
