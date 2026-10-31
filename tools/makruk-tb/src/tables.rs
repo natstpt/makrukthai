@@ -3,7 +3,9 @@
 //! Layer n: (a) every position where the side to move is mated after n-1 moves makes all positions one move before it
 //! (found by moving the other side's pieces back) wins in n; (b) every position that is a win in n makes the positions
 //! one move before it candidates for a loss, which a forward check confirms (all its moves lead to the other side's
-//! win). A capture goes to a smaller table built before. Memory: one byte a position for each side to move.
+//! win). A capture goes to a smaller table built before. Memory: one byte a position for each side to move, in RAM, or
+//! with --disk (Registry::disk) in memory-mapped files in the output folder, so a table bigger than the RAM can be built:
+//! the system keeps the pages in use in memory and writes the rest to the files (slower, but it finishes).
 
 use crate::geom::{bit, Geo, Kind, BLACK, WHITE};
 use crate::layout::*;
@@ -39,6 +41,8 @@ pub struct Registry {
     pub tables: HashMap<String, Arc<Table>>,
     pub dir: PathBuf,
     pub log: bool,
+    /// Build in memory-mapped files (<name>.w.bin.part, .b.bin.part, renamed when done) instead of RAM.
+    pub disk: bool,
 }
 
 /// A piece on the board for lookups: colour, kind, square.
@@ -46,7 +50,7 @@ pub type Piece = (usize, Kind, u8);
 
 impl Registry {
     pub fn new(dir: &Path, log: bool) -> Registry {
-        Registry { geo: Geo::new(), cb: Combos::new(), tables: HashMap::new(), dir: dir.to_path_buf(), log }
+        Registry { geo: Geo::new(), cb: Combos::new(), tables: HashMap::new(), dir: dir.to_path_buf(), log, disk: false }
     }
 
     /// The table for `mat` (canonical side up), from memory, from the folder, or built now (smaller ones first).
@@ -61,10 +65,13 @@ impl Registry {
             Table { v: [map(&files[0]), map(&files[1])], lay }
         } else {
             for sub in subs(&mat) { if sub.count() > 0 { self.get(&sub); } }
-            let t = build(self, lay);
             fs::create_dir_all(&self.dir).expect("cannot create the output folder");
-            fs::write(&files[0], &*t.v[0]).expect("cannot write the table");
-            fs::write(&files[1], &*t.v[1]).expect("cannot write the table");
+            let t = build(self, lay);
+            // Built in RAM: written now (a --disk build has already put its files in place).
+            if let Data::Owned(_) = t.v[0] {
+                fs::write(&files[0], &*t.v[0]).expect("cannot write the table");
+                fs::write(&files[1], &*t.v[1]).expect("cannot write the table");
+            }
             t
         };
         let about = self.dir.join(format!("{}.json", name));
@@ -264,6 +271,55 @@ pub fn for_unmoves(reg: &Registry, lay: &Layout, p: &Pos, mover: usize, mut f: i
     }
 }
 
+/// The bytes of a table being built, one side to move: in RAM, or a memory-mapped file (--disk).
+enum Store { Ram(Vec<AtomicU8>), Disk(memmap2::MmapMut, PathBuf) }
+impl std::ops::Deref for Store {
+    type Target = [AtomicU8];
+    fn deref(&self) -> &[AtomicU8] {
+        match self {
+            Store::Ram(v) => v,
+            // SAFETY: AtomicU8 has the same size and alignment as u8; the map lives as long as the Store.
+            Store::Disk(m, _) => unsafe { std::slice::from_raw_parts(m.as_ptr() as *const AtomicU8, m.len()) },
+        }
+    }
+}
+impl Store {
+    /// n bytes of UNKNOWN: in RAM, or in the file `path` (made n bytes long, then mapped).
+    fn new(n: u64, disk: Option<PathBuf>) -> Store {
+        match disk {
+            None => Store::Ram(atomic(vec![UNKNOWN; n as usize])),
+            Some(path) => {
+                let f = fs::OpenOptions::new().read(true).write(true).create(true).truncate(true).open(&path)
+                    .unwrap_or_else(|e| panic!("{}: {}", path.display(), e));
+                f.set_len(n).unwrap_or_else(|e| panic!("{}: {}", path.display(), e));
+                // SAFETY: the file is this build's own, opened by nobody else until it is renamed when done.
+                let mut m = unsafe { memmap2::MmapMut::map_mut(&f) }.unwrap_or_else(|e| panic!("{}: {}", path.display(), e));
+                m.par_chunks_mut(1 << 20).for_each(|c| c.fill(UNKNOWN));
+                Store::Disk(m, path)
+            }
+        }
+    }
+    fn bytes(&mut self) -> &mut [u8] {
+        match self {
+            // SAFETY: as in plain(): the same memory read as plain bytes, with no other reference left.
+            Store::Ram(v) => unsafe { std::slice::from_raw_parts_mut(v.as_mut_ptr() as *mut u8, v.len()) },
+            Store::Disk(m, _) => &mut m[..],
+        }
+    }
+    /// The finished bytes: owned (RAM), or the file flushed, renamed to `done` and mapped again for reading.
+    fn finish(self, done: &Path) -> Data {
+        match self {
+            Store::Ram(v) => Data::Owned(plain(v)),
+            Store::Disk(m, path) => {
+                m.flush().unwrap_or_else(|e| panic!("{}: {}", path.display(), e));
+                drop(m);
+                fs::rename(&path, done).unwrap_or_else(|e| panic!("{}: {}", done.display(), e));
+                map(done)
+            }
+        }
+    }
+}
+
 fn atomic(v: Vec<u8>) -> Vec<AtomicU8> {
     let mut v = std::mem::ManuallyDrop::new(v);
     // SAFETY: AtomicU8 has the same size and alignment as u8.
@@ -283,8 +339,10 @@ pub fn build(reg: &Registry, lay: Layout) -> Table {
     let t0 = Instant::now();
     let n = lay.n;
     let name = lay.mat.name();
-    if reg.log { eprintln!("{}: {} positions a side to move, {:.1} GB of memory", name, n, 2.0 * n as f64 / 1e9); }
-    let v: [Vec<AtomicU8>; 2] = [atomic(vec![UNKNOWN; n as usize]), atomic(vec![UNKNOWN; n as usize])];
+    if reg.log { eprintln!("{}: {} positions a side to move, {:.1} GB of {}", name, n, 2.0 * n as f64 / 1e9, if reg.disk { "files (--disk)" } else { "memory" }); }
+    let file = |side: &str| reg.dir.join(format!("{}.{}.bin", name, side));
+    let part = |side: &str| if reg.disk { Some(reg.dir.join(format!("{}.{}.bin.part", name, side))) } else { None };
+    let v: [Store; 2] = [Store::new(n, part("w")), Store::new(n, part("b"))];
     let chunks = (n + CHUNK - 1) / CHUNK;
     let far = AtomicU64::new(0); // the longest distance set ahead of its layer (captures)
     let bump = |d: u8| { far.fetch_max(d as u64, Relaxed); };
@@ -374,14 +432,15 @@ pub fn build(reg: &Registry, lay: Layout) -> Table {
         if layer >= max_dtm() { long_mates(reg, &lay, &v, &name, t0); break; }
         layer += 1;
     }
-    let [w, b] = v;
-    let (mut w, mut b) = (plain(w), plain(b));
+    let [mut sw, mut sb] = v;
+    {
+    let (w, b) = (sw.bytes(), sb.bytes());
     w.par_iter_mut().chain(b.par_iter_mut()).for_each(|x| { if *x == UNKNOWN || *x == ILLEGAL { *x = DRAW; } });
     // Mirror images get their position's value, so a reader may number positions either way. Copied in place: a mirror
     // image i is written once, from its position c, which is never itself a mirror image (so never written here); no
     // list of copies is kept (a six-piece table has over a billion mirror images).
     let lr = &lay;
-    for side in [&mut w, &mut b] {
+    for side in [w, b] {
         let at = Shared(side.as_mut_ptr());
         (0..chunks).into_par_iter().for_each(|ch| {
             let at = &at;
@@ -395,14 +454,15 @@ pub fn build(reg: &Registry, lay: Layout) -> Table {
             }
         });
     }
+    }
     if reg.log { eprintln!("{}: done in {:.1} min", name, t0.elapsed().as_secs_f64() / 60.0); }
-    Table { lay, v: [Data::Owned(w), Data::Owned(b)] }
+    Table { v: [sw.finish(&file("w")), sb.finish(&file("b"))], lay }
 }
 
 /// Mates longer than max_dtm() moves: still found (win or loss), kept as long(). Losses newly known make the positions one
 /// move back wins; wins newly known make them loss candidates, checked forward; until nothing more is found. Which
 /// positions are new is kept in two bit sets a side.
-fn long_mates(reg: &Registry, lay: &Layout, v: &[Vec<AtomicU8>; 2], name: &str, t0: Instant) {
+fn long_mates(reg: &Registry, lay: &Layout, v: &[Store; 2], name: &str, t0: Instant) {
     let n = lay.n;
     let words = ((n + 63) / 64) as usize;
     let bits = || (0..words).map(|_| AtomicU64::new(0)).collect::<Vec<_>>();

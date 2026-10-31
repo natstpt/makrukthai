@@ -1,10 +1,11 @@
 //! makruk-tb: endgame tables for makruk, built on your own computer.
 //!
-//!   makruk-tb build KRMMvKR [more …] [--out DIR] [--threads N]
+//!   makruk-tb build KRMMvKR [more …] [--out DIR] [--threads N] [--disk]
 //!       Builds the tables (and every smaller one a capture leads to, first) into DIR (default: tablebase-local next
 //!       to the repository). Materials: K then the pieces of white, v, K then red's: R rook, N knight, S khon,
 //!       M met or promoted pawn, e.g. KRMMvKR = king, rook and two promoted pawns against king and rook.
-//!       Finished tables are read back instead of rebuilt, so a stopped run goes on where it was.
+//!       Finished tables are read back instead of rebuilt, so a stopped run goes on where it was. --disk builds in
+//!       memory-mapped files in DIR instead of RAM, for a table bigger than the memory (slower).
 //!   makruk-tb export KRvKR [more …] [--out DIR] [--repo DIR] [--to DIR] [--sample N] [--drop-raw]
 //!       Writes the tables (from DIR, building them first if needed) for the website into tablebase/rs/ (or --to):
 //!       white to move only, split by the kings' squares when big, compressed (see export.rs). --sample checks N
@@ -54,7 +55,7 @@ fn main() {
     let mut port = serve::PORT;
     let mut sample = 1_000_000u64;
     let mut to: Option<PathBuf> = None;
-    let (mut drop_raw, mut check_first) = (false, 0u64);
+    let (mut drop_raw, mut check_first, mut disk) = (false, 0u64, false);
     let mut words = Vec::new();
     let mut bigs = Vec::new();
     let mut i = 0;
@@ -67,6 +68,7 @@ fn main() {
             "--sample" => { i += 1; sample = args[i].parse().expect("--sample takes a number"); check_first = sample; }
             "--to" => { i += 1; to = Some(PathBuf::from(&args[i])); }
             "--drop-raw" => drop_raw = true,
+            "--disk" => disk = true,
             "--big" => { i += 1; bigs.push(PathBuf::from(&args[i])); }
             w => words.push(w.to_string()),
         }
@@ -77,6 +79,7 @@ fn main() {
     match words.first().map(|s| s.as_str()) {
         Some("build") if words.len() > 1 => {
             let mut reg = Registry::new(&out, true);
+            reg.disk = disk;
             for w in &words[1..] {
                 let mat = Material::parse(w).unwrap_or_else(|| panic!("cannot read the material {} (e.g. KRMMvKR)", w));
                 let t = reg.get(&mat);
