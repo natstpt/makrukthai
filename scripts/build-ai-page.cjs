@@ -7,7 +7,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const root = path.join(__dirname, '..');
 function build() {
-  let html = fs.readFileSync(path.join(root, 'editor.html'), 'utf8');
+  // LF only: a Windows checkout (core.autocrlf) has CRLF on disk, the repository LF.
+  let html = fs.readFileSync(path.join(root, 'editor.html'), 'utf8').replace(/\r\n/g, '\n');
   const head = '<meta charset="utf-8">';
   if (!html.includes(head)) throw Error('editor.html: no <meta charset> to put the base after');
   html = html.replace(head, head + '<base href="../"><script>window.MAKRUK_PAGE=\'ai\';</script>');
