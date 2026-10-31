@@ -187,7 +187,8 @@
     if (k && k.big) return bigList && bigList.indexOf(k.name) >= 0 && bigLayout(k.name) && k.tables.every(loaded) ? { side: k.side, big: k } : null;
     if (k && !isRookTable(k.name)) return k.tables.every(loaded) ? { side: k.side, extra: k } : null;
     var rooks = pieces.filter(function (p) { return p.piece === 'rook'; });
-    if (rooks.length !== pieces.length - 2 || (rooks.length === 2 && rooks[0].side !== rooks[1].side)) return null;
+    // Rooks of one side only (one or two): rooks on both sides (KRvKR, KRRvKR) are for the two-sided tables.
+    if (!rooks.length || rooks.length > 2 || rooks.length !== pieces.length - 2 || rooks.some(function (p) { return p.side !== rooks[0].side; })) return null;
     if (rooks.length === 1 ? !table : !table2) return null;
     var side = rooks[0].side, wk = pieces.find(function (p) { return p.piece === 'king' && p.side === side; });
     var bk = pieces.find(function (p) { return p.piece === 'king' && p.side !== side; });

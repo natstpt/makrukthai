@@ -82,4 +82,8 @@ for (let i = 0; i < 300; i++) {
 }
 // Not king + rook against king: no table move.
 assert.equal(T.bestMove([{ piece: 'king', side: 'white', at: at('a1') }, { piece: 'met', side: 'white', at: at('d4') }, { piece: 'king', side: 'black', at: at('e6') }], 'white'), null);
+// Rooks on both sides (two against one) are not the king + two rooks table: no answer from it, whoever moves.
+const krrkr = [{ piece: 'rook', side: 'black', at: at('f7') }, { piece: 'king', side: 'black', at: at('f4') }, { piece: 'rook', side: 'white', at: at('c3') },
+  { piece: 'king', side: 'white', at: at('e2') }, { piece: 'rook', side: 'white', at: at('g2') }];
+for (const side of ['white', 'black']) { assert.equal(T.outcomes(krrkr, side), null); assert.equal(T.bestMove(krrkr, side), null); }
 console.log('KRK table: ' + fresh.won + ' wins, longest 16; KRRK: ' + fresh2.won + ' wins, longest 7; ' + checked + ' positions agree with the rules (' + wins + ' wins); ' + played + ' games mate on time.');
