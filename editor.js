@@ -352,11 +352,15 @@
       if(l)b.addEventListener('click',function(){var m=l.pv[0];if(m)playMove(square(m,0),square(m,2));});
       li.appendChild(b);list.appendChild(li);
     });
-    // A selected piece: each of its squares shows what the table says (ชนะ / แพ้ in N, or =).
-    if(view.table&&selected)view.table.list.forEach(function(x){
-      if(!same(x.move.from,selected))return;var el=squareEl(x.move.to);if(!el)return;
-      var tag=document.createElement('span');tag.className='tbBadge '+x.kind;tag.textContent=x.kind==='draw'?'=':(x.kind==='win'?'+':'-')+x.moves;el.appendChild(tag);
+    // A selected piece: each of its squares shows what the table says (W / L in N, or D), the piece's best move(s)
+    // outlined (the list is sorted best first), and the summary line says what the letters mean.
+    var own=view.table&&selected?view.table.list.filter(function(x){return same(x.move.from,selected);}):[];
+    own.forEach(function(x){
+      var el=squareEl(x.move.to);if(!el)return;
+      var tag=document.createElement('span');tag.className='tbBadge '+x.kind+(x.kind===own[0].kind&&x.moves===own[0].moves?' best':'');
+      tag.textContent=x.kind==='draw'?'D':(x.kind==='win'?'W':'L')+x.moves;tag.title=badgeTitle(x);el.appendChild(tag);
     });
+    if(own.length)$('evalText').textContent=view.table.summary+' · W=ชนะ L=แพ้ D=เสมอ';
     if(top&&assist.arrows&&top.pv[0])$('arrowLayer').innerHTML+=arrow(top.pv[0],'rgba(74,163,223,.88)');
     if(top&&assist.threats&&top.pv[1])$('arrowLayer').innerHTML+=arrow(top.pv[1],'rgba(216,52,44,.8)',true);
     // The last move's rating sits at the right of the evaluation bar (play mode shows no status line).
@@ -416,6 +420,7 @@
   // The mate score of a table row from the mover's side: a win counts up, a loss down.
   function tableScore(x){return x.kind==='draw'?{cp:0}:{mate:x.kind==='win'?x.moves:-x.moves};}
   function chipLabel(x){return x.kind==='win'?'ชนะ '+x.moves:x.kind==='loss'?'แพ้ '+x.moves:/นับ/.test(x.why||'')?'เสมอ·นับ':'เสมอ';}
+  function badgeTitle(x){return 'เดินตานี้: '+(x.kind==='win'?'ชนะ · รุกจนใน '+x.moves+' ตา':x.kind==='loss'?'แพ้ · โดนรุกจนใน '+x.moves+' ตา':'เสมอ · '+x.why);}
   function tableLabel(x){return x.kind==='win'?'ชนะ '+x.moves:x.kind==='loss'?'แพ้ '+x.moves:'เสมอ';}
   function drawTableMoves(){
     // The chips above the board list every move now; this list stays hidden (kept for wide screens if wanted).
