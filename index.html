@@ -1264,7 +1264,7 @@
     selected:false, promoted:false, captured:null, tool:'move', gesture:null, suppressClick:false,
     focus:null, showDestinations:localStorage.getItem('makrukDestinations')!=='false',showStarHint:localStorage.getItem('makrukStarHint')!=='false',
     correctMoves:0,roundIndex:0,roundDone:false,quizCorrect:false,lastFrom:null,lastTo:null,
-    gamePieces:[],gameOver:false,gameResult:null,gameHistory:[],matchResults:[],pendingNotation:null,starTarget:null,lastStarTarget:null,lastPracticeStart:null,scoreMoves:[],savedScores:[]
+    gamePieces:[],gameOver:false,gameResult:null,gameHistory:[],matchResults:[],pendingNotation:null,starTarget:null,starTargets:[],altNote:'',lastStarTarget:null,lastPracticeStart:null,scoreMoves:[],savedScores:[]
   };
   destinationsToggle.checked=state.showDestinations;
   starHintToggle.checked=state.showStarHint;
@@ -1292,6 +1292,8 @@
     var l=lessons[state.lesson];
     return (isBoardPractice()||l.type==='quiz'||l.type==='aiGame')&&state.correctMoves>=(l.requiredCorrect||1)&&(!l.requiredGames||state.matchResults.length>=l.requiredGames);
   }
+  function isStar(p){return state.starTargets.some(function(x){return same(x,p);});}
+  function starNames(list){return list.map(squareLabel).join(' หรือ ');}
   function isStarPractice(l){return !!l.piece&&l.type!=='game'&&l.type!=='notation'&&l.id!=='assessment';}
   function updatePracticeUI(){
     // A task revisited with "ย้อนกลับ" can be played again but is only counted once.
@@ -1340,6 +1342,8 @@
     if(state.phase==='active'){
       var task=challenge()||l;
       var text=l.type==='aiGame'?state.aiSay||'':task&&task.example?task.explanation:state.roundDone&&state.roundMessage?state.roundMessage:l.puzzle&&state.puzzleSay?state.puzzleSay:state.roundDone?(l.type==='quiz'&&task.explanation?((task.choices||[]).some(function(c){return c.correct&&c.text===task.explanation;})?'ถูกต้อง! คำตอบคือ “'+task.explanation+'”':task.explanation):ready?'ครบแล้ว! กดผ่านบทนี้ได้เลย':'ถูกต้องแล้ว! ไปโจทย์ถัดไปกัน'):l.type==='quiz'?task.mission:missionEl.textContent;
+      // The other right squares go after the praise: "ถูกต้องแล้ว! ไป จ3 ก็ถูกเหมือนกัน · ไปโจทย์ถัดไปกัน".
+      if(state.roundDone&&state.altNote&&!(task&&task.example)){var praise=text.match(/^[^!]*!\s*/);text=praise?praise[0]+state.altNote+' · '+text.slice(praise[0].length):text+' · '+state.altNote;}
       speechEl.textContent=text;mobileSpeechEl.textContent=text;mobileSpeechEl.classList.toggle('sayError',false);mobileSpeechEl.classList.toggle('saySuccess',!!state.roundDone&&!(task&&task.example));
     }
   }
@@ -1360,7 +1364,7 @@
     state.puzzleNode=l.puzzle&&task?puzzleNodeAt(task.tree,0):null;state.puzzleHintOn=false;state.puzzleSay='';state.puzzleLeft=l.puzzle&&task?task.moves:0;state.puzzleCount=l.puzzle&&task&&task.count?task.count.start:0;state.pieceCount=null;
     state.current=start?{r:start.r,c:start.c}:null;
     if(start&&l.type==='move')state.lastPracticeStart={r:start.r,c:start.c};
-    state.starTarget=null;state.routeMoves=0;state.routeLimit=0;
+    state.starTarget=null;state.starTargets=[];state.altNote='';state.routeMoves=0;state.routeLimit=0;
     state.promoted=false;state.captured=null;state.selected=false;state.roundDone=false;state.roundMessage='';state.hint=false;
     state.quizCorrect=false;state.gameOver=false;state.gameResult=null;state.gameHistory=[];
     state.pendingNotation=null;state.scoreMoves=[];notationForm.hidden=true;notationChoices.innerHTML='';
@@ -1372,12 +1376,17 @@
         if(!starOptions.length)starOptions=starMoves;
         state.starTarget=l.practiceSets&&state.phase==='active'&&task.goal?task.goal:starOptions[Math.floor(Math.random()*starOptions.length)];
         state.lastStarTarget={r:state.starTarget.r,c:state.starTarget.c};
+        // A task with several right answers (ผูก from two squares, รุก from two, หนีรุก to any safe square): every one
+        // is a star and any of them passes, so a learner who picks the other right square is not told it is wrong.
+        var several=!l.routePuzzle&&l.type!=='notation'&&task&&!task.goal&&(task.goals||l.type==='check'||l.type==='escape')&&starMoves.length>1;
+        state.starTargets=several?starMoves.slice().sort(function(a,b){return a.c-b.c||b.r-a.r;}):[state.starTarget];
         if(l.routePuzzle)state.routeLimit=routeDistance(state.current,state.starTarget);
       }
     }
     state.lastFrom=state.lastTo=null;state.focus=state.current||{r:7,c:0};
     missionEl.textContent=l.requiredGames?'เกมที่ '+(state.roundIndex+1)+' · หาทางรุกจน':task&&task.mission?task.mission:l.type==='notation'?'เดินตามโจทย์ แล้วดูวิธีจดตานั้น':l.piece?'เดิน'+pieceName[activePiece()]+'ไปเก็บดาว':l.type==='game'?'เดินหมากขาว แล้วดูฝ่ายแดงเดินตอบ':'ดูโจทย์แล้วเลือกคำตอบ';
-    if(!l.routePuzzle&&state.starTarget&&l.type!=='notation')missionEl.textContent+=' · เดินไปช่องดาว '+squareLabel(state.starTarget);
+    if(!l.routePuzzle&&state.starTargets.length>1)missionEl.textContent+=' · '+(state.starTargets.length>3?(l.type==='escape'?'หนีได้ ':'ไปได้ ')+state.starTargets.length+' ช่อง เลือกช่องดาวช่องไหนก็ได้':'เลือกได้ '+state.starTargets.length+' ช่อง: '+starNames(state.starTargets));
+    else if(!l.routePuzzle&&state.starTarget&&l.type!=='notation')missionEl.textContent+=' · เดินไปช่องดาว '+squareLabel(state.starTarget);
     if(l.routePuzzle&&state.starTarget)missionEl.textContent='เดิน'+pieceName[l.piece]+'ไป '+squareLabel(state.starTarget)+' · เดิน '+state.routeLimit+' ตา';
     mobileSpeechEl.textContent=l.type==='notation'?'เดินหมาก แล้วดูวิธีจดตานั้น':l.puzzle&&task?task.mission:l.type==='game'?'เลือกหมากขาว แล้วทำภารกิจ':l.type==='quiz'?task&&task.mission?task.mission:l.mission:task&&task.mission?task.mission:l.piece?state.showStarHint?'เดิน'+pieceName[activePiece()]+'ไปเก็บดาว ⭐':'ลองเดิน'+pieceName[activePiece()]:'มาลองทำภารกิจนี้กัน'; mobileSpeechEl.classList.remove('sayError','saySuccess');
     boardCaption.textContent=l.puzzle&&task?'โจทย์ที่ '+(state.roundIndex+1)+' · '+task.mission:l.type==='game'?(l.requiredGames?'มินิเกมที่ '+(state.roundIndex+1):'เกมฝึกเต็มกระดาน')+' · คุณเล่นฝ่ายขาว':task&&task.mission?'โจทย์ที่ '+(state.roundIndex+1)+' · '+task.mission:state.current?pieceName[activePiece()]+'อยู่ที่ '+squareLabel(state.current):l.caption;
@@ -1629,7 +1638,7 @@
         if(puzzleHint&&same(p,puzzleHint.from))s.classList.add('hintSource');
         if(state.wrongMove&&same(p,state.wrongMove.from))s.classList.add('wrongFrom');
         if(state.wrongMove&&same(p,state.wrongMove.to)){s.classList.add('wrongTo');s.insertAdjacentHTML('beforeend','<span class="wrongBadge" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#e8473b" stroke="#fff" stroke-width="2"/><path d="M8 8l8 8M16 8l-8 8" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></span>');}
-        if(state.phase==='active'&&state.showStarHint&&(state.starTarget||puzzleHint&&puzzleHint.to)&&!state.roundDone&&!state.pendingNotation&&same(p,state.starTarget||puzzleHint.to))s.innerHTML+='<span class="goalStar" aria-hidden="true">'+GOAL_STAR+'</span>';
+        if(state.phase==='active'&&state.showStarHint&&(state.starTarget||puzzleHint&&puzzleHint.to)&&!state.roundDone&&!state.pendingNotation&&(state.starTarget?isStar(p):same(p,puzzleHint.to)))s.innerHTML+='<span class="goalStar" aria-hidden="true">'+GOAL_STAR+'</span>';
         var pc=pieces.find(function(x){return same(x.at,p);});
         var source=canMove&&state.current&&same(p,state.current);
         if(canMove&&pc&&pc.side===userSide()&&(source||l.type==='game'))s.classList.add('selectable');
@@ -1645,7 +1654,7 @@
           }
         }
         if(state.phase==='active'&&state.roundDone&&state.lastTo&&same(p,state.lastTo)&&isStarPractice(l))s.classList.add('starCollected');
-        s.setAttribute('aria-label',squareLabel(p)+(state.phase==='active'&&state.showStarHint&&state.starTarget&&same(p,state.starTarget)?' ดาวคำใบ้':'')+(pc?' '+pieceName[pc.piece]+'ฝ่าย'+(pc.side==='white'?'ขาว':'แดง'): ' ช่องว่าง'));
+        s.setAttribute('aria-label',squareLabel(p)+(state.phase==='active'&&state.showStarHint&&state.starTarget&&isStar(p)?' ดาวคำใบ้':'')+(pc?' '+pieceName[pc.piece]+'ฝ่าย'+(pc.side==='white'?'ขาว':'แดง'): ' ช่องว่าง'));
         s.setAttribute('aria-pressed',String((source&&state.selected)||(state.arrowStart&&same(p,state.arrowStart))||false));
         if(pc)s.innerHTML+=pieceHtml(pc.piece,pc.side);
         if(pc&&pc.piece==='king'&&Rules.inCheck(pieces,pc.side))s.classList.add('inCheck');
@@ -2210,7 +2219,7 @@
     if(l.puzzle){playPuzzleMove(dest);return;}
     if(l.type==='game'){playGameMove(dest);return;}
     var legal=goalDestinations();
-    if(!l.routePuzzle&&state.starTarget&&!same(dest,state.starTarget)){wrongMove(state.current,dest,'ตานี้ให้เดินไปช่องดาวที่ '+squareLabel(state.starTarget)+' ตามโจทย์นะ');return;}
+    if(!l.routePuzzle&&state.starTarget&&!isStar(dest)){wrongMove(state.current,dest,'ตานี้ให้เดินไปช่องดาวที่ '+starNames(state.starTargets)+' ตามโจทย์นะ');return;}
     // A route puzzle gives as many moves as the shortest way to the star: a step that no longer reaches it in time is wrong.
     if(l.routePuzzle&&state.starTarget&&!same(dest,state.starTarget)&&routeDistance(dest,state.starTarget)>state.routeLimit-state.routeMoves-1){
       wrongMove(state.current,dest,state.routeLimit===1?'ตานี้ต้องเดินถึงช่องดาว '+squareLabel(state.starTarget)+' ใน 1 ตา':'ทางนี้ไปถึง '+squareLabel(state.starTarget)+' ไม่ทันใน '+state.routeLimit+' ตา ลองทางอื่นนะ');return;
@@ -2247,6 +2256,9 @@
       message=task&&task.success?task.success:'ถูกต้อง!';
       if(l.endgame)state.roundMessage=message;
     }
+    // The other right squares, said after the move: "ไป จ3 ก็ถูกเหมือนกัน".
+    var others=state.starTargets.length>1?state.starTargets.filter(function(x){return !same(x,dest);}):[];
+    state.altNote=!others.length?'':others.length>2?'ช่องดาวอื่นอีก '+others.length+' ช่องก็ถูกเหมือนกัน':'ไป '+starNames(others)+' ก็ถูกเหมือนกัน';
     if(l.type==='notation'){
       // Show how this move is written, in the speech bubble, instead of asking the learner to pick the record.
       state.correctMoves++;state.roundDone=true;state.roundMessage='ตานี้จดว่า “'+notation.text+'” · '+notationParts(notation);
@@ -2372,7 +2384,7 @@
       if(state.roundDone)hint='ทำโจทย์นี้ถูกแล้ว กด “ฝึกโจทย์ถัดไป” เพื่อฝึกเพิ่ม';
       else if(task&&task.hint)hint=task.hint;
       else if(l.type==='promote')hint='เดินตรงไป '+squareLabel(task.goal)+' เมื่อถึงแถว 6 เบี้ยจะหงาย';
-      else hint=(l.type==='check'?'เรือต้องอยู่แนวเดียวกับขุนแดง':l.type==='escape'?'เดินขุนออกจากแนวเรือแดง':l.rule)+' · จาก '+squareLabel(state.current)+' ลอง '+(state.starTarget?[state.starTarget]:goalDestinations()).map(squareLabel).join(' · ');
+      else hint=(l.type==='check'?'เรือต้องอยู่แนวเดียวกับขุนแดง':l.type==='escape'?'เดินขุนออกจากแนวเรือแดง':l.rule)+' · จาก '+squareLabel(state.current)+' ลอง '+(state.starTargets.length?state.starTargets:goalDestinations()).map(squareLabel).join(' · ');
     }else if(task&&task.hint)hint=task.hint;
     feedbackEl.textContent='💡 '+hint;
     if(state.phase==='active')speechEl.textContent=mobileSpeechEl.textContent=hint; mobileSpeechEl.classList.remove('sayError','saySuccess');
