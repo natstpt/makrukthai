@@ -7,7 +7,7 @@ const Learning=require('../learning-design.js');
 const source=fs.readFileSync(require('node:path').join(__dirname,'../index.html'),'utf8');
 // Execute the production move handlers, with rendering replaced by no-ops.
 // This tests state transitions independently of CSS and browser timing.
-const names=['same','squareLabel','challenge','activePiece','isBoardPractice','basePieces','boardPieces','moveDestinations','goalDestinations','routeDistance','attemptMove'];
+const names=['same','squareLabel','challenge','activePiece','isBoardPractice','basePieces','boardPieces','moveDestinations','goalDestinations','routeDistance','isStar','starNames','attemptMove'];
 const functions=names.map(name=>{
   const firstLine=source.slice(source.indexOf('  function '+name+'(')).split(/\r?\n/)[0];
   if(firstLine.trimEnd().endsWith('}'))return firstLine;
@@ -19,7 +19,7 @@ for(const piece of ['king','rook','knight','met','khon','promoted']){
   for(const showStarHint of [true,false]){
     const start={r:4,c:3},route=Learning.routeTargets(Rules,piece,start,2)[0];
     const lesson={id:piece,type:'move',piece,start,routePuzzle:true,requiredCorrect:3};
-    const state={lesson:0,phase:'active',current:start,selected:true,completed:false,roundDone:false,showStarHint,starTarget:route.at,correctMoves:0,routeMoves:0,routeLimit:2};
+    const state={lesson:0,phase:'active',current:start,selected:true,completed:false,roundDone:false,showStarHint,starTarget:route.at,starTargets:[route.at],correctMoves:0,routeMoves:0,routeLimit:2};
     const context={Rules,lessons:[lesson],state,pieceName:{[piece]:piece},displayFiles:'กขคงจฉชญ',window:{MakrukLearning:Learning},
       boardCaption:{},feedbackEl:{},speechEl:{},coachSay(){},queueMoveFeedback(){},showToast(){},renderBoard(){},updatePracticeUI(){},isStarPractice(){return true;},
       moveError(){context.errors++;},wrongMove(from,to){context.errors++;context.wrong={from,to};},errors:0};
@@ -40,7 +40,7 @@ for(const piece of ['king','rook','knight','met','khon','promoted']){
   const start={r:4,c:3},targets=Learning.routeTargets(Rules,piece,start,1),star=targets[0].at;
   const away=targets.map(t=>t.at).find(at=>at.r!==star.r||at.c!==star.c);
   const lesson={id:piece,type:'move',piece,start,routePuzzle:true,requiredCorrect:3};
-  const state={lesson:0,phase:'active',current:start,selected:true,completed:false,roundDone:false,starTarget:star,correctMoves:0,routeMoves:0,routeLimit:1};
+  const state={lesson:0,phase:'active',current:start,selected:true,completed:false,roundDone:false,starTarget:star,starTargets:[star],correctMoves:0,routeMoves:0,routeLimit:1};
   const context={Rules,lessons:[lesson],state,pieceName:{[piece]:piece},displayFiles:'กขคงจฉชญ',window:{MakrukLearning:Learning},
     boardCaption:{},feedbackEl:{},speechEl:{},coachSay(){},queueMoveFeedback(){},showToast(){},renderBoard(){},updatePracticeUI(){},isStarPractice(){return true;},
     moveError(){context.errors++;},wrongMove(from,to){context.errors++;context.wrong={from,to};},errors:0};
@@ -56,21 +56,29 @@ for(const piece of ['king','rook','knight','met','khon','promoted']){
 console.log(`Production puzzle flow verified: ${scenarios} piece / hint scenarios, illegal steps and duplicate awards rejected.`);
 
 
-// Regression: both rook moves give check, but only the starred destination scores.
-for(const showStarHint of [true,false]){
+// A check lesson: both rook moves give check, so both are stars and either one scores (a child who picks the other
+// right square is not told it is wrong), and the speech then names the other square. A single star (a practice set
+// that names its square) still rejects any other move.
+for(const showStarHint of [true,false])for(const several of [true,false]){
   const start={r:3,c:0},goal={r:3,c:7},other={r:0,c:0};
   const task={piece:'rook',start,enemies:[{piece:'king',side:'black',at:{r:0,c:7}}]};
   const lesson={id:'check',type:'check',piece:'rook',challenges:[task],requiredCorrect:3};
-  const state={lesson:0,phase:'active',roundIndex:0,current:start,selected:true,completed:false,roundDone:false,showStarHint,starTarget:goal,correctMoves:0,routeMoves:0};
+  const state={lesson:0,phase:'active',roundIndex:0,current:start,selected:true,completed:false,roundDone:false,showStarHint,starTarget:goal,starTargets:several?[goal,other]:[goal],correctMoves:0,routeMoves:0};
   const context={Rules,lessons:[lesson],state,pieceName:{rook:'เรือ'},displayFiles:'กขคงจฉชญ',boardCaption:{},feedbackEl:{},speechEl:{},coachSay(){},queueMoveFeedback(){},showToast(){},renderBoard(){},updatePracticeUI(){},isStarPractice(){return true;},moveError(){context.errors++;},wrongMove(from,to){context.errors++;context.wrong={from,to};},errors:0};
   vm.createContext(context);vm.runInContext(functions,context);
   assert(Rules.inCheck(Rules.applyMove(context.boardPieces(),start,other),'black'));
-  context.attemptMove(other);assert.equal(state.correctMoves,0);assert.equal(context.errors,1);assert.deepEqual(state.current,start);
+  context.attemptMove(other);
+  if(several){
+    assert.equal(state.correctMoves,1);assert(state.roundDone);assert.equal(context.errors,0);
+    assert.equal(state.altNote,'ไป '+context.squareLabel(goal)+' ก็ถูกเหมือนกัน');
+    continue;
+  }
+  assert.equal(state.correctMoves,0);assert.equal(context.errors,1);assert.deepEqual(state.current,start);
   // A legal but wrong move is shown on the board as a wrong move (the learner then presses ลองใหม่), not silently refused.
   assert.deepEqual(JSON.parse(JSON.stringify(context.wrong)),{from:start,to:other});
-  context.attemptMove(goal);assert.equal(state.correctMoves,1);assert(state.roundDone);
+  context.attemptMove(goal);assert.equal(state.correctMoves,1);assert(state.roundDone);assert.equal(state.altNote,'');
 }
-console.log('Check lesson: alternative check rejected, only the star scores, including with hints hidden.');
+console.log('Check lesson: every right square is a star and scores; a single star still rejects the others, with hints hidden too.');
 
 // Teaching compares all three pieces on precisely the same square.
 for(const [teachingIndex,piece,count] of [[1,'king',8],[2,'khon',5],[3,'met',4]]){
