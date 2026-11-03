@@ -4,7 +4,7 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const Rules=require('../makruk-rules.js');
 const Learning=require('../learning-design.js');
-const source=fs.readFileSync(require('node:path').join(__dirname,'../index.html'),'utf8');
+const source=fs.readFileSync(require('node:path').join(__dirname,'../learn/index.html'),'utf8');
 // Execute the production move handlers, with rendering replaced by no-ops.
 // This tests state transitions independently of CSS and browser timing.
 const names=['same','squareLabel','challenge','activePiece','isBoardPractice','basePieces','boardPieces','moveDestinations','goalDestinations','routeDistance','isStar','starNames','attemptMove'];

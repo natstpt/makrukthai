@@ -223,7 +223,7 @@ check(R.applyMove(challengeBoard(lessonById('assessment').challenges[1]), lesson
 
 // Extract lesson data and the coordinate formatter, not the application script.
 // This evaluates no DOM handlers and requires no browser or additional packages.
-const indexSource = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8').replace(/\r\n/g, '\n');
+const indexSource = fs.readFileSync(path.join(__dirname, '..', 'learn', 'index.html'), 'utf8').replace(/\r\n/g, '\n');
 const lessonStart = indexSource.indexOf('var lessons = [');
 const lessonEndMarker = '\n  ];';
 const lessonEnd = indexSource.indexOf(lessonEndMarker, lessonStart);

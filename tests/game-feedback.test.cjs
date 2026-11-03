@@ -1,7 +1,7 @@
 'use strict';
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),path=require('node:path');
 const Rules=require('../makruk-rules.js'),Notation=require('../makruk-notation.js');
-const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
+const html=fs.readFileSync(path.join(__dirname,'../learn/index.html'),'utf8');
 const extract=n=>html.match(new RegExp('  function '+n+'\\([^]*?\\n  }'))[0];
 function game(){
  let nextId=0;const timers=new Map(),events=[];

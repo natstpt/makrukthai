@@ -1,7 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('fs'),path=require('path'),vm=require('vm');
 const Rules=require('../makruk-rules.js'),Notation=require('../makruk-notation.js'),Learning=require('../learning-design.js');
-const root=path.join(__dirname,'..'),html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+const root=path.join(__dirname,'..'),html=fs.readFileSync(path.join(root,'learn','index.html'),'utf8');
 const ctx={window:{},pos:(f,n)=>({r:8-n,c:'abcdefgh'.indexOf(f)})};vm.createContext(ctx);
 for(const file of ['day2-lessons.js','rules-lessons.js','endgame-lessons.js','learning-design.js','practice-sets.js'])vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),ctx);
 const lessons=vm.runInContext(html.slice(html.indexOf('var lessons = ['),html.indexOf('// Keep internal coordinates stable'))+';lessons',ctx);

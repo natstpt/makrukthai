@@ -1,7 +1,7 @@
 // Build reviewed, deterministic practice banks. Run after changing lesson examples.
 const fs=require('fs'),vm=require('vm'),path=require('path');
 const root=path.join(__dirname,'..'),Rules=require('../makruk-rules.js'),Learning=require('../learning-design.js'),Notation=require('../makruk-notation.js');
-const html=fs.readFileSync(path.join(root,'index.html'),'utf8');const ctx={window:{},pos:(f,n)=>({r:8-n,c:'abcdefgh'.indexOf(f)})};vm.createContext(ctx);
+const html=fs.readFileSync(path.join(root,'learn','index.html'),'utf8');const ctx={window:{},pos:(f,n)=>({r:8-n,c:'abcdefgh'.indexOf(f)})};vm.createContext(ctx);
 for(const file of ['day2-lessons.js','rules-lessons.js','endgame-lessons.js','learning-design.js'])vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),ctx);
 const lessons=vm.runInContext(html.slice(html.indexOf('var lessons = ['),html.indexOf('// Keep internal coordinates stable'))+';lessons',ctx);
 const clone=x=>JSON.parse(JSON.stringify(x)),same=(a,b)=>a&&b&&a.r===b.r&&a.c===b.c,label=Notation.squareLabel;

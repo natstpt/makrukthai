@@ -19,7 +19,7 @@ const same = (a, b) => !!a && !!b && a.r === b.r && a.c === b.c;
 const squareKey = at => `${at.r},${at.c}`;
 const onBoard = at => !!at && Number.isInteger(at.r) && Number.isInteger(at.c) && at.r >= 0 && at.r < 8 && at.c >= 0 && at.c < 8;
 const repo = path.join(__dirname, '..');
-const source = fs.readFileSync(path.join(repo, 'index.html'), 'utf8').replace(/\r\n/g, '\n');
+const source = fs.readFileSync(path.join(repo, 'learn', 'index.html'), 'utf8').replace(/\r\n/g, '\n');
 
 // Evaluate the actual initial lesson data and the actual factory calls, not the
 // application IIFE. There is no DOM, browser, server, or third-party dependency.

@@ -75,6 +75,9 @@ jobs:
       - name: Verify the khon and promoted pawn against promoted pawn table
         run: node tests/rs-ksm.test.cjs
 
+      - name: Verify the mate puzzles of the puzzle page
+        run: node tests/mate-puzzles.test.cjs
+
       - name: Build the stand-alone AI page from editor.html
         run: node scripts/build-ai-page.cjs && node tests/ai-page.test.cjs
 
