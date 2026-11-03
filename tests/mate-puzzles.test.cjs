@@ -1,0 +1,166 @@
+'use strict';
+// The puzzle page (puzzle/): every puzzle in puzzle/mate-puzzles.js (scripts/build-mate-puzzles.cjs) is a legal position
+// whose side to move mates in exactly the moves it says, by the endgame tables and by a move search with
+// makruk-rules.js; its tree takes every move that mates as fast or faster (no right move is called wrong) and answers
+// with a longest defence. Also the page's rules (puzzle/puzzle-core.js) and the links between the site's pages.
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const zlib = require('node:zlib');
+const R = require('../makruk-rules.js');
+const T = require('../tablebase.js');
+const M = require('../editor-model.js');
+const C = require('../puzzle/puzzle-core.js');
+const DATA = require('../puzzle/mate-puzzles.js');
+
+const root = path.join(__dirname, '..'), dir = path.join(root, 'tablebase');
+const open = f => new Uint8Array(zlib.inflateRawSync(fs.readFileSync(f)));
+T.use(new Uint8Array(fs.readFileSync(path.join(dir, 'krk.bin'))), open(path.join(dir, 'krrk.bin')));
+for (const name of T.NAMES) T.useTable(name, open(path.join(dir, name + '.bin')));
+for (const name of ['KRvKM', 'KRvKR', 'KSvKM', 'KRMvKR']) {
+  const info = JSON.parse(fs.readFileSync(path.join(dir, 'rs', name, 'info.json'), 'utf8')), parts = {};
+  if (info.single) parts[0] = open(path.join(dir, 'rs', name, 'all.bin'));
+  else for (let k = 0; k < info.positions / info.part; k++) if (!info.zero.includes(k)) parts[k] = open(path.join(dir, 'rs', name, k + '.bin'));
+  T.useRs(name, info, parts);
+}
+const other = C.other, key = C.moveKey;
+
+// A move search of its own (memoised): can side, to move, mate within n moves?
+const memo = new Map();
+const pkey = (ps, side) => side + ps.map(p => p.side[0] + p.piece + p.at.r + p.at.c).sort().join();
+function wins(ps, side, n) {
+  if (n <= 0) return false;
+  const k = pkey(ps, side) + n;
+  if (!memo.has(k)) memo.set(k, R.legalMoves(ps, side).some(m => mates(R.applyMove(ps, m.from, m.to), side, n)));
+  return memo.get(k);
+}
+function mates(after, side, n) {
+  const st = R.gameStatus(after, other(side)).state;
+  if (st === 'checkmate') return true;
+  if (st !== 'playing' || n <= 1) return false;
+  return R.legalMoves(after, other(side)).every(r => wins(R.applyMove(after, r.from, r.to), side, n - 1));
+}
+const depth = (ps, side, max) => { for (let n = 1; n <= max; n++) if (wins(ps, side, n)) return n; return Infinity; };
+
+// A tree node with `left` moves to play: exactly the moves that mate in time, each with a legal longest defence.
+let nodes = 0;
+function checkNode(ps, side, left, node, where) {
+  nodes++;
+  const want = R.legalMoves(ps, side).filter(m => mates(R.applyMove(ps, m.from, m.to), side, left)).map(key).sort();
+  assert.deepEqual(Object.keys(node).sort(), want, where + ': the tree takes every move that mates within ' + left);
+  for (const k of want) {
+    const m = C.fromKey(k), after = R.applyMove(ps, m.from, m.to), hit = node[k];
+    if (hit === '#') { assert.equal(R.gameStatus(after, other(side)).state, 'checkmate', where + ' ' + k + ' mates'); continue; }
+    assert.notEqual(R.gameStatus(after, other(side)).state, 'checkmate', where + ' ' + k + ' is not mate, so it has a reply');
+    const replies = R.legalMoves(after, other(side));
+    const r = replies.find(x => key(x) === hit.r);
+    assert(r, where + ' ' + k + ': the reply ' + hit.r + ' is legal');
+    const next = R.applyMove(after, r.from, r.to), got = depth(next, side, left - 1);
+    const longest = Math.max(...replies.map(x => depth(R.applyMove(after, x.from, x.to), side, left - 1)));
+    assert.equal(got, longest, where + ' ' + k + ': ' + hit.r + ' holds out longest');
+    checkNode(next, side, got, hit.n, where + ' ' + k + ' ' + hit.r);
+  }
+}
+
+// ---- The puzzles ----
+const ids = DATA.sets.map(s => s.id);
+assert(DATA.sets.length >= 10, 'at least ten piece sets');
+assert.equal(new Set(ids).size, ids.length, 'set ids are unique');
+const fens = new Set();
+const count = {};
+for (const p of DATA.puzzles) {
+  const where = p.set + ' ' + p.fen, set = DATA.sets.find(s => s.id === p.set);
+  assert(set, where + ': its set is listed');
+  assert([1, 2, 3].includes(p.mate), where + ': mate in 1, 2 or 3');
+  assert(!fens.has(p.fen), where + ': no puzzle twice'); fens.add(p.fen);
+  const st = M.parse(p.fen), ps = st.pieces, side = st.turn;
+  assert.equal(M.validate(st), '', where + ': a legal position');
+  assert(!R.inCheck(ps, side), where + ': the attacker is not in check');
+  const kings = ps.filter(x => x.piece === 'king');
+  assert(Math.max(Math.abs(kings[0].at.r - kings[1].at.r), Math.abs(kings[0].at.c - kings[1].at.c)) > 1, where + ': kings apart');
+  // The pieces are the set's.
+  const mine = ps.filter(x => x.side === side && x.piece !== 'king').map(x => x.piece).sort();
+  const theirs = ps.filter(x => x.side !== side && x.piece !== 'king').map(x => x.piece).sort();
+  assert.deepEqual(mine, set.attack.slice().sort(), where + ': attacking pieces');
+  assert.deepEqual(theirs, set.defend.slice().sort(), where + ': defending pieces');
+  // The tables, then the move search.
+  const table = set.defend.length ? T.result(ps, side) : { res: 'win', n: T.value(ps) };
+  assert.deepEqual(table, { res: 'win', n: p.mate }, where + ': the tables say mate in ' + p.mate);
+  assert.equal(depth(ps, side, 3), p.mate, where + ': the move search finds mate in exactly ' + p.mate);
+  assert(Object.keys(p.tree).length <= 2, where + ': at most two first moves mate in time');
+  checkNode(ps, side, p.mate, p.tree, where);
+  count[p.set + p.mate] = (count[p.set + p.mate] || 0) + 1;
+  if (memo.size > 2e6) memo.clear();
+}
+for (const s of DATA.sets) assert(DATA.puzzles.filter(p => p.set === s.id).length >= 10, s.id + ': at least ten puzzles');
+for (const n of [1, 2, 3]) assert(DATA.puzzles.filter(p => p.mate === n).length >= 100, 'plenty of mate-in-' + n + ' puzzles');
+assert(DATA.puzzles.some(p => M.parse(p.fen).turn === 'black') && DATA.puzzles.some(p => M.parse(p.fen).turn === 'white'), 'both colours attack');
+
+// ---- puzzle-core: the set of 10 ----
+let seed = 9;
+const rnd = () => { seed = (Math.imul(seed, 1103515245) + 12345) >>> 0; return (seed >>> 8) / 16777216; };
+const all = { mates: [1, 2, 3], sets: ids };
+const plan = C.plan(DATA, all, rnd);
+assert.deepEqual(plan.map(p => p.mate), [1, 1, 1, 1, 2, 2, 2, 2, 3, 3], 'by default: 4 × mate in 1, 4 × in 2, 2 × in 3, easy first');
+assert.equal(new Set(plan).size, 10, 'no puzzle twice in a set');
+assert.deepEqual(C.plan(DATA, { mates: [3, 2], sets: ids }, rnd).map(p => p.mate), [2, 2, 2, 2, 2, 3, 3, 3, 3, 3], 'two counts share the ten');
+assert(C.plan(DATA, { mates: [2], sets: ['r', 'rr'] }, rnd).every(p => p.mate === 2 && ['r', 'rr'].includes(p.set)), 'only the chosen sets and counts');
+assert.deepEqual(C.plan(DATA, { mates: [1], sets: [] }, rnd), [], 'no sets, no puzzles');
+assert.deepEqual(C.plan(DATA, { mates: [], sets: ids }, rnd), [], 'no mate counts, no puzzles');
+// A set with no mate in 3 for knights (only mate in 1): mate in 1 tops the ten up.
+const nn = DATA.sets.find(s => s.id === 'nn');
+if (nn) {
+  const few = C.plan(DATA, { mates: [1, 3], sets: ['nn'] }, rnd);
+  assert.equal(few.length, Math.min(10, DATA.puzzles.filter(p => p.set === 'nn' && [1, 3].includes(p.mate)).length), 'topped up from the other count');
+}
+assert.equal(C.available(DATA, all), DATA.puzzles.length);
+
+// ---- puzzle-core: moves ----
+{
+  const p = DATA.puzzles.find(x => x.mate === 2), st = M.parse(p.fen);
+  const k = Object.keys(p.tree)[0], res = C.step(p.tree, C.fromKey(k));
+  assert(res.ok && !res.mate && res.reply && res.node, 'a tree move gets its reply');
+  const bad = R.legalMoves(st.pieces, st.turn).find(m => !p.tree[key(m)]);
+  assert.deepEqual(C.step(p.tree, bad), { ok: false }, 'any other move is wrong');
+  const why = C.refute(R.applyMove(st.pieces, bad.from, bad.to), st.turn, 2);
+  assert(['stalemate', 'capture', 'escape'].includes(why.kind) && why.text, 'a wrong move gets a reason');
+  if (why.reply) assert(!wins(R.applyMove(R.applyMove(st.pieces, bad.from, bad.to), why.reply.from, why.reply.to), st.turn, 1), 'the shown defence stops mate in time');
+  const line = C.line(p.tree);
+  assert.equal(line.length, 3, 'the book line of mate in 2: move, reply, mate');
+  let ps = st.pieces;
+  line.forEach(m => { ps = R.applyMove(ps, m.from, m.to); });
+  assert.equal(R.gameStatus(ps, other(st.turn)).state, 'checkmate', 'the book line ends in mate');
+}
+{
+  // A move that stalemates is named so (the first such move among the puzzles).
+  let stale = null;
+  for (const p of DATA.puzzles) {
+    const st = M.parse(p.fen);
+    const m = R.legalMoves(st.pieces, st.turn).find(x => R.gameStatus(R.applyMove(st.pieces, x.from, x.to), other(st.turn)).state === 'stalemate');
+    if (m) { stale = { after: R.applyMove(st.pieces, m.from, m.to), side: st.turn }; break; }
+  }
+  assert(stale, 'some puzzle has a stalemating move');
+  assert.deepEqual([C.refute(stale.after, stale.side, 1).kind, C.refute(stale.after, stale.side, 1).reply], ['stalemate', null], 'stalemate is named');
+  // A hanging rook is taken.
+  const ps2 = [{ piece: 'king', side: 'black', at: { r: 0, c: 4 } }, { piece: 'king', side: 'white', at: { r: 7, c: 0 } }, { piece: 'rook', side: 'white', at: { r: 5, c: 3 } }];
+  const after2 = R.applyMove(ps2, { r: 5, c: 3 }, { r: 1, c: 3 });
+  const why2 = C.refute(after2, 'white', 2);
+  assert.equal(why2.kind, 'capture'); assert.equal(key(why2.reply), 'e8d7');
+}
+
+// ---- The pages ----
+const read = f => fs.readFileSync(path.join(root, f), 'utf8');
+const home = read('index.html');
+for (const href of ['learn/', 'ai/', 'puzzle/']) assert(home.includes('href="' + href + '"'), 'the home page links to ' + href);
+assert(home.includes("location.replace('learn/#credits')"), 'old links to the credits go on to the lessons');
+const learn = read('learn/index.html'), puzzle = read('puzzle/index.html');
+for (const [name, html] of [['learn', learn], ['puzzle', puzzle]]) {
+  assert(html.includes('<base href="../">'), name + ' loads its files from the site root');
+  for (const [, src] of html.matchAll(/<script src="([^"?]+)/g)) assert(fs.existsSync(path.join(root, src)), name + ': ' + src + ' exists');
+}
+assert(learn.includes('class="brand" href="./"'), 'the lessons link back home');
+assert(read('editor.html').includes('<a href="learn/" class="back">'), 'the editor links to the lessons at learn/');
+assert(puzzle.includes('id="settingsBtn"'), 'the puzzle page has the settings button');
+assert(!/localStorage/.test(read('puzzle/puzzle.js')), 'the puzzle settings are not remembered');
+
+console.log('Mate puzzles verified: ' + DATA.puzzles.length + ' puzzles in ' + DATA.sets.length + ' sets, ' + nodes + ' tree nodes checked.');

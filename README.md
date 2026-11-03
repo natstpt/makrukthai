@@ -4,8 +4,10 @@
 
 | หน้า | ลิงก์ | ใช้ทำอะไร |
 | --- | --- | --- |
-| บทเรียน | [natstpt.github.io/makrukthai](https://natstpt.github.io/makrukthai/) | 59 บท ตั้งแต่รู้จักกระดานจนถึงไล่ปลายกระดานและเล่นจริง |
+| หน้าหลัก | [natstpt.github.io/makrukthai](https://natstpt.github.io/makrukthai/) | ทางเข้าบทเรียน เล่นกับ AI และโจทย์รุกจน |
+| บทเรียน | [/learn](https://natstpt.github.io/makrukthai/learn) | 59 บท ตั้งแต่รู้จักกระดานจนถึงไล่ปลายกระดานและเล่นจริง |
 | เล่นกับ AI | [/ai](https://natstpt.github.io/makrukthai/ai) | AI 6 ระดับ พร้อมหน้าวิเคราะห์การเดินหลังจบเกม |
+| โจทย์รุกจน | [/puzzle](https://natstpt.github.io/makrukthai/puzzle) | โจทย์จนใน 1–3 ตาจากตารางท้ายเกม ชุดละ 10 ข้อ ครูกรองจำนวนตาและชุดหมากได้ (ปุ่มเฟือง) |
 | ถอดหมาก | [/editor.html?analysis=1](https://natstpt.github.io/makrukthai/editor.html?analysis=1) | ให้ AI วิเคราะห์ตำแหน่งใดก็ได้ |
 | ตั้งหมาก | [/editor.html](https://natstpt.github.io/makrukthai/editor.html) | วางหมากเพื่อสอน แล้วทดลองเดินทั้งสองฝ่าย |
 | เล่น 2 คน | [/editor.html?play=2](https://natstpt.github.io/makrukthai/editor.html?play=2) | เล่นกันสองคนในเครื่องเดียว พร้อมระบบนับตามกติกา |
@@ -147,7 +149,9 @@ for f in tests/*.test.cjs; do node "$f" || echo "FAIL $f"; done
 
 | ไฟล์ | หน้าที่ |
 | --- | --- |
-| `index.html` | หน้าบทเรียนทั้งหมด (HTML, CSS และโค้ดของบทเรียนอยู่ในไฟล์เดียว) |
+| `index.html` | หน้าหลัก: การ์ดไปบทเรียน, เล่นกับ AI และโจทย์รุกจน |
+| `learn/index.html` | หน้าบทเรียนทั้งหมด (HTML, CSS และโค้ดของบทเรียนอยู่ในไฟล์เดียว) ใช้ `<base href="../">` จึงโหลดไฟล์จากรากเว็บ |
+| `puzzle/` | หน้าโจทย์รุกจน: `index.html` + `puzzle.js` (หน้าจอ), `puzzle-core.js` (เลือกโจทย์ ตรวจตา เหตุผลเมื่อเดินผิด) และ `mate-puzzles.js` **สร้างอัตโนมัติ** ด้วย `node scripts/build-mate-puzzles.cjs` |
 | `editor.html` · `editor.js` · `editor.css` | หน้าตั้งหมาก, เล่น 2 คน, เล่นกับ AI, ถอดหมาก และวิเคราะห์การเดิน |
 | `ai/index.html` | หน้า /ai **สร้างอัตโนมัติ** จาก `editor.html` ด้วย `scripts/build-ai-page.cjs` ห้ามแก้ด้วยมือ |
 
@@ -191,7 +195,7 @@ for f in tests/*.test.cjs; do node "$f" || echo "FAIL $f"; done
 | อยากทำ | ทำอย่างไร |
 | --- | --- |
 | แก้ `editor.html` / `editor.js` / `editor.css` / `engine-ai.js` / `makruk-play.js` | แก้เสร็จแล้วรัน `node scripts/build-ai-page.cjs` เพื่อสร้างหน้า /ai ใหม่ และเปลี่ยนเลข `?v=` ของไฟล์ที่แก้ใน `editor.html` เพื่อล้าง cache ของผู้ใช้ |
-| แก้ไฟล์ JS ที่ `index.html` โหลด | เปลี่ยนเลข `?v=` ของไฟล์นั้นใน `index.html` |
+| แก้ไฟล์ JS ที่ `learn/index.html` โหลด | เปลี่ยนเลข `?v=` ของไฟล์นั้นใน `learn/index.html` |
 | แก้ตำแหน่งหรือข้อความที่ใช้สร้างแบบฝึก | `node scripts/build-practice-sets.cjs` |
 | แก้โจทย์กลยุทธ์ | `node scripts/build-tactic-trees.cjs` |
 | แก้โจทย์ไล่จนสั้น (กลสั้น) | `node scripts/build-puzzle-trees.cjs` |

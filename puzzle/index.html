@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <base href="../">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#272119">
+  <meta name="description" content="โจทย์รุกจนหมากรุกไทย จนใน 1, 2 และ 3 ตา จากตารางท้ายเกม สำหรับเด็กประถม">
+  <title>โจทย์รุกจน | Makruk Learn</title>
+  <style>
+    :root{
+      --bg:#2e271d;--panel:#262018;--panel2:#332b20;--ink:#f7f5ec;--muted:#d8bf99;
+      --board:#efd783;--boardLine:#24200f;--arrow:#9e8c44;
+      --accent:#c69a29;--gold:#f2c14e;--danger:#e0635f;--good:#5fae4b;--line:#473d2d;
+      --font:"Noto Sans Thai","Leelawadee UI",Tahoma,sans-serif;
+      --boardSize:min(100vw,calc(100vh - 330px - env(safe-area-inset-bottom)),640px);
+    }
+    @supports(height:100dvh){:root{--boardSize:min(100vw,calc(100dvh - 330px - env(safe-area-inset-bottom)),640px)}}
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0}
+    body{font-family:var(--font);background:var(--bg);color:var(--ink);overflow:hidden;-webkit-tap-highlight-color:transparent}
+    button{font-family:inherit}
+    .app{height:100%;display:flex;flex-direction:column;align-items:center}
+    .head{width:100%;display:flex;align-items:center;justify-content:space-between;padding:8px 10px;min-height:52px}
+    .head h1{margin:0;font-size:20px;font-weight:950;display:flex;align-items:center;gap:8px}
+    .head h1 img{width:30px;height:30px;border-radius:8px;background:var(--board);padding:2px}
+    .iconBtn{width:44px;height:44px;border-radius:12px;border:0;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer;text-decoration:none}
+    .iconBtn:hover,.iconBtn:focus-visible{background:var(--panel2);color:var(--ink);outline:none}
+    .iconBtn svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+    .coach{width:var(--boardSize);display:flex;align-items:flex-end;gap:10px;padding:4px 8px 10px;min-height:96px}
+    .coach img{width:72px;height:72px;border-radius:50%;object-fit:cover;flex-shrink:0;background:#1f1a12;border:2px solid var(--line)}
+    .speech{flex:1;min-width:0;background:var(--ink);color:#2b2214;border-radius:16px;padding:10px 14px;position:relative;min-height:62px;transition:opacity .2s}
+    .speech:before{content:"";position:absolute;left:-9px;bottom:18px;border:9px solid transparent;border-right-color:var(--ink);border-left:0}
+    .speech.dim{opacity:.72}
+    .say1{display:flex;align-items:center;gap:7px;font-weight:900;font-size:16px}
+    .say2{font-size:15px;line-height:1.45;margin-top:2px;color:#4b3c22}
+    .turnBox{width:16px;height:16px;border-radius:4px;border:2px solid #2b2214;flex-shrink:0}
+    .turnBox.white{background:#fff}.turnBox.black{background:#c63a2e}
+    html.blackPieces .turnBox.black{background:#222}
+    .mark{width:20px;height:20px;flex-shrink:0}
+    .boardWrap{width:var(--boardSize);height:var(--boardSize);position:relative;flex-shrink:0;user-select:none;-webkit-user-select:none;touch-action:none}
+    .board{display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);width:100%;height:100%;background:var(--board);outline:1.5px solid var(--boardLine);box-shadow:0 12px 38px rgba(0,0,0,.25)}
+    .sq{position:relative;border:0;border-right:1.5px solid var(--boardLine);border-bottom:1.5px solid var(--boardLine);background:transparent;padding:0;display:grid;place-items:center;min-width:0;min-height:0;overflow:visible;cursor:default}
+    .sq.c7{border-right:0}.sq.r7{border-bottom:0}
+    .sq.mine{cursor:grab}.sq.dest{cursor:pointer}
+    .sq.last{background:rgba(158,140,68,.22)}
+    .sq.sel{background:rgba(242,193,78,.45);box-shadow:inset 0 0 0 3px var(--accent)}
+    .sq.hint{background:rgba(242,193,78,.55);box-shadow:inset 0 0 0 4px #e2a400;animation:pulse 1.1s ease-in-out infinite alternate}
+    @keyframes pulse{to{box-shadow:inset 0 0 0 7px #e2a400}}
+    .sq.dest:after{content:"";position:absolute;width:24%;aspect-ratio:1;border-radius:50%;background:rgba(75,61,40,.42);z-index:5;pointer-events:none}
+    .sq.dest.cap:after{width:auto;inset:8%;background:transparent;border:4px solid rgba(111,90,60,.72)}
+    .sq.wrongTo{background:rgba(224,99,95,.45)}
+    .sq.good{background:rgba(95,174,75,.45)}
+    .sq.check{background:radial-gradient(circle,rgba(224,60,50,.75) 0,rgba(224,60,50,.25) 60%,transparent 72%)}
+    .sq.over{box-shadow:inset 0 0 0 4px #7d6016}
+    .coord{position:absolute;font-size:clamp(10px,2.4vw,15px);font-weight:800;color:#665a29;opacity:.85;pointer-events:none;z-index:2}
+    .coord.rank{left:3px;top:1px}.coord.file{right:3px;bottom:0}
+    .piece{position:absolute;inset:6%;z-index:4;pointer-events:none}
+    .piece img{width:100%;height:100%;display:block;object-fit:contain}
+    .sq.lift .piece{opacity:.25}
+    .badge{position:absolute;right:-9%;top:-9%;width:44%;height:44%;z-index:8;pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))}
+    .ghost{position:fixed;z-index:50;pointer-events:none;transform:translate(-50%,-50%)}
+    .ghost img{width:100%;height:100%}
+    .arrows{position:absolute;inset:0;z-index:7;pointer-events:none}
+    .stats{width:var(--boardSize);padding:10px 10px 0}
+    .statRow{display:flex;align-items:center;justify-content:space-between;font-weight:900}
+    .count{font-size:19px}.count small{color:var(--muted);font-weight:700;font-size:14px;margin-left:6px}
+    .clock{display:flex;align-items:center;gap:5px;color:var(--muted);font-variant-numeric:tabular-nums}
+    .clock svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2}
+    .track{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;margin-top:8px}
+    .track i{height:8px;border-radius:99px;background:var(--panel2)}
+    .track i.ok{background:var(--good)}.track i.hint{background:var(--gold)}.track i.miss{background:var(--danger)}
+    .track i.now{background:#8d7e40;box-shadow:0 0 0 2px var(--accent)}
+    .bar{width:var(--boardSize);display:flex;align-items:center;gap:6px;padding:10px 6px calc(10px + env(safe-area-inset-bottom));margin-top:auto}
+    .tool{flex:1;min-width:0;border:0;background:transparent;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;font-size:13px;font-weight:700;padding:6px 2px;border-radius:12px;cursor:pointer}
+    .tool svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+    .tool:hover:not(:disabled),.tool:focus-visible{background:var(--panel2);color:var(--ink);outline:none}
+    .tool:disabled{opacity:.35;cursor:default}
+    .big{flex:1.6;border:0;border-radius:14px;font-size:20px;font-weight:950;padding:13px 8px;cursor:pointer;color:#fff;box-shadow:0 4px 0 rgba(0,0,0,.28)}
+    .big:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.28)}
+    .big.go{background:var(--good)}.big.retry{background:var(--danger)}
+    dialog{border:0;border-radius:20px;background:var(--panel);color:var(--ink);padding:0;width:min(560px,calc(100vw - 24px));max-height:calc(100dvh - 24px);box-shadow:0 30px 80px rgba(0,0,0,.5)}
+    dialog::backdrop{background:rgba(10,8,5,.6)}
+    .dlg{display:flex;flex-direction:column;max-height:calc(100dvh - 24px)}
+    .dlgHead{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 6px}
+    .dlgHead h2{margin:0;font-size:20px}
+    .dlgBody{padding:4px 16px 12px;overflow:auto}
+    .dlgBody h3{font-size:15px;color:var(--muted);margin:14px 0 8px}
+    .note{font-size:13px;color:var(--muted);margin:6px 0 0}
+    .chips{display:flex;flex-wrap:wrap;gap:8px}
+    .chip{border:2px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:14px;padding:8px 12px;font-size:15px;font-weight:800;cursor:pointer}
+    .chip[aria-pressed="true"]{border-color:var(--gold);background:#4a3c1f}
+    .chip[aria-pressed="false"]{opacity:.55}
+    .chip[aria-pressed="true"]:before{content:"✓ ";color:var(--gold)}
+    .setChip[aria-pressed="true"]:before{content:none}
+    .sets{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:8px}
+    .setChip{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;padding:8px 6px}
+    .setChip .pics{display:flex;align-items:center;gap:1px;height:34px}
+    .setChip .pics img{width:28px;height:28px}
+    .setChip .vs{font-size:11px;color:var(--muted);margin:0 3px}
+    .setChip small{font-weight:600;color:var(--muted);font-size:12px}
+    .setChip.none{opacity:.45}
+    .dlgFoot{display:flex;gap:8px;padding:12px 16px 16px;border-top:1px solid var(--line);flex-wrap:wrap}
+    .btn{border:0;border-radius:12px;padding:11px 16px;font-size:16px;font-weight:900;cursor:pointer;background:var(--panel2);color:var(--ink)}
+    .btn.main{background:var(--good);color:#fff;margin-left:auto}
+    .btn:disabled{opacity:.4;cursor:default}
+    .sum{text-align:center;padding:22px 18px 6px}
+    .sum img{width:96px;height:96px;border-radius:50%;object-fit:cover;border:3px solid var(--line)}
+    .sum h2{margin:10px 0 4px;font-size:26px}
+    .sum p{margin:4px 0;color:var(--muted);font-size:16px}
+    .dots{display:flex;justify-content:center;gap:5px;margin:14px 0 4px;flex-wrap:wrap}
+    .dots i{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:13px;font-weight:900;color:#fff}
+    .dots i.ok{background:var(--good)}.dots i.hint{background:var(--gold);color:#2b2214}.dots i.miss{background:var(--danger)}
+    .empty{padding:30px 16px;text-align:center;color:var(--muted)}
+    @media (min-width:900px) and (min-height:760px){
+      :root{--boardSize:min(calc(100vh - 330px),680px)}
+      .coach img{width:84px;height:84px}
+    }
+  </style>
+  <script src="piece-colors.js?v=20261014-preload"></script>
+</head>
+<body>
+<div class="app">
+  <header class="head">
+    <a class="iconBtn" href="./" aria-label="กลับหน้าหลัก" title="หน้าหลัก"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></a>
+    <h1><img src="assets/images/lessons/mate.svg" alt="">โจทย์รุกจน</h1>
+    <button type="button" class="iconBtn" id="settingsBtn" aria-label="ตั้งค่าโจทย์ (สำหรับครู)" title="ตั้งค่าโจทย์ (สำหรับครู)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+  </header>
+  <section class="coach" aria-live="polite">
+    <img src="assets/images/lesson-guide.webp" width="384" height="384" alt="" decoding="async">
+    <div class="speech" id="speech"><div class="say1" id="say1"></div><div class="say2" id="say2"></div></div>
+  </section>
+  <div class="boardWrap" id="boardWrap">
+    <div class="board" id="board" role="grid" aria-label="กระดานโจทย์"></div>
+    <svg class="arrows" id="arrows" viewBox="0 0 8 8" aria-hidden="true"></svg>
+  </div>
+  <section class="stats">
+    <div class="statRow"><div class="count" id="count"></div><div class="clock"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span id="clock">0:00</span></div></div>
+    <div class="track" id="track" aria-hidden="true"></div>
+  </section>
+  <nav class="bar" id="bar"></nav>
+</div>
+
+<dialog id="settings" aria-labelledby="settingsTitle">
+  <form method="dialog" class="dlg" id="settingsForm">
+    <div class="dlgHead"><h2 id="settingsTitle">ตั้งค่าโจทย์ (ครู)</h2><button class="iconBtn" value="cancel" aria-label="ปิด"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="dlgBody">
+      <h3>จำนวนตาที่จน</h3>
+      <div class="chips" id="mateChips"></div>
+      <h3>ชุดหมาก (ฝ่ายรุก ปะทะ ฝ่ายรับ)</h3>
+      <div class="chips" style="margin-bottom:8px"><button type="button" class="chip" id="allSets">เลือกทั้งหมด</button><button type="button" class="chip" id="noSets">ไม่เลือกเลย</button></div>
+      <div class="sets" id="setChips"></div>
+      <p class="note">ค่าที่ตั้งใช้กับหน้านี้จนกว่าจะปิดหรือโหลดหน้าใหม่ · เล่นชุดละ 10 ข้อ เรียงจากง่ายไปยาก</p>
+    </div>
+    <div class="dlgFoot"><button class="btn" value="cancel">ยกเลิก</button><button class="btn main" id="applySettings" value="apply">เริ่มชุดใหม่</button></div>
+  </form>
+</dialog>
+
+<dialog id="summary" aria-labelledby="sumTitle">
+  <div class="dlg">
+    <div class="sum">
+      <img src="assets/images/lesson-guide.webp" alt="">
+      <h2 id="sumTitle"></h2>
+      <div class="dots" id="sumDots"></div>
+      <p id="sumText"></p>
+      <p id="sumTime"></p>
+    </div>
+    <div class="dlgFoot"><a class="btn" href="./" style="text-decoration:none">หน้าหลัก</a><button class="btn" id="sumSettings">ตั้งค่า</button><button class="btn main" id="sumAgain">เล่นชุดใหม่</button></div>
+  </div>
+</dialog>
+
+<script src="makruk-rules.js?v=20261004-learn"></script>
+<script src="makruk-notation.js?v=20261004-practice5"></script>
+<script src="editor-model.js"></script>
+<script src="puzzle/mate-puzzles.js?v=20261104-puzzle"></script>
+<script src="puzzle/puzzle-core.js?v=20261104-puzzle"></script>
+<script src="puzzle/puzzle.js?v=20261104-puzzle"></script>
+</body>
+</html>
