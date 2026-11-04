@@ -192,6 +192,7 @@ assert(puzzle.includes('id="musicBtn"') && puzzle.includes('id="effectsBtn"'), '
 assert(puzzle.indexOf('src="presentation.js') >= 0 && puzzle.indexOf('src="presentation.js') < puzzle.indexOf('src="puzzle/puzzle.js'), 'the puzzle page loads the sounds before its script');
 const pjs = read('puzzle/puzzle.js');
 for (const kind of ['success', 'failure', 'set', 'perfect']) assert(pjs.includes("'" + kind + "'"), 'the puzzle page plays the ' + kind + ' sound');
+assert(puzzle.includes('id="drawLayer"') && /e\.button === 2/.test(pjs) && /contextmenu/.test(pjs), 'the puzzle page draws arrows and marks with the right mouse button, as the AI page does');
 
 // ---- The local sets against the tables on this computer, when its server runs ----
 (async () => {

@@ -63,6 +63,7 @@
     .sq.good{background:rgba(95,174,75,.45)}
     .sq.check{background:radial-gradient(circle,rgba(224,60,50,.75) 0,rgba(224,60,50,.25) 60%,transparent 72%)}
     .sq.over{box-shadow:inset 0 0 0 4px #7d6016}
+    .sq.marked{background:#ea7a62!important}
     .coord{position:absolute;font-size:clamp(10px,2.4vw,15px);font-weight:800;color:#665a29;opacity:.85;pointer-events:none;z-index:2}
     .coord.rank{left:3px;top:1px}.coord.file{right:3px;bottom:0}
     .piece{position:absolute;inset:6%;z-index:4;pointer-events:none}
@@ -162,6 +163,7 @@
   <div class="boardWrap" id="boardWrap">
     <div class="board" id="board" role="grid" aria-label="กระดานโจทย์"></div>
     <svg class="arrows" id="arrows" viewBox="0 0 8 8" aria-hidden="true"></svg>
+    <svg class="arrows" id="drawLayer" viewBox="0 0 8 8" aria-hidden="true"></svg>
   </div>
   <section class="stats">
     <div class="statRow"><div class="count" id="count"></div><div class="clock"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span id="clock">0:00</span></div></div>
@@ -204,6 +206,6 @@
 <script src="presentation.js?v=20261106-puzzle"></script>
 <script src="puzzle/sets.js?v=20261105-local"></script>
 <script src="puzzle/puzzle-core.js?v=20261105-local"></script>
-<script src="puzzle/puzzle.js?v=20261106-sound"></script>
+<script src="puzzle/puzzle.js?v=20261107-arrows"></script>
 </body>
 </html>
