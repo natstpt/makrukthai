@@ -193,6 +193,16 @@ assert(puzzle.indexOf('src="presentation.js') >= 0 && puzzle.indexOf('src="prese
 const pjs = read('puzzle/puzzle.js');
 for (const kind of ['success', 'failure', 'set', 'perfect']) assert(pjs.includes("'" + kind + "'"), 'the puzzle page plays the ' + kind + ' sound');
 assert(puzzle.includes('id="drawLayer"') && /e\.button === 2/.test(pjs) && /contextmenu/.test(pjs), 'the puzzle page draws arrows and marks with the right mouse button, as the AI page does');
+// The clock runs until the puzzle is done: a wrong move only settles the result, and the clock stops at mate, when the
+// solution is shown or on the next puzzle.
+const fn = name => { const i = pjs.indexOf('function ' + name + '('); assert(i >= 0, name + ' exists'); const j = pjs.indexOf('\n  function ', i + 1); return pjs.slice(i, j < 0 ? undefined : j); };
+assert(!/elapsed|stopClock|times/.test(fn('settle')), 'settling the result does not stop the clock');
+assert(!/stopClock/.test(fn('wrongMove')) && !/stopClock/.test(fn('retry')), 'the clock runs on after a wrong move');
+for (const f of ['solved', 'showSolution', 'nextPuzzle']) assert(/stopClock\(\)/.test(fn(f)), f + ' stops the clock');
+assert(/session\.times\[session\.index\] = cur\.elapsed/.test(fn('stopClock')), 'the stopped time goes to the summary');
+assert(/if \(!cur\.stopped\) cur\.elapsed/.test(fn('tick')), 'the clock counts while not stopped');
+// Wide screens: the board beside a column for the coach, clock and buttons, as big as on the AI page.
+assert(/@media \(min-width:900px\) and \(orientation:landscape\)\{\s*:root\{--boardSize:min\(65vw,70vh/.test(puzzle) && /\.app:not\(\.onMap\)\{display:grid/.test(puzzle), 'wide screens put the board beside the coach column, as big as on the AI page');
 
 // ---- The local sets against the tables on this computer, when its server runs ----
 (async () => {
