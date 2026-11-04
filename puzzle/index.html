@@ -138,6 +138,57 @@
       .setChip .name{grid-area:name;font-size:17px}
       .setChip small{grid-area:count;font-size:14px;text-align:right}
     }
+    /* ---- The level map: numbered stops on a winding road up a gold board, a pawn on the level to play ---- */
+    .map{display:none;flex:1;min-height:0;width:100%;flex-direction:column}
+    .app.onMap .map{display:flex}
+    .app.onMap .coach,.app.onMap .boardWrap,.app.onMap .stats,.app.onMap .bar{display:none}
+    .mapTop{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 14px 10px;width:100%;max-width:560px;margin:0 auto}
+    .rankBox{display:flex;align-items:center;gap:10px;min-width:0}
+    .rankBox img{width:46px;height:46px;border-radius:50%;background:var(--board);padding:4px;border:2px solid var(--accent);flex-shrink:0}
+    .rankBox b{display:block;font-size:18px;font-weight:950;white-space:nowrap}
+    .rankBox small{display:block;color:var(--muted);font-size:14px;font-weight:700}
+    .starTotal{flex-shrink:0;background:var(--panel2);border:2px solid var(--line);border-radius:999px;padding:6px 12px;font-weight:900;font-size:16px;white-space:nowrap}
+    .starTotal b{color:var(--gold)}
+    .mapScroll{flex:1;min-height:0;width:100%;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;
+      background-color:#d2b45c;background-image:repeating-conic-gradient(#dcc06c 0 25%,#c9a851 0 50%);background-size:96px 96px;
+      box-shadow:inset 0 10px 18px -10px rgba(0,0,0,.55),inset 0 -10px 18px -10px rgba(0,0,0,.55)}
+    .mapPath{position:relative;width:100%;max-width:520px;margin:0 auto}
+    .mapPath svg.road{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+    .node{position:absolute;width:64px;height:64px;transform:translate(-50%,50%);border-radius:50%;border:3px solid #5b4719;font:950 23px var(--font);display:grid;place-items:center;cursor:pointer;padding:0;box-shadow:0 6px 0 #5b4719;z-index:2;-webkit-tap-highlight-color:transparent}
+    .node.done{background:#6fbf57;color:#fff;border-color:#2f6b25;box-shadow:0 6px 0 #2f6b25}
+    .node.current{background:var(--gold);color:#2b2214;box-shadow:0 6px 0 #8a6510,0 0 0 6px rgba(255,236,170,.55);animation:glow 1.3s ease-in-out infinite alternate}
+    @keyframes glow{to{box-shadow:0 6px 0 #8a6510,0 0 0 12px rgba(255,236,170,.25)}}
+    .node.locked{background:#b49a5e;color:#6e5a30;border-color:#7c6535;box-shadow:0 6px 0 #7c6535;cursor:default}
+    .node.locked svg{width:22px;height:22px;fill:none;stroke:#6e5a30;stroke-width:2.4;stroke-linecap:round}
+    .node:active:not(.locked){transform:translate(-50%,calc(50% + 3px))}
+    .node .st{position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);font-size:15px;letter-spacing:1px;white-space:nowrap;color:#4c3a12;text-shadow:0 1px 0 rgba(255,255,255,.45)}
+    .node .st i{font-style:normal;color:#8a7546}.node .st i.on{color:#e9a400;text-shadow:0 1px 0 #6b4b00}
+    .node.shake{animation:shake .35s}
+    @keyframes shake{25%{margin-left:-6px}75%{margin-left:6px}}
+    .pawn{position:absolute;width:54px;height:54px;transform:translate(-50%,-6px);z-index:3;pointer-events:none;filter:drop-shadow(0 4px 3px rgba(0,0,0,.4));transition:left .9s ease-in-out,bottom .9s ease-in-out}
+    .pawn img{width:100%;height:100%;animation:bob 1.2s ease-in-out infinite alternate}
+    @keyframes bob{to{transform:translateY(-6px)}}
+    .chapter{position:absolute;left:50%;transform:translate(-50%,50%);background:var(--panel);color:var(--ink);border:2px solid var(--accent);border-radius:14px;padding:6px 14px;text-align:center;white-space:nowrap;z-index:1;box-shadow:0 6px 16px rgba(0,0,0,.3)}
+    .chapter b{display:block;font-size:15px}.chapter small{color:var(--muted);font-size:13px;font-weight:700}
+    .mile{position:absolute;transform:translate(-50%,50%);text-align:center;z-index:1;pointer-events:none}
+    .mile .ped{width:84px;height:84px;border-radius:50%;background:radial-gradient(circle at 50% 35%,#fff6d4,#e6c766 60%,#b8913a);border:3px solid #7b5d1e;display:grid;place-items:center;box-shadow:0 8px 0 #7b5d1e;margin:0 auto}
+    .mile img{width:62px;height:62px}
+    .mile span{display:inline-block;margin-top:10px;background:rgba(38,32,24,.85);color:var(--ink);border-radius:999px;padding:3px 10px;font-size:13px;font-weight:800;white-space:nowrap}
+    .mile.locked .ped{filter:grayscale(1) brightness(.85);opacity:.7}
+    .mapFoot{display:flex;gap:8px;padding:10px 14px calc(10px + env(safe-area-inset-bottom));width:100%;max-width:560px;margin:0 auto}
+    .mapFoot .btn{min-height:50px}
+    .mapFoot .main{flex:1;font-size:19px;margin-left:0}
+    .bigStars{display:flex;justify-content:center;gap:6px;margin:6px 0 2px}
+    .bigStars i{font-style:normal;font-size:48px;line-height:1;color:#5a4b33;transform:scale(0);animation:pop .45s cubic-bezier(.3,1.6,.5,1) forwards}
+    .bigStars i.on{color:var(--gold);text-shadow:0 3px 0 #8a6510}
+    @keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+    .btn.warn{background:#5a2d26;color:#ffd9d3}
+    .rankPic{width:120px!important;height:120px!important;border-radius:50%!important;object-fit:contain!important;background:radial-gradient(circle at 50% 35%,#fff6d4,#e6c766 60%,#b8913a);border:4px solid #7b5d1e!important;padding:14px;animation:pop .6s cubic-bezier(.3,1.6,.5,1) both}
+    .confetti{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+    .confetti i{position:absolute;top:-16px;width:9px;height:14px;border-radius:2px;animation:fall 2.6s linear forwards}
+    @keyframes fall{to{transform:translateY(520px) rotate(720deg);opacity:.2}}
+    #rankUp .sum{position:relative}
+    @media (prefers-reduced-motion:reduce){.pawn{transition:none}.pawn img,.node.current{animation:none}.confetti{display:none}}
     @media (min-width:900px) and (min-height:760px){
       :root{--boardSize:min(calc(100vh - 330px),680px)}
       .coach img{width:84px;height:84px}
@@ -146,9 +197,9 @@
   <script src="piece-colors.js?v=20261014-preload"></script>
 </head>
 <body>
-<div class="app">
+<div class="app onMap" id="app">
   <header class="head">
-    <a class="iconBtn" href="./" aria-label="กลับหน้าหลัก" title="หน้าหลัก"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></a>
+    <a class="iconBtn" href="./" id="backBtn" aria-label="กลับหน้าหลัก" title="หน้าหลัก"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></a>
     <h1><img src="assets/images/lessons/mate.svg" alt="">รุกไล่ปลายกระดาน</h1>
     <div class="headTools">
     <button type="button" class="iconBtn snd" id="musicBtn" data-icon aria-pressed="true" aria-label="ปิดเพลงคลอ" title="เพลงคลอ"><svg class="on" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg><svg class="off" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/><path d="M3 3l18 18"/></svg></button>
@@ -156,6 +207,11 @@
     <button type="button" class="iconBtn" id="settingsBtn" aria-label="ตั้งค่า" title="ตั้งค่า"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
     </div>
   </header>
+  <section class="map" id="map" aria-label="แผนที่ด่าน">
+    <div class="mapTop"><div class="rankBox"><img id="rankPic" src="" alt=""><div><b id="rankName"></b><small id="lvText"></small></div></div><div class="starTotal" aria-label="ดาวที่เก็บได้"><b>★</b> <span id="starTotal">0</span></div></div>
+    <div class="mapScroll" id="mapScroll"><div class="mapPath" id="mapPath"></div></div>
+    <div class="mapFoot"><button type="button" class="btn" id="freeBtn">ฝึกอิสระ</button><button type="button" class="btn main" id="playBtn">เล่นด่าน 1</button></div>
+  </section>
   <section class="coach" aria-live="polite">
     <img src="assets/images/lesson-guide.webp" width="384" height="384" alt="" decoding="async">
     <div class="speech" id="speech"><div class="say1" id="say1"></div><div class="say2" id="say2"></div></div>
@@ -181,9 +237,12 @@
       <h3>ชุดหมาก (ฝ่ายรุก ปะทะ ฝ่ายรับ)</h3>
       <div class="chips" style="margin-bottom:8px"><button type="button" class="chip" id="allSets">เลือกทั้งหมด</button><button type="button" class="chip" id="noSets">ไม่เลือกเลย</button></div>
       <div id="setChips"></div>
-      <p class="note">ค่าที่ตั้งใช้กับหน้านี้จนกว่าจะปิดหรือโหลดหน้าใหม่ · เล่นชุดละ 10 ข้อ เรียงจากง่ายไปยาก</p>
+      <h3>ด่าน</h3>
+      <button type="button" class="btn warn" id="resetLevels">เริ่มด่านใหม่ตั้งแต่ด่าน 1</button>
+      <p class="note">ปุ่มนี้ลบดาวและด่านที่ผ่านแล้วในเครื่องนี้ เหมาะกับเครื่องที่เด็กใช้สลับกัน</p>
+      <p class="note">จำนวนตาและชุดหมากใช้กับโหมดฝึกอิสระ (ไม่นับด่าน) จนกว่าจะปิดหรือโหลดหน้าใหม่ · เล่นชุดละ 10 ข้อ เรียงจากง่ายไปยาก</p>
     </div>
-    <div class="dlgFoot"><button class="btn" value="cancel">ยกเลิก</button><button class="btn main" id="applySettings" value="apply">เริ่มชุดใหม่</button></div>
+    <div class="dlgFoot"><button class="btn" value="cancel">ยกเลิก</button><button class="btn main" id="applySettings" value="apply">เริ่มฝึกอิสระ</button></div>
   </form>
 </dialog>
 
@@ -192,11 +251,24 @@
     <div class="sum">
       <img src="assets/images/lesson-guide.webp" alt="">
       <h2 id="sumTitle"></h2>
+      <div class="bigStars" id="sumStars" hidden></div>
       <div class="dots" id="sumDots"></div>
       <p id="sumText"></p>
       <p id="sumTime"></p>
     </div>
-    <div class="dlgFoot"><a class="btn" href="./" style="text-decoration:none">หน้าหลัก</a><button class="btn" id="sumSettings">ตั้งค่า</button><button class="btn main" id="sumAgain">เล่นชุดใหม่</button></div>
+    <div class="dlgFoot"><button class="btn" id="sumMap">แผนที่</button><button class="btn" id="sumSettings">ตั้งค่า</button><button class="btn" id="sumAgain">เล่นซ้ำ</button><button class="btn main" id="sumNext">ด่านถัดไป</button></div>
+  </div>
+</dialog>
+
+<dialog id="rankUp" aria-labelledby="rankTitle">
+  <div class="dlg">
+    <div class="sum">
+      <div class="confetti" id="confetti"></div>
+      <img class="rankPic" id="rankUpPic" src="" alt="">
+      <h2 id="rankTitle">เลื่อนยศ!</h2>
+      <p id="rankUpText"></p>
+    </div>
+    <div class="dlgFoot"><button class="btn main" id="rankOk">ไปต่อ</button></div>
   </div>
 </dialog>
 
@@ -206,6 +278,8 @@
 <script src="presentation.js?v=20261106-puzzle"></script>
 <script src="puzzle/sets.js?v=20261105-local"></script>
 <script src="puzzle/puzzle-core.js?v=20261105-local"></script>
-<script src="puzzle/puzzle.js?v=20261107-arrows"></script>
+<script src="puzzle/levels.js?v=20261107-levels"></script>
+<script src="puzzle/progress.js?v=20261107-levels"></script>
+<script src="puzzle/puzzle.js?v=20261107-levels"></script>
 </body>
 </html>

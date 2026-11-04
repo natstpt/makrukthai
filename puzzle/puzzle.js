@@ -2,7 +2,10 @@
  * puzzle/sets.js and puzzle/sets/<id>.json (scripts/build-mate-puzzles.cjs; only the files of the sets a round uses are
  * fetched), laid out like a phone puzzle app: the guide says whose move
  * it is and what to find, the board, a clock and progress, and the tools along the bottom.
- * The settings (the gear, for teachers) pick the mate counts and piece sets; they are not remembered. */
+ * The page opens on the level map (puzzle/levels.js, scripts/build-puzzle-levels.cjs): 60 levels in 6 chapters, then
+ * endless ones, each a set of 10; stars, LV and the learner's title are kept on this device by puzzle/progress.js.
+ * The settings (the gear, for teachers) pick the mate counts and piece sets of free practice, which counts no level;
+ * they are not remembered. */
 (function () {
   'use strict';
   var R = window.MakrukRules, N = window.MakrukNotation, E = window.MakrukEditor, C = window.MakrukPuzzleCore;
@@ -18,6 +21,8 @@
   // By default every set but those where the defender has two pieces.
   var filters = { mates: [1, 2, 3], sets: DATA.sets.filter(function (s) { return s.on; }).map(function (s) { return s.id; }) };
   var session = null, cur = null, timer = null, busy = 0, files = {}, round = 0;
+  var LEVELS = window.MakrukPuzzleLevels, P = window.MakrukPuzzleProgress, progress = P.load();
+  var MAP_LEVELS = LEVELS.levels.length, ALL_SETS = DATA.sets.map(function (s) { return s.id; });
   // Music and sound effects, shared with the AI and lesson pages (presentation.js; on or off is remembered there).
   var sound = window.MakrukPresentation ? window.MakrukPresentation.create({ board: $('board'), wrap: $('boardWrap') }) : null;
   // A move's sound, with the check chime when it gives check (not for the mating move, which gets the success sound).
@@ -37,8 +42,18 @@
     }).catch(function (e) { delete files[id]; throw e; });
     return files[id];
   }
-  function newSession() {
-    var slots = C.plan(DATA, filters), mine = ++round;
+  // What to play: {level: n} (a level of the map; past the last one, an endless level drawn at random from every set)
+  // or {free: true} (free practice with the settings' filters).
+  var last = { free: true };
+  function slotsFor(spec) {
+    if (spec.free) return C.plan(DATA, filters);
+    if (spec.level <= MAP_LEVELS) return LEVELS.levels[spec.level - 1].slots.map(function (x) { return { set: x[0], mate: x[1], i: x[2] }; });
+    return C.plan(DATA, { mates: [1, 2, 3], sets: ALL_SETS });
+  }
+  function newSession(spec) {
+    spec = spec || last; last = spec; walkFrom = null;
+    showPlay();
+    var slots = slotsFor(spec), mine = ++round;
     clearInterval(timer); cur = null;
     if (!slots.length) { session = null; renderEmpty(); return; }
     say('กำลังเตรียมโจทย์…', ''); $('bar').innerHTML = '';
@@ -47,7 +62,7 @@
       if (mine !== round) return;
       var got = {};
       ids.forEach(function (id, i) { got[id] = lists[i]; });
-      session = { list: C.fill(slots, got), index: 0, results: [], times: [] };
+      session = { list: C.fill(slots, got), index: 0, results: [], times: [], level: spec.level || null };
       startPuzzle();
     }, function () {
       if (mine !== round) return;
@@ -297,7 +312,7 @@
   }
   function renderStats() {
     var done = session.results.filter(function (r) { return r === 'ok' || r === 'hint'; }).length;
-    $('count').innerHTML = 'ข้อ ' + (session.index + 1) + '/' + session.list.length + '<small>แก้ได้ ' + done + ' · จนใน ' + cur.p.mate + ' ตา</small>';
+    $('count').innerHTML = 'ข้อ ' + (session.index + 1) + '/' + session.list.length + '<small>' + (session.level ? 'ด่าน ' + session.level + ' · ' : '') + 'แก้ได้ ' + done + ' · จนใน ' + cur.p.mate + ' ตา</small>';
     var t = '';
     for (var i = 0; i < session.list.length; i++) t += '<i class="' + (session.results[i] || (i === session.index ? 'now' : '')) + '"></i>';
     $('track').innerHTML = t;
@@ -329,20 +344,140 @@
   function renderEmpty() {
     clearInterval(timer);
     $('board').innerHTML = ''; $('arrows').innerHTML = ''; $('bar').innerHTML = ''; $('track').innerHTML = ''; $('count').textContent = '';
+    $('clock').textContent = '0:00';
     say('ยังไม่มีโจทย์', 'ตัวกรองที่เลือกไม่มีโจทย์เลย กดปุ่มเฟืองมุมขวาบนเพื่อเลือกใหม่');
   }
+  var pending = null; // after the result: a new title to show before going on
   function finish() {
     clearInterval(timer);
-    var res = session.results, n = session.list.length;
+    var res = session.results, n = session.list.length, lv = session.level;
     var ok = res.filter(function (r) { return r === 'ok'; }).length, hinted = res.filter(function (r) { return r === 'hint'; }).length;
     var total = Math.round(session.times.reduce(function (a, b) { return a + (b || 0); }, 0) / 1000);
-    $('sumTitle').textContent = ok + hinted === n ? 'เยี่ยมมาก! ครบทุกข้อ' : ok + hinted >= n / 2 ? 'เก่งมาก!' : 'สู้ต่อนะ!';
     $('sumDots').innerHTML = res.map(function (r, i) { return '<i class="' + r + '">' + (i + 1) + '</i>'; }).join('');
-    $('sumText').textContent = 'แก้ได้ ' + (ok + hinted) + ' จาก ' + n + ' ข้อ' + (hinted ? ' (ใช้คำใบ้ ' + hinted + ' ข้อ)' : '');
     $('sumTime').textContent = 'เวลารวม ' + Math.floor(total / 60) + ':' + String(total % 60).padStart(2, '0');
+    var stars = $('sumStars');
+    if (lv) {
+      var was = P.current(progress), rec = P.record(progress, lv, res, LEVELS);
+      progress = rec.state; P.save(progress);
+      pending = rec.rankUp;
+      walkFrom = P.current(progress) > was ? was : null;
+      $('sumTitle').textContent = rec.passed ? (rec.stars === 3 ? 'สุดยอด! ผ่านด่าน ' + lv : 'ผ่านด่าน ' + lv + ' แล้ว!') : 'ยังไม่ผ่านด่าน ' + lv;
+      stars.hidden = false;
+      stars.innerHTML = [0, 1, 2].map(function (i) { return '<i class="' + (i < rec.stars ? 'on' : '') + '" style="animation-delay:' + (0.25 + i * 0.35) + 's">★</i>'; }).join('');
+      $('sumText').textContent = 'แก้ได้ ' + (ok + hinted) + ' จาก ' + n + ' ข้อ' + (hinted ? ' (ใช้คำใบ้ ' + hinted + ' ข้อ)' : '') +
+        (rec.passed ? (rec.stars < 3 ? ' · ถูกครบโดยไม่ใช้คำใบ้ได้ 3 ดาว' : '') : ' · ต้องแก้ได้ ' + P.PASS + ' ข้อจึงผ่าน ลองอีกครั้งนะ');
+      $('sumAgain').textContent = 'เล่นซ้ำ';
+      $('sumNext').hidden = !rec.passed; $('sumSettings').hidden = true;
+      $('sumNext').textContent = 'ด่านถัดไป';
+      resultSound(!rec.passed ? 'failure' : rec.stars === 3 ? 'perfect' : 'set');
+    } else {
+      pending = null; walkFrom = null;
+      $('sumTitle').textContent = ok + hinted === n ? 'เยี่ยมมาก! ครบทุกข้อ' : ok + hinted >= n / 2 ? 'เก่งมาก!' : 'สู้ต่อนะ!';
+      stars.hidden = true;
+      $('sumText').textContent = 'แก้ได้ ' + (ok + hinted) + ' จาก ' + n + ' ข้อ' + (hinted ? ' (ใช้คำใบ้ ' + hinted + ' ข้อ)' : '') + ' · ฝึกอิสระ ไม่นับด่าน';
+      $('sumAgain').textContent = 'เล่นชุดใหม่';
+      $('sumNext').hidden = true; $('sumSettings').hidden = false;
+      resultSound(ok + hinted === n ? 'perfect' : 'set');
+    }
     $('summary').showModal();
-    resultSound(ok + hinted === n ? 'perfect' : 'set');
   }
+  // Closes the result, shows a new title first if one was earned, then goes on.
+  function after(fn) {
+    if ($('summary').open) $('summary').close();
+    if (!pending) { fn(); return; }
+    var r = pending; pending = null;
+    $('rankUpPic').src = src(r.piece, 'white');
+    $('rankUpText').textContent = 'ผ่านครบทั้งบทแล้ว ได้ยศใหม่ "' + r.name + '"';
+    var colors = ['#f2c14e', '#5fae4b', '#e0635f', '#f7f5ec', '#c69a29'], html = '';
+    for (var i = 0; i < 40; i++) html += '<i style="left:' + (Math.random() * 100).toFixed(1) + '%;background:' + colors[i % colors.length] + ';animation-delay:' + (Math.random() * 0.8).toFixed(2) + 's"></i>';
+    $('confetti').innerHTML = html;
+    rankThen = fn;
+    $('rankUp').showModal();
+    resultSound('perfect');
+  }
+  var rankThen = null;
+
+  // ---- The level map ----
+  var walkFrom = null; // the level the pawn walks from, just after passing it
+  var SP = 96, GAP = 110, BOTTOM = 150;
+  function stopAt(i) {
+    // Level i (0-based from the bottom): a winding road, a little extra room where a chapter begins.
+    var chapterGaps = Math.floor(i / LEVELS.perChapter);
+    return { x: 50 + 30 * Math.sin(i * 0.85), y: BOTTOM + i * SP + chapterGaps * GAP };
+  }
+  function lockIcon() { return '<svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>'; }
+  function showMap() {
+    round++; clearInterval(timer); cur = null; session = null; busy = 0;
+    $('app').classList.add('onMap');
+    $('backBtn').setAttribute('aria-label', 'กลับหน้าหลัก'); $('backBtn').title = 'หน้าหลัก';
+    renderMap();
+  }
+  function showPlay() {
+    $('app').classList.remove('onMap');
+    $('backBtn').setAttribute('aria-label', 'กลับแผนที่ด่าน'); $('backBtn').title = 'แผนที่ด่าน';
+  }
+  function renderMap() {
+    var now = P.current(progress), rank = P.rank(progress, LEVELS), count = MAP_LEVELS + 1;
+    $('rankPic').src = src(rank.piece, 'white');
+    $('rankName').textContent = rank.name;
+    $('lvText').textContent = 'LV ' + now;
+    $('starTotal').textContent = P.totalStars(progress);
+    $('playBtn').textContent = 'เล่นด่าน ' + now;
+    var top = stopAt(count - 1).y + 150, html = '', road = [];
+    for (var i = 0; i < count; i++) {
+      var n = i < MAP_LEVELS ? i + 1 : Math.max(now, MAP_LEVELS + 1), at = stopAt(i), st = progress.stars[n] || 0;
+      var state = n < now ? 'done' : n === now ? 'current' : 'locked';
+      if (i === MAP_LEVELS && now <= MAP_LEVELS) state = 'locked';
+      road.push(at.x + ',' + (top - at.y));
+      if (i < MAP_LEVELS && i % LEVELS.perChapter === 0) {
+        var ch = LEVELS.chapters[i / LEVELS.perChapter];
+        html += '<div class="chapter" style="bottom:' + (at.y - (SP + GAP) / 2) + 'px"><b>บทที่ ' + (i / LEVELS.perChapter + 1) + ' · ' + ch.title + '</b><small>' + ch.sub + '</small></div>';
+      }
+      if (i === MAP_LEVELS) html += '<div class="chapter" style="bottom:' + (at.y - (SP + GAP) / 2) + 'px"><b>ด่านไม่รู้จบ</b><small>สุ่มจากทุกชุดหมาก</small></div>';
+      var label = state === 'locked' ? lockIcon() : String(n);
+      var stars = i < MAP_LEVELS && state === 'done' ? '<span class="st">' + [1, 2, 3].map(function (k) { return '<i class="' + (k <= st ? 'on' : '') + '">★</i>'; }).join('') + '</span>' : '';
+      html += '<button type="button" class="node ' + state + '" data-level="' + n + '" style="left:' + at.x + '%;bottom:' + at.y + 'px" aria-label="ด่าน ' + n +
+        (state === 'locked' ? ' ยังไม่เปิด' : state === 'done' ? ' ได้ ' + st + ' ดาว' : ' ด่านที่จะเล่น') + '">' + label + stars + '</button>';
+      // The end of a chapter: the piece of the title it gives.
+      if (i < MAP_LEVELS && (i + 1) % LEVELS.perChapter === 0) {
+        var r = LEVELS.ranks[(i + 1) / LEVELS.perChapter], doneCh = P.chaptersDone(progress, LEVELS) >= (i + 1) / LEVELS.perChapter;
+        html += '<div class="mile' + (doneCh ? '' : ' locked') + '" style="left:' + (at.x > 50 ? 20 : 80) + '%;bottom:' + (at.y + 8) + 'px"><div class="ped"><img src="' + src(r.piece, 'white') + '" alt=""></div><span>ยศ ' + r.name + '</span></div>';
+      }
+    }
+    var pawnAt = stopAt(Math.min(now, count) - 1), from = walkFrom ? stopAt(walkFrom - 1) : null;
+    html += '<div class="pawn" id="pawn" style="left:' + (from || pawnAt).x + '%;bottom:' + ((from || pawnAt).y + 28) + 'px"><img src="' + src('pawn', 'white') + '" alt=""></div>';
+    var svg = '<svg class="road" viewBox="0 0 100 ' + top + '" preserveAspectRatio="none" aria-hidden="true"><polyline points="' + road.join(' ') +
+      '" fill="none" stroke="#6b5220" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" opacity=".45"/><polyline points="' + road.join(' ') +
+      '" fill="none" stroke="#fff3c4" stroke-width="3" stroke-dasharray="2 12" stroke-linecap="round" vector-effect="non-scaling-stroke" opacity=".8"/></svg>';
+    $('mapPath').style.height = top + 'px';
+    $('mapPath').innerHTML = svg + html;
+    // Scroll so the level to play sits a little below the middle.
+    var box = $('mapScroll');
+    box.scrollTop = Math.max(0, top - (from || pawnAt).y - box.clientHeight * 0.62);
+    if (from) {
+      walkFrom = null;
+      requestAnimationFrame(function () { requestAnimationFrame(function () {
+        var pw = $('pawn'); if (!pw) return;
+        pw.style.left = pawnAt.x + '%'; pw.style.bottom = (pawnAt.y + 28) + 'px';
+        box.scrollTo({ top: Math.max(0, top - pawnAt.y - box.clientHeight * 0.62), behavior: 'smooth' });
+      }); });
+    }
+  }
+  $('mapPath').addEventListener('click', function (e) {
+    var b = e.target.closest('.node');
+    if (!b) return;
+    var n = Number(b.dataset.level);
+    if (!P.open(progress, n)) { b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); return; }
+    newSession({ level: n });
+  });
+  $('playBtn').addEventListener('click', function () { newSession({ level: P.current(progress) }); });
+  $('freeBtn').addEventListener('click', function () { openSettings(); });
+  // The back arrow: from a set back to the map, from the map to the home page.
+  $('backBtn').addEventListener('click', function (e) {
+    if ($('app').classList.contains('onMap')) return;
+    e.preventDefault();
+    showMap();
+  });
 
   // ---- Input: tap a piece then a square, or drag ----
   var drag = null;
@@ -453,7 +588,7 @@
     }).join('');
     var total = C.available(DATA, draft);
     $('applySettings').disabled = !total;
-    $('applySettings').textContent = total ? 'เริ่มชุดใหม่ (' + Math.min(C.SIZE, total) + ' ข้อ)' : 'ยังไม่มีโจทย์';
+    $('applySettings').textContent = total ? 'เริ่มฝึกอิสระ (' + Math.min(C.SIZE, total) + ' ข้อ)' : 'ยังไม่มีโจทย์';
   }
   var GROUPS = ['ฝ่ายรับเหลือขุนตัวเดียว', 'ฝ่ายรับมีหมาก 1 ตัว', 'ฝ่ายรับมีหมาก 2 ตัว'];
   function setChip(s) {
@@ -477,11 +612,22 @@
   });
   $('settings').addEventListener('close', function () {
     if ($('settings').returnValue !== 'apply' || !C.available(DATA, draft)) return;
-    filters = draft; newSession();
+    filters = draft; newSession({ free: true });
   });
   $('settingsBtn').addEventListener('click', openSettings);
-  $('sumAgain').addEventListener('click', function () { $('summary').close(); newSession(); });
-  $('sumSettings').addEventListener('click', function () { $('summary').close(); openSettings(); });
+  $('sumAgain').addEventListener('click', function () { after(function () { newSession(last); }); });
+  $('sumNext').addEventListener('click', function () { var n = last.level + 1; after(function () { newSession({ level: n }); }); });
+  $('sumMap').addEventListener('click', function () { after(showMap); });
+  $('sumSettings').addEventListener('click', function () { after(openSettings); });
+  $('rankOk').addEventListener('click', function () { $('rankUp').close(); });
+  $('rankUp').addEventListener('close', function () { var fn = rankThen; rankThen = null; if (fn) fn(); });
+  $('summary').addEventListener('cancel', function (e) { e.preventDefault(); after(showMap); });
+  $('resetLevels').addEventListener('click', function () {
+    if (!window.confirm('ลบดาวและด่านที่ผ่านแล้วทั้งหมดในเครื่องนี้ แล้วเริ่มที่ด่าน 1 ใช่ไหม?')) return;
+    progress = P.reset();
+    $('settings').close();
+    showMap();
+  });
 
-  newSession();
+  showMap();
 })();
