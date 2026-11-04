@@ -151,7 +151,7 @@ for f in tests/*.test.cjs; do node "$f" || echo "FAIL $f"; done
 | --- | --- |
 | `index.html` | หน้าหลัก: การ์ดไปบทเรียน, เล่นกับ AI และโจทย์รุกจน |
 | `learn/index.html` | หน้าบทเรียนทั้งหมด (HTML, CSS และโค้ดของบทเรียนอยู่ในไฟล์เดียว) ใช้ `<base href="../">` จึงโหลดไฟล์จากรากเว็บ |
-| `puzzle/` | หน้าโจทย์รุกจน: `index.html` + `puzzle.js` (หน้าจอ), `puzzle-core.js` (เลือกโจทย์ ตรวจตา เหตุผลเมื่อเดินผิด) และ `mate-puzzles.js` **สร้างอัตโนมัติ** ด้วย `node scripts/build-mate-puzzles.cjs` |
+| `puzzle/` | หน้าโจทย์รุกจน: `index.html` + `puzzle.js` (หน้าจอ), `puzzle-core.js` (เลือกโจทย์ ตรวจตา เหตุผลเมื่อเดินผิด) และ `sets.js` + `sets/<ชุด>.json` (โจทย์แยกไฟล์ตามชุด โหลดเฉพาะชุดที่เล่น) **สร้างอัตโนมัติ** ด้วย `node scripts/build-mate-puzzles.cjs` ชุดที่ฝ่ายรับมีหมากหลายชุดสร้างจากตารางในเครื่อง (`tablebase-local/`) ต้องเปิด `makruk-tb serve` ก่อน ขึ้นเว็บเฉพาะโจทย์ ไม่ขึ้นตาราง |
 | `editor.html` · `editor.js` · `editor.css` | หน้าตั้งหมาก, เล่น 2 คน, เล่นกับ AI, ถอดหมาก และวิเคราะห์การเดิน |
 | `ai/index.html` | หน้า /ai **สร้างอัตโนมัติ** จาก `editor.html` ด้วย `scripts/build-ai-page.cjs` ห้ามแก้ด้วยมือ |
 

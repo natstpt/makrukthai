@@ -1,11 +1,12 @@
 /* The puzzle page (https://natstpt.github.io/makrukthai/puzzle): sets of 10 mate-in-1/2/3 puzzles from
- * puzzle/mate-puzzles.js (scripts/build-mate-puzzles.cjs), laid out like a phone puzzle app: the guide says whose move
+ * puzzle/sets.js and puzzle/sets/<id>.json (scripts/build-mate-puzzles.cjs; only the files of the sets a round uses are
+ * fetched), laid out like a phone puzzle app: the guide says whose move
  * it is and what to find, the board, a clock and progress, and the tools along the bottom.
  * The settings (the gear, for teachers) pick the mate counts and piece sets; they are not remembered. */
 (function () {
   'use strict';
   var R = window.MakrukRules, N = window.MakrukNotation, E = window.MakrukEditor, C = window.MakrukPuzzleCore;
-  var DATA = window.MakrukMatePuzzles;
+  var DATA = window.MakrukPuzzleSets;
   var FILE = { king: 'K', rook: 'R', knight: 'N', met: 'Q', khon: 'B', pawn: 'P', promoted: 'F' };
   var THAI_FILES = ['ก', 'ข', 'ค', 'ง', 'จ', 'ฉ', 'ช', 'ญ'];
   var REPLY_DELAY = 550;
@@ -14,15 +15,35 @@
   var prefix = function (side) { return typeof MakrukPieceColors === 'object' ? MakrukPieceColors.prefix(side) : side === 'white' ? 'w' : 'r'; };
   var src = function (piece, side) { return 'assets/pieces/makruk/ada/' + prefix(side) + FILE[piece] + '.svg'; };
 
-  var filters = { mates: [1, 2, 3], sets: DATA.sets.map(function (s) { return s.id; }) };
-  var session = null, cur = null, timer = null, busy = 0;
+  // By default every set but those where the defender has two pieces.
+  var filters = { mates: [1, 2, 3], sets: DATA.sets.filter(function (s) { return s.on; }).map(function (s) { return s.id; }) };
+  var session = null, cur = null, timer = null, busy = 0, files = {}, round = 0;
 
   // ---- A set of 10 ----
+  // The puzzles of a piece set (fetched once).
+  function load(id) {
+    if (!files[id]) files[id] = fetch('puzzle/sets/' + id + '.json?v=20261105-local').then(function (res) {
+      if (!res.ok) throw Error(res.status);
+      return res.json();
+    }).catch(function (e) { delete files[id]; throw e; });
+    return files[id];
+  }
   function newSession() {
-    var list = C.plan(DATA, filters);
-    session = { list: list, index: 0, results: [], times: [] };
-    if (!list.length) { cur = null; renderEmpty(); return; }
-    startPuzzle();
+    var slots = C.plan(DATA, filters), mine = ++round;
+    clearInterval(timer); cur = null;
+    if (!slots.length) { session = null; renderEmpty(); return; }
+    say('กำลังเตรียมโจทย์…', ''); $('bar').innerHTML = '';
+    var ids = slots.map(function (x) { return x.set; }).filter(function (id, i, a) { return a.indexOf(id) === i; });
+    Promise.all(ids.map(load)).then(function (lists) {
+      if (mine !== round) return;
+      var got = {};
+      ids.forEach(function (id, i) { got[id] = lists[i]; });
+      session = { list: C.fill(slots, got), index: 0, results: [], times: [] };
+      startPuzzle();
+    }, function () {
+      if (mine !== round) return;
+      say('โหลดโจทย์ไม่สำเร็จ', 'ตรวจอินเทอร์เน็ตแล้วโหลดหน้านี้ใหม่อีกครั้ง');
+    });
   }
   function startPuzzle() {
     var p = session.list[session.index], st = E.parse(p.fen);
@@ -350,20 +371,33 @@
     $('mateChips').innerHTML = [1, 2, 3].map(function (n) {
       return '<button type="button" class="chip" data-mate="' + n + '" aria-pressed="' + (draft.mates.indexOf(n) >= 0) + '">จนใน ' + n + ' ตา</button>';
     }).join('');
-    $('setChips').innerHTML = DATA.sets.map(function (s) {
-      var n = C.available(DATA, { mates: draft.mates, sets: [s.id] });
-      var pics = '<img src="' + src('king', 'white') + '" alt="">' + s.attack.map(function (p) { return '<img src="' + src(p, 'white') + '" alt="">'; }).join('') +
-        '<span class="vs">ปะทะ</span><img src="' + src('king', 'black') + '" alt="">' + s.defend.map(function (p) { return '<img src="' + src(p, 'black') + '" alt="">'; }).join('');
-      return '<button type="button" class="chip setChip' + (n ? '' : ' none') + '" data-set="' + s.id + '" aria-pressed="' + (draft.sets.indexOf(s.id) >= 0) + '">' +
-        '<span class="pics">' + pics + '</span>' + s.label + (s.defend.length ? '' : ' ปะทะ ขุน') + '<small>' + (n ? n + ' ข้อ' : 'ไม่มีโจทย์ตามจำนวนตาที่เลือก') + '</small></button>';
+    // Grouped by the defender's pieces: none (a lone king), one, two.
+    $('setChips').innerHTML = GROUPS.map(function (title, g) {
+      var list = DATA.sets.filter(function (s) { return s.defend.length === g; });
+      if (!list.length) return '';
+      return '<div class="groupHead"><h4>' + title + '</h4><button type="button" class="chip mini" data-group="' + g + '">' +
+        (list.every(function (s) { return draft.sets.indexOf(s.id) >= 0; }) ? 'ไม่เลือกกลุ่มนี้' : 'เลือกทั้งกลุ่ม') + '</button></div><div class="sets">' + list.map(setChip).join('') + '</div>';
     }).join('');
     var total = C.available(DATA, draft);
     $('applySettings').disabled = !total;
     $('applySettings').textContent = total ? 'เริ่มชุดใหม่ (' + Math.min(C.SIZE, total) + ' ข้อ)' : 'ยังไม่มีโจทย์';
   }
+  var GROUPS = ['ฝ่ายรับเหลือขุนตัวเดียว', 'ฝ่ายรับมีหมาก 1 ตัว', 'ฝ่ายรับมีหมาก 2 ตัว'];
+  function setChip(s) {
+      var n = C.available(DATA, { mates: draft.mates, sets: [s.id] });
+      var pics = '<img src="' + src('king', 'white') + '" alt="">' + s.attack.map(function (p) { return '<img src="' + src(p, 'white') + '" alt="">'; }).join('') +
+        '<span class="vs">ปะทะ</span><img src="' + src('king', 'black') + '" alt="">' + s.defend.map(function (p) { return '<img src="' + src(p, 'black') + '" alt="">'; }).join('');
+      return '<button type="button" class="chip setChip' + (n ? '' : ' none') + '" data-set="' + s.id + '" aria-pressed="' + (draft.sets.indexOf(s.id) >= 0) + '">' +
+        '<span class="pics">' + pics + '</span>' + s.label + (s.defend.length ? '' : ' ปะทะ ขุน') + '<small>' + (n ? n + ' ข้อ' : 'ไม่มีโจทย์ตามจำนวนตาที่เลือก') + '</small></button>';
+  }
   $('settingsForm').addEventListener('click', function (e) {
-    var m = e.target.closest('[data-mate]'), s = e.target.closest('[data-set]');
-    if (m) { toggle(draft.mates, Number(m.dataset.mate)); draft.mates.sort(); renderSettings(); }
+    var m = e.target.closest('[data-mate]'), s = e.target.closest('[data-set]'), g = e.target.closest('[data-group]');
+    if (g) {
+      var ids = DATA.sets.filter(function (x) { return x.defend.length === Number(g.dataset.group); }).map(function (x) { return x.id; });
+      var all = ids.every(function (id) { return draft.sets.indexOf(id) >= 0; });
+      draft.sets = draft.sets.filter(function (id) { return ids.indexOf(id) < 0; }).concat(all ? [] : ids);
+      renderSettings();
+    } else if (m) { toggle(draft.mates, Number(m.dataset.mate)); draft.mates.sort(); renderSettings(); }
     else if (s) { toggle(draft.sets, s.dataset.set); renderSettings(); }
     else if (e.target.id === 'allSets') { draft.sets = DATA.sets.map(function (x) { return x.id; }); renderSettings(); }
     else if (e.target.id === 'noSets') { draft.sets = []; renderSettings(); }

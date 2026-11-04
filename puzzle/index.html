@@ -101,6 +101,10 @@
     .setChip .vs{font-size:11px;color:var(--muted);margin:0 3px}
     .setChip small{font-weight:600;color:var(--muted);font-size:12px}
     .setChip.none{opacity:.45}
+    .groupHead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:14px 0 8px}
+    .groupHead h4{margin:0;font-size:15px}
+    .chip.mini{padding:5px 10px;font-size:13px}
+    .chip.mini:before{content:none}
     .dlgFoot{display:flex;gap:8px;padding:12px 16px 16px;border-top:1px solid var(--line);flex-wrap:wrap}
     .btn{border:0;border-radius:12px;padding:11px 16px;font-size:16px;font-weight:900;cursor:pointer;background:var(--panel2);color:var(--ink)}
     .btn.main{background:var(--good);color:#fff;margin-left:auto}
@@ -150,7 +154,7 @@
       <div class="chips" id="mateChips"></div>
       <h3>ชุดหมาก (ฝ่ายรุก ปะทะ ฝ่ายรับ)</h3>
       <div class="chips" style="margin-bottom:8px"><button type="button" class="chip" id="allSets">เลือกทั้งหมด</button><button type="button" class="chip" id="noSets">ไม่เลือกเลย</button></div>
-      <div class="sets" id="setChips"></div>
+      <div id="setChips"></div>
       <p class="note">ค่าที่ตั้งใช้กับหน้านี้จนกว่าจะปิดหรือโหลดหน้าใหม่ · เล่นชุดละ 10 ข้อ เรียงจากง่ายไปยาก</p>
     </div>
     <div class="dlgFoot"><button class="btn" value="cancel">ยกเลิก</button><button class="btn main" id="applySettings" value="apply">เริ่มชุดใหม่</button></div>
@@ -173,8 +177,8 @@
 <script src="makruk-rules.js?v=20261004-learn"></script>
 <script src="makruk-notation.js?v=20261004-practice5"></script>
 <script src="editor-model.js"></script>
-<script src="puzzle/mate-puzzles.js?v=20261104-puzzle"></script>
-<script src="puzzle/puzzle-core.js?v=20261104-puzzle"></script>
-<script src="puzzle/puzzle.js?v=20261104-puzzle"></script>
+<script src="puzzle/sets.js?v=20261105-local"></script>
+<script src="puzzle/puzzle-core.js?v=20261105-local"></script>
+<script src="puzzle/puzzle.js?v=20261105-local"></script>
 </body>
 </html>
