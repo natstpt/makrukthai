@@ -76,7 +76,7 @@
       p: p, side: st.turn, start: st.pieces, pieces: st.pieces, node: p.tree, left: p.mate,
       history: [{ pieces: st.pieces, last: null, node: p.tree, left: p.mate }], view: 0,
       phase: 'play', hint: 0, hinted: false, failed: false, selected: null, wrong: null, reply: null, mated: false,
-      began: Date.now(), elapsed: 0, result: null, lines: []
+      began: Date.now(), elapsed: 0, stopped: false, result: null, lines: []
     };
     say(turnLine(), goalText());
     tick(); clearInterval(timer); timer = setInterval(tick, 1000);
@@ -97,15 +97,20 @@
   };
   function tick() {
     if (!cur) return;
-    if (!cur.result) cur.elapsed = Date.now() - cur.began;
+    if (!cur.stopped) cur.elapsed = Date.now() - cur.began;
     var s = Math.floor(cur.elapsed / 1000);
     $('clock').textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
   }
   // The first try decides the result: right with no hint (ok), right with a hint (hint) or not right (miss).
+  // The clock is apart from it: it runs on after a wrong move and stops only when the puzzle is done (mate,
+  // the solution shown or the next puzzle), so the time is how long the learner took over the whole puzzle.
   function settle(result) {
     if (cur.result) return;
-    cur.result = result; cur.elapsed = Date.now() - cur.began;
-    session.results[session.index] = result; session.times[session.index] = cur.elapsed;
+    cur.result = result; session.results[session.index] = result;
+  }
+  function stopClock() {
+    if (cur.stopped) return;
+    cur.stopped = true; cur.elapsed = Date.now() - cur.began; session.times[session.index] = cur.elapsed;
     tick();
   }
 
@@ -146,7 +151,7 @@
   }
   function solved() {
     cur.phase = 'solved'; cur.mated = true;
-    settle(cur.failed ? 'miss' : cur.hinted ? 'hint' : 'ok');
+    settle(cur.failed ? 'miss' : cur.hinted ? 'hint' : 'ok'); stopClock();
     var title = cur.failed ? 'แก้ได้แล้ว' : cur.hinted ? 'แก้ได้ด้วยคำใบ้' : 'แก้ได้แล้ว! เก่งมาก';
     var more = cur.failed ? 'ครั้งหน้าลองให้ได้ตั้งแต่ครั้งแรกนะ' : cur.hinted ? 'ลองจำรูปแบบนี้ไว้นะ' : 'รุกจนสวยมาก';
     say(MARK.ok + title, more + ' · ' + cur.lines.join(' · '));
@@ -182,7 +187,7 @@
   // Plays the book line from where the learner is (before a wrong move).
   function showSolution() {
     if (cur.wrong) { cur.pieces = cur.wrong.before; cur.wrong = null; cur.reply = null; cur.lines.pop(); }
-    settle('miss');
+    settle('miss'); stopClock();
     cur.phase = 'show'; cur.hint = 0;
     var steps = C.line(cur.node);
     say(MARK.hint + 'เฉลย', 'ดูให้ดีนะ');
@@ -211,13 +216,14 @@
     render();
   }
   function restart() {
-    var keep = { result: cur.result, elapsed: cur.elapsed };
+    var keep = { result: cur.result, elapsed: cur.elapsed, stopped: cur.stopped };
     startPuzzle();
-    cur.result = keep.result; cur.elapsed = keep.elapsed; cur.failed = keep.result === 'miss'; cur.hinted = keep.result === 'hint';
+    cur.result = keep.result; cur.elapsed = keep.elapsed; cur.stopped = keep.stopped; cur.began = Date.now() - keep.elapsed; cur.failed = keep.result === 'miss'; cur.hinted = keep.result === 'hint';
     tick();
   }
   function nextPuzzle() {
     if (!cur.result) settle('miss');
+    stopClock();
     if (session.index + 1 >= session.list.length) { finish(); return; }
     session.index++; startPuzzle();
   }

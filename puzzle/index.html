@@ -189,8 +189,19 @@
     @keyframes fall{to{transform:translateY(520px) rotate(720deg);opacity:.2}}
     #rankUp .sum{position:relative}
     @media (prefers-reduced-motion:reduce){.pawn{transition:none}.pawn img,.node.current{animation:none}.confetti{display:none}}
-    @media (min-width:900px) and (min-height:760px){
-      :root{--boardSize:min(calc(100vh - 330px),680px)}
+    /* Wide screens: the board on the left as big as on the AI page (min(65vw, 70dvh)), the coach, the clock and the
+       buttons in a column beside it, so nothing below the board takes its height. */
+    @media (min-width:900px) and (orientation:landscape){
+      :root{--boardSize:min(65vw,70vh,calc(100vw - 440px))}
+      @supports(height:100dvh){:root{--boardSize:min(65vw,70dvh,calc(100vw - 440px))}}
+      .app:not(.onMap){display:grid;grid-template-columns:var(--boardSize) minmax(300px,380px);grid-template-rows:auto auto auto auto 1fr;column-gap:28px;justify-content:center;align-content:start;align-items:start}
+      .app:not(.onMap) .head{grid-column:1/-1}
+      .app:not(.onMap) .boardWrap{grid-column:1;grid-row:2/6;margin-top:8px}
+      .app:not(.onMap) .coach,.app:not(.onMap) .stats,.app:not(.onMap) .bar{grid-column:2;width:auto}
+      .app:not(.onMap) .coach{grid-row:2;align-items:flex-start;padding:8px 0 6px}
+      .app:not(.onMap) .speech:before{bottom:auto;top:26px}
+      .app:not(.onMap) .stats{grid-row:3;padding:14px 4px 0}
+      .app:not(.onMap) .bar{grid-row:4;margin-top:0;padding:18px 0 10px}
       .coach img{width:84px;height:84px}
     }
   </style>
@@ -280,6 +291,6 @@
 <script src="puzzle/puzzle-core.js?v=20261105-local"></script>
 <script src="puzzle/levels.js?v=20261107-levels"></script>
 <script src="puzzle/progress.js?v=20261107-levels"></script>
-<script src="puzzle/puzzle.js?v=20261107-levels"></script>
+<script src="puzzle/puzzle.js?v=20261108-clock"></script>
 </body>
 </html>
