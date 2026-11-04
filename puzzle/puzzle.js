@@ -388,7 +388,7 @@
       var pics = '<img src="' + src('king', 'white') + '" alt="">' + s.attack.map(function (p) { return '<img src="' + src(p, 'white') + '" alt="">'; }).join('') +
         '<span class="vs">ปะทะ</span><img src="' + src('king', 'black') + '" alt="">' + s.defend.map(function (p) { return '<img src="' + src(p, 'black') + '" alt="">'; }).join('');
       return '<button type="button" class="chip setChip' + (n ? '' : ' none') + '" data-set="' + s.id + '" aria-pressed="' + (draft.sets.indexOf(s.id) >= 0) + '">' +
-        '<span class="pics">' + pics + '</span>' + s.label + (s.defend.length ? '' : ' ปะทะ ขุน') + '<small>' + (n ? n + ' ข้อ' : 'ไม่มีโจทย์ตามจำนวนตาที่เลือก') + '</small></button>';
+        '<span class="pics">' + pics + '</span><span class="name">' + s.label + (s.defend.length ? '' : ' ปะทะ ขุน') + '</span><small>' + (n ? n + ' ข้อ' : 'ไม่มีโจทย์ตามจำนวนตาที่เลือก') + '</small></button>';
   }
   $('settingsForm').addEventListener('click', function (e) {
     var m = e.target.closest('[data-mate]'), s = e.target.closest('[data-set]'), g = e.target.closest('[data-group]');
