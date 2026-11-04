@@ -10,9 +10,11 @@
     var timer=null,nextBeat=0,beat=0,unlocked=false,musicNodes=new Set(),pending=null,active=null,outcomeNodes=new Set(),lastOutcome=-Infinity;
     var AudioContext=win.AudioContext||win.webkitAudioContext;
     var reduced=win.matchMedia&&win.matchMedia('(prefers-reduced-motion: reduce)');
+    // Buttons marked data-icon (the puzzle page) keep their own icons; the page's CSS shows on or off from aria-pressed.
+    function icon(button){return typeof button.getAttribute==='function'&&button.getAttribute('data-icon')!==null;}
     function sync(){
-      if(musicButton){musicButton.textContent='♪';musicButton.setAttribute('aria-pressed',String(music));musicButton.setAttribute('aria-label',music?'ปิดเพลงคลอ':'เปิดเพลงคลอ');musicButton.title=music?'เพลงคลอเปิดอยู่ · แตะเพื่อปิด':'แตะเพื่อเปิดเพลงคลอ';musicButton.disabled=!AudioContext;}
-      if(effectsButton){effectsButton.textContent='เสียงเอฟเฟกต์: '+(effects?'เปิด':'ปิด');effectsButton.setAttribute('aria-pressed',String(effects));effectsButton.disabled=!AudioContext;}
+      if(musicButton){if(!icon(musicButton))musicButton.textContent='♪';musicButton.setAttribute('aria-pressed',String(music));musicButton.setAttribute('aria-label',music?'ปิดเพลงคลอ':'เปิดเพลงคลอ');musicButton.title=music?'เพลงคลอเปิดอยู่ · แตะเพื่อปิด':'แตะเพื่อเปิดเพลงคลอ';musicButton.disabled=!AudioContext;}
+      if(effectsButton){if(icon(effectsButton)){effectsButton.setAttribute('aria-label',effects?'ปิดเสียงเอฟเฟกต์':'เปิดเสียงเอฟเฟกต์');effectsButton.title=effects?'เสียงเอฟเฟกต์เปิดอยู่ · แตะเพื่อปิด':'แตะเพื่อเปิดเสียงเอฟเฟกต์';}else effectsButton.textContent='เสียงเอฟเฟกต์: '+(effects?'เปิด':'ปิด');effectsButton.setAttribute('aria-pressed',String(effects));effectsButton.disabled=!AudioContext;}
     }
     function tone(bus,freq,start,length,volume,type,isMusic){
       var osc=context.createOscillator(),gain=context.createGain();osc.type=type||'sine';osc.frequency.setValueAtTime(freq,start);
@@ -88,9 +90,12 @@
       var now=context.currentTime;
       if(now-lastOutcome<.16)return;
       lastOutcome=now;stopOutcome();
-      // Rising major notes celebrate; two low descending notes clearly mean retry.
-      var notes=kind==='failure'?[330,220]:kind==='complete'?[523.25,659.25,783.99,1046.5]:kind==='draw'?[523.25,523.25]:[659.25,783.99,1046.5];
-      var spacing=kind==='failure'?.18:.13;
+      // Rising major notes celebrate; two low descending notes clearly mean retry. A finished set of puzzles gets a
+      // longer fanfare, and a set with every puzzle solved a high sparkle after it.
+      var FANFARE=[523.25,659.25,783.99,659.25,783.99,1046.5];
+      var notes=kind==='failure'?[330,220]:kind==='complete'?[523.25,659.25,783.99,1046.5]:kind==='draw'?[523.25,523.25]:
+        kind==='set'?FANFARE:kind==='perfect'?FANFARE.concat([1318.51,1567.98,2093]):[659.25,783.99,1046.5];
+      var spacing=kind==='failure'?.18:kind==='set'||kind==='perfect'?.15:.13;
       notes.forEach(function(freq,i){
         outcomeNodes.add(tone(effectBus,freq,now+.04+i*spacing,i===notes.length-1?.40:.20,kind==='failure'?.22:.20,kind==='failure'?'triangle':'sine',false));
       });
