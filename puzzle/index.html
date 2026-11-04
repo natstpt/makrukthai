@@ -89,21 +89,23 @@
     .dlgBody h3{font-size:15px;color:var(--muted);margin:14px 0 8px}
     .note{font-size:13px;color:var(--muted);margin:6px 0 0}
     .chips{display:flex;flex-wrap:wrap;gap:8px}
-    .chip{border:2px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:14px;padding:8px 12px;font-size:15px;font-weight:800;cursor:pointer}
+    .chip{border:2px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:14px;padding:8px 14px;min-height:44px;font-size:16px;font-weight:800;cursor:pointer}
     .chip[aria-pressed="true"]{border-color:var(--gold);background:#4a3c1f}
     .chip[aria-pressed="false"]{opacity:.55}
     .chip[aria-pressed="true"]:before{content:"✓ ";color:var(--gold)}
     .setChip[aria-pressed="true"]:before{content:none}
-    .sets{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:8px}
-    .setChip{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;padding:8px 6px}
-    .setChip .pics{display:flex;align-items:center;gap:1px;height:34px}
-    .setChip .pics img{width:28px;height:28px}
-    .setChip .vs{font-size:11px;color:var(--muted);margin:0 3px}
-    .setChip small{font-weight:600;color:var(--muted);font-size:12px}
+    .sets{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+    /* A set card: its pieces (they shrink rather than spill out of the card), its name and how many puzzles. */
+    .setChip{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;padding:8px 8px;min-width:0}
+    .setChip .pics{display:flex;align-items:center;justify-content:center;gap:2px;max-width:100%;min-width:0}
+    .setChip .pics img{flex:0 1 30px;width:30px;min-width:0;aspect-ratio:1;height:auto;display:block}
+    .setChip .vs{flex:none;font-size:12px;color:var(--muted);margin:0 4px}
+    .setChip .name{line-height:1.3}
+    .setChip small{font-weight:600;color:var(--muted);font-size:13px}
     .setChip.none{opacity:.45}
     .groupHead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:14px 0 8px}
     .groupHead h4{margin:0;font-size:15px}
-    .chip.mini{padding:5px 10px;font-size:13px}
+    .chip.mini{padding:6px 12px;font-size:14px}
     .chip.mini:before{content:none}
     .dlgFoot{display:flex;gap:8px;padding:12px 16px 16px;border-top:1px solid var(--line);flex-wrap:wrap}
     .btn{border:0;border-radius:12px;padding:11px 16px;font-size:16px;font-weight:900;cursor:pointer;background:var(--panel2);color:var(--ink)}
@@ -117,6 +119,15 @@
     .dots i{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:13px;font-weight:900;color:#fff}
     .dots i.ok{background:var(--good)}.dots i.hint{background:var(--gold);color:#2b2214}.dots i.miss{background:var(--danger)}
     .empty{padding:30px 16px;text-align:center;color:var(--muted)}
+    /* Phones: one set card a row, the pieces on top and the name with its count beneath. */
+    @media (max-width:560px){
+      .sets{grid-template-columns:1fr}
+      .setChip{display:grid;grid-template-columns:1fr auto;grid-template-areas:"pics pics" "name count";align-items:center;gap:4px 10px;text-align:left;padding:8px 14px}
+      .setChip .pics{grid-area:pics;justify-content:flex-start}
+      .setChip .pics img{flex-basis:32px;width:32px}
+      .setChip .name{grid-area:name;font-size:17px}
+      .setChip small{grid-area:count;font-size:14px;text-align:right}
+    }
     @media (min-width:900px) and (min-height:760px){
       :root{--boardSize:min(calc(100vh - 330px),680px)}
       .coach img{width:84px;height:84px}
@@ -129,7 +140,7 @@
   <header class="head">
     <a class="iconBtn" href="./" aria-label="กลับหน้าหลัก" title="หน้าหลัก"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></a>
     <h1><img src="assets/images/lessons/mate.svg" alt="">รุกไล่ปลายกระดาน</h1>
-    <button type="button" class="iconBtn" id="settingsBtn" aria-label="ตั้งค่าโจทย์ (สำหรับครู)" title="ตั้งค่าโจทย์ (สำหรับครู)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+    <button type="button" class="iconBtn" id="settingsBtn" aria-label="ตั้งค่า" title="ตั้งค่า"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
   </header>
   <section class="coach" aria-live="polite">
     <img src="assets/images/lesson-guide.webp" width="384" height="384" alt="" decoding="async">
@@ -148,7 +159,7 @@
 
 <dialog id="settings" aria-labelledby="settingsTitle">
   <form method="dialog" class="dlg" id="settingsForm">
-    <div class="dlgHead"><h2 id="settingsTitle">ตั้งค่าโจทย์ (ครู)</h2><button class="iconBtn" value="cancel" aria-label="ปิด"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="dlgHead"><h2 id="settingsTitle">ตั้งค่า</h2><button class="iconBtn" value="cancel" aria-label="ปิด"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <div class="dlgBody">
       <h3>จำนวนตาที่จน</h3>
       <div class="chips" id="mateChips"></div>
@@ -179,6 +190,6 @@
 <script src="editor-model.js"></script>
 <script src="puzzle/sets.js?v=20261105-local"></script>
 <script src="puzzle/puzzle-core.js?v=20261105-local"></script>
-<script src="puzzle/puzzle.js?v=20261105-local"></script>
+<script src="puzzle/puzzle.js?v=20261106-mobile"></script>
 </body>
 </html>
