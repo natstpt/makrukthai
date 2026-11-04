@@ -4,9 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#272119">
-  <meta name="description" content="Makruk Learn เว็บหมากรุกไทยสำหรับเด็ก: บทเรียนทีละขั้น เล่นกับ AI และโจทย์รุกจน">
+  <meta name="description" content="Makruk หมากรุกไทยสำหรับเด็ก: บทเรียนพื้นฐาน ฝึกเล่นกับ AI และรุกไล่ปลายกระดาน">
   <meta name="author" content="นายณัฐกมล สุนทรพิทักษ์">
-  <title>Makruk Learn | หมากรุกไทยทีละขั้น</title>
+  <title>Makruk | หมากรุกไทย</title>
+  <link rel="icon" href="assets/images/logo.svg" type="image/svg+xml">
   <script>
     // The lessons used to live here: old links to the credits (index.html#credits) go on to the lessons page.
     if (location.hash === '#credits') location.replace('learn/#credits');
@@ -21,7 +22,7 @@
     html,body{margin:0;min-height:100%}
     body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
     .top{display:flex;align-items:center;gap:10px;padding:14px max(16px,env(safe-area-inset-left));font-weight:950}
-    .brandmark{width:38px;height:38px;border-radius:12px;background:var(--accent);color:#1d1607;display:grid;place-items:center;font-size:17px}
+    .brandmark{width:40px;height:40px;display:block}
     .top small{display:block;font-weight:600;color:var(--muted);font-size:12px}
     main{flex:1;width:100%;max-width:1040px;margin:0 auto;padding:12px 16px 28px;display:flex;flex-direction:column;gap:22px}
     .hello{display:flex;align-items:center;gap:16px}
@@ -36,6 +37,7 @@
     .icon{width:112px;height:112px;border-radius:26px;background:var(--board);display:grid;place-items:center;border:2px solid var(--boardLine)}
     .icon img{width:84px;height:84px}
     .card b{font-size:26px;font-weight:950}
+    .text{display:flex;flex-direction:column;gap:4px;min-width:0}
     .card span{color:var(--muted);font-size:16px;line-height:1.45}
     .go{margin-top:auto;background:var(--accent);color:#1d1607;font-weight:900;font-size:17px;border-radius:999px;padding:10px 26px}
     footer{text-align:center;color:var(--muted);font-size:13px;padding:0 16px 18px}
@@ -52,26 +54,26 @@
   </style>
 </head>
 <body>
-  <header class="top"><div class="brandmark">มร</div><div>Makruk Learn<small>หมากรุกไทยทีละขั้น</small></div></header>
+  <header class="top"><img class="brandmark" src="assets/images/logo.svg" alt=""><div>Makruk<small>หมากรุกไทย</small></div></header>
   <main>
     <section class="hello">
       <img src="assets/images/lesson-guide.webp" width="384" height="384" alt="" decoding="async">
-      <div class="speech">สวัสดีครับ วันนี้อยากเล่นอะไรดี?<small>เลือกได้เลย: เรียนทีละบท เล่นกับ AI หรือฝึกโจทย์รุกจน</small></div>
+      <div class="speech">สวัสดีครับ วันนี้อยากเล่นอะไรดี?<small>เลือกได้เลย: เรียนพื้นฐาน ฝึกเล่นกับ AI หรือรุกไล่ปลายกระดาน</small></div>
     </section>
     <nav class="cards" aria-label="เลือกหน้า">
       <a class="card" href="learn/" id="goLearn">
         <div class="icon"><img src="assets/images/lessons/board.svg" alt=""></div>
-        <div class="text"><b>บทเรียน</b><span>เรียนหมากรุกไทยทีละขั้น ตั้งแต่รู้จักกระดานจนถึงไล่ปลายกระดาน</span></div>
+        <div class="text"><b>บทเรียนพื้นฐาน</b><span>เรียนทีละขั้นจาก 0 จนเล่นเป็น</span></div>
         <div class="go">เริ่มเรียน</div>
       </a>
       <a class="card" href="ai/" id="goAi">
         <div class="icon"><img src="assets/images/lessons/ai-hard.svg" alt=""></div>
-        <div class="text"><b>เล่นกับ AI</b><span>เลือกระดับแล้วเล่นจริงกับคอมพิวเตอร์ ดูวิเคราะห์หลังจบเกม</span></div>
+        <div class="text"><b>ฝึกเล่นกับ AI</b><span>เลือกระดับแล้วเล่นจริง</span></div>
         <div class="go">เริ่มเล่น</div>
       </a>
       <a class="card" href="puzzle/" id="goPuzzle">
         <div class="icon"><img src="assets/images/lessons/mate.svg" alt=""></div>
-        <div class="text"><b>โจทย์รุกจน</b><span>ฝึกหาตาจนใน 1, 2 และ 3 ตา ชุดละ 10 ข้อ</span></div>
+        <div class="text"><b>รุกไล่ปลายกระดาน</b><span>ฝึกรุกจนให้ชนะใน 1–3 ตา</span></div>
         <div class="go">เริ่มฝึก</div>
       </a>
     </nav>
