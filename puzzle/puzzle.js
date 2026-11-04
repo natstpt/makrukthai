@@ -18,6 +18,15 @@
   // By default every set but those where the defender has two pieces.
   var filters = { mates: [1, 2, 3], sets: DATA.sets.filter(function (s) { return s.on; }).map(function (s) { return s.id; }) };
   var session = null, cur = null, timer = null, busy = 0, files = {}, round = 0;
+  // Music and sound effects, shared with the AI and lesson pages (presentation.js; on or off is remembered there).
+  var sound = window.MakrukPresentation ? window.MakrukPresentation.create({ board: $('board'), wrap: $('boardWrap') }) : null;
+  // A move's sound, with the check chime when it gives check (not for the mating move, which gets the success sound).
+  function moveSound(m, after, side, chime) {
+    if (!sound) return;
+    sound.queueMove({ from: m.from, to: m.to, check: chime !== false && R.inCheck(after, C.other(side)), skipAnimation: true });
+    sound.flush();
+  }
+  function resultSound(kind) { if (sound) sound.playResult(kind); }
 
   // ---- A set of 10 ----
   // The puzzles of a piece set (fetched once).
@@ -94,6 +103,7 @@
     cur.selected = null; cur.wrong = null; cur.reply = null;
     if (text) cur.lines.push(text.text);
     if (!res.ok) { wrongMove(before, after, move); return; }
+    moveSound(move, after, cur.side, !res.mate);
     push(after, move);
     cur.left--; cur.hint = 0;
     if (res.mate) { solved(); return; }
@@ -105,6 +115,7 @@
       var t = N.formatMove(cur.pieces, res.reply.from, res.reply.to);
       if (t) cur.lines.push(t.text);
       push(R.applyMove(cur.pieces, res.reply.from, res.reply.to), res.reply);
+      moveSound(res.reply, cur.pieces, C.other(cur.side));
       cur.history[cur.history.length - 1].node = cur.node;
       cur.history[cur.history.length - 1].left = cur.left;
       say(turnLine(), 'เหลืออีก ' + cur.left + ' ตา ' + (cur.left === 1 ? 'ตานี้ต้องจนเลย' : 'เดินต่อเลย'));
@@ -122,6 +133,7 @@
     var title = cur.failed ? 'แก้ได้แล้ว' : cur.hinted ? 'แก้ได้ด้วยคำใบ้' : 'แก้ได้แล้ว! เก่งมาก';
     var more = cur.failed ? 'ครั้งหน้าลองให้ได้ตั้งแต่ครั้งแรกนะ' : cur.hinted ? 'ลองจำรูปแบบนี้ไว้นะ' : 'รุกจนสวยมาก';
     say(MARK.ok + title, more + ' · ' + cur.lines.join(' · '));
+    resultSound('success');
     render();
   }
   function wrongMove(before, after, move) {
@@ -130,6 +142,7 @@
     cur.phase = 'wrong'; cur.wrong = { before: before, move: move, after: after };
     cur.pieces = after; render();
     say(MARK.bad + 'ยังไม่ใช่', why.text);
+    resultSound('failure');
     if (!why.reply) return;
     busy++;
     setTimeout(function () {
@@ -137,6 +150,7 @@
       if (!cur || cur.phase !== 'wrong') return;
       cur.reply = why.reply;
       cur.pieces = R.applyMove(after, why.reply.from, why.reply.to);
+      moveSound(why.reply, cur.pieces, C.other(cur.side));
       render();
     }, REPLY_DELAY);
   }
@@ -164,9 +178,10 @@
         say(MARK.hint + 'นี่คือเฉลย', cur.lines.join(' · '));
         render(); return;
       }
-      var m = steps[i++], t = N.formatMove(cur.pieces, m.from, m.to);
+      var m = steps[i++], t = N.formatMove(cur.pieces, m.from, m.to), mover = i % 2 ? cur.side : C.other(cur.side);
       if (t) cur.lines.push(t.text);
       push(R.applyMove(cur.pieces, m.from, m.to), m);
+      moveSound(m, cur.pieces, mover);
       render();
       setTimeout(next, REPLY_DELAY + 250);
     })();
@@ -295,6 +310,7 @@
     $('sumText').textContent = 'แก้ได้ ' + (ok + hinted) + ' จาก ' + n + ' ข้อ' + (hinted ? ' (ใช้คำใบ้ ' + hinted + ' ข้อ)' : '');
     $('sumTime').textContent = 'เวลารวม ' + Math.floor(total / 60) + ':' + String(total % 60).padStart(2, '0');
     $('summary').showModal();
+    resultSound(ok + hinted === n ? 'perfect' : 'set');
   }
 
   // ---- Input: tap a piece then a square, or drag ----

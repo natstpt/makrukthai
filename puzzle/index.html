@@ -23,9 +23,18 @@
     button{font-family:inherit}
     .app{height:100%;display:flex;flex-direction:column;align-items:center}
     .head{width:100%;display:flex;align-items:center;justify-content:space-between;padding:8px 10px;min-height:52px}
-    .head h1{margin:0;font-size:20px;font-weight:950;display:flex;align-items:center;gap:8px}
+    .head h1{margin:0;font-size:20px;font-weight:950;display:flex;align-items:center;gap:8px;min-width:0;white-space:nowrap}
+    .headTools{display:flex;align-items:center;flex-shrink:0}
+    /* Music and effects: the icon shows whether each is on (presentation.js sets aria-pressed). */
+    .snd .off{display:none}
+    .snd[aria-pressed="false"] .on{display:none}
+    .snd[aria-pressed="false"] .off{display:block}
+    .snd[aria-pressed="false"]{opacity:.6}
+    .snd:disabled{opacity:.3;cursor:default}
+    @media (max-width:400px){.head{padding:8px 4px}.head h1{font-size:18px;gap:6px}.head h1 img{width:26px;height:26px}}
+    @media (max-width:340px){.head h1{font-size:17px}.head h1 img{display:none}}
     .head h1 img{width:30px;height:30px;border-radius:8px;background:var(--board);padding:2px}
-    .iconBtn{width:44px;height:44px;border-radius:12px;border:0;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer;text-decoration:none}
+    .iconBtn{width:44px;height:44px;border-radius:12px;border:0;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer;text-decoration:none;flex-shrink:0}
     .iconBtn:hover,.iconBtn:focus-visible{background:var(--panel2);color:var(--ink);outline:none}
     .iconBtn svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
     .coach{width:var(--boardSize);display:flex;align-items:flex-end;gap:10px;padding:4px 8px 10px;min-height:96px}
@@ -140,7 +149,11 @@
   <header class="head">
     <a class="iconBtn" href="./" aria-label="กลับหน้าหลัก" title="หน้าหลัก"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></a>
     <h1><img src="assets/images/lessons/mate.svg" alt="">รุกไล่ปลายกระดาน</h1>
+    <div class="headTools">
+    <button type="button" class="iconBtn snd" id="musicBtn" data-icon aria-pressed="true" aria-label="ปิดเพลงคลอ" title="เพลงคลอ"><svg class="on" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg><svg class="off" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/><path d="M3 3l18 18"/></svg></button>
+    <button type="button" class="iconBtn snd" id="effectsBtn" data-icon aria-pressed="true" aria-label="ปิดเสียงเอฟเฟกต์" title="เสียงเอฟเฟกต์"><svg class="on" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg><svg class="off" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9.5l5 5M22 9.5l-5 5"/></svg></button>
     <button type="button" class="iconBtn" id="settingsBtn" aria-label="ตั้งค่า" title="ตั้งค่า"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+    </div>
   </header>
   <section class="coach" aria-live="polite">
     <img src="assets/images/lesson-guide.webp" width="384" height="384" alt="" decoding="async">
@@ -188,8 +201,9 @@
 <script src="makruk-rules.js?v=20261004-learn"></script>
 <script src="makruk-notation.js?v=20261004-practice5"></script>
 <script src="editor-model.js"></script>
+<script src="presentation.js?v=20261106-puzzle"></script>
 <script src="puzzle/sets.js?v=20261105-local"></script>
 <script src="puzzle/puzzle-core.js?v=20261105-local"></script>
-<script src="puzzle/puzzle.js?v=20261106-mobile"></script>
+<script src="puzzle/puzzle.js?v=20261106-sound"></script>
 </body>
 </html>

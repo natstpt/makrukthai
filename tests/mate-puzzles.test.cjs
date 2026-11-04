@@ -188,6 +188,10 @@ assert(learn.includes('class="brand" href="./"'), 'the lessons link back home');
 assert(read('editor.html').includes('<a href="learn/" class="back">'), 'the editor links to the lessons at learn/');
 assert(puzzle.includes('id="settingsBtn"'), 'the puzzle page has the settings button');
 assert(!/localStorage/.test(read('puzzle/puzzle.js')), 'the puzzle settings are not remembered');
+assert(puzzle.includes('id="musicBtn"') && puzzle.includes('id="effectsBtn"'), 'the puzzle page has the music and effects buttons');
+assert(puzzle.indexOf('src="presentation.js') >= 0 && puzzle.indexOf('src="presentation.js') < puzzle.indexOf('src="puzzle/puzzle.js'), 'the puzzle page loads the sounds before its script');
+const pjs = read('puzzle/puzzle.js');
+for (const kind of ['success', 'failure', 'set', 'perfect']) assert(pjs.includes("'" + kind + "'"), 'the puzzle page plays the ' + kind + ' sound');
 
 // ---- The local sets against the tables on this computer, when its server runs ----
 (async () => {

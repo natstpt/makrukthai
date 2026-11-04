@@ -1,9 +1,9 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const source=fs.readFileSync(path.join(__dirname,'../presentation.js'),'utf8');
-function harness(reduce=false,support=true){
+function harness(reduce=false,support=true,icon=false){
  const listeners={},buttons={},timers=new Map(),oscillators=[],saved=new Map(),animations=[];let clock;
- function button(){return {style:{},handlers:{},setAttribute(k,v){this[k]=v},addEventListener(k,fn){this.handlers[k]=fn}}}
+ function button(){const b={style:{},handlers:{},setAttribute(k,v){this[k]=v},addEventListener(k,fn){this.handlers[k]=fn}};if(icon)b.getAttribute=k=>k==='data-icon'?'':null;return b}
  buttons.musicBtn=button();buttons.effectsBtn=button();
  const param=()=>({value:0,setValueAtTime(){},linearRampToValueAtTime(){},exponentialRampToValueAtTime(){},setTargetAtTime(v){this.value=v}});
  class Audio{constructor(){clock=this;this.currentTime=0;this.state='running';this.destination={};}createGain(){return {gain:param(),connect(){},disconnect(){}}}createOscillator(){const node={frequency:param(),connect(){},disconnect(){},start(t){this.started=t},stop(t){this.stopped=t}};oscillators.push(node);return node}resume(){this.state='running';return Promise.resolve()}suspend(){this.state='suspended';return Promise.resolve()}}
@@ -37,3 +37,14 @@ outcomes.clock.currentTime=2;outcomes.api.playResult('complete');assert.equal(ou
 outcomes.buttons.effectsBtn.handlers.click();outcomes.clock.currentTime=3;outcomes.api.playResult('failure');assert.equal(outcomes.oscillators.length,9);
 outcomes.buttons.effectsBtn.handlers.click();outcomes.doc.hidden=true;outcomes.listeners.visibilitychange();outcomes.api.playResult('complete');assert.equal(outcomes.oscillators.length,9);
 console.log('Mission audio verified: success, completion, failure, mute, hidden-tab pause and rapid-input suppression.');
+// The end of a puzzle set: a longer fanfare, with a sparkle when every puzzle was solved.
+const sets=harness();sets.listeners.pointerdown();sets.buttons.musicBtn.handlers.click();sets.oscillators.length=0;
+sets.api.playResult('set');assert.equal(sets.oscillators.length,6);
+sets.clock.currentTime=1;sets.api.playResult('perfect');assert.equal(sets.oscillators.length,15);
+// Icon buttons (data-icon, the puzzle page) keep their icons: no text is written into them.
+const icons=harness(false,true,true);
+assert.equal(icons.buttons.musicBtn.textContent,undefined);assert.equal(icons.buttons.effectsBtn.textContent,undefined);
+assert.equal(icons.buttons.effectsBtn['aria-label'],'ปิดเสียงเอฟเฟกต์');
+icons.buttons.effectsBtn.handlers.click();assert.equal(icons.buttons.effectsBtn['aria-label'],'เปิดเสียงเอฟเฟกต์');assert.equal(icons.buttons.effectsBtn['aria-pressed'],'false');
+assert.equal(icons.buttons.effectsBtn.textContent,undefined);
+console.log('Puzzle-set audio verified: set fanfare, all-solved sparkle and icon buttons.');
