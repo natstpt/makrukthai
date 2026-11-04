@@ -203,6 +203,13 @@ assert(/session\.times\[session\.index\] = cur\.elapsed/.test(fn('stopClock')), 
 assert(/if \(!cur\.stopped\) cur\.elapsed/.test(fn('tick')), 'the clock counts while not stopped');
 // Wide screens: the board beside a column for the coach, clock and buttons, as big as on the AI page.
 assert(/@media \(min-width:900px\) and \(orientation:landscape\)\{\s*:root\{--boardSize:min\(65vw,70vh/.test(puzzle) && /\.app:not\(\.onMap\)\{display:grid/.test(puzzle), 'wide screens put the board beside the coach column, as big as on the AI page');
+// The board looks as on the AI page: a 2px rounded frame, 1px lines and bold coordinates; tablets get a board as big as
+// the screen allows; the map is plain board colour; the words suit anyone (no titles word, no children or teachers).
+assert(/\.board\{[^}]*border:2px solid #ab9558;border-radius:6px/.test(puzzle) && /\.sq:before\{[^}]*inset -1px -1px #756332/.test(puzzle), 'the puzzle board has the AI page frame and lines');
+assert(/\.coord\{[^}]*font-weight:bold;color:#574819/.test(puzzle) && /\.coord\.rank\{left:4px;top:4px\}\.coord\.file\{right:4px;bottom:4px\}/.test(puzzle), 'coordinates as on the AI page');
+assert(/\(min-width:600px\) and \(orientation:portrait\)/.test(puzzle) && /\(pointer:coarse\)/.test(puzzle), 'tablets get a bigger board, upright and lying down');
+assert(/\.mapScroll\{[^}]*background-color:var\(--board\)/.test(puzzle) && !/repeating-conic-gradient/.test(puzzle), 'the level map is one plain board colour');
+for (const w of ['ยศ', 'เด็ก', 'ครู']) assert(!puzzle.includes(w) && !pjs.includes(w), 'the puzzle page does not say ' + w);
 
 // ---- The local sets against the tables on this computer, when its server runs ----
 (async () => {

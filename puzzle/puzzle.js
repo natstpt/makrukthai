@@ -254,7 +254,7 @@
     board.innerHTML = '';
     for (var i = 0; i < 8; i++) for (var j = 0; j < 8; j++) {
       var at = { r: f ? 7 - i : i, c: f ? 7 - j : j }, el = document.createElement('button');
-      el.type = 'button'; el.className = 'sq' + (j === 7 ? ' c7' : '') + (i === 7 ? ' r7' : '');
+      el.type = 'button'; el.className = 'sq';
       el.dataset.r = at.r; el.dataset.c = at.c;
       var pc = pieces.find(function (p) { return same(p.at, at); }), html = '';
       if (j === 0) html += '<span class="coord rank">' + (8 - at.r) + '</span>';
@@ -393,7 +393,7 @@
     if (!pending) { fn(); return; }
     var r = pending; pending = null;
     $('rankUpPic').src = src(r.piece, 'white');
-    $('rankUpText').textContent = 'ผ่านครบทั้งบทแล้ว ได้ยศใหม่ "' + r.name + '"';
+    $('rankUpText').textContent = 'ผ่านครบทั้งบทแล้ว ตอนนี้เป็น "' + r.name + '"';
     var colors = ['#f2c14e', '#5fae4b', '#e0635f', '#f7f5ec', '#c69a29'], html = '';
     for (var i = 0; i < 40; i++) html += '<i style="left:' + (Math.random() * 100).toFixed(1) + '%;background:' + colors[i % colors.length] + ';animation-delay:' + (Math.random() * 0.8).toFixed(2) + 's"></i>';
     $('confetti').innerHTML = html;
@@ -447,7 +447,7 @@
       // The end of a chapter: the piece of the title it gives.
       if (i < MAP_LEVELS && (i + 1) % LEVELS.perChapter === 0) {
         var r = LEVELS.ranks[(i + 1) / LEVELS.perChapter], doneCh = P.chaptersDone(progress, LEVELS) >= (i + 1) / LEVELS.perChapter;
-        html += '<div class="mile' + (doneCh ? '' : ' locked') + '" style="left:' + (at.x > 50 ? 20 : 80) + '%;bottom:' + (at.y + 8) + 'px"><div class="ped"><img src="' + src(r.piece, 'white') + '" alt=""></div><span>ยศ ' + r.name + '</span></div>';
+        html += '<div class="mile' + (doneCh ? '' : ' locked') + '" style="left:' + (at.x > 50 ? 20 : 80) + '%;bottom:' + (at.y + 8) + 'px"><div class="ped"><img src="' + src(r.piece, 'white') + '" alt=""></div><span>' + r.name + '</span></div>';
       }
     }
     var pawnAt = stopAt(Math.min(now, count) - 1), from = walkFrom ? stopAt(walkFrom - 1) : null;

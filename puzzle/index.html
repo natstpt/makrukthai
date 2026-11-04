@@ -5,7 +5,7 @@
   <base href="../">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="theme-color" content="#272119">
-  <meta name="description" content="โจทย์รุกจนหมากรุกไทย จนใน 1, 2 และ 3 ตา จากตารางท้ายเกม สำหรับเด็กประถม">
+  <meta name="description" content="โจทย์รุกจนหมากรุกไทย จนใน 1, 2 และ 3 ตา จากตารางท้ายเกม เล่นได้ทุกคน">
   <title>รุกไล่ปลายกระดาน | Makruk หมากรุกไทย</title>
   <link rel="icon" href="assets/images/logo.svg" type="image/svg+xml">
   <style>
@@ -49,9 +49,11 @@
     html.blackPieces .turnBox.black{background:#222}
     .mark{width:20px;height:20px;flex-shrink:0}
     .boardWrap{width:var(--boardSize);height:var(--boardSize);position:relative;flex-shrink:0;user-select:none;-webkit-user-select:none;touch-action:none}
-    .board{display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);width:100%;height:100%;background:var(--board);outline:1.5px solid var(--boardLine);box-shadow:0 12px 38px rgba(0,0,0,.25)}
-    .sq{position:relative;border:0;border-right:1.5px solid var(--boardLine);border-bottom:1.5px solid var(--boardLine);background:transparent;padding:0;display:grid;place-items:center;min-width:0;min-height:0;overflow:visible;cursor:default}
-    .sq.c7{border-right:0}.sq.r7{border-bottom:0}
+    /* The board looks as on the AI page (editor.css): a 2px rounded frame and crisp 1px lines along each square's
+       right and bottom edge (drawn by :before so the highlight shadows below do not hide them). */
+    .board{display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);width:100%;height:100%;background:var(--board);border:2px solid #ab9558;border-radius:6px;box-shadow:0 8px 24px #0003}
+    .sq{position:relative;border:0;border-radius:0;background:transparent;padding:0;display:grid;place-items:center;min-width:0;min-height:0;overflow:visible;cursor:default;color:#574819}
+    .sq:before{content:"";position:absolute;inset:0;box-shadow:inset -1px -1px #756332;pointer-events:none;z-index:1}
     .sq.mine{cursor:grab}.sq.dest{cursor:pointer}
     .sq.last{background:rgba(158,140,68,.22)}
     .sq.sel{background:rgba(242,193,78,.45);box-shadow:inset 0 0 0 3px var(--accent)}
@@ -64,15 +66,15 @@
     .sq.check{background:radial-gradient(circle,rgba(224,60,50,.75) 0,rgba(224,60,50,.25) 60%,transparent 72%)}
     .sq.over{box-shadow:inset 0 0 0 4px #7d6016}
     .sq.marked{background:#ea7a62!important}
-    .coord{position:absolute;font-size:clamp(10px,2.4vw,15px);font-weight:800;color:#665a29;opacity:.85;pointer-events:none;z-index:2}
-    .coord.rank{left:3px;top:1px}.coord.file{right:3px;bottom:0}
+    .coord{position:absolute;font-size:clamp(10px,calc(var(--boardSize) * .029),22px);line-height:1;font-weight:bold;color:#574819;pointer-events:none;z-index:2}
+    .coord.rank{left:4px;top:4px}.coord.file{right:4px;bottom:4px}
     .piece{position:absolute;inset:6%;z-index:4;pointer-events:none}
     .piece img{width:100%;height:100%;display:block;object-fit:contain}
     .sq.lift .piece{opacity:.25}
     .badge{position:absolute;right:-9%;top:-9%;width:44%;height:44%;z-index:8;pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))}
     .ghost{position:fixed;z-index:50;pointer-events:none;transform:translate(-50%,-50%)}
     .ghost img{width:100%;height:100%}
-    .arrows{position:absolute;inset:0;z-index:7;pointer-events:none}
+    .arrows{position:absolute;inset:2px;z-index:7;pointer-events:none}
     .stats{width:var(--boardSize);padding:10px 10px 0}
     .statRow{display:flex;align-items:center;justify-content:space-between;font-weight:900}
     .count{font-size:19px}.count small{color:var(--muted);font-weight:700;font-size:14px;margin-left:6px}
@@ -150,7 +152,7 @@
     .starTotal{flex-shrink:0;background:var(--panel2);border:2px solid var(--line);border-radius:999px;padding:6px 12px;font-weight:900;font-size:16px;white-space:nowrap}
     .starTotal b{color:var(--gold)}
     .mapScroll{flex:1;min-height:0;width:100%;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;
-      background-color:#d2b45c;background-image:repeating-conic-gradient(#dcc06c 0 25%,#c9a851 0 50%);background-size:96px 96px;
+      background-color:var(--board);
       box-shadow:inset 0 10px 18px -10px rgba(0,0,0,.55),inset 0 -10px 18px -10px rgba(0,0,0,.55)}
     .mapPath{position:relative;width:100%;max-width:520px;margin:0 auto}
     .mapPath svg.road{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
@@ -189,6 +191,11 @@
     @keyframes fall{to{transform:translateY(520px) rotate(720deg);opacity:.2}}
     #rankUp .sum{position:relative}
     @media (prefers-reduced-motion:reduce){.pawn{transition:none}.pawn img,.node.current{animation:none}.confetti{display:none}}
+    /* Tablets upright (iPad and up): the board as wide as the screen with a small margin, no 640px cap. */
+    @media (min-width:600px) and (orientation:portrait){
+      :root{--boardSize:min(calc(100vw - 24px),calc(100vh - 300px - env(safe-area-inset-bottom)))}
+      @supports(height:100dvh){:root{--boardSize:min(calc(100vw - 24px),calc(100dvh - 300px - env(safe-area-inset-bottom)))}}
+    }
     /* Wide screens: the board on the left as big as on the AI page (min(65vw, 70dvh)), the coach, the clock and the
        buttons in a column beside it, so nothing below the board takes its height. */
     @media (min-width:900px) and (orientation:landscape){
@@ -203,6 +210,11 @@
       .app:not(.onMap) .stats{grid-row:3;padding:14px 4px 0}
       .app:not(.onMap) .bar{grid-row:4;margin-top:0;padding:18px 0 10px}
       .coach img{width:84px;height:84px}
+    }
+    /* Tablets lying down (touch screens): the board nearly as tall as the screen; a computer keeps the AI page size. */
+    @media (min-width:900px) and (orientation:landscape) and (pointer:coarse){
+      :root{--boardSize:min(calc(100vh - 76px),calc(100vw - 440px))}
+      @supports(height:100dvh){:root{--boardSize:min(calc(100dvh - 76px),calc(100vw - 440px))}}
     }
   </style>
   <script src="piece-colors.js?v=20261014-preload"></script>
@@ -250,7 +262,7 @@
       <div id="setChips"></div>
       <h3>ด่าน</h3>
       <button type="button" class="btn warn" id="resetLevels">เริ่มด่านใหม่ตั้งแต่ด่าน 1</button>
-      <p class="note">ปุ่มนี้ลบดาวและด่านที่ผ่านแล้วในเครื่องนี้ เหมาะกับเครื่องที่เด็กใช้สลับกัน</p>
+      <p class="note">ปุ่มนี้ลบดาวและด่านที่ผ่านแล้วในเครื่องนี้ ใช้เมื่ออยากเริ่มใหม่ หรือใช้เครื่องเดียวกันหลายคน</p>
       <p class="note">จำนวนตาและชุดหมากใช้กับโหมดฝึกอิสระ (ไม่นับด่าน) จนกว่าจะปิดหรือโหลดหน้าใหม่ · เล่นชุดละ 10 ข้อ เรียงจากง่ายไปยาก</p>
     </div>
     <div class="dlgFoot"><button class="btn" value="cancel">ยกเลิก</button><button class="btn main" id="applySettings" value="apply">เริ่มฝึกอิสระ</button></div>
@@ -276,7 +288,7 @@
     <div class="sum">
       <div class="confetti" id="confetti"></div>
       <img class="rankPic" id="rankUpPic" src="" alt="">
-      <h2 id="rankTitle">เลื่อนยศ!</h2>
+      <h2 id="rankTitle">เก่งขึ้นอีกขั้น!</h2>
       <p id="rankUpText"></p>
     </div>
     <div class="dlgFoot"><button class="btn main" id="rankOk">ไปต่อ</button></div>
@@ -291,6 +303,6 @@
 <script src="puzzle/puzzle-core.js?v=20261105-local"></script>
 <script src="puzzle/levels.js?v=20261107-levels"></script>
 <script src="puzzle/progress.js?v=20261107-levels"></script>
-<script src="puzzle/puzzle.js?v=20261108-clock"></script>
+<script src="puzzle/puzzle.js?v=20261109-board"></script>
 </body>
 </html>
