@@ -7,7 +7,8 @@
   <meta name="theme-color" content="#272119">
   <meta name="description" content="Makruk Learn บทเรียนหมากรุกไทยแบบทีละขั้น สำหรับเด็กและผู้เริ่มต้น">
   <meta name="author" content="นายณัฐกมล สุนทรพิทักษ์">
-  <title>Makruk Learn | เรียนหมากรุกไทยทีละขั้น</title>
+  <title>บทเรียนพื้นฐาน | Makruk หมากรุกไทย</title>
+  <link rel="icon" href="assets/images/logo.svg" type="image/svg+xml">
   <style>
     :root{
       --bg:#2e271d;--panel:#262018;--panel2:#332b20;--ink:#f7f5ec;--muted:#d8bf99;
@@ -25,7 +26,7 @@
     .app{height:100dvh;display:grid;grid-template-rows:58px minmax(0,1fr)}
     .topbar{display:flex;align-items:center;padding:0 16px;gap:12px;background:#231e17;border-bottom:1px solid #3f3629;z-index:20}
     .brand{color:inherit;text-decoration:none;display:flex;align-items:center;gap:9px;font-weight:950;letter-spacing:.2px;white-space:nowrap}
-    .brandmark{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(145deg,var(--accent),var(--accent2));color:#3a2c0a;font-weight:950;box-shadow:inset 0 -3px rgba(0,0,0,.12)}
+    .brandmark{width:34px;height:34px;display:block;flex-shrink:0}
     .brand small{display:block;font-size:10px;color:#cba975;font-weight:700;line-height:1}
     .topActions{margin-left:auto;display:flex;gap:8px}
     .topMenu{position:relative}
@@ -603,8 +604,8 @@
 <div class="app">
   <header class="topbar">
     <a class="brand" href="./" title="หน้าหลัก">
-      <div class="brandmark">มร</div>
-      <div>Makruk Learn<small>หมากรุกไทยทีละขั้น</small></div>
+      <img class="brandmark" src="assets/images/logo.svg" alt="">
+      <div>Makruk<small>หมากรุกไทย</small></div>
     </a>
     <div class="mobileLessonTitle" id="mobileLessonTitle"></div>
     <div class="topActions">
