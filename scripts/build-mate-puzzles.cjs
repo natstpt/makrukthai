@@ -1,11 +1,16 @@
 'use strict';
-// Builds puzzle/mate-puzzles.js, the mate-in-1/2/3 puzzles of the puzzle page (https://natstpt.github.io/makrukthai/puzzle).
-// Positions are drawn at random for each piece set, kept when the endgame tables (tablebase/) say the side to move
-// mates in 1, 2 or 3 moves, then searched again move by move with makruk-rules.js: the mate must take exactly that
-// many moves, and at most 2 first moves may mate that fast. Each puzzle keeps a solution tree: every attacking move
-// that still mates in the moves left (so any move as good as the book one is right), and for each one the defence
-// that holds out longest.
-//   node scripts/build-mate-puzzles.cjs          writes puzzle/mate-puzzles.js
+// Builds the mate-in-1/2/3 puzzles of the puzzle page (https://natstpt.github.io/makrukthai/puzzle):
+// puzzle/sets/<id>.json, one file per piece set, and puzzle/sets.js, the list of sets with their counts.
+// Positions are drawn at random for each piece set, kept when the endgame tables say the side to move mates in 1, 2 or
+// 3 moves, then searched again move by move with makruk-rules.js: the mate must take exactly that many moves, and at
+// most 2 first moves may mate that fast. Each puzzle keeps a solution tree: every attacking move that still mates in
+// the moves left (so any move as good as the book one is right), and for each one the defence that holds out longest.
+// The tables: tablebase/ (on the website) for the `web` sets; for the `local` sets, the tables only on this computer
+// (tablebase-local/, too big for GitHub Pages), asked through the local server (tools/makruk-tb: makruk-tb serve).
+// Only the puzzles go on the website, never those tables. The local sets also drop easy positions: no piece of either
+// side may stand attacked and unguarded, and no first move of the solution may be a capture.
+//   node scripts/build-mate-puzzles.cjs              every set (local ones only when the local server is running)
+//   node scripts/build-mate-puzzles.cjs rr-r rmf-r   just these sets; the other files stay as they are
 const fs = require('node:fs');
 const path = require('node:path');
 const zlib = require('node:zlib');
@@ -15,9 +20,13 @@ const M = require('../editor-model.js');
 
 const root = path.join(__dirname, '..');
 const dir = path.join(root, 'tablebase');
+const out = path.join(root, 'puzzle', 'sets');
+const LOCAL = 'http://127.0.0.1:8765';
 const open = f => new Uint8Array(zlib.inflateRawSync(fs.readFileSync(f)));
 
-// Piece sets: the attacker's pieces besides the king, and the defender's. `label` is shown on the page.
+// Piece sets: the attacker's pieces besides the king, and the defender's. `label` is shown on the page; `per` is how
+// many puzzles of each mate count to find (more for endings that come up often in real games); `off`: not in the
+// default choice (the defender has two pieces).
 const SETS = [
   { id: 'r', label: 'เรือ', attack: ['rook'], defend: [] },
   { id: 'rr', label: 'เรือ 2 ลำ', attack: ['rook', 'rook'], defend: [] },
@@ -34,9 +43,26 @@ const SETS = [
   { id: 'r-m', label: 'เรือ ปะทะ เม็ด', attack: ['rook'], defend: ['met'] },
   { id: 'r-r', label: 'เรือ ปะทะ เรือ', attack: ['rook'], defend: ['rook'] },
   { id: 's-m', label: 'โคน ปะทะ เม็ด', attack: ['khon'], defend: ['met'] },
-  { id: 'rm-r', label: 'เรือ + เม็ด ปะทะ เรือ', attack: ['rook', 'met'], defend: ['rook'] }
+  { id: 'rm-r', label: 'เรือ + เม็ด ปะทะ เรือ', attack: ['rook', 'met'], defend: ['rook'] },
+  // From the tables on this computer only.
+  { id: 'r-n', label: 'เรือ ปะทะ ม้า', attack: ['rook'], defend: ['knight'], local: true },
+  { id: 'r-s', label: 'เรือ ปะทะ โคน', attack: ['rook'], defend: ['khon'], local: true },
+  { id: 'rr-r', label: 'เรือ 2 ลำ ปะทะ เรือ', attack: ['rook', 'rook'], defend: ['rook'], local: true },
+  { id: 'rr-n', label: 'เรือ 2 ลำ ปะทะ ม้า', attack: ['rook', 'rook'], defend: ['knight'], local: true },
+  { id: 'rr-s', label: 'เรือ 2 ลำ ปะทะ โคน', attack: ['rook', 'rook'], defend: ['khon'], local: true },
+  { id: 'rn-m', label: 'เรือ + ม้า ปะทะ เม็ด', attack: ['rook', 'knight'], defend: ['met'], local: true },
+  { id: 'rn-n', label: 'เรือ + ม้า ปะทะ ม้า', attack: ['rook', 'knight'], defend: ['knight'], local: true },
+  { id: 'rs-m', label: 'เรือ + โคน ปะทะ เม็ด', attack: ['rook', 'khon'], defend: ['met'], local: true },
+  { id: 'rs-s', label: 'เรือ + โคน ปะทะ โคน', attack: ['rook', 'khon'], defend: ['khon'], local: true },
+  { id: 'rm-n', label: 'เรือ + เม็ด ปะทะ ม้า', attack: ['rook', 'met'], defend: ['knight'], local: true },
+  { id: 'rm-m', label: 'เรือ + เม็ด ปะทะ เม็ด', attack: ['rook', 'met'], defend: ['met'], local: true },
+  // Rook and two mets (a met and a promoted pawn) against a rook: common in real games, so more of them.
+  { id: 'rmf-r', label: 'เรือ + เม็ด + เบี้ยหงาย ปะทะ เรือ', attack: ['rook', 'met', 'promoted'], defend: ['rook'], local: true, per: 80 },
+  { id: 'rm-nm', label: 'เรือ + เม็ด ปะทะ ม้า + เม็ด', attack: ['rook', 'met'], defend: ['knight', 'met'], local: true, searchFirst: true },
+  { id: 'rm-sm', label: 'เรือ + เม็ด ปะทะ โคน + เม็ด', attack: ['rook', 'met'], defend: ['khon', 'met'], local: true, searchFirst: true },
+  { id: 'rr-rs', label: 'เรือ 2 ลำ ปะทะ เรือ + โคน', attack: ['rook', 'rook'], defend: ['rook', 'khon'], local: true, searchFirst: true }
 ];
-const PER = 30, MATES = [1, 2, 3], MAX_FIRST = 2;
+const PER = 30, MATES = [1, 2, 3], MAX_FIRST = 2, MIN_SET = 10;
 
 function loadTables() {
   T.use(new Uint8Array(fs.readFileSync(path.join(dir, 'krk.bin'))), open(path.join(dir, 'krrk.bin')));
@@ -48,6 +74,13 @@ function loadTables() {
     T.useRs(name, info, parts);
   }
 }
+// The local server's tables, or null when it is not running.
+async function localTables() {
+  try { const res = await fetch(LOCAL + '/status', { signal: AbortSignal.timeout(1500) }); return res.ok ? (await res.json()).tables : null; } catch (e) { return null; }
+}
+// The local table name of a set, as makruk-tb names it (KRMMvKR).
+const LETTER = { rook: 'R', knight: 'N', khon: 'S', met: 'M', promoted: 'M' };
+const tableName = set => 'K' + set.attack.map(p => LETTER[p]).join('') + 'vK' + set.defend.map(p => LETTER[p]).join('');
 
 const other = s => s === 'white' ? 'black' : 'white';
 const square = at => 'abcdefgh'[at.c] + (8 - at.r);
@@ -94,14 +127,27 @@ function createSolver() {
   return { wins, mates, depth, tree, clear: () => memo.clear() };
 }
 
-let seed = 20261104;
-const rand = n => { seed = (Math.imul(seed, 1103515245) + 12345) >>> 0; return (seed >>> 8) % n; };
+// A piece standing attacked by the other side and guarded by none of its own (a free capture).
+function hanging(ps) {
+  return ps.some(p => p.piece !== 'king' && R.isAttacked(ps, p.at, other(p.side)) && !R.isAttacked(ps.filter(x => x !== p), p.at, p.side));
+}
+// The quality rule of the local sets: nothing hanging, and no first move of the solution a capture.
+function plain(ps, tree) {
+  if (hanging(ps)) return false;
+  return Object.keys(tree).every(k => !ps.some(p => square(p.at) === k.slice(2)));
+}
 
+// Each set draws from its own sequence, so adding a set leaves the others' puzzles as they are.
+function seeded(id) {
+  let seed = 20261104;
+  for (const ch of id) seed = (Math.imul(seed, 31) + ch.charCodeAt(0)) >>> 0;
+  return n => { seed = (Math.imul(seed, 1103515245) + 12345) >>> 0; return (seed >>> 8) % n; };
+}
 // A random legal position for the set, attacker (either colour) to move, neither king in check. Mates come soon only
-// with the lone king near the edge and the attacking pieces close by, so most draws put them there.
-const near = (at, d) => { for (;;) { const r = at.r + rand(2 * d + 1) - d, c = at.c + rand(2 * d + 1) - d; if (r >= 0 && r < 8 && c >= 0 && c < 8) return r * 8 + c; } };
+// with the defending king near the edge and the attacking pieces close by, so most draws put them there.
 const EDGE = Array.from({ length: 64 }, (_, s) => s).filter(s => (s >> 3) % 7 === 0 || (s & 7) % 7 === 0);
-function randomPosition(set) {
+function randomPosition(set, rand) {
+  const near = (at, d) => { for (;;) { const r = at.r + rand(2 * d + 1) - d, c = at.c + rand(2 * d + 1) - d; if (r >= 0 && r < 8 && c >= 0 && c < 8) return r * 8 + c; } };
   for (;;) {
     const attacker = rand(2) ? 'white' : 'black', defender = other(attacker);
     const slots = [['king', defender], ['king', attacker]].concat(set.attack.map(p => [p, attacker]), set.defend.map(p => [p, defender]));
@@ -126,54 +172,85 @@ function randomPosition(set) {
   }
 }
 // Moves to mate for the attacker (to move) from the tables, or Infinity. The pawn tables are read through value().
-function tableMate(ps, attacker, set) {
+async function tableMate(ps, attacker, set) {
+  if (set.local) {
+    const res = await fetch(LOCAL + '/probe?fen=' + encodeURIComponent(T.fenOf(ps, attacker)));
+    const a = await res.json();
+    if (!a.covered) throw Error(set.id + ': the local server has no table for ' + T.fenOf(ps, attacker));
+    return a.result && a.result.res === 'win' ? a.result.n : Infinity;
+  }
   if (!set.defend.length) return T.value(ps);
   const r = T.result(ps, attacker);
   return r && r.res === 'win' ? r.n : Infinity;
 }
 
-function build(options) {
-  const per = (options && options.per) || PER, tries = (options && options.tries) || 1500000;
-  loadTables();
-  const solver = createSolver(), puzzles = [], report = [], seen = new Set();
+async function buildSet(set, solver, tries) {
+  const per = set.per || PER, got = { 1: 0, 2: 0, 3: 0 }, rand = seeded(set.id), seen = new Set(), puzzles = [];
   let disagree = 0;
-  for (const set of SETS) {
-    const got = { 1: 0, 2: 0, 3: 0 };
-    for (let i = 0; i < tries && MATES.some(n => got[n] < per); i++) {
-      const { ps, attacker } = randomPosition(set);
-      const n = tableMate(ps, attacker, set);
-      if (n > 3 || got[n] >= per) continue;
-      const fen = M.fen({ pieces: ps, turn: attacker });
-      if (seen.has(fen)) continue;
-      seen.add(fen);
-      if (solver.depth(ps, attacker, 3) !== n) { disagree++; continue; }
-      const tree = solver.tree(ps, attacker, n);
-      if (Object.keys(tree).length > MAX_FIRST) continue;
-      puzzles.push({ set: set.id, mate: n, fen, tree });
-      got[n]++;
-      if (solver.clear && puzzles.length % 50 === 0) solver.clear();
-    }
-    report.push(set.id + ' ' + MATES.map(n => got[n]).join('/'));
+  for (let i = 0; i < tries && MATES.some(n => got[n] < per); i++) {
+    if (i && i % (set.searchFirst ? 2000 : 50000) === 0 && process.env.MAKRUK_PROGRESS) console.log(set.id + ': ' + i + ' tries, ' + MATES.map(n => got[n]).join('/'));
+    const { ps, attacker } = randomPosition(set, rand);
+    // The quality rule's first half is cheap: test it before asking the tables.
+    if (set.local && hanging(ps)) continue;
+    // The six-piece tables answer slowly (a probe takes 0.2–1 s), so those sets search first and ask the tables only
+    // about the puzzles they keep; the others ask the tables first.
+    const n = set.searchFirst ? solver.depth(ps, attacker, 3) : await tableMate(ps, attacker, set);
+    if (n > 3 || got[n] >= per) continue;
+    const fen = M.fen({ pieces: ps, turn: attacker });
+    if (seen.has(fen)) continue;
+    seen.add(fen);
+    if (!set.searchFirst && solver.depth(ps, attacker, 3) !== n) { disagree++; continue; }
+    const tree = solver.tree(ps, attacker, n);
+    if (Object.keys(tree).length > MAX_FIRST || (set.local && !plain(ps, tree))) continue;
+    if (set.searchFirst && await tableMate(ps, attacker, set) !== n) { disagree++; continue; }
+    if (set.searchFirst && i % 200 === 0) solver.clear();
+    puzzles.push({ mate: n, fen, tree });
+    got[n]++;
+    if (puzzles.length % 50 === 0) solver.clear();
   }
-  if (disagree) throw Error(disagree + ' positions where the tables and the move search disagree');
-  return { sets: SETS.map(s => ({ id: s.id, label: s.label, attack: s.attack, defend: s.defend })), puzzles, report };
+  if (disagree) throw Error(set.id + ': ' + disagree + ' positions where the tables and the move search disagree');
+  return puzzles.sort((a, b) => a.mate - b.mate);
 }
 
-function write() {
-  const { sets, puzzles, report } = build();
-  // A set with only a handful of puzzles is left off the page.
-  const usable = sets.filter(s => puzzles.filter(p => p.set === s.id).length >= 10);
-  const kept = puzzles.filter(p => usable.some(s => s.id === p.set));
+// puzzle/sets.js: every set with a file of at least MIN_SET puzzles, with its counts by mate count.
+function writeIndex() {
+  const sets = [];
+  for (const s of SETS) {
+    const f = path.join(out, s.id + '.json');
+    if (!fs.existsSync(f)) continue;
+    const list = JSON.parse(fs.readFileSync(f, 'utf8'));
+    if (list.length < MIN_SET) continue;
+    const count = {};
+    MATES.forEach(n => { count[n] = list.filter(p => p.mate === n).length; });
+    sets.push({ id: s.id, label: s.label, attack: s.attack, defend: s.defend, on: s.defend.length < 2, count });
+  }
   const body = '/* Generated by scripts/build-mate-puzzles.cjs — do not edit by hand.\n' +
-    ' * Mate-in-1/2/3 puzzles from the endgame tables, checked move by move with makruk-rules.js.\n' +
-    ' * tree: every move that mates in the moves left → "#" (mate) or {r: the defence, n: the next node}. */\n' +
-    '(function (root) {\n  var data = ' + JSON.stringify({ sets: usable, puzzles: kept }) + ';\n' +
-    "  if (typeof module === 'object' && module.exports) module.exports = data;\n  if (root) root.MakrukMatePuzzles = data;\n" +
+    ' * The piece sets of the puzzle page; each set\'s puzzles are in puzzle/sets/<id>.json:\n' +
+    ' * [{mate, fen, tree}], tree: every move that mates in the moves left → "#" (mate) or {r: the defence, n: the next node}.\n' +
+    ' * on: in the default choice. count: puzzles by mate count. */\n' +
+    '(function (root) {\n  var data = ' + JSON.stringify({ sets }) + ';\n' +
+    "  if (typeof module === 'object' && module.exports) module.exports = data;\n  if (root) root.MakrukPuzzleSets = data;\n" +
     "})(typeof window !== 'undefined' ? window : null);\n";
-  fs.mkdirSync(path.join(root, 'puzzle'), { recursive: true });
-  fs.writeFileSync(path.join(root, 'puzzle', 'mate-puzzles.js'), body);
-  console.log('puzzle/mate-puzzles.js written: ' + kept.length + ' puzzles (' + report.join(', ') + ').');
+  fs.writeFileSync(path.join(root, 'puzzle', 'sets.js'), body);
+  return sets;
 }
 
-module.exports = { SETS, build, createSolver };
-if (require.main === module) write();
+async function main(ids) {
+  loadTables();
+  fs.mkdirSync(out, { recursive: true });
+  const served = await localTables(), solver = createSolver(), report = [];
+  for (const set of SETS) {
+    if (ids.length && !ids.includes(set.id)) continue;
+    if (set.local && !(served && served.includes(tableName(set)))) { report.push(set.id + ' skipped (no local table ' + tableName(set) + ')'); continue; }
+    const puzzles = await buildSet(set, solver, set.searchFirst ? 40000 : set.local ? 3000000 : 1500000);
+    fs.writeFileSync(path.join(out, set.id + '.json'), JSON.stringify(puzzles));
+    report.push(set.id + ' ' + MATES.map(n => puzzles.filter(p => p.mate === n).length).join('/'));
+    console.log(report[report.length - 1]);
+  }
+  const sets = writeIndex();
+  const bytes = sets.reduce((a, s) => a + fs.statSync(path.join(out, s.id + '.json')).size, 0);
+  console.log('puzzle/sets.js written: ' + sets.length + ' sets, ' + sets.reduce((a, s) => a + MATES.reduce((b, n) => b + s.count[n], 0), 0) + ' puzzles, ' + Math.round(bytes / 1024) + ' KB (' + report.join(', ') + ').');
+}
+
+module.exports = { SETS, MIN_SET, tableName, hanging, plain, createSolver, randomPosition, seeded, LOCAL };
+if (require.main === module) main(process.argv.slice(2)).catch(e => { console.error(e.message || e); process.exit(1); });

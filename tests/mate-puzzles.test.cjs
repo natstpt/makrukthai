@@ -1,8 +1,10 @@
 'use strict';
-// The puzzle page (puzzle/): every puzzle in puzzle/mate-puzzles.js (scripts/build-mate-puzzles.cjs) is a legal position
-// whose side to move mates in exactly the moves it says, by the endgame tables and by a move search with
-// makruk-rules.js; its tree takes every move that mates as fast or faster (no right move is called wrong) and answers
-// with a longest defence. Also the page's rules (puzzle/puzzle-core.js) and the links between the site's pages.
+// The puzzle page (puzzle/): every puzzle in puzzle/sets/<id>.json (scripts/build-mate-puzzles.cjs) is a legal position
+// whose side to move mates in exactly the moves it says, by a move search with makruk-rules.js and by the endgame
+// tables; its tree takes every move that mates as fast or faster (no right move is called wrong) and answers with a
+// longest defence. The sets made from the tables on the author's computer only (tablebase-local/) are checked against
+// those tables when the local server (makruk-tb serve) is running; elsewhere, as on GitHub, by the move search alone.
+// Also puzzle/sets.js, the page's rules (puzzle/puzzle-core.js) and the links between the site's pages.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -11,7 +13,8 @@ const R = require('../makruk-rules.js');
 const T = require('../tablebase.js');
 const M = require('../editor-model.js');
 const C = require('../puzzle/puzzle-core.js');
-const DATA = require('../puzzle/mate-puzzles.js');
+const DATA = require('../puzzle/sets.js');
+const B = require('../scripts/build-mate-puzzles.cjs');
 
 const root = path.join(__dirname, '..'), dir = path.join(root, 'tablebase');
 const open = f => new Uint8Array(zlib.inflateRawSync(fs.readFileSync(f)));
@@ -64,13 +67,28 @@ function checkNode(ps, side, left, node, where) {
 
 // ---- The puzzles ----
 const ids = DATA.sets.map(s => s.id);
-assert(DATA.sets.length >= 10, 'at least ten piece sets');
+assert(DATA.sets.length >= 25, 'at least 25 piece sets');
 assert.equal(new Set(ids).size, ids.length, 'set ids are unique');
-const fens = new Set();
+const files = {}, ALL = [];
+let bytes = 0;
+for (const s of DATA.sets) {
+  const f = path.join(root, 'puzzle', 'sets', s.id + '.json');
+  bytes += fs.statSync(f).size;
+  files[s.id] = JSON.parse(fs.readFileSync(f, 'utf8'));
+  for (const n of [1, 2, 3]) assert.equal(files[s.id].filter(p => p.mate === n).length, s.count[n], s.id + ': sets.js counts its mate-in-' + n + ' puzzles');
+  assert.deepEqual(files[s.id].map(p => p.mate), files[s.id].map(p => p.mate).sort(), s.id + ': its file is in mate order');
+  assert.equal(s.on, s.defend.length < 2, s.id + ': chosen by default unless the defender has two pieces');
+  const def = B.SETS.find(x => x.id === s.id);
+  assert(def && def.label === s.label, s.id + ': a set of the build script');
+  for (const p of files[s.id]) ALL.push(Object.assign({ set: s.id }, p));
+}
+assert(bytes <= 1024 * 1024, 'the puzzle files stay under 1 MB (' + Math.round(bytes / 1024) + ' KB)');
+const big = DATA.sets.find(s => s.id === 'rmf-r');
+assert(big && [1, 2, 3].every(n => big.count[n] > 30), 'rook, met and promoted pawn against a rook has more puzzles than the others');
+const fens = new Set(), forLocal = [];
 const count = {};
-for (const p of DATA.puzzles) {
-  const where = p.set + ' ' + p.fen, set = DATA.sets.find(s => s.id === p.set);
-  assert(set, where + ': its set is listed');
+for (const p of ALL) {
+  const where = p.set + ' ' + p.fen, set = B.SETS.find(s => s.id === p.set);
   assert([1, 2, 3].includes(p.mate), where + ': mate in 1, 2 or 3');
   assert(!fens.has(p.fen), where + ': no puzzle twice'); fens.add(p.fen);
   const st = M.parse(p.fen), ps = st.pieces, side = st.turn;
@@ -83,18 +101,24 @@ for (const p of DATA.puzzles) {
   const theirs = ps.filter(x => x.side !== side && x.piece !== 'king').map(x => x.piece).sort();
   assert.deepEqual(mine, set.attack.slice().sort(), where + ': attacking pieces');
   assert.deepEqual(theirs, set.defend.slice().sort(), where + ': defending pieces');
-  // The tables, then the move search.
-  const table = set.defend.length ? T.result(ps, side) : { res: 'win', n: T.value(ps) };
-  assert.deepEqual(table, { res: 'win', n: p.mate }, where + ': the tables say mate in ' + p.mate);
+  // The tables (the local ones further down), then the move search.
+  if (set.local) forLocal.push({ ps, side, mate: p.mate, where });
+  else assert.deepEqual(set.defend.length ? T.result(ps, side) : { res: 'win', n: T.value(ps) }, { res: 'win', n: p.mate }, where + ': the tables say mate in ' + p.mate);
   assert.equal(depth(ps, side, 3), p.mate, where + ': the move search finds mate in exactly ' + p.mate);
   assert(Object.keys(p.tree).length <= 2, where + ': at most two first moves mate in time');
   checkNode(ps, side, p.mate, p.tree, where);
+  // The local sets' quality rule: nothing hanging, and no first move of the solution a capture.
+  if (set.local) {
+    assert(!B.hanging(ps), where + ': no piece hangs');
+    assert(Object.keys(p.tree).every(k => !ps.some(x => C.square(x.at) === k.slice(2))), where + ': the first move takes nothing');
+  }
   count[p.set + p.mate] = (count[p.set + p.mate] || 0) + 1;
   if (memo.size > 2e6) memo.clear();
 }
-for (const s of DATA.sets) assert(DATA.puzzles.filter(p => p.set === s.id).length >= 10, s.id + ': at least ten puzzles');
-for (const n of [1, 2, 3]) assert(DATA.puzzles.filter(p => p.mate === n).length >= 100, 'plenty of mate-in-' + n + ' puzzles');
-assert(DATA.puzzles.some(p => M.parse(p.fen).turn === 'black') && DATA.puzzles.some(p => M.parse(p.fen).turn === 'white'), 'both colours attack');
+for (const s of DATA.sets) assert(files[s.id].length >= 10, s.id + ': at least ten puzzles');
+for (const n of [1, 2, 3]) assert(ALL.filter(p => p.mate === n).length >= 100, 'plenty of mate-in-' + n + ' puzzles');
+assert(ALL.some(p => M.parse(p.fen).turn === 'black') && ALL.some(p => M.parse(p.fen).turn === 'white'), 'both colours attack');
+assert([0, 1, 2].every(g => DATA.sets.some(s => s.defend.length === g)), 'sets in all three groups of the settings');
 
 // ---- puzzle-core: the set of 10 ----
 let seed = 9;
@@ -102,7 +126,9 @@ const rnd = () => { seed = (Math.imul(seed, 1103515245) + 12345) >>> 0; return (
 const all = { mates: [1, 2, 3], sets: ids };
 const plan = C.plan(DATA, all, rnd);
 assert.deepEqual(plan.map(p => p.mate), [1, 1, 1, 1, 2, 2, 2, 2, 3, 3], 'by default: 4 × mate in 1, 4 × in 2, 2 × in 3, easy first');
-assert.equal(new Set(plan).size, 10, 'no puzzle twice in a set');
+assert.equal(new Set(plan.map(p => p.set + p.mate + ':' + p.i)).size, 10, 'no puzzle twice in a set');
+const filled = C.fill(plan, files);
+assert(filled.every((p, i) => p.mate === plan[i].mate && files[p.set].some(x => x.fen === p.fen && x.mate === p.mate)), 'fill takes the planned puzzles from the set files');
 assert.deepEqual(C.plan(DATA, { mates: [3, 2], sets: ids }, rnd).map(p => p.mate), [2, 2, 2, 2, 2, 3, 3, 3, 3, 3], 'two counts share the ten');
 assert(C.plan(DATA, { mates: [2], sets: ['r', 'rr'] }, rnd).every(p => p.mate === 2 && ['r', 'rr'].includes(p.set)), 'only the chosen sets and counts');
 assert.deepEqual(C.plan(DATA, { mates: [1], sets: [] }, rnd), [], 'no sets, no puzzles');
@@ -111,13 +137,13 @@ assert.deepEqual(C.plan(DATA, { mates: [], sets: ids }, rnd), [], 'no mate count
 const nn = DATA.sets.find(s => s.id === 'nn');
 if (nn) {
   const few = C.plan(DATA, { mates: [1, 3], sets: ['nn'] }, rnd);
-  assert.equal(few.length, Math.min(10, DATA.puzzles.filter(p => p.set === 'nn' && [1, 3].includes(p.mate)).length), 'topped up from the other count');
+  assert.equal(few.length, Math.min(10, ALL.filter(p => p.set === 'nn' && [1, 3].includes(p.mate)).length), 'topped up from the other count');
 }
-assert.equal(C.available(DATA, all), DATA.puzzles.length);
+assert.equal(C.available(DATA, all), ALL.length);
 
 // ---- puzzle-core: moves ----
 {
-  const p = DATA.puzzles.find(x => x.mate === 2), st = M.parse(p.fen);
+  const p = ALL.find(x => x.mate === 2), st = M.parse(p.fen);
   const k = Object.keys(p.tree)[0], res = C.step(p.tree, C.fromKey(k));
   assert(res.ok && !res.mate && res.reply && res.node, 'a tree move gets its reply');
   const bad = R.legalMoves(st.pieces, st.turn).find(m => !p.tree[key(m)]);
@@ -134,7 +160,7 @@ assert.equal(C.available(DATA, all), DATA.puzzles.length);
 {
   // A move that stalemates is named so (the first such move among the puzzles).
   let stale = null;
-  for (const p of DATA.puzzles) {
+  for (const p of ALL) {
     const st = M.parse(p.fen);
     const m = R.legalMoves(st.pieces, st.turn).find(x => R.gameStatus(R.applyMove(st.pieces, x.from, x.to), other(st.turn)).state === 'stalemate');
     if (m) { stale = { after: R.applyMove(st.pieces, m.from, m.to), side: st.turn }; break; }
@@ -163,4 +189,18 @@ assert(read('editor.html').includes('<a href="learn/" class="back">'), 'the edit
 assert(puzzle.includes('id="settingsBtn"'), 'the puzzle page has the settings button');
 assert(!/localStorage/.test(read('puzzle/puzzle.js')), 'the puzzle settings are not remembered');
 
-console.log('Mate puzzles verified: ' + DATA.puzzles.length + ' puzzles in ' + DATA.sets.length + ' sets, ' + nodes + ' tree nodes checked.');
+// ---- The local sets against the tables on this computer, when its server runs ----
+(async () => {
+  let served = null;
+  try { const res = await fetch(B.LOCAL + '/status', { signal: AbortSignal.timeout(1500) }); served = res.ok ? (await res.json()).tables : null; } catch (e) {}
+  let local = 'the local sets checked by the move search only (no local server)';
+  if (served) {
+    for (const q of forLocal) {
+      const a = await (await fetch(B.LOCAL + '/probe?fen=' + encodeURIComponent(T.fenOf(q.ps, q.side)))).json();
+      assert(a.covered, q.where + ': a local table covers it');
+      assert.deepEqual(a.result, { res: 'win', n: q.mate }, q.where + ': the local tables say mate in ' + q.mate);
+    }
+    local = forLocal.length + ' local-set puzzles also checked against the local tables';
+  }
+  console.log('Mate puzzles verified: ' + ALL.length + ' puzzles in ' + DATA.sets.length + ' sets (' + Math.round(bytes / 1024) + ' KB), ' + nodes + ' tree nodes checked; ' + local + '.');
+})().catch(e => { console.error(e); process.exit(1); });

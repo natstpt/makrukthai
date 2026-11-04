@@ -1,5 +1,5 @@
 /* The rules of the puzzle page (puzzle/index.html), apart from the screen, so tests can run them in Node:
- * - plan(): which 10 puzzles a set holds for the chosen mate counts and piece sets;
+ * - plan() and fill(): which 10 puzzles a set holds for the chosen mate counts and piece sets;
  * - step(): is a move right? Any move in the solution tree is (every move that mates as fast as the book one, or
  *   faster), with the defence the tree keeps;
  * - refute(): after a wrong move, the defence that shows why it is wrong, and the reason in words. */
@@ -29,15 +29,19 @@
     var base = Math.floor(SIZE / mates.length), extra = SIZE % mates.length;
     return mates.map(function (_, i) { return base + (i < extra ? 1 : 0); });
   }
-  // A set of up to 10 puzzles from data (mate-puzzles.js) for filters {mates: [1, 2, 3], sets: [ids]}, ordered by
-  // mate count. random() is Math.random unless a test passes its own. A mate count with too few puzzles is topped
-  // up from the others.
-  function plan(data, filters, random) {
+  // A set of up to 10 puzzles for filters {mates: [1, 2, 3], sets: [ids]}, from index (puzzle/sets.js: each set's
+  // count by mate count), ordered by mate count: [{set, mate, i}], the i-th puzzle of that mate count in the set's file.
+  // random() is Math.random unless a test passes its own. A mate count with too few puzzles is topped up from the others.
+  function plan(index, filters, random) {
     random = random || Math.random;
     var mates = (filters.mates || []).slice().sort(), sets = filters.sets || [];
     var pool = {};
     mates.forEach(function (n) {
-      pool[n] = data.puzzles.filter(function (p) { return p.mate === n && sets.indexOf(p.set) >= 0; });
+      pool[n] = [];
+      index.sets.forEach(function (s) {
+        if (sets.indexOf(s.id) < 0) return;
+        for (var i = 0; i < (s.count[n] || 0); i++) pool[n].push({ set: s.id, mate: n, i: i });
+      });
     });
     // Draw from the pool of n, a piece set at random first so the sets take turns.
     var used = [];
@@ -61,9 +65,19 @@
     }
     return out.sort(function (a, b) { return a.mate - b.mate; });
   }
+  // The planned puzzles from the loaded set files (files: {id: [{mate, fen, tree}]}): [{set, mate, fen, tree}].
+  function fill(slots, files) {
+    return slots.map(function (s) {
+      var p = files[s.set].filter(function (x) { return x.mate === s.mate; })[s.i];
+      return { set: s.set, mate: s.mate, fen: p.fen, tree: p.tree };
+    });
+  }
   // How many puzzles the filters can give (for the settings dialog).
-  function available(data, filters) {
-    return data.puzzles.filter(function (p) { return (filters.mates || []).indexOf(p.mate) >= 0 && (filters.sets || []).indexOf(p.set) >= 0; }).length;
+  function available(index, filters) {
+    return index.sets.reduce(function (a, s) {
+      if ((filters.sets || []).indexOf(s.id) < 0) return a;
+      return a + (filters.mates || []).reduce(function (b, n) { return b + (s.count[n] || 0); }, 0);
+    }, 0);
   }
 
   // The learner's move in a tree node: {ok: false} if it is not one of the tree's moves, else {ok: true, mate: true}
@@ -122,5 +136,5 @@
   }
 
   return { SIZE: SIZE, NAME: NAME, other: other, square: square, moveKey: moveKey, fromKey: fromKey, sideName: sideName,
-    shares: shares, plan: plan, available: available, step: step, line: line, wins: wins, refute: refute };
+    shares: shares, plan: plan, fill: fill, available: available, step: step, line: line, wins: wins, refute: refute };
 });
