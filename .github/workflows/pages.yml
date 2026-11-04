@@ -78,6 +78,9 @@ jobs:
       - name: Verify the mate puzzles of the puzzle page
         run: node tests/mate-puzzles.test.cjs
 
+      - name: Verify the level map of the puzzle page
+        run: node tests/puzzle-levels.test.cjs
+
       - name: Build the stand-alone AI page from editor.html
         run: node scripts/build-ai-page.cjs && node tests/ai-page.test.cjs
 
