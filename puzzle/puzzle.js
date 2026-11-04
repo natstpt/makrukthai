@@ -55,6 +55,7 @@
     });
   }
   function startPuzzle() {
+    resetMarks();
     var p = session.list[session.index], st = E.parse(p.fen);
     cur = {
       p: p, side: st.turn, start: st.pieces, pieces: st.pieces, node: p.tree, left: p.mate,
@@ -123,6 +124,7 @@
     }, REPLY_DELAY);
   }
   function push(pieces, last) {
+    resetMarks();
     cur.pieces = pieces;
     cur.history.push({ pieces: pieces, last: last, node: cur.node, left: cur.left });
     cur.view = cur.history.length - 1;
@@ -137,6 +139,7 @@
     render();
   }
   function wrongMove(before, after, move) {
+    resetMarks();
     cur.failed = true; settle('miss');
     var why = C.refute(after, cur.side, cur.left);
     cur.phase = 'wrong'; cur.wrong = { before: before, move: move, after: after };
@@ -206,7 +209,7 @@
   function view(delta) {
     var v = cur.view + delta;
     if (v < 0 || v >= cur.history.length || busy) return;
-    cur.view = v; cur.selected = null; render();
+    cur.view = v; cur.selected = null; resetMarks(); render();
   }
   function analyse() {
     var fen = E.fen({ pieces: cur.start, turn: cur.side });
@@ -255,7 +258,35 @@
     if (h && cur.hint >= 2) arrows.push({ m: h, color: '#e2a400' });
     if (cur.phase === 'wrong') { arrows.push({ m: cur.wrong.move, color: '#e0635f' }); if (cur.reply) arrows.push({ m: cur.reply, color: '#c63a2e' }); }
     $('arrows').innerHTML = arrows.map(function (a) { return arrowSvg(a.m, a.color); }).join('');
+    drawMarks();
   }
+
+  // ---- Marks, as on the AI page: right-drag from one square to another draws an orange arrow (a knight's as an L),
+  // a right-click on a square colours it, doing it again takes it away, and a left click clears them all. ----
+  var marks = { squares: {}, arrows: {} }, markDrag = null;
+  function markKey(at) { return at.r * 8 + at.c; }
+  function resetMarks() { marks = { squares: {}, arrows: {} }; markDrag = null; drawMarks(); }
+  function markPoints(a, b) {
+    var f = flip(), pt = function (s) { return { x: (f ? 7 - s.c : s.c) + 0.5, y: (f ? 7 - s.r : s.r) + 0.5 }; };
+    var p = pt(a), q = pt(b), dr = Math.abs(a.r - b.r), dc = Math.abs(a.c - b.c);
+    return dr * dc === 2 ? [p, dr === 2 ? { x: p.x, y: q.y } : { x: q.x, y: p.y }, q] : [p, q];
+  }
+  function markArrow(a, b, ghost) {
+    var pts = markPoints(a, b), n = pts.length, q = pts[n - 1], o = pts[n - 2], len = Math.hypot(q.x - o.x, q.y - o.y), ux = (q.x - o.x) / len, uy = (q.y - o.y) / len;
+    var tip = { x: q.x - ux * 0.08, y: q.y - uy * 0.08 }, base = { x: tip.x - ux * 0.42, y: tip.y - uy * 0.42 }, w = 0.28;
+    var s = pts[0], t = pts[1], sl = Math.hypot(t.x - s.x, t.y - s.y), start = { x: s.x + (t.x - s.x) / sl * 0.22, y: s.y + (t.y - s.y) / sl * 0.22 };
+    var line = [start].concat(pts.slice(1, n - 1), [base]).map(function (p) { return p.x.toFixed(3) + ',' + p.y.toFixed(3); }).join(' ');
+    return '<g opacity="' + (ghost ? 0.55 : 0.8) + '"><polyline points="' + line + '" fill="none" stroke="#f6a821" stroke-width="0.2" stroke-linejoin="miter"/>' +
+      '<polygon points="' + tip.x + ',' + tip.y + ' ' + (base.x - uy * w) + ',' + (base.y + ux * w) + ' ' + (base.x + uy * w) + ',' + (base.y - ux * w) + '" fill="#f6a821"/></g>';
+  }
+  function drawMarks() {
+    if (!$('drawLayer')) return;
+    $('board').querySelectorAll('.sq').forEach(function (sq) { sq.classList.toggle('marked', !!marks.squares[Number(sq.dataset.r) * 8 + Number(sq.dataset.c)]); });
+    var html = Object.keys(marks.arrows).map(function (k) { var a = marks.arrows[k]; return markArrow(a.from, a.to); }).join('');
+    if (markDrag && markDrag.to && !same(markDrag.to, markDrag.from) && !marks.arrows[markKey(markDrag.from) + '-' + markKey(markDrag.to)]) html += markArrow(markDrag.from, markDrag.to, true);
+    $('drawLayer').innerHTML = html;
+  }
+  function hasMarks() { return Object.keys(marks.squares).length > 0 || Object.keys(marks.arrows).length > 0; }
   function arrowSvg(m, color) {
     var f = flip(), p = function (at) { return { x: (f ? 7 - at.c : at.c) + 0.5, y: (f ? 7 - at.r : at.r) + 0.5 }; };
     var a = p(m.from), b = p(m.to), dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy), ux = dx / len, uy = dy / len;
@@ -321,7 +352,33 @@
     return el && $('board').contains(el) ? { r: Number(el.dataset.r), c: Number(el.dataset.c) } : null;
   }
   function ownAt(at) { return cur.pieces.find(function (p) { return same(p.at, at) && p.side === cur.side; }); }
+  $('boardWrap').addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  // Marks first: a right button never moves a piece; a left click clears the marks and then plays as usual.
   $('boardWrap').addEventListener('pointerdown', function (e) {
+    if (!cur || e.pointerType === 'touch') return;
+    if (e.button === 2) {
+      e.preventDefault(); e.stopImmediatePropagation();
+      var at = squareAt(e.clientX, e.clientY);
+      if (at) markDrag = { id: e.pointerId, from: at, to: null };
+      return;
+    }
+    if (e.button === 0 && hasMarks()) resetMarks();
+  });
+  window.addEventListener('pointermove', function (e) {
+    if (!markDrag || e.pointerId !== markDrag.id) return;
+    var at = squareAt(e.clientX, e.clientY);
+    if (at && !same(at, markDrag.to)) { markDrag.to = at; drawMarks(); }
+  });
+  window.addEventListener('pointerup', function (e) {
+    if (!markDrag || e.pointerId !== markDrag.id || e.button !== 2) return;
+    var from = markDrag.from, at = squareAt(e.clientX, e.clientY);
+    markDrag = null;
+    if (at && same(at, from)) { var k = markKey(at); if (marks.squares[k]) delete marks.squares[k]; else marks.squares[k] = true; }
+    else if (at) { var key = markKey(from) + '-' + markKey(at); if (marks.arrows[key]) delete marks.arrows[key]; else marks.arrows[key] = { from: from, to: at }; }
+    drawMarks();
+  });
+  $('boardWrap').addEventListener('pointerdown', function (e) {
+    if (e.button > 0) return;
     if (!cur || !live()) return;
     var at = squareAt(e.clientX, e.clientY);
     if (!at) return;
