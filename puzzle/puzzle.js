@@ -394,7 +394,13 @@
     var ok = res.filter(function (r) { return r === 'ok'; }).length, hinted = res.filter(function (r) { return r === 'hint'; }).length;
     var total = Math.round(session.times.reduce(function (a, b) { return a + (b || 0); }, 0) / 1000);
     $('sumDots').innerHTML = res.map(function (r, i) { return '<i class="' + r + '">' + (i + 1) + '</i>'; }).join('');
-    $('sumTime').textContent = 'เวลารวม ' + Math.floor(total / 60) + ':' + String(total % 60).padStart(2, '0');
+    // Boxes of numbers instead of a sentence (hints only when used), and one short tip on two lines.
+    var tile = function (kind, num, word) { return '<div class="tile ' + kind + '"><b>' + num + '</b><span>' + word + '</span></div>'; };
+    $('sumTiles').innerHTML = tile('ok', ok + hinted, 'แก้ได้') + (hinted ? tile('hint', hinted, 'คำใบ้') : '') +
+      tile('miss', n - ok - hinted, 'พลาด') + tile('time' + (total >= 600 ? ' long' : ''), Math.floor(total / 60) + ':' + String(total % 60).padStart(2, '0'), 'เวลา');
+    var tip = function (head, more) { $('sumTip').innerHTML = '<b>' + head + '</b>' + (more ? '<span>' + more + '</span>' : ''); };
+    // The big button across is what to do next; the others sit under it.
+    var main = function (el) { ['sumNext', 'sumAgain'].forEach(function (id) { $(id).classList.toggle('main', $(id) === el); }); };
     var stars = $('sumStars');
     if (lv) {
       var was = P.current(progress), rec = P.record(progress, lv, res, LEVELS);
@@ -404,19 +410,22 @@
       $('sumTitle').textContent = rec.passed ? (rec.stars === 3 ? 'สุดยอด! ผ่านด่าน ' + lv : 'ผ่านด่าน ' + lv + ' แล้ว!') : 'ยังไม่ผ่านด่าน ' + lv;
       stars.hidden = false;
       stars.innerHTML = [0, 1, 2].map(function (i) { return '<i class="' + (i < rec.stars ? 'on' : '') + '" style="animation-delay:' + (0.25 + i * 0.35) + 's">★</i>'; }).join('');
-      $('sumText').textContent = 'แก้ได้ ' + (ok + hinted) + ' จาก ' + n + ' ข้อ' + (hinted ? ' (ใช้คำใบ้ ' + hinted + ' ข้อ)' : '') +
-        (rec.passed ? (rec.stars < 3 ? ' · ถูกครบโดยไม่ใช้คำใบ้ได้ 3 ดาว' : '') : ' · ต้องแก้ได้ ' + P.PASS + ' ข้อจึงผ่าน ลองอีกครั้งนะ');
-      $('sumAgain').textContent = 'เล่นซ้ำ';
+      if (!rec.passed) tip('ต้องแก้ได้ ' + P.PASS + ' ข้อจึงผ่าน', 'ลองอีกครั้งนะ');
+      else if (rec.stars < 3) tip('อยากได้ 3 ดาว?', 'ทำถูกทุกข้อ ไม่ใช้คำใบ้');
+      else tip('ถูกทุกข้อโดยไม่ใช้คำใบ้', 'เก่งมาก!');
+      $('sumAgain').textContent = rec.passed ? 'เล่นซ้ำ' : 'ลองอีกครั้ง';
       $('sumNext').hidden = !rec.passed; $('sumSettings').hidden = true;
-      $('sumNext').textContent = 'ด่านถัดไป';
+      $('sumNext').textContent = 'ด่านถัดไป →';
+      main(rec.passed ? $('sumNext') : $('sumAgain'));
       resultSound(!rec.passed ? 'failure' : rec.stars === 3 ? 'perfect' : 'set');
     } else {
       pending = null; walkFrom = null;
       $('sumTitle').textContent = ok + hinted === n ? 'เยี่ยมมาก! ครบทุกข้อ' : ok + hinted >= n / 2 ? 'เก่งมาก!' : 'สู้ต่อนะ!';
       stars.hidden = true;
-      $('sumText').textContent = 'แก้ได้ ' + (ok + hinted) + ' จาก ' + n + ' ข้อ' + (hinted ? ' (ใช้คำใบ้ ' + hinted + ' ข้อ)' : '') + ' · ฝึกอิสระ ไม่นับด่าน';
+      tip('ฝึกอิสระ', 'ไม่นับด่าน');
       $('sumAgain').textContent = 'เล่นชุดใหม่';
       $('sumNext').hidden = true; $('sumSettings').hidden = false;
+      main($('sumAgain'));
       resultSound(ok + hinted === n ? 'perfect' : 'set');
     }
     $('summary').showModal();

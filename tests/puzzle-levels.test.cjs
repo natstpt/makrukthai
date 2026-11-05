@@ -97,6 +97,11 @@ assert.equal(P.rank(all, LEVELS).name, LEVELS.ranks[6].name, 'all six chapters: 
 // ---- The page ----
 const html = fs.readFileSync(path.join(root, 'puzzle', 'index.html'), 'utf8'), js = fs.readFileSync(path.join(root, 'puzzle', 'puzzle.js'), 'utf8');
 for (const id of ['map', 'mapPath', 'playBtn', 'freeBtn', 'resetLevels', 'sumStars', 'sumNext', 'sumMap', 'rankUp']) assert(html.includes('id="' + id + '"'), 'the page has #' + id);
+// The result: boxes of numbers (solved, hints when used, missed, time) and a two-line tip instead of one long sentence,
+// with one big button across for what to do next.
+assert(html.includes('id="sumTiles"') && html.includes('id="sumTip"') && !html.includes('id="sumText"') && /\.sumFoot \.btn\.main\{flex:1 0 100%/.test(html), 'the result page shows boxes, a tip and one big button');
+assert(js.includes("tile('ok', ok + hinted, 'แก้ได้')") && js.includes("(hinted ? tile('hint', hinted, 'คำใบ้') : '')") && js.includes("tip('อยากได้ 3 ดาว?', 'ทำถูกทุกข้อ ไม่ใช้คำใบ้')"), 'the boxes and the tip');
+assert(js.includes("main(rec.passed ? $('sumNext') : $('sumAgain'))"), 'the next level is the big button, or trying again after a fail');
 assert(html.indexOf('puzzle/levels.js') < html.indexOf('puzzle/puzzle.js') && html.indexOf('puzzle/progress.js') < html.indexOf('puzzle/puzzle.js'), 'levels and progress load before the page script');
 assert(/if \(!cameBack\(\)\) showMap\(\);\s*\}\)\(\);\s*$/.test(js), 'the page opens on the level map (or back on the puzzle left for the analysis page)');
 console.log('Puzzle levels verified: ' + LEVELS.levels.length + ' levels in ' + LEVELS.chapters.length + ' chapters (' + seen.size + ' puzzles, none twice), stars, unlocking, titles and stored progress.');

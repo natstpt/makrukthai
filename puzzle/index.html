@@ -128,12 +128,28 @@
     .btn.main{background:var(--good);color:#fff;margin-left:auto}
     .btn:disabled{opacity:.4;cursor:default}
     .sum{text-align:center;padding:22px 18px 6px}
-    .sum img{width:96px;height:96px;border-radius:50%;object-fit:cover;border:3px solid var(--line)}
+    .sum img{width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid var(--line)}
     .sum h2{margin:10px 0 4px;font-size:26px}
     .sum p{margin:4px 0;color:var(--muted);font-size:16px}
     .dots{display:flex;justify-content:center;gap:5px;margin:14px 0 4px;flex-wrap:wrap}
     .dots i{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:13px;font-weight:900;color:#fff}
     .dots i.ok{background:var(--good)}.dots i.hint{background:var(--gold);color:#2b2214}.dots i.miss{background:var(--danger)}
+    @media (max-width:360px){.dots{gap:3px}.dots i{width:21px;height:21px;font-size:12px}}
+    /* The result at a glance: a box per number (solved, hints, missed, time), big number over one short word. */
+    .tiles{display:flex;justify-content:center;gap:8px;margin:14px 0 4px}
+    .tile{flex:1 1 0;min-width:0;max-width:112px;background:var(--panel2);border-radius:14px;padding:8px 2px 7px;border-bottom:4px solid var(--line)}
+    .tile b{display:block;font-size:28px;line-height:1.15;font-weight:950;font-variant-numeric:tabular-nums;white-space:nowrap}
+    .tile span{display:block;font-size:14px;font-weight:800;color:var(--muted);white-space:nowrap}
+    .tile.ok{border-color:var(--good)}.tile.ok b{color:#8fd47a}
+    .tile.hint{border-color:var(--gold)}.tile.hint b{color:var(--gold)}
+    .tile.miss{border-color:var(--danger)}.tile.miss b{color:#ff8f88}
+    .tile.long b{font-size:20px;line-height:1.6;letter-spacing:-.5px}
+    @media (max-width:360px){.tiles{gap:6px}}
+    .sum .tip{margin:12px 0 2px;font-size:16px;line-height:1.5;color:var(--ink)}
+    .tip b,.tip span{display:block}.tip span{color:var(--muted);font-weight:700}
+    /* What to do next: one big button across, the others side by side under it. */
+    .sumFoot .btn{flex:1 1 0;min-height:48px;margin:0}
+    .sumFoot .btn.main{flex:1 0 100%;order:-1;min-height:56px;font-size:20px}
     .empty{padding:30px 16px;text-align:center;color:var(--muted)}
     /* Phones: one set card a row, the pieces on top and the name with its count beneath. */
     @media (max-width:560px){
@@ -280,10 +296,10 @@
       <h2 id="sumTitle"></h2>
       <div class="bigStars" id="sumStars" hidden></div>
       <div class="dots" id="sumDots"></div>
-      <p id="sumText"></p>
-      <p id="sumTime"></p>
+      <div class="tiles" id="sumTiles"></div>
+      <p class="tip" id="sumTip"></p>
     </div>
-    <div class="dlgFoot"><button class="btn" id="sumMap">แผนที่</button><button class="btn" id="sumSettings">ตั้งค่า</button><button class="btn" id="sumAgain">เล่นซ้ำ</button><button class="btn main" id="sumNext">ด่านถัดไป</button></div>
+    <div class="dlgFoot sumFoot"><button class="btn" id="sumMap">แผนที่</button><button class="btn" id="sumSettings">ตั้งค่า</button><button class="btn" id="sumAgain">เล่นซ้ำ</button><button class="btn main" id="sumNext">ด่านถัดไป</button></div>
   </div>
 </dialog>
 
@@ -307,6 +323,6 @@
 <script src="puzzle/puzzle-core.js?v=20261110-back"></script>
 <script src="puzzle/levels.js?v=20261107-levels"></script>
 <script src="puzzle/progress.js?v=20261107-levels"></script>
-<script src="puzzle/puzzle.js?v=20261110-back"></script>
+<script src="puzzle/puzzle.js?v=20261111-summary"></script>
 </body>
 </html>
