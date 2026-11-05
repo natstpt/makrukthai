@@ -192,7 +192,19 @@ for (const [name, html] of [['learn', learn], ['puzzle', puzzle]]) {
   assert(html.includes('<base href="../">'), name + ' loads its files from the site root');
   for (const [, src] of html.matchAll(/<script src="([^"?]+)/g)) assert(fs.existsSync(path.join(root, src)), name + ': ' + src + ' exists');
 }
-assert(learn.includes('class="brand" href="./"'), 'the lessons link back home');
+// The lessons and AI pages have the puzzle page's top row (page-top.css): ← to the home page, the page's icon and
+// name, and the music and effects buttons (no second copy in their menus).
+const ai = read('ai/index.html');
+for (const [name, html, title] of [['learn', learn, 'บทเรียนพื้นฐาน'], ['ai', ai, 'ฝึกเล่นกับ AI']]) {
+  assert(html.includes('<link rel="stylesheet" href="page-top.css'), name + ' loads page-top.css');
+  assert(/<header class="[^"]*pageTop"[^>]*>\s*<a class="pageIcon" href="\.\/" aria-label="กลับหน้าหลัก"/.test(html), name + ': ← goes to the home page');
+  assert(html.includes('alt="">' + title + '</h1>'), name + ' is called ' + title);
+  assert(/class="pageIcon snd" id="musicBtn" data-icon/.test(html) && /class="pageIcon snd" id="effectsBtn" data-icon/.test(html), name + ': sound buttons in the row');
+  assert((html.match(/id="musicBtn"/g) || []).length === 1 && (html.match(/id="effectsBtn"/g) || []).length === 1, name + ': one of each sound button');
+}
+assert(!ai.includes('<summary>เสียง</summary>'), 'the AI page has no sound section in its options any more');
+assert(!learn.includes('class="settingsGear"') && /class="pageIcon" id="settingsBtn"/.test(learn), 'the lessons settings gear sits in the row');
+assert(!/target:'(musicBtn|effectsBtn)'/.test(learn), 'the lesson menu has no sound icons any more');
 assert(!learn.includes('class="creditCard"') && learn.includes('id="creditsSlot"') && learn.includes('<script src="credits.js') && /MakrukCredits\.load\(document\.getElementById\('creditsSlot'\)\)/.test(learn), 'the lessons page takes its credits from credits.html');
 assert(read('editor.html').includes('<a href="learn/" class="back">'), 'the editor links to the lessons at learn/');
 assert(puzzle.includes('id="settingsBtn"'), 'the puzzle page has the settings button');
