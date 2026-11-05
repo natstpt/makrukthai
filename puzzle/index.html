@@ -14,15 +14,15 @@
       --board:#efd783;--boardLine:#24200f;--arrow:#9e8c44;
       --accent:#c69a29;--gold:#f2c14e;--danger:#e0635f;--good:#5fae4b;--line:#473d2d;
       --font:"Noto Sans Thai","Leelawadee UI",Tahoma,sans-serif;
-      --boardSize:min(100vw,calc(100vh - 330px - env(safe-area-inset-bottom)),640px);
+      --boardSize:min(100vw,calc(100vh - 340px - env(safe-area-inset-bottom)),640px);
     }
-    @supports(height:100dvh){:root{--boardSize:min(100vw,calc(100dvh - 330px - env(safe-area-inset-bottom)),640px)}}
+    @supports(height:100dvh){:root{--boardSize:min(100vw,calc(100dvh - 340px - env(safe-area-inset-bottom)),640px)}}
     *{box-sizing:border-box}
     html,body{height:100%;margin:0}
     body{font-family:var(--font);background:var(--bg);color:var(--ink);overflow:hidden;-webkit-tap-highlight-color:transparent}
     button{font-family:inherit}
     .app{height:100%;display:flex;flex-direction:column;align-items:center}
-    .head{width:100%;display:flex;align-items:center;justify-content:space-between;padding:8px 10px;min-height:52px}
+    .head{width:100%;display:flex;align-items:center;justify-content:space-between;padding:8px 10px;min-height:52px;flex-shrink:0}
     .head h1{margin:0;font-size:20px;font-weight:950;display:flex;align-items:center;gap:8px;min-width:0;white-space:nowrap}
     .headTools{display:flex;align-items:center;flex-shrink:0}
     /* Music and effects: the icon shows whether each is on (presentation.js sets aria-pressed). */
@@ -37,13 +37,15 @@
     .iconBtn{width:44px;height:44px;border-radius:12px;border:0;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer;text-decoration:none;flex-shrink:0}
     .iconBtn:hover,.iconBtn:focus-visible{background:var(--panel2);color:var(--ink);outline:none}
     .iconBtn svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
-    .coach{width:var(--boardSize);display:flex;align-items:flex-end;gap:10px;padding:4px 8px 10px;min-height:96px}
+    .coach{width:var(--boardSize);display:flex;align-items:flex-end;gap:10px;padding:4px 8px 10px;height:108px;flex-shrink:0}
     .coach img{width:72px;height:72px;border-radius:50%;object-fit:cover;flex-shrink:0;background:#1f1a12;border:2px solid var(--line)}
-    .speech{flex:1;min-width:0;background:var(--ink);color:#2b2214;border-radius:16px;padding:10px 14px;position:relative;min-height:62px;transition:opacity .2s}
+    /* The speech box keeps one height (a title line and up to two short lines; longer text ends in …), so the board
+       below it never moves while playing. */
+    .speech{flex:1;min-width:0;background:var(--ink);color:#2b2214;border-radius:16px;padding:9px 14px;position:relative;height:90px;overflow:hidden;transition:opacity .2s}
     .speech:before{content:"";position:absolute;left:-9px;bottom:18px;border:9px solid transparent;border-right-color:var(--ink);border-left:0}
     .speech.dim{opacity:.72}
-    .say1{display:flex;align-items:center;gap:7px;font-weight:900;font-size:16px}
-    .say2{font-size:15px;line-height:1.45;margin-top:2px;color:#4b3c22}
+    .say1{display:flex;align-items:center;gap:7px;font-weight:900;font-size:16px;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .say2{font-size:15px;line-height:1.45;margin-top:2px;color:#4b3c22;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
     .turnBox{width:16px;height:16px;border-radius:4px;border:2px solid #2b2214;flex-shrink:0}
     .turnBox.white{background:#fff}.turnBox.black{background:#c63a2e}
     html.blackPieces .turnBox.black{background:#222}
@@ -90,6 +92,8 @@
     .tool:hover:not(:disabled),.tool:focus-visible{background:var(--panel2);color:var(--ink);outline:none}
     .tool:disabled{opacity:.35;cursor:default}
     .big{flex:1.6;border:0;border-radius:14px;font-size:20px;font-weight:950;padding:13px 8px;cursor:pointer;color:#fff;box-shadow:0 4px 0 rgba(0,0,0,.28)}
+    .big{white-space:nowrap;min-width:0}
+    @media (max-width:360px){.big{font-size:17px;padding:13px 4px}.tool{font-size:12px}}
     .big:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.28)}
     .big.go{background:var(--good)}.big.retry{background:var(--danger)}
     dialog{border:0;border-radius:20px;background:var(--panel);color:var(--ink);padding:0;width:min(560px,calc(100vw - 24px));max-height:calc(100dvh - 24px);box-shadow:0 30px 80px rgba(0,0,0,.5)}
@@ -300,9 +304,9 @@
 <script src="editor-model.js"></script>
 <script src="presentation.js?v=20261106-puzzle"></script>
 <script src="puzzle/sets.js?v=20261105-local"></script>
-<script src="puzzle/puzzle-core.js?v=20261105-local"></script>
+<script src="puzzle/puzzle-core.js?v=20261110-back"></script>
 <script src="puzzle/levels.js?v=20261107-levels"></script>
 <script src="puzzle/progress.js?v=20261107-levels"></script>
-<script src="puzzle/puzzle.js?v=20261109-board"></script>
+<script src="puzzle/puzzle.js?v=20261110-back"></script>
 </body>
 </html>

@@ -8,7 +8,7 @@
  * they are not remembered. */
 (function () {
   'use strict';
-  var R = window.MakrukRules, N = window.MakrukNotation, E = window.MakrukEditor, C = window.MakrukPuzzleCore;
+  var R = window.MakrukRules, E = window.MakrukEditor, C = window.MakrukPuzzleCore;
   var DATA = window.MakrukPuzzleSets;
   var FILE = { king: 'K', rook: 'R', knight: 'N', met: 'Q', khon: 'B', pawn: 'P', promoted: 'F' };
   var THAI_FILES = ['ก', 'ข', 'ค', 'ง', 'จ', 'ฉ', 'ช', 'ญ'];
@@ -50,10 +50,11 @@
     if (spec.level <= MAP_LEVELS) return LEVELS.levels[spec.level - 1].slots.map(function (x) { return { set: x[0], mate: x[1], i: x[2] }; });
     return C.plan(DATA, { mates: [1, 2, 3], sets: ALL_SETS });
   }
-  function newSession(spec) {
+  // back: a puzzle left for the analysis page (see analyse), to come back to as it was.
+  function newSession(spec, back) {
     spec = spec || last; last = spec; walkFrom = null;
     showPlay();
-    var slots = slotsFor(spec), mine = ++round;
+    var slots = back ? back.slots : slotsFor(spec), mine = ++round;
     clearInterval(timer); cur = null;
     if (!slots.length) { session = null; renderEmpty(); return; }
     say('กำลังเตรียมโจทย์…', ''); $('bar').innerHTML = '';
@@ -62,8 +63,8 @@
       if (mine !== round) return;
       var got = {};
       ids.forEach(function (id, i) { got[id] = lists[i]; });
-      session = { list: C.fill(slots, got), index: 0, results: [], times: [], level: spec.level || null };
-      startPuzzle();
+      session = { list: C.fill(slots, got), slots: slots, index: 0, results: [], times: [], level: spec.level || null };
+      if (back) comeBack(back); else startPuzzle();
     }, function () {
       if (mine !== round) return;
       say('โหลดโจทย์ไม่สำเร็จ', 'ตรวจอินเทอร์เน็ตแล้วโหลดหน้านี้ใหม่อีกครั้ง');
@@ -76,7 +77,7 @@
       p: p, side: st.turn, start: st.pieces, pieces: st.pieces, node: p.tree, left: p.mate,
       history: [{ pieces: st.pieces, last: null, node: p.tree, left: p.mate }], view: 0,
       phase: 'play', hint: 0, hinted: false, failed: false, selected: null, wrong: null, reply: null, mated: false,
-      began: Date.now(), elapsed: 0, stopped: false, result: null, lines: []
+      began: Date.now(), elapsed: 0, stopped: false, result: null
     };
     say(turnLine(), goalText());
     tick(); clearInterval(timer); timer = setInterval(tick, 1000);
@@ -119,10 +120,9 @@
   function play(from, to) {
     if (!live()) return;
     if (!R.legalDestinations(cur.pieces, from).some(function (t) { return same(t, to); })) return;
-    var move = { from: from, to: to }, before = cur.pieces, text = N.formatMove(before, from, to);
+    var move = { from: from, to: to }, before = cur.pieces;
     var res = C.step(cur.node, move), after = R.applyMove(before, from, to);
     cur.selected = null; cur.wrong = null; cur.reply = null;
-    if (text) cur.lines.push(text.text);
     if (!res.ok) { wrongMove(before, after, move); return; }
     moveSound(move, after, cur.side, !res.mate);
     push(after, move);
@@ -133,8 +133,6 @@
     busy++;
     setTimeout(function () {
       busy--;
-      var t = N.formatMove(cur.pieces, res.reply.from, res.reply.to);
-      if (t) cur.lines.push(t.text);
       push(R.applyMove(cur.pieces, res.reply.from, res.reply.to), res.reply);
       moveSound(res.reply, cur.pieces, C.other(cur.side));
       cur.history[cur.history.length - 1].node = cur.node;
@@ -153,8 +151,8 @@
     cur.phase = 'solved'; cur.mated = true;
     settle(cur.failed ? 'miss' : cur.hinted ? 'hint' : 'ok'); stopClock();
     var title = cur.failed ? 'แก้ได้แล้ว' : cur.hinted ? 'แก้ได้ด้วยคำใบ้' : 'แก้ได้แล้ว! เก่งมาก';
-    var more = cur.failed ? 'ครั้งหน้าลองให้ได้ตั้งแต่ครั้งแรกนะ' : cur.hinted ? 'ลองจำรูปแบบนี้ไว้นะ' : 'รุกจนสวยมาก';
-    say(MARK.ok + title, more + ' · ' + cur.lines.join(' · '));
+    var more = cur.failed ? 'ครั้งหน้าลองให้ได้ตั้งแต่ครั้งแรกนะ' : cur.hinted ? 'ลองจำรูปแบบนี้ไว้นะ' : 'รุกจนสวยมาก กด ย้อน เพื่อดูทีละตา';
+    say(MARK.ok + title, more);
     resultSound('success');
     render();
   }
@@ -180,13 +178,12 @@
   function retry() {
     if (!cur.wrong) return;
     cur.pieces = cur.wrong.before; cur.wrong = null; cur.reply = null; cur.phase = 'play';
-    cur.lines.pop();
     say(turnLine(), 'ลองใหม่อีกครั้ง เหลืออีก ' + cur.left + ' ตา');
     render();
   }
   // Plays the book line from where the learner is (before a wrong move).
   function showSolution() {
-    if (cur.wrong) { cur.pieces = cur.wrong.before; cur.wrong = null; cur.reply = null; cur.lines.pop(); }
+    if (cur.wrong) { cur.pieces = cur.wrong.before; cur.wrong = null; cur.reply = null; }
     settle('miss'); stopClock();
     cur.phase = 'show'; cur.hint = 0;
     var steps = C.line(cur.node);
@@ -198,11 +195,10 @@
       if (!cur || cur.phase !== 'show') { busy--; return; }
       if (i >= steps.length) {
         busy--; cur.phase = 'solved'; cur.mated = true;
-        say(MARK.hint + 'นี่คือเฉลย', cur.lines.join(' · '));
+        say(MARK.hint + 'นี่คือเฉลย', 'กด ย้อน เพื่อดูทีละตา');
         render(); return;
       }
-      var m = steps[i++], t = N.formatMove(cur.pieces, m.from, m.to), mover = i % 2 ? cur.side : C.other(cur.side);
-      if (t) cur.lines.push(t.text);
+      var m = steps[i++], mover = i % 2 ? cur.side : C.other(cur.side);
       push(R.applyMove(cur.pieces, m.from, m.to), m);
       moveSound(m, cur.pieces, mover);
       render();
@@ -232,9 +228,47 @@
     if (v < 0 || v >= cur.history.length || busy) return;
     cur.view = v; cur.selected = null; resetMarks(); render();
   }
+  // The analysis page (editor.html) opens with a button back to this puzzle: the set, the puzzle and how it went are kept
+  // in this tab (sessionStorage) and put back when the page opens again with ?back=1 or by the browser's back.
+  var BACK = 'makrukPuzzleBack';
   function analyse() {
     var fen = E.fen({ pieces: cur.start, turn: cur.side });
-    location.href = 'editor.html?analysis=1#fen=' + encodeURIComponent(fen) + (cur.side === 'black' ? '&flip=1' : '');
+    try {
+      sessionStorage.setItem(BACK, JSON.stringify({
+        spec: last, filters: filters, slots: session.slots, index: session.index, results: session.results, times: session.times,
+        moves: cur.history.slice(1).map(function (h) { return h.last; }), view: cur.view,
+        result: cur.result, elapsed: cur.elapsed, hinted: cur.hinted, failed: cur.failed, say: [$('say1').innerHTML, $('say2').textContent]
+      }));
+    } catch (e) {}
+    location.href = 'editor.html?analysis=1&from=puzzle#fen=' + encodeURIComponent(fen) + (cur.side === 'black' ? '&flip=1' : '');
+  }
+  // The finished puzzle as it was left: its moves played again, the clock stopped, the same words from the coach.
+  function comeBack(b) {
+    session.index = b.index; session.results = b.results; session.times = b.times;
+    startPuzzle(); clearInterval(timer);
+    b.moves.forEach(function (m) { push(R.applyMove(cur.pieces, m.from, m.to), m); });
+    cur.phase = 'solved'; cur.mated = true; cur.stopped = true; cur.left = 0;
+    cur.result = b.result; cur.elapsed = b.elapsed; cur.hinted = b.hinted; cur.failed = b.failed;
+    cur.view = Math.max(0, Math.min(b.view, cur.history.length - 1));
+    $('say1').innerHTML = b.say[0]; $('say2').textContent = b.say[1];
+    tick(); render();
+  }
+  function takeBack() {
+    var b = null;
+    try { b = JSON.parse(sessionStorage.getItem(BACK) || 'null'); sessionStorage.removeItem(BACK); } catch (e) {}
+    if (!b || !b.spec || !Array.isArray(b.slots) || !b.slots.length || !Array.isArray(b.moves) || !b.say) return null;
+    return b;
+  }
+  function cameBack() {
+    var asked = /[?&]back=1/.test(location.search), nav = null;
+    try { nav = performance.getEntriesByType('navigation')[0]; } catch (e) {}
+    if (!asked && !(nav && nav.type === 'back_forward')) { try { sessionStorage.removeItem(BACK); } catch (e) {} return false; }
+    if (asked) try { history.replaceState(null, '', location.pathname); } catch (e) {}
+    var b = takeBack();
+    if (!b) return false;
+    if (b.filters) filters = b.filters;
+    newSession(b.spec, b);
+    return true;
   }
 
   // ---- Board ----
@@ -635,5 +669,7 @@
     showMap();
   });
 
-  showMap();
+  // A page shown again from the browser's memory (iOS back swipe) is already as it was; a fresh load comes back to the
+  // puzzle left for the analysis page, or opens on the level map.
+  if (!cameBack()) showMap();
 })();

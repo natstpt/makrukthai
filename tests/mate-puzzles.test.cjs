@@ -210,6 +210,16 @@ assert(/\.coord\{[^}]*font-weight:bold;color:#574819/.test(puzzle) && /\.coord\.
 assert(/\(min-width:600px\) and \(orientation:portrait\)/.test(puzzle) && /\(pointer:coarse\)/.test(puzzle), 'tablets get a bigger board, upright and lying down');
 assert(/\.mapScroll\{[^}]*background-color:var\(--board\)/.test(puzzle) && !/repeating-conic-gradient/.test(puzzle), 'the level map is one plain board colour');
 for (const w of ['ยศ', 'เด็ก', 'ครู']) assert(!puzzle.includes(w) && !pjs.includes(w), 'the puzzle page does not say ' + w);
+// The coach's box keeps one height and the solved words carry no move list, so the board never moves; the analysis
+// page links back to the puzzle, which the puzzle page keeps for that tab and puts back.
+assert(/\.coach\{[^}]*height:108px;flex-shrink:0/.test(puzzle) && /\.speech\{[^}]*height:90px;overflow:hidden/.test(puzzle) && /\.say2\{[^}]*-webkit-line-clamp:2/.test(puzzle), 'the speech box has one height');
+assert(/\.head\{[^}]*flex-shrink:0/.test(puzzle), 'the header never shrinks (which would move the board)');
+assert(!/cur\.lines/.test(pjs), 'no move list in the coach');
+assert(/from=puzzle/.test(fn('analyse')) && /sessionStorage\.setItem\(BACK/.test(fn('analyse')), 'the analysis page is opened with the puzzle kept');
+assert(/back_forward/.test(fn('cameBack')) && /back=1/.test(fn('cameBack')), 'the puzzle comes back by the link or the browser back');
+const ejs = read('editor.js');
+assert(/get\('from'\)==='puzzle'/.test(ejs) && ejs.includes("backLink.href='puzzle/?back=1'") && ejs.includes('← กลับไปโจทย์'), 'the analysis page links back to the puzzle');
+assert(read('index.html').includes('<small>ลองเลือกได้เลย 🙂</small>'), 'the home page greeting is short');
 
 // ---- The local sets against the tables on this computer, when its server runs ----
 (async () => {

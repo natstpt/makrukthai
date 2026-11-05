@@ -283,6 +283,9 @@
   // ถอดหมาก (editor.html?analysis=1, or #fen= for a position): both sides move freely while the hard AI
   // (engine-ai.js) analyses every position with three lines. The assistance options switch each part on or off.
   var analysis=false;try{analysis=new URLSearchParams(location.search).get('analysis')==='1';}catch(e){}
+  // Opened from the puzzle page's วิเคราะห์ (from=puzzle): the top-left link goes back to that puzzle, kept by the
+  // puzzle page, so nobody needs the browser's back button.
+  try{if(new URLSearchParams(location.search).get('from')==='puzzle'){var backLink=document.querySelector('.pageHeader .back');if(backLink){backLink.href='puzzle/?back=1';backLink.textContent='← กลับไปโจทย์';}}}catch(e){}
   var assist={bar:true,arrows:true,threats:true,lines:true,feedback:true};
   try{var savedAssist=JSON.parse(localStorage.getItem('makrukAssist')||'{}');Object.keys(assist).forEach(function(k){if(typeof savedAssist[k]==='boolean')assist[k]=savedAssist[k];});}catch(e){}
   var view={fen:null,lines:[],depth:0,done:false,prev:null,moves:0,error:''};

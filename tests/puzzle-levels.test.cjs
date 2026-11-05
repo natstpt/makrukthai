@@ -98,5 +98,5 @@ assert.equal(P.rank(all, LEVELS).name, LEVELS.ranks[6].name, 'all six chapters: 
 const html = fs.readFileSync(path.join(root, 'puzzle', 'index.html'), 'utf8'), js = fs.readFileSync(path.join(root, 'puzzle', 'puzzle.js'), 'utf8');
 for (const id of ['map', 'mapPath', 'playBtn', 'freeBtn', 'resetLevels', 'sumStars', 'sumNext', 'sumMap', 'rankUp']) assert(html.includes('id="' + id + '"'), 'the page has #' + id);
 assert(html.indexOf('puzzle/levels.js') < html.indexOf('puzzle/puzzle.js') && html.indexOf('puzzle/progress.js') < html.indexOf('puzzle/puzzle.js'), 'levels and progress load before the page script');
-assert(/showMap\(\);\s*\}\)\(\);\s*$/.test(js), 'the page opens on the level map');
+assert(/if \(!cameBack\(\)\) showMap\(\);\s*\}\)\(\);\s*$/.test(js), 'the page opens on the level map (or back on the puzzle left for the analysis page)');
 console.log('Puzzle levels verified: ' + LEVELS.levels.length + ' levels in ' + LEVELS.chapters.length + ' chapters (' + seen.size + ' puzzles, none twice), stars, unlocking, titles and stored progress.');
