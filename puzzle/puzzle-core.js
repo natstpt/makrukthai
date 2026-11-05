@@ -116,7 +116,7 @@
   // reason. {reply: {from, to} | null, kind: 'stalemate' | 'capture' | 'escape', text}.
   function refute(after, side, left) {
     var def = other(side), st = R.gameStatus(after, def).state;
-    if (st === 'stalemate') return { reply: null, kind: 'stalemate', text: 'อับแล้ว! ขุน' + sideName(def) + 'ไม่โดนรุก แต่ไม่มีที่เดิน เกมจึงเสมอ' };
+    if (st === 'stalemate') return { reply: null, kind: 'stalemate', text: 'อับแล้ว! ขุน' + sideName(def) + 'ไม่มีที่เดิน เกมเสมอ' };
     var moves = R.legalMoves(after, def), later = left - 1;
     var holds = function (m) { return !wins(R.applyMove(after, m.from, m.to), side, later); };
     var taken = function (m) { var p = after.find(function (x) { return x.at.r === m.to.r && x.at.c === m.to.c; }); return p && p.side === side ? p : null; };
