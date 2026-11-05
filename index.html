@@ -8,10 +8,7 @@
   <meta name="author" content="นายณัฐกมล สุนทรพิทักษ์">
   <title>Makruk | หมากรุกไทย</title>
   <link rel="icon" href="assets/images/logo.svg" type="image/svg+xml">
-  <script>
-    // The lessons used to live here: old links to the credits (index.html#credits) go on to the lessons page.
-    if (location.hash === '#credits') location.replace('learn/#credits');
-  </script>
+  <link rel="stylesheet" href="credits.css?v=20261111-credits">
   <style>
     :root{
       --bg:#2e271d;--panel:#262018;--panel2:#332b20;--ink:#f7f5ec;--muted:#d8bf99;
@@ -53,6 +50,16 @@
       .go{display:none}
       .hello img{width:72px;height:72px}.speech{font-size:16px}
     }
+    /* The credits open over this page (credits.html's content, see credits.js): close with ×, a tap outside or Esc. */
+    .creditsDialog{border:0;padding:0;width:min(680px,calc(100vw - 24px));max-height:calc(100dvh - 24px);border-radius:20px;background:#f7f5eb;color:#423616;box-shadow:0 24px 80px rgba(0,0,0,.42);overflow:hidden}
+    .creditsDialog[open]{display:flex;flex-direction:column}
+    .creditsDialog::backdrop{background:rgba(0,0,0,.62)}
+    .creditsDialog .dlgHead{display:flex;align-items:center;gap:10px;padding:12px 12px 12px 18px;border-bottom:1px solid #eadcc7;flex-shrink:0}
+    .creditsDialog h2{margin:0;font-size:21px;flex:1;min-width:0}
+    .creditsDialog .close{width:44px;height:44px;border:0;border-radius:12px;background:#ebe9e4;color:#423616;font-size:24px;line-height:1;cursor:pointer;flex-shrink:0}
+    .creditsDialog .close:hover,.creditsDialog .close:focus-visible{background:#dcd8cf;outline:none}
+    .creditsDialog .dlgBody{padding:16px 18px 20px;overflow:auto;-webkit-overflow-scrolling:touch}
+    body:has(.creditsDialog[open]){overflow:hidden}
   </style>
 </head>
 <body>
@@ -80,6 +87,36 @@
       </a>
     </nav>
   </main>
-  <footer><p>จัดทำโดย นายณัฐกมล สุนทรพิทักษ์</p><p><a href="learn/#credits">Credits &amp; License</a> · <a href="https://github.com/natstpt/makrukthai" target="_blank" rel="noopener">Source code</a></p></footer>
+  <footer><p>จัดทำโดย นายณัฐกมล สุนทรพิทักษ์</p><p><a href="credits.html" id="creditsLink" aria-haspopup="dialog">Credits &amp; License</a> · <a href="https://github.com/natstpt/makrukthai" target="_blank" rel="noopener">Source code</a></p></footer>
+  <dialog class="creditsDialog" id="creditsDialog" aria-labelledby="creditsTitle">
+    <div class="dlgHead"><h2 id="creditsTitle">เครดิตและแหล่งที่มา</h2><button type="button" class="close" id="creditsClose" aria-label="ปิดเครดิต">×</button></div>
+    <div class="dlgBody" id="creditsBody"><p class="infoIntro">กำลังโหลดเครดิต…</p></div>
+  </dialog>
+  <script src="credits.js?v=20261111-credits"></script>
+  <script>
+    // Credits & License opens the credits over this page instead of going to another one (credits.html still works
+    // without scripts or <dialog>). Old links to the credits (index.html#credits) open them too.
+    (function () {
+      var dlg = document.getElementById('creditsDialog'), link = document.getElementById('creditsLink');
+      if (!dlg.showModal) return;
+      function open() { dlg.showModal(); document.getElementById('creditsBody').scrollTop = 0; MakrukCredits.load(document.getElementById('creditsBody')); }
+      link.addEventListener('click', function (e) { e.preventDefault(); open(); });
+      // After closing (×, a tap outside or Esc): drop an old #credits from the address and go back to the link.
+      function closed() {
+        if (location.hash === '#credits') history.replaceState(null, '', location.pathname + location.search);
+        link.focus({ preventScroll: true });
+      }
+      function shut() { dlg.close(); closed(); }
+      document.getElementById('creditsClose').addEventListener('click', shut);
+      // A tap on the dark area around the box (the dialog element itself, outside its content) closes it.
+      dlg.addEventListener('click', function (e) {
+        if (e.target !== dlg) return;
+        var r = dlg.getBoundingClientRect();
+        if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) shut();
+      });
+      dlg.addEventListener('cancel', closed);
+      if (location.hash === '#credits') open();
+    })();
+  </script>
 </body>
 </html>

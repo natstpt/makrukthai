@@ -178,13 +178,22 @@ assert.equal(C.available(DATA, all), ALL.length);
 const read = f => fs.readFileSync(path.join(root, f), 'utf8');
 const home = read('index.html');
 for (const href of ['learn/', 'ai/', 'puzzle/']) assert(home.includes('href="' + href + '"'), 'the home page links to ' + href);
-assert(home.includes("location.replace('learn/#credits')"), 'old links to the credits go on to the lessons');
+// The credits are written once, in credits.html: the home page opens them in a dialog (also for old #credits links)
+// and the lessons page fills its credits window from the same file; every file they link to exists.
+const credits = read('credits.html');
+assert(home.includes('id="creditsDialog"') && home.includes('href="credits.html" id="creditsLink"') && home.includes('<script src="credits.js') && /location\.hash === '#credits'\) open\(\)/.test(home), 'the home page opens the credits over itself');
+assert(/<main id="credits">/.test(credits) && (credits.match(/class="creditCard"/g) || []).length === 12, 'credits.html holds all 12 credits');
+for (const [, href] of credits.matchAll(/href="([^"]+)"/g)) {
+  const file = href.split(/[?#]/)[0];
+  if (!/^https?:/.test(href) && file !== './') assert(fs.existsSync(path.join(root, file)), 'credits.html: ' + file + ' exists');
+}
 const learn = read('learn/index.html'), puzzle = read('puzzle/index.html');
 for (const [name, html] of [['learn', learn], ['puzzle', puzzle]]) {
   assert(html.includes('<base href="../">'), name + ' loads its files from the site root');
   for (const [, src] of html.matchAll(/<script src="([^"?]+)/g)) assert(fs.existsSync(path.join(root, src)), name + ': ' + src + ' exists');
 }
 assert(learn.includes('class="brand" href="./"'), 'the lessons link back home');
+assert(!learn.includes('class="creditCard"') && learn.includes('id="creditsSlot"') && learn.includes('<script src="credits.js') && /MakrukCredits\.load\(document\.getElementById\('creditsSlot'\)\)/.test(learn), 'the lessons page takes its credits from credits.html');
 assert(read('editor.html').includes('<a href="learn/" class="back">'), 'the editor links to the lessons at learn/');
 assert(puzzle.includes('id="settingsBtn"'), 'the puzzle page has the settings button');
 assert(!/localStorage/.test(read('puzzle/puzzle.js')), 'the puzzle settings are not remembered');

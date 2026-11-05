@@ -1,0 +1,17 @@
+/* The credits' cards (credits.html), on the home page's dialog and on credits.html opened on its own. The lessons page
+   has the same rules in its own styles. */
+.infoIntro{margin:0 0 16px;color:#78664c;line-height:1.6}
+.creditList{display:grid;gap:12px}
+.creditCard{border:1px solid #dfdace;border-radius:13px;padding:14px;background:white}
+.creditCard h3{font-size:16px;margin:0 0 7px}
+.creditCard p{font-size:13px;line-height:1.65;margin:0;color:#6c5c45}
+.creditLinks{display:flex;gap:5px 12px;flex-wrap:wrap;margin-top:5px}
+.creditLinks a{display:inline-flex;align-items:center;min-height:40px;font-size:13px;font-weight:800}
+.creditNotice{font-size:12px;color:#806e52;line-height:1.6;margin:16px 0 0}
+.creditsPage a,.creditsDialog a{color:#645121;text-underline-offset:3px;overflow-wrap:anywhere}
+/* credits.html on its own */
+body.creditsPage{margin:0;background:#f7f5eb;color:#423616;font-family:"Noto Sans Thai","Leelawadee UI",Tahoma,sans-serif}
+.creditsHead{max-width:720px;margin:0 auto;padding:18px 16px 4px}
+.creditsHead a{font-weight:800}
+.creditsHead h1{font-size:24px;margin:10px 0 4px}
+.creditsPage main{max-width:720px;margin:0 auto;padding:8px 16px 32px}
