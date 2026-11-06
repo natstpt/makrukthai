@@ -102,6 +102,15 @@ for (const id of ['map', 'mapPath', 'playBtn', 'freeBtn', 'resetLevels', 'sumSta
 assert(html.includes('id="sumTiles"') && html.includes('id="sumTip"') && !html.includes('id="sumText"') && /\.sumFoot \.btn\.main\{flex:1 0 100%/.test(html), 'the result page shows boxes, a tip and one big button');
 assert(js.includes("tile('ok', ok + hinted, 'แก้ได้')") && js.includes("(hinted ? tile('hint', hinted, 'คำใบ้') : '')") && js.includes("tip('อยากได้ 3 ดาว?', 'ทำถูกทุกข้อ ไม่ใช้คำใบ้')"), 'the boxes and the tip');
 assert(js.includes("main(rec.passed ? $('sumNext') : $('sumAgain'))"), 'the next level is the big button, or trying again after a fail');
+// Phones: the board takes the height the other parts leave, measured in the browser at hand (in-app browsers such as
+// Facebook's show less of the page), never wider than the screen; wide screens keep the CSS size.
+assert(/function fitBoard\(\)/.test(js) && js.includes("['.head', '.coach', '.stats', '.bar']") && js.includes("root.style.setProperty('--boardSize'") && js.includes("root.style.removeProperty('--boardSize')"), 'the board fits the space measured on the phone');
+assert(/new ResizeObserver\(refit\)\.observe\(\$\('app'\)\)/.test(js) && /refit\(\);\s*\n\s*render\(\);/.test(js), 'the board fits again when the screen changes and when a puzzle starts');
+assert(/\.statRow\{[^}]*height:30px/.test(html) && /\.bar\{[^}]*min-height:calc\(78px/.test(html), 'the rows under the board keep one height, so the board never moves');
+// Under the board only the clock, one thick bar in ten parts (which puzzle and how each went, in words for screen
+// readers) and the level coin: no other numbers to mix up.
+assert(html.includes('id="lvBadge"') && /\.track\{display:flex;height:14px/.test(html) && !html.includes('id="count"') && !/\.tag\{/.test(html), 'the clock, one bar and a level coin, nothing else');
+assert(js.includes("$('track').setAttribute('aria-label', say)") && js.includes("lv.textContent = session.level") && !js.includes("$('count')"), 'the bar says which puzzle in words; the coin shows the level');
 assert(html.indexOf('puzzle/levels.js') < html.indexOf('puzzle/puzzle.js') && html.indexOf('puzzle/progress.js') < html.indexOf('puzzle/puzzle.js'), 'levels and progress load before the page script');
 assert(/if \(!cameBack\(\)\) showMap\(\);\s*\}\)\(\);\s*$/.test(js), 'the page opens on the level map (or back on the puzzle left for the analysis page)');
 console.log('Puzzle levels verified: ' + LEVELS.levels.length + ' levels in ' + LEVELS.chapters.length + ' chapters (' + seen.size + ' puzzles, none twice), stars, unlocking, titles and stored progress.');

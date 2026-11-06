@@ -81,6 +81,7 @@
     };
     say(turnLine(), goalText());
     tick(); clearInterval(timer); timer = setInterval(tick, 1000);
+    refit();
     render();
   }
   function turnLine() { return '<span class="turnBox ' + cur.side + '"></span>' + C.sideName(cur.side) + 'เดิน'; }
@@ -352,11 +353,19 @@
   }
   function renderStats() {
     var done = session.results.filter(function (r) { return r === 'ok' || r === 'hint'; }).length;
-    $('count').innerHTML = 'ข้อ ' + (session.index + 1) + '/' + session.list.length + '<small>' + (session.level ? 'ด่าน ' + session.level + ' · ' : '') + 'แก้ได้ ' + done + ' · จนใน ' + cur.p.mate + ' ตา</small>';
+    // No numbers but the clock and the level coin: which puzzle and how it went is the bar itself (said in words on a
+    // long press and to screen readers), and the coach already says the moves to mate.
+    var n = session.index + 1, of = session.list.length, say = 'ข้อ ' + n + ' จาก ' + of + ' แก้ได้ ' + done + ' ข้อ';
+    $('track').title = say; $('track').setAttribute('aria-label', say);
     var t = '';
-    for (var i = 0; i < session.list.length; i++) t += '<i class="' + (session.results[i] || (i === session.index ? 'now' : '')) + '"></i>';
+    for (var i = 0; i < of; i++) t += '<i class="' + (session.results[i] || (i === session.index ? 'now' : '')) + '"></i>';
     $('track').innerHTML = t;
-    $('track').style.gridTemplateColumns = 'repeat(' + session.list.length + ',1fr)';
+    var lv = $('lvBadge');
+    lv.hidden = !session.level;
+    if (session.level) {
+      lv.textContent = session.level; lv.classList.toggle('long', session.level > 99);
+      lv.title = 'ด่าน ' + session.level; lv.setAttribute('aria-label', 'ด่าน ' + session.level); lv.setAttribute('role', 'img');
+    }
   }
   var ICON = {
     hint: '<svg viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V17h5v-1.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3zM10 20h4"/></svg>',
@@ -383,7 +392,7 @@
   }
   function renderEmpty() {
     clearInterval(timer);
-    $('board').innerHTML = ''; $('arrows').innerHTML = ''; $('bar').innerHTML = ''; $('track').innerHTML = ''; $('count').textContent = '';
+    $('board').innerHTML = ''; $('arrows').innerHTML = ''; $('bar').innerHTML = ''; $('track').innerHTML = ''; $('lvBadge').hidden = true;
     $('clock').textContent = '0:00';
     say('ยังไม่มีโจทย์', 'ตัวกรองที่เลือกไม่มีโจทย์เลย กดปุ่มเฟืองมุมขวาบนเพื่อเลือกใหม่');
   }
@@ -464,7 +473,33 @@
   function showPlay() {
     $('app').classList.remove('onMap');
     $('backBtn').setAttribute('aria-label', 'กลับแผนที่ด่าน'); $('backBtn').title = 'แผนที่ด่าน';
+    fitBoard();
   }
+  // Phones and upright tablets: the board takes all the height the header, coach, stats and buttons leave, measured
+  // in the browser at hand (in-app browsers such as Facebook's show less of the page than Chrome, so a fixed sum
+  // would leave the board small there or space unused), never wider than the screen. Wide screens keep the CSS size.
+  var WIDE = window.matchMedia ? window.matchMedia('(min-width:900px) and (orientation:landscape)') : { matches: false };
+  function fitBoard() {
+    var root = document.documentElement;
+    if (WIDE.matches || $('app').classList.contains('onMap')) { root.style.removeProperty('--boardSize'); return; }
+    var w = root.clientWidth, maxW = w >= 600 ? w - 24 : w;
+    // The stats and buttons are as wide as the board, so their height can change with it: measure twice.
+    for (var k = 0; k < 2; k++) {
+      var used = ['.head', '.coach', '.stats', '.bar'].reduce(function (sum, sel) { return sum + document.querySelector(sel).offsetHeight; }, 0);
+      var size = Math.floor(Math.max(240, Math.min(maxW, $('app').clientHeight - used - 6)));
+      root.style.setProperty('--boardSize', size + 'px');
+    }
+  }
+  var fitLater = null;
+  function refit() { clearTimeout(fitLater); fitLater = setTimeout(fitBoard, 60); }
+  window.addEventListener('resize', refit);
+  window.addEventListener('orientationchange', refit);
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', refit);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(refit);
+  // The page's own box follows the screen (it is 100% high): watching it catches every change of size, including the
+  // ones some in-app browsers make without a resize event. The board's size does not change the box, so no loop.
+  if (window.ResizeObserver) new ResizeObserver(refit).observe($('app'));
+  if (WIDE.addEventListener) WIDE.addEventListener('change', refit);
   function renderMap() {
     var now = P.current(progress), rank = P.rank(progress, LEVELS), count = MAP_LEVELS + 1;
     $('rankPic').src = src(rank.piece, 'white');
