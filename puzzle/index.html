@@ -77,16 +77,24 @@
     .ghost{position:fixed;z-index:50;pointer-events:none;transform:translate(-50%,-50%)}
     .ghost img{width:100%;height:100%}
     .arrows{position:absolute;inset:2px;z-index:7;pointer-events:none}
-    .stats{width:var(--boardSize);padding:10px 10px 0}
-    .statRow{display:flex;align-items:center;justify-content:space-between;font-weight:900}
-    .count{font-size:19px}.count small{color:var(--muted);font-weight:700;font-size:14px;margin-left:6px}
-    .clock{display:flex;align-items:center;gap:5px;color:var(--muted);font-variant-numeric:tabular-nums}
+    .stats{width:var(--boardSize);padding:10px 10px 0;flex-shrink:0}
+    /* Under the board, just three things that cannot be mixed up: the clock, one thick bar in ten parts coloured puzzle
+       by puzzle (the part being played glows), and the level in a gold coin at the end. */
+    .stats{display:flex;align-items:center;gap:12px}
+    .statMain{flex:1;min-width:0}
+    .statRow{display:flex;align-items:center;justify-content:flex-end;font-weight:900;white-space:nowrap;height:30px}
+    .lvBadge{flex-shrink:0;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 50% 35%,#ffe9a8,var(--gold) 60%,#c99a2c);color:#3a2a08;border:3px solid #8a6510;box-shadow:0 4px 0 #8a6510;font:950 19px/1 var(--font);font-variant-numeric:tabular-nums}
+    .lvBadge.long{font-size:15px}
+    .clock{display:flex;align-items:center;gap:5px;color:var(--muted);font-variant-numeric:tabular-nums;font-size:18px;flex-shrink:0}
     .clock svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2}
-    .track{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;margin-top:8px}
-    .track i{height:8px;border-radius:99px;background:var(--panel2)}
+    .track{display:flex;height:14px;margin-top:8px;border-radius:99px;background:#3d3529;overflow:hidden}
+    .track i{flex:1 1 0;height:100%}
+    .track i+i{box-shadow:inset 2px 0 rgba(20,16,10,.45)}
     .track i.ok{background:var(--good)}.track i.hint{background:var(--gold)}.track i.miss{background:var(--danger)}
-    .track i.now{background:#8d7e40;box-shadow:0 0 0 2px var(--accent)}
-    .bar{width:var(--boardSize);display:flex;align-items:center;gap:6px;padding:10px 6px calc(10px + env(safe-area-inset-bottom));margin-top:auto}
+    .track i.now{background:rgba(242,193,78,.32);animation:nowGlow 1.2s ease-in-out infinite alternate}
+    @keyframes nowGlow{to{background:rgba(242,193,78,.6)}}
+    @media (prefers-reduced-motion:reduce){.track i.now{animation:none}}
+    .bar{width:var(--boardSize);display:flex;align-items:center;gap:6px;padding:10px 6px calc(10px + env(safe-area-inset-bottom));margin-top:auto;min-height:calc(78px + env(safe-area-inset-bottom));flex-shrink:0}
     .tool{flex:1;min-width:0;border:0;background:transparent;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;font-size:13px;font-weight:700;padding:6px 2px;border-radius:12px;cursor:pointer}
     .tool svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
     .tool:hover:not(:disabled),.tool:focus-visible{background:var(--panel2);color:var(--ink);outline:none}
@@ -265,8 +273,11 @@
     <svg class="arrows" id="drawLayer" viewBox="0 0 8 8" aria-hidden="true"></svg>
   </div>
   <section class="stats">
-    <div class="statRow"><div class="count" id="count"></div><div class="clock"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span id="clock">0:00</span></div></div>
-    <div class="track" id="track" aria-hidden="true"></div>
+    <div class="statMain">
+    <div class="statRow"><div class="clock"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span id="clock">0:00</span></div></div>
+    <div class="track" id="track" role="img"></div>
+    </div>
+    <div class="lvBadge" id="lvBadge" hidden></div>
   </section>
   <nav class="bar" id="bar"></nav>
 </div>
@@ -323,6 +334,6 @@
 <script src="puzzle/puzzle-core.js?v=20261110-back"></script>
 <script src="puzzle/levels.js?v=20261107-levels"></script>
 <script src="puzzle/progress.js?v=20261107-levels"></script>
-<script src="puzzle/puzzle.js?v=20261111-summary"></script>
+<script src="puzzle/puzzle.js?v=20261113-simple"></script>
 </body>
 </html>
