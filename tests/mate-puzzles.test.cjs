@@ -84,7 +84,7 @@ for (const s of DATA.sets) {
 }
 assert(bytes <= 1.5 * 1024 * 1024, 'the puzzle files stay under 1.5 MB (' + Math.round(bytes / 1024) + ' KB)');
 // The corner sets (chase the lone king into a corner with pawns, promoted pawns and knights) are all there.
-for (const id of ['pp', 'fff-c', 'fff-x', 'nff', 'nff2-x', 'nff2-c', 'nnf-c', 'nnf-x']) assert(ids.includes(id) && DATA.sets.find(s => s.id === id).defend.length === 0, id + ': a lone-king set');
+for (const id of ['pp', 'fff-c', 'fff-x', 'nff-c', 'nff-x', 'nff2-x', 'nff2-c', 'nnf-c', 'nnf-x']) assert(ids.includes(id) && DATA.sets.find(s => s.id === id).defend.length === 0, id + ': a lone-king set');
 const big = DATA.sets.find(s => s.id === 'rmf-r');
 assert(big && [1, 2, 3].every(n => big.count[n] > 30), 'rook, met and promoted pawn against a rook has more puzzles than the others');
 const fens = new Set(), forLocal = [];

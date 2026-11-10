@@ -12,7 +12,7 @@ const BIG = ['r', 'rr', 'rm', 'rs', 'rn', 'rp'];
 const ONE = DATA.sets.filter(s => s.defend.length === 1).map(s => s.id);
 const TWO = DATA.sets.filter(s => s.defend.length === 2).map(s => s.id);
 // The corner sets added later (chapter 7) stay out of the earlier chapters, so levels 1–60 keep their puzzles.
-const CORNER = ['pp', 'fff-c', 'fff-x', 'nff', 'nff2-x', 'nff2-c', 'nnf-c', 'nnf-x'];
+const CORNER = ['pp', 'fff-c', 'fff-x', 'nff-c', 'nff-x', 'nff2-x', 'nff2-c', 'nnf-c', 'nnf-x'];
 const ALL = DATA.sets.map(s => s.id).filter(id => !CORNER.includes(id));
 // A level: its sets and how many puzzles of each mate count [in 1, in 2, in 3].
 const L = (sets, m1, m2, m3) => ({ sets, want: [m1, m2, m3] });
@@ -39,8 +39,8 @@ const CHAPTERS = [
     L(ALL, 3, 4, 3), L(ALL, 3, 4, 3), L(ALL, 3, 4, 3), L(ROOK_MET, 2, 4, 4), L(ALL, 3, 4, 3),
     L(ALL, 2, 4, 4), L(ALL, 2, 4, 4), L(ROOK_MET, 0, 5, 5), L(ALL, 2, 4, 4), L(ALL, 0, 5, 5)] },
   { title: 'ไล่ขุนเข้ามุม', sub: 'เบี้ย เบี้ยหงาย และม้า', levels: [
-    L(['pp'], 10, 0, 0), L(['fff-c', 'fff-x'], 10, 0, 0), L(['nff', 'nff2-c', 'nff2-x'], 10, 0, 0), L(['nnf-c', 'nnf-x'], 10, 0, 0),
-    L(['pp'], 0, 6, 4), L(['fff-c', 'fff-x'], 0, 6, 4), L(['nff', 'nff2-c', 'nff2-x'], 0, 6, 4), L(['nnf-c', 'nnf-x'], 0, 6, 4),
+    L(['pp'], 10, 0, 0), L(['fff-c', 'fff-x'], 10, 0, 0), L(['nff-c', 'nff-x', 'nff2-c', 'nff2-x'], 10, 0, 0), L(['nnf-c', 'nnf-x'], 10, 0, 0),
+    L(['pp'], 0, 6, 4), L(['fff-c', 'fff-x'], 0, 6, 4), L(['nff-c', 'nff-x', 'nff2-c', 'nff2-x'], 0, 6, 4), L(['nnf-c', 'nnf-x'], 0, 6, 4),
     L(CORNER, 0, 5, 5), L(CORNER, 0, 0, 10)] }
 ];
 // The title a learner holds: the first before any chapter is done, then one more for each chapter, with the piece

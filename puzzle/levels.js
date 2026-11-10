@@ -64,14 +64,14 @@
     {"chapter":5,"slots":[["rn-m",2,17],["rmf-r",2,38],["rmf-r",2,74],["mf",2,23],["rn",2,22],["rn",3,25],["rs-m",3,24],["ns",3,8],["sm",3,14],["ns",3,26]]},
     {"chapter":6,"slots":[["pp",1,15],["pp",1,19],["pp",1,2],["pp",1,23],["pp",1,17],["pp",1,29],["pp",1,1],["pp",1,10],["pp",1,4],["pp",1,25]]},
     {"chapter":6,"slots":[["fff-x",1,29],["fff-x",1,13],["fff-x",1,27],["fff-c",1,20],["fff-c",1,21],["fff-c",1,10],["fff-c",1,0],["fff-x",1,12],["fff-c",1,25],["fff-c",1,16]]},
-    {"chapter":6,"slots":[["nff2-x",1,0],["nff",1,25],["nff2-c",1,22],["nff2-x",1,18],["nff2-x",1,20],["nff",1,29],["nff2-x",1,14],["nff",1,26],["nff2-c",1,19],["nff",1,28]]},
+    {"chapter":6,"slots":[["nff-x",1,0],["nff-c",1,25],["nff2-x",1,22],["nff-x",1,18],["nff2-x",1,13],["nff2-c",1,26],["nff-x",1,3],["nff2-x",1,27],["nff-c",1,19],["nff-c",1,22]]},
     {"chapter":6,"slots":[["nnf-x",1,14],["nnf-c",1,21],["nnf-x",1,15],["nnf-c",1,28],["nnf-c",1,9],["nnf-x",1,10],["nnf-c",1,10],["nnf-c",1,13],["nnf-c",1,8],["nnf-c",1,27]]},
     {"chapter":6,"slots":[["pp",2,28],["pp",2,19],["pp",2,22],["pp",2,0],["pp",2,16],["pp",2,21],["pp",3,28],["pp",3,16],["pp",3,13],["pp",3,6]]},
     {"chapter":6,"slots":[["fff-c",2,13],["fff-c",2,15],["fff-c",2,19],["fff-c",2,29],["fff-c",2,12],["fff-x",2,6],["fff-x",3,0],["fff-x",3,8],["fff-x",3,26],["fff-c",3,1]]},
-    {"chapter":6,"slots":[["nff2-x",2,13],["nff",2,22],["nff2-c",2,23],["nff",2,0],["nff2-x",2,7],["nff2-x",2,21],["nff",3,16],["nff",3,19],["nff2-c",3,2],["nff2-c",3,1]]},
+    {"chapter":6,"slots":[["nff2-x",2,13],["nff2-c",2,22],["nff-c",2,23],["nff-x",2,16],["nff2-x",2,7],["nff-c",2,1],["nff-c",3,16],["nff2-c",3,0],["nff2-x",3,2],["nff-c",3,1]]},
     {"chapter":6,"slots":[["nnf-x",2,28],["nnf-x",2,4],["nnf-c",2,1],["nnf-c",2,2],["nnf-c",2,9],["nnf-c",2,0],["nnf-x",3,18],["nnf-x",3,9],["nnf-c",3,7],["nnf-c",3,26]]},
-    {"chapter":6,"slots":[["pp",2,23],["nff2-x",2,24],["fff-c",2,5],["nff",2,24],["nff2-c",2,24],["nff2-x",3,1],["fff-x",3,15],["nff",3,11],["fff-x",3,17],["nff2-x",3,11]]},
-    {"chapter":6,"slots":[["nff2-c",3,9],["nff",3,17],["nnf-c",3,5],["nnf-c",3,0],["pp",3,20],["pp",3,19],["fff-c",3,11],["nff2-c",3,8],["nff",3,26],["nff",3,4]]}
+    {"chapter":6,"slots":[["nff-x",2,10],["nff-x",2,4],["nff2-c",2,20],["nff2-x",2,24],["nnf-c",2,4],["pp",3,18],["nff-x",3,4],["nff2-c",3,22],["nff-c",3,0],["nff2-x",3,11]]},
+    {"chapter":6,"slots":[["nff2-c",3,8],["nnf-x",3,25],["nff-c",3,11],["nff-x",3,25],["nff2-x",3,23],["fff-x",3,22],["fff-x",3,1],["nnf-x",3,6],["nff2-x",3,26],["nnf-x",3,26]]}
   ]};
   if (typeof module === 'object' && module.exports) module.exports = data;
   if (root) root.MakrukPuzzleLevels = data;
