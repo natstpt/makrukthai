@@ -82,7 +82,9 @@ for (const s of DATA.sets) {
   assert(def && def.label === s.label, s.id + ': a set of the build script');
   for (const p of files[s.id]) ALL.push(Object.assign({ set: s.id }, p));
 }
-assert(bytes <= 1024 * 1024, 'the puzzle files stay under 1 MB (' + Math.round(bytes / 1024) + ' KB)');
+assert(bytes <= 1.5 * 1024 * 1024, 'the puzzle files stay under 1.5 MB (' + Math.round(bytes / 1024) + ' KB)');
+// The corner sets (chase the lone king into a corner with pawns, promoted pawns and knights) are all there.
+for (const id of ['pp', 'fff-c', 'fff-x', 'nff', 'nff2-x', 'nff2-c', 'nnf-c', 'nnf-x']) assert(ids.includes(id) && DATA.sets.find(s => s.id === id).defend.length === 0, id + ': a lone-king set');
 const big = DATA.sets.find(s => s.id === 'rmf-r');
 assert(big && [1, 2, 3].every(n => big.count[n] > 30), 'rook, met and promoted pawn against a rook has more puzzles than the others');
 const fens = new Set(), forLocal = [];
@@ -99,16 +101,28 @@ for (const p of ALL) {
   // The pieces are the set's.
   const mine = ps.filter(x => x.side === side && x.piece !== 'king').map(x => x.piece).sort();
   const theirs = ps.filter(x => x.side !== side && x.piece !== 'king').map(x => x.piece).sort();
-  assert.deepEqual(mine, set.attack.slice().sort(), where + ': attacking pieces');
+  // mix sets: each pawn may already be promoted.
+  assert.deepEqual(set.mix ? mine.map(x => x === 'promoted' ? 'pawn' : x) : mine, set.attack.slice().sort(), where + ': attacking pieces');
   assert.deepEqual(theirs, set.defend.slice().sort(), where + ': defending pieces');
   // The tables (the local ones further down), then the move search.
   if (set.local) forLocal.push({ ps, side, mate: p.mate, where });
-  else assert.deepEqual(set.defend.length ? T.result(ps, side) : { res: 'win', n: T.value(ps) }, { res: 'win', n: p.mate }, where + ': the tables say mate in ' + p.mate);
+  else if (!set.search) assert.deepEqual(set.defend.length ? T.result(ps, side) : { res: 'win', n: T.value(ps) }, { res: 'win', n: p.mate }, where + ': the tables say mate in ' + p.mate);
   assert.equal(depth(ps, side, 3), p.mate, where + ': the move search finds mate in exactly ' + p.mate);
   assert(Object.keys(p.tree).length <= 2, where + ': at most two first moves mate in time');
   checkNode(ps, side, p.mate, p.tree, where);
+  // The corner sets: the lone king in a 3x3 corner, the promoted pawns' colours, and where the king is mated.
+  if (set.search) {
+    const lone = ps.find(x => x.piece === 'king' && x.side !== side).at;
+    const corner = { r: lone.r < 3 ? 0 : 7, c: lone.c < 3 ? 0 : 7 };
+    assert((lone.r < 3 || lone.r > 4) && (lone.c < 3 || lone.c > 4), where + ': the lone king starts in a corner');
+    assert(B.colours(set, ps, corner), where + ': the promoted pawns stand as the set says');
+    if (set.cornerMate !== undefined) {
+      const at = B.mateSquares(ps, side, p.tree, []), on = a => a.r === corner.r && a.c === corner.c;
+      assert(set.cornerMate ? at.every(on) : !at.some(on), where + ': mated ' + (set.cornerMate ? 'on' : 'beside') + ' the corner square');
+    }
+  }
   // The local sets' quality rule: nothing hanging, and no first move of the solution a capture.
-  if (set.local) {
+  if (set.local || set.search) {
     assert(!B.hanging(ps), where + ': no piece hangs');
     assert(Object.keys(p.tree).every(k => !ps.some(x => C.square(x.at) === k.slice(2))), where + ': the first move takes nothing');
   }

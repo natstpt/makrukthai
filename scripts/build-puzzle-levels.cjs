@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Builds puzzle/levels.js, the level map of the puzzle page (puzzle/): 60 levels in 6 chapters, each level a set of 10
+// Builds puzzle/levels.js, the level map of the puzzle page (puzzle/): 70 levels in 7 chapters, each level a set of 10
 // puzzles from puzzle/sets.js, from easy to hard. A level always holds the same puzzles (so stars are fair to replay)
-// and no puzzle is in two levels. After level 60 the page makes endless levels at random from every set.
+// and no puzzle is in two levels. After level 70 the page makes endless levels at random from every set.
 //   node scripts/build-puzzle-levels.cjs
 'use strict';
 const fs = require('fs'), path = require('path');
@@ -11,7 +11,9 @@ const LONE = ['r', 'rr', 'rn', 'rs', 'rm', 'rp', 'ns', 'nm', 'nn', 'ss', 'sm', '
 const BIG = ['r', 'rr', 'rm', 'rs', 'rn', 'rp'];
 const ONE = DATA.sets.filter(s => s.defend.length === 1).map(s => s.id);
 const TWO = DATA.sets.filter(s => s.defend.length === 2).map(s => s.id);
-const ALL = DATA.sets.map(s => s.id);
+// The corner sets added later (chapter 7) stay out of the earlier chapters, so levels 1–60 keep their puzzles.
+const CORNER = ['pp', 'fff-c', 'fff-x', 'nff', 'nff2-x', 'nff2-c', 'nnf-c', 'nnf-x'];
+const ALL = DATA.sets.map(s => s.id).filter(id => !CORNER.includes(id));
 // A level: its sets and how many puzzles of each mate count [in 1, in 2, in 3].
 const L = (sets, m1, m2, m3) => ({ sets, want: [m1, m2, m3] });
 const ROOK_MET = ['rmf-r', 'rm-r', 'r-r']; // the rook endings met most in real games (rook, met and promoted pawn against a rook most)
@@ -35,13 +37,18 @@ const CHAPTERS = [
     L(TWO, 4, 6, 0), L(TWO, 0, 10, 0), L(['rr-rs'], 0, 0, 10), L(['rm-nm', 'rm-sm'], 0, 0, 10), L(TWO, 0, 5, 5)] },
   { title: 'รวมทุกแบบ', sub: 'จนใน 1–3 ตา', levels: [
     L(ALL, 3, 4, 3), L(ALL, 3, 4, 3), L(ALL, 3, 4, 3), L(ROOK_MET, 2, 4, 4), L(ALL, 3, 4, 3),
-    L(ALL, 2, 4, 4), L(ALL, 2, 4, 4), L(ROOK_MET, 0, 5, 5), L(ALL, 2, 4, 4), L(ALL, 0, 5, 5)] }
+    L(ALL, 2, 4, 4), L(ALL, 2, 4, 4), L(ROOK_MET, 0, 5, 5), L(ALL, 2, 4, 4), L(ALL, 0, 5, 5)] },
+  { title: 'ไล่ขุนเข้ามุม', sub: 'เบี้ย เบี้ยหงาย และม้า', levels: [
+    L(['pp'], 10, 0, 0), L(['fff-c', 'fff-x'], 10, 0, 0), L(['nff', 'nff2-c', 'nff2-x'], 10, 0, 0), L(['nnf-c', 'nnf-x'], 10, 0, 0),
+    L(['pp'], 0, 6, 4), L(['fff-c', 'fff-x'], 0, 6, 4), L(['nff', 'nff2-c', 'nff2-x'], 0, 6, 4), L(['nnf-c', 'nnf-x'], 0, 6, 4),
+    L(CORNER, 0, 5, 5), L(CORNER, 0, 0, 10)] }
 ];
 // The title a learner holds: the first before any chapter is done, then one more for each chapter, with the piece
 // that stands beside the end of that chapter on the map.
 const RANKS = [
   { name: 'เบี้ยน้อย', piece: 'pawn' }, { name: 'เบี้ยหงาย', piece: 'promoted' }, { name: 'โคนกล้า', piece: 'khon' },
-  { name: 'ม้าเร็ว', piece: 'knight' }, { name: 'เรือใหญ่', piece: 'rook' }, { name: 'ขุนพล', piece: 'met' }, { name: 'จอมทัพ', piece: 'king' }
+  { name: 'ม้าเร็ว', piece: 'knight' }, { name: 'เรือใหญ่', piece: 'rook' }, { name: 'ขุนพล', piece: 'met' }, { name: 'จอมทัพ', piece: 'king' },
+  { name: 'เซียนหมากรุก', piece: 'king' }
 ];
 
 function seeded(text) {
@@ -92,4 +99,4 @@ if (require.main === module) {
   const body = write(out);
   console.log('puzzle/levels.js: ' + out.levels.length + ' levels in ' + out.chapters.length + ' chapters (' + Math.round(body.length / 1024) + ' KB)');
 }
-module.exports = { build, CHAPTERS, RANKS };
+module.exports = { build, CHAPTERS, RANKS, CORNER };
