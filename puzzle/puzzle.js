@@ -2,7 +2,7 @@
  * puzzle/sets.js and puzzle/sets/<id>.json (scripts/build-mate-puzzles.cjs; only the files of the sets a round uses are
  * fetched), laid out like a phone puzzle app: the guide says whose move
  * it is and what to find, the board, a clock and progress, and the tools along the bottom.
- * The page opens on the level map (puzzle/levels.js, scripts/build-puzzle-levels.cjs): 60 levels in 6 chapters, then
+ * The page opens on the level map (puzzle/levels.js, scripts/build-puzzle-levels.cjs): 70 levels in 7 chapters, then
  * endless ones, each a set of 10; stars, LV and the learner's title are kept on this device by puzzle/progress.js.
  * The settings (the gear, for teachers) pick the mate counts and piece sets of free practice, which counts no level;
  * they are not remembered. */

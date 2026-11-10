@@ -40,6 +40,20 @@ const SETS = [
   { id: 'ss', label: 'โคน 2 ตัว', attack: ['khon', 'khon'], defend: [] },
   { id: 'sm', label: 'โคน + เม็ด', attack: ['khon', 'met'], defend: [] },
   { id: 'mf', label: 'เม็ด + เบี้ยหงาย', attack: ['met', 'promoted'], defend: [] },
+  // Driving the lone king into a corner with pawns, promoted pawns and knights (from the move search alone, no tables):
+  // the king starts in a 3x3 corner, the attackers near it. `colours`: the promoted pawns on one colour ('same'), on
+  // both ('split'), or two on one colour and one on the other ('pair', as three promoted pawns must be to mate).
+  // `corner`: the promoted pawns (the pair, for 'pair') walk on the colour of that corner (true) or the other (false);
+  // `cornerMate`: the king is mated on the corner square itself (true) or beside it (false). `mix`: each pawn may
+  // already be promoted. The pawns' corner is on the far side, where they promote.
+  { id: 'pp', label: 'เบี้ย 2 ตัว', attack: ['pawn', 'pawn'], defend: [], search: true, mix: true },
+  { id: 'fff-c', label: 'เบี้ยหงาย 3 ตัว (ตรงมุม)', attack: ['promoted', 'promoted', 'promoted'], defend: [], search: true, colours: 'pair', corner: true },
+  { id: 'fff-x', label: 'เบี้ยหงาย 3 ตัว (ไม่ตรงมุม)', attack: ['promoted', 'promoted', 'promoted'], defend: [], search: true, colours: 'pair', corner: false },
+  { id: 'nff', label: 'ม้า + เบี้ยหงาย 2 ตัว (ผูกกัน)', attack: ['knight', 'promoted', 'promoted'], defend: [], search: true, colours: 'same' },
+  { id: 'nff2-x', label: 'ม้า + เบี้ยหงาย 2 ตัว (เทียมกัน ไม่ตรงมุม)', attack: ['knight', 'promoted', 'promoted'], defend: [], search: true, colours: 'split', cornerMate: false },
+  { id: 'nff2-c', label: 'ม้า + เบี้ยหงาย 2 ตัว (เทียมกัน ตรงมุม)', attack: ['knight', 'promoted', 'promoted'], defend: [], search: true, colours: 'split', cornerMate: true },
+  { id: 'nnf-c', label: 'ม้า 2 ตัว + เบี้ยหงาย (ตรงมุม)', attack: ['knight', 'knight', 'promoted'], defend: [], search: true, corner: true },
+  { id: 'nnf-x', label: 'ม้า 2 ตัว + เบี้ยหงาย (ไม่ตรงมุม)', attack: ['knight', 'knight', 'promoted'], defend: [], search: true, corner: false },
   { id: 'r-m', label: 'เรือ ปะทะ เม็ด', attack: ['rook'], defend: ['met'] },
   { id: 'r-r', label: 'เรือ ปะทะ เรือ', attack: ['rook'], defend: ['rook'] },
   { id: 's-m', label: 'โคน ปะทะ เม็ด', attack: ['khon'], defend: ['met'] },
@@ -150,12 +164,16 @@ function randomPosition(set, rand) {
   const near = (at, d) => { for (;;) { const r = at.r + rand(2 * d + 1) - d, c = at.c + rand(2 * d + 1) - d; if (r >= 0 && r < 8 && c >= 0 && c < 8) return r * 8 + c; } };
   for (;;) {
     const attacker = rand(2) ? 'white' : 'black', defender = other(attacker);
-    const slots = [['king', defender], ['king', attacker]].concat(set.attack.map(p => [p, attacker]), set.defend.map(p => [p, defender]));
+    const pieces = set.mix ? set.attack.map(p => p === 'pawn' && rand(3) === 0 ? 'promoted' : p) : set.attack;
+    const slots = [['king', defender], ['king', attacker]].concat(pieces.map(p => [p, attacker]), set.defend.map(p => [p, defender]));
+    // The corner sets: the lone king in a 3x3 corner (for pawns, on the side where they promote).
+    const corner = set.search ? { r: set.attack.includes('pawn') ? (attacker === 'white' ? 0 : 7) : rand(2) * 7, c: rand(2) * 7 } : null;
     const used = new Set(), ps = [];
     let ok = true;
     for (const [piece, side] of slots) {
       const lone = ps[0] && ps[0].at;
-      const s = !lone ? (rand(4) ? EDGE[rand(EDGE.length)] : rand(64)) : rand(4) ? near(lone, piece === 'king' ? 2 : 3) : rand(64);
+      const s = corner && !lone ? (Math.abs(corner.r - rand(3)) * 8 + Math.abs(corner.c - rand(3))) : corner ? near(lone, piece === 'king' ? 2 : 3)
+        : !lone ? (rand(4) ? EDGE[rand(EDGE.length)] : rand(64)) : rand(4) ? near(lone, piece === 'king' ? 2 : 3) : rand(64);
       const at = { r: s >> 3, c: s & 7 };
       if (used.has(s)) { ok = false; break; }
       used.add(s);
@@ -165,11 +183,41 @@ function randomPosition(set, rand) {
       ps.push({ piece, side, at });
     }
     if (!ok) continue;
+    if (set.search && !colours(set, ps, corner)) continue;
     const [k1, k2] = ps;
     if (Math.max(Math.abs(k1.at.r - k2.at.r), Math.abs(k1.at.c - k2.at.c)) <= 1) continue;
     if (R.inCheck(ps, attacker) || R.inCheck(ps, defender)) continue;
-    return { ps, attacker };
+    return { ps, attacker, corner };
   }
+}
+// The corner sets' colour rules: the promoted pawns on one colour, both, or two and one, and the colour (of the pair,
+// for 'pair') against the corner's.
+const parity = at => (at.r + at.c) % 2;
+function colours(set, ps, corner) {
+  const f = ps.filter(p => p.piece === 'promoted').map(p => parity(p.at)), ones = f.filter(x => x === 1).length;
+  if (set.colours === 'same' && f.some(x => x !== f[0])) return false;
+  if (set.colours === 'split' && f.every(x => x === f[0])) return false;
+  if (set.colours === 'pair' && !(f.length === 3 && (ones === 1 || ones === 2))) return false;
+  const walk = set.colours === 'pair' ? (ones === 2 ? 1 : 0) : f[0];
+  if (set.corner !== undefined && f.length && (walk === parity(corner)) !== set.corner) return false;
+  return true;
+}
+const fromSquare = k => ({ r: 8 - +k[1], c: k.charCodeAt(0) - 97 });
+// Where the lone king ends: the squares it is mated on along every line of the solution tree.
+function mateSquares(ps, side, node, out) {
+  for (const k of Object.keys(node)) {
+    const after = R.applyMove(ps, fromSquare(k.slice(0, 2)), fromSquare(k.slice(2)));
+    if (node[k] === '#') { out.push(after.find(p => p.piece === 'king' && p.side !== side).at); continue; }
+    const r = node[k].r;
+    mateSquares(R.applyMove(after, fromSquare(r.slice(0, 2)), fromSquare(r.slice(2))), side, node[k].n, out);
+  }
+  return out;
+}
+// cornerMate sets: the king is mated on the corner square in every line (true), or never (false).
+function cornerMateOk(set, ps, side, tree, corner) {
+  if (set.cornerMate === undefined) return true;
+  const at = mateSquares(ps, side, tree, []), on = a => a.r === corner.r && a.c === corner.c;
+  return set.cornerMate ? at.every(on) : !at.some(on);
 }
 // Moves to mate for the attacker (to move) from the tables, or Infinity. The pawn tables are read through value().
 async function tableMate(ps, attacker, set) {
@@ -189,21 +237,22 @@ async function buildSet(set, solver, tries) {
   let disagree = 0;
   for (let i = 0; i < tries && MATES.some(n => got[n] < per); i++) {
     if (i && i % (set.searchFirst ? 2000 : 50000) === 0 && process.env.MAKRUK_PROGRESS) console.log(set.id + ': ' + i + ' tries, ' + MATES.map(n => got[n]).join('/'));
-    const { ps, attacker } = randomPosition(set, rand);
+    const { ps, attacker, corner } = randomPosition(set, rand);
     // The quality rule's first half is cheap: test it before asking the tables.
-    if (set.local && hanging(ps)) continue;
+    if ((set.local || set.search) && hanging(ps)) continue;
     // The six-piece tables answer slowly (a probe takes 0.2–1 s), so those sets search first and ask the tables only
     // about the puzzles they keep; the others ask the tables first.
-    const n = set.searchFirst ? solver.depth(ps, attacker, 3) : await tableMate(ps, attacker, set);
+    const n = set.searchFirst || set.search ? solver.depth(ps, attacker, 3) : await tableMate(ps, attacker, set);
     if (n > 3 || got[n] >= per) continue;
     const fen = M.fen({ pieces: ps, turn: attacker });
     if (seen.has(fen)) continue;
     seen.add(fen);
-    if (!set.searchFirst && solver.depth(ps, attacker, 3) !== n) { disagree++; continue; }
+    if (!set.searchFirst && !set.search && solver.depth(ps, attacker, 3) !== n) { disagree++; continue; }
     const tree = solver.tree(ps, attacker, n);
-    if (Object.keys(tree).length > MAX_FIRST || (set.local && !plain(ps, tree))) continue;
+    if (Object.keys(tree).length > MAX_FIRST || ((set.local || set.search) && !plain(ps, tree))) continue;
+    if (set.search && !cornerMateOk(set, ps, attacker, tree, corner)) continue;
     if (set.searchFirst && await tableMate(ps, attacker, set) !== n) { disagree++; continue; }
-    if (set.searchFirst && i % 200 === 0) solver.clear();
+    if ((set.searchFirst || set.search) && i % 200 === 0) solver.clear();
     puzzles.push({ mate: n, fen, tree });
     got[n]++;
     if (puzzles.length % 50 === 0) solver.clear();
@@ -242,7 +291,7 @@ async function main(ids) {
   for (const set of SETS) {
     if (ids.length && !ids.includes(set.id)) continue;
     if (set.local && !(served && served.includes(tableName(set)))) { report.push(set.id + ' skipped (no local table ' + tableName(set) + ')'); continue; }
-    const puzzles = await buildSet(set, solver, set.searchFirst ? 40000 : set.local ? 3000000 : 1500000);
+    const puzzles = await buildSet(set, solver, set.search ? 400000 : set.searchFirst ? 40000 : set.local ? 3000000 : 1500000);
     fs.writeFileSync(path.join(out, set.id + '.json'), JSON.stringify(puzzles));
     report.push(set.id + ' ' + MATES.map(n => puzzles.filter(p => p.mate === n).length).join('/'));
     console.log(report[report.length - 1]);
@@ -252,5 +301,5 @@ async function main(ids) {
   console.log('puzzle/sets.js written: ' + sets.length + ' sets, ' + sets.reduce((a, s) => a + MATES.reduce((b, n) => b + s.count[n], 0), 0) + ' puzzles, ' + Math.round(bytes / 1024) + ' KB (' + report.join(', ') + ').');
 }
 
-module.exports = { SETS, MIN_SET, tableName, hanging, plain, createSolver, randomPosition, seeded, LOCAL };
+module.exports = { SETS, MIN_SET, tableName, hanging, plain, createSolver, randomPosition, seeded, LOCAL, colours, mateSquares, parity };
 if (require.main === module) main(process.argv.slice(2)).catch(e => { console.error(e.message || e); process.exit(1); });
