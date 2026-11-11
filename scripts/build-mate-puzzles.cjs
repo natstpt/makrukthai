@@ -47,14 +47,19 @@ const SETS = [
   // `cornerMate`: the king is mated on the corner square itself (true) or beside it (false). `mix`: each pawn may
   // already be promoted. The pawns' corner is on the far side, where they promote.
   { id: 'pp', label: 'เบี้ย 2 ตัว', attack: ['pawn', 'pawn'], defend: [], search: true, mix: true },
-  { id: 'fff-c', label: 'เบี้ยหงาย 3 ตัว (ตรงมุม)', attack: ['promoted', 'promoted', 'promoted'], defend: [], search: true, colours: 'pair', corner: true },
-  { id: 'fff-x', label: 'เบี้ยหงาย 3 ตัว (ไม่ตรงมุม)', attack: ['promoted', 'promoted', 'promoted'], defend: [], search: true, colours: 'pair', corner: false },
-  { id: 'nff-c', label: 'ม้า + เบี้ยหงาย 2 ตัว (ผูกกัน ตรงมุม)', attack: ['knight', 'promoted', 'promoted'], defend: [], search: true, colours: 'same', corner: true },
-  { id: 'nff-x', label: 'ม้า + เบี้ยหงาย 2 ตัว (ผูกกัน ไม่ตรงมุม)', attack: ['knight', 'promoted', 'promoted'], defend: [], search: true, colours: 'same', corner: false },
-  { id: 'nff2-x', label: 'ม้า + เบี้ยหงาย 2 ตัว (เทียมกัน ไม่ตรงมุม)', attack: ['knight', 'promoted', 'promoted'], defend: [], search: true, colours: 'split', cornerMate: false },
-  { id: 'nff2-c', label: 'ม้า + เบี้ยหงาย 2 ตัว (เทียมกัน ตรงมุม)', attack: ['knight', 'promoted', 'promoted'], defend: [], search: true, colours: 'split', cornerMate: true },
-  { id: 'nnf-c', label: 'ม้า 2 ตัว + เบี้ยหงาย (ตรงมุม)', attack: ['knight', 'knight', 'promoted'], defend: [], search: true, corner: true },
-  { id: 'nnf-x', label: 'ม้า 2 ตัว + เบี้ยหงาย (ไม่ตรงมุม)', attack: ['knight', 'knight', 'promoted'], defend: [], search: true, corner: false },
+  { id: 'fff-c', label: 'เบี้ยหงาย 3 ตัว (2 ตัวผูกกัน เบี้ยตรงมุม)', attack: ['promoted', 'promoted', 'promoted'], defend: [], search: true, colours: 'pair', corner: true },
+  { id: 'fff-x', label: 'เบี้ยหงาย 3 ตัว (2 ตัวผูกกัน เบี้ยไม่ตรงมุม)', attack: ['promoted', 'promoted', 'promoted'], defend: [], search: true, colours: 'pair', corner: false },
+  { id: 'nff-c', label: 'ม้า + เบี้ยหงาย 2 ตัว (ผูกกัน เบี้ยตรงมุม)', attack: ['knight', 'promoted', 'promoted'], defend: [], search: true, colours: 'same', corner: true },
+  { id: 'nff-x', label: 'ม้า + เบี้ยหงาย 2 ตัว (ผูกกัน เบี้ยไม่ตรงมุม)', attack: ['knight', 'promoted', 'promoted'], defend: [], search: true, colours: 'same', corner: false },
+  // Two promoted pawns on both colours: one always walks on the corner's colour, so no corner split (twice as many).
+  { id: 'nff2', label: 'ม้า + เบี้ยหงาย 2 ตัว (เทียมกัน)', attack: ['knight', 'promoted', 'promoted'], defend: [], search: true, colours: 'split', per: 60 },
+  { id: 'nnf-c', label: 'ม้า 2 ตัว + เบี้ยหงาย (เบี้ยตรงมุม)', attack: ['knight', 'knight', 'promoted'], defend: [], search: true, corner: true },
+  { id: 'nnf-x', label: 'ม้า 2 ตัว + เบี้ยหงาย (เบี้ยไม่ตรงมุม)', attack: ['knight', 'knight', 'promoted'], defend: [], search: true, corner: false },
+  // A khon and a promoted pawn: `facing` puts the lone king's corner in front of the khon (where it moves) or behind it.
+  { id: 'sf-fc', label: 'โคน + เบี้ยหงาย (หน้าโคน เบี้ยตรงมุม)', attack: ['khon', 'promoted'], defend: [], search: true, facing: 'front', corner: true },
+  { id: 'sf-fx', label: 'โคน + เบี้ยหงาย (หน้าโคน เบี้ยไม่ตรงมุม)', attack: ['khon', 'promoted'], defend: [], search: true, facing: 'front', corner: false },
+  { id: 'sf-bc', label: 'โคน + เบี้ยหงาย (หลังโคน เบี้ยตรงมุม)', attack: ['khon', 'promoted'], defend: [], search: true, facing: 'back', corner: true },
+  { id: 'sf-bx', label: 'โคน + เบี้ยหงาย (หลังโคน เบี้ยไม่ตรงมุม)', attack: ['khon', 'promoted'], defend: [], search: true, facing: 'back', corner: false },
   { id: 'r-m', label: 'เรือ ปะทะ เม็ด', attack: ['rook'], defend: ['met'] },
   { id: 'r-r', label: 'เรือ ปะทะ เรือ', attack: ['rook'], defend: ['rook'] },
   { id: 's-m', label: 'โคน ปะทะ เม็ด', attack: ['khon'], defend: ['met'] },
@@ -167,8 +172,10 @@ function randomPosition(set, rand) {
     const attacker = rand(2) ? 'white' : 'black', defender = other(attacker);
     const pieces = set.mix ? set.attack.map(p => p === 'pawn' && rand(3) === 0 ? 'promoted' : p) : set.attack;
     const slots = [['king', defender], ['king', attacker]].concat(pieces.map(p => [p, attacker]), set.defend.map(p => [p, defender]));
-    // The corner sets: the lone king in a 3x3 corner (for pawns, on the side where they promote).
-    const corner = set.search ? { r: set.attack.includes('pawn') ? (attacker === 'white' ? 0 : 7) : rand(2) * 7, c: rand(2) * 7 } : null;
+    // The corner sets: the lone king in a 3x3 corner (for pawns, and 'front', on the side the attacker moves towards;
+    // 'back' on its own side).
+    const far = attacker === 'white' ? 0 : 7, row = set.facing === 'back' ? 7 - far : set.facing === 'front' || set.attack.includes('pawn') ? far : rand(2) * 7;
+    const corner = set.search ? { r: row, c: rand(2) * 7 } : null;
     const used = new Set(), ps = [];
     let ok = true;
     for (const [piece, side] of slots) {

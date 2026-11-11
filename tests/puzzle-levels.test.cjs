@@ -1,5 +1,5 @@
 'use strict';
-// The level map of the puzzle page: puzzle/levels.js is what scripts/build-puzzle-levels.cjs builds (70 levels in 7
+// The level map of the puzzle page: puzzle/levels.js is what scripts/build-puzzle-levels.cjs builds (80 levels in 8
 // chapters, 10 puzzles each, easy first, no puzzle in two levels, each chapter from its group of piece sets), and
 // puzzle/progress.js gives the stars, the order levels open in, the title and the stored progress.
 const assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path');
@@ -9,8 +9,8 @@ const B = require('../scripts/build-puzzle-levels.cjs');
 
 // ---- The levels ----
 assert.deepEqual(JSON.parse(JSON.stringify(B.build().levels)), LEVELS.levels, 'puzzle/levels.js is what the build script makes (rerun it)');
-assert.equal(LEVELS.levels.length, 70, '70 levels');
-assert.equal(LEVELS.chapters.length, 7, 'in 7 chapters');
+assert.equal(LEVELS.levels.length, 80, '80 levels');
+assert.equal(LEVELS.chapters.length, 8, 'in 8 chapters');
 assert.equal(LEVELS.perChapter, 10);
 assert.equal(LEVELS.ranks.length, LEVELS.chapters.length + 1, 'a title to begin with and one for each chapter');
 const sets = Object.fromEntries(DATA.sets.map(s => [s.id, s])), seen = new Set();
@@ -32,6 +32,8 @@ LEVELS.levels.forEach((lv, k) => {
     else if (ch === 4) assert.equal(defend, 2, where + ': chapter 5 has two defending pieces');
     if (ch === 6) assert(B.CORNER.includes(id), where + ': chapter 7 is the corner sets');
     else assert(!B.CORNER.includes(id), where + ': the corner sets only in chapter 7, so levels 1-60 stay as they were');
+    if (ch === 7) assert(B.KHON_PAWN.includes(id), where + ': chapter 8 is the khon and promoted pawn sets');
+    else assert(!B.KHON_PAWN.includes(id), where + ': the khon and promoted pawn sets only in chapter 8, so levels 1-70 stay as they were');
     if (ch === 0 || ch === 2) assert.equal(mate, 1, where + ': chapters 1 and 3 are mate in 1');
     if (ch === 1 || ch === 3) assert(mate > 1, where + ': chapters 2 and 4 are mate in 2–3');
   }
@@ -90,11 +92,11 @@ assert.deepEqual(P.load(mem), { stars: {} }, 'reset starts again at level 1');
 const broken = { getItem() { throw Error('blocked'); }, setItem() { throw Error('blocked'); } };
 assert.deepEqual(P.load(broken), { stars: {} }, 'blocked storage still plays');
 assert.equal(P.save(s, broken), false);
-// Endless levels past 70 open in turn too.
+// Endless levels past 80 open in turn too.
 const all = { stars: {} };
-for (let n = 1; n <= 70; n++) all.stars[n] = 1;
-assert.equal(P.current(all), 71);
-assert.equal(P.rank(all, LEVELS).name, LEVELS.ranks[7].name, 'all seven chapters: the last title');
+for (let n = 1; n <= 80; n++) all.stars[n] = 1;
+assert.equal(P.current(all), 81);
+assert.equal(P.rank(all, LEVELS).name, LEVELS.ranks[8].name, 'all eight chapters: the last title');
 
 // ---- The page ----
 const html = fs.readFileSync(path.join(root, 'puzzle', 'index.html'), 'utf8'), js = fs.readFileSync(path.join(root, 'puzzle', 'puzzle.js'), 'utf8');
